@@ -38,7 +38,9 @@ out/
 
 
 ### Vue ###
-node_modules/
-dist/
 !/frontend/build/
 !/frontend/build/**
+/frontend/*.local
+node_modules
+dist
+stats.html
