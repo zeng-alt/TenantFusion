@@ -4,9 +4,10 @@ version = "0.0.1-SNAPSHOT"
 
 plugins {
     id("java")
-    alias(libs.plugins.spring.boot)
-    alias(libs.plugins.graalvm.native)
-    alias(libs.plugins.hibernate.orm)
+    id("org.springframework.boot")
+    id("io.spring.dependency-management")
+    id("org.hibernate.orm")
+    id("org.graalvm.buildtools.native")
 }
 
 
@@ -52,8 +53,8 @@ dependencies {
     }
     runtimeOnly(libs.postgresql)
     runtimeOnly(libs.h2)
-    implementation(libs.spring.boot.starter.data.jpa)
-    implementation(libs.spring.boot.starter.security)
+    implementation("org.springframework.boot:spring-boot-starter-data-jpa")
+    implementation("org.springframework.boot:spring-boot-starter-security")
     implementation(libs.spring.boot.starter.validation)
     implementation(libs.spring.boot.starter.web)
     implementation(libs.spring.modulith.starter.core)
