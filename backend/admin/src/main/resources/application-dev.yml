@@ -1,0 +1,43 @@
+spring:
+  # 开启 Docker Compose 自动管理
+  docker:
+    compose:
+      enabled: false
+      file: backend/admin/compose.yaml
+      # 配置远程虚拟机的 Docker 地址 (请将 192.168.x.x 替换为你虚拟机的实际 IP)
+      host: tcp://192.168.56.106:2375
+      # 可选: 设置生命周期，比如应用停止时不要停止容器（如果你希望它们一直运行）
+      # lifecycle-management: start-only
+  
+  
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration
+
+  # JPA / Hibernate 配置
+  datasource:
+    url: jdbc:h2:mem:admin_db;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    username: sa
+    password: 
+    driver-class-name: org.h2.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: none # 因为使用了 Liquibase，所以将其设为 validate（或 none）以防止 Hibernate 自动修改表结构
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+        dialect: org.hibernate.dialect.H2Dialect
+
+  data:
+    redis:
+      host: 192.168.56.106
+      port: 6379
+      database: 0
+
+  # 开启 H2 控制台（可选），方便在浏览器查看数据库
+  h2:
+    console:
+      enabled: true
+      path: /h2-console

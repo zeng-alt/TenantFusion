@@ -1,0 +1,40 @@
+[versions]
+spring-boot = "3.5.13"
+spring-dependency-management = "1.1.7"
+hibernate-orm = "6.6.45.Final"
+graalvm-native = "0.10.6"
+spring-modulith = "1.4.10"
+junit = "5.9.1"
+
+[libraries]
+spring-modulith-bom = { module = "org.springframework.modulith:spring-modulith-bom", version.ref = "spring-modulith" }
+junit-bom = { module = "org.junit:junit-bom", version.ref = "junit" }
+junit-jupiter = { module = "org.junit.jupiter:junit-jupiter" }
+
+liquibase-core = { module = "org.liquibase:liquibase-core" }
+postgresql = { module = "org.postgresql:postgresql" }
+h2 = { module = "com.h2database:h2" }
+
+spring-boot-starter-data-jpa = { module = "org.springframework.boot:spring-boot-starter-data-jpa" }
+spring-boot-starter-security = { module = "org.springframework.boot:spring-boot-starter-security" }
+spring-boot-starter-validation = { module = "org.springframework.boot:spring-boot-starter-validation" }
+spring-boot-starter-web = { module = "org.springframework.boot:spring-boot-starter-web" }
+spring-boot-docker-compose = { module = "org.springframework.boot:spring-boot-docker-compose" }
+spring-boot-starter-data-redis = { module = "org.springframework.boot:spring-boot-starter-data-redis" }
+spring-boot-configuration-processor = { module = "org.springframework.boot:spring-boot-configuration-processor" }
+spring-boot-starter-test = { module = "org.springframework.boot:spring-boot-starter-test" }
+
+spring-modulith-starter-core = { module = "org.springframework.modulith:spring-modulith-starter-core" }
+spring-modulith-starter-jpa = { module = "org.springframework.modulith:spring-modulith-starter-jpa" }
+spring-modulith-starter-test = { module = "org.springframework.modulith:spring-modulith-starter-test" }
+
+spring-security-test = { module = "org.springframework.security:spring-security-test" }
+
+lombok = { module = "org.projectlombok:lombok" }
+junit-platform-launcher = { module = "org.junit.platform:junit-platform-launcher" }
+
+[plugins]
+spring-boot = { id = "org.springframework.boot", version.ref = "spring-boot" }
+spring-dependency-management = { id = "io.spring.dependency-management", version.ref = "spring-dependency-management" }
+hibernate-orm = { id = "org.hibernate.orm", version.ref = "hibernate-orm" }
+graalvm-native = { id = "org.graalvm.buildtools.native", version.ref = "graalvm-native" }

@@ -1,1 +1,9 @@
-databaseChangeLog: []
+databaseChangeLog:
+  - includeAll:
+      path: pg/
+      relativeToChangelogFile: true
+
+  # 后面更改为读取 /h2 目录下的 sql 时，可以注释上面的 pg 配置，并放开下面的 h2 配置
+  # - includeAll:
+  #     path: h2/
+  #     relativeToChangelogFile: true

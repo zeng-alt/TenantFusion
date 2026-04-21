@@ -1,4 +1,5 @@
 spring:
-  docker:
-    compose:
-      enabled: false
+  application:
+    name: admin-application
+  profiles:
+    active: @profiles.active@

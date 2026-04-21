@@ -43,4 +43,4 @@ out/
 /frontend/*.local
 node_modules
 dist
-stats.html
+**/static/

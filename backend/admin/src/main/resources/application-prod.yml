@@ -1,0 +1,35 @@
+spring:
+  # 生产环境通常不开启 docker compose 自动管理
+  docker:
+    compose:
+      enabled: false
+
+  # 生产环境数据库配置
+  datasource:
+    # 生产环境推荐替换为真实数据库的 URL
+    url: jdbc:postgresql://127.0.0.1:5432/admin_db
+    username: root
+    password: 123456
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: none # 生产环境建议设置为 validate 或 none
+    show-sql: false # 生产环境关闭 SQL 打印
+    properties:
+      hibernate:
+        format_sql: false
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+
+  data:
+    redis:
+      # 生产环境 Redis 配置
+      host: 127.0.0.1
+      port: 6379
+      database: 0
+
+  liquibase:
+    enabled: false
+  h2:
+    console:
+      enabled: false # 生产环境关闭 H2 控制台

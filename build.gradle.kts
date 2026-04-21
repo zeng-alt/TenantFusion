@@ -1,8 +1,8 @@
 plugins {
-    id("org.springframework.boot") version "3.5.13" apply false
-    id("io.spring.dependency-management") version "1.1.7" apply false
-    id("org.hibernate.orm") version "6.6.45.Final" apply false
-    id("org.graalvm.buildtools.native") version "0.10.6" apply false
+    alias(libs.plugins.spring.boot) apply false
+    alias(libs.plugins.spring.dependency.management) apply false
+    alias(libs.plugins.hibernate.orm) apply false
+    alias(libs.plugins.graalvm.native) apply false
 }
 
 allprojects {
@@ -14,26 +14,21 @@ allprojects {
     }
 }
 
+val myLibs = libs
 
 // 统一配置所有后端相关的模块（排除 frontend 模块）
 configure(subprojects) {
     apply(plugin = "io.spring.dependency-management")
 
-
     the<io.spring.gradle.dependencymanagement.dsl.DependencyManagementExtension>().apply {
         imports {
             mavenBom(org.springframework.boot.gradle.plugin.SpringBootPlugin.BOM_COORDINATES)
-            mavenBom("org.springframework.modulith:spring-modulith-bom:1.4.10")
+            mavenBom(myLibs.spring.modulith.bom.get().toString())
         }
 
         dependencies {
             // 统一管理第三方库版本
-            dependency("com.google.guava:guava:32.1.3-jre")
-            dependency("org.apache.commons:commons-lang3:3.14.0")
-            dependency("com.fasterxml.jackson.core:jackson-databind:2.17.0")
-            dependency("io.jsonwebtoken:jjwt-api:0.12.5")
-            dependency("io.jsonwebtoken:jjwt-impl:0.12.5")
-            dependency("io.jsonwebtoken:jjwt-jackson:0.12.5")
+
         }
     }
 
@@ -63,7 +58,7 @@ tasks.register<Exec>("buildFrontend") {
     commandLine(npmCmd, "run", "build")
     inputs.dir(file("${frontendDir}/src"))
     inputs.file(file("${frontendDir}/package.json"))
-    inputs.file(file("${frontendDir}/package-lock.json"))
+    inputs.file(file("${frontendDir}/pnpm-lock.yaml"))
     outputs.dir(frontendDistDir)
 }
 
@@ -78,10 +73,10 @@ tasks.register<Copy>("copyFrontend") {
 project(":backend:admin") {
     plugins.withId("java") {
         tasks.named("compileJava") {
-            dependsOn(rootProject.tasks.named("copyFrontend"))
+           dependsOn(rootProject.tasks.named("copyFrontend"))
         }
         tasks.named("processResources") {
-            dependsOn(rootProject.tasks.named("copyFrontend"))
+           dependsOn(rootProject.tasks.named("copyFrontend"))
         }
     }
 }
