@@ -6,6 +6,7 @@ version = "0.0.1-SNAPSHOT"
 
 plugins {
     id("java")
+    alias(libs.plugins.spring.boot)
     alias(libs.plugins.graalvm.native)
     alias(libs.plugins.hibernate.orm)
 }
