@@ -29,8 +29,8 @@ subprojects {
     }
 
     dependencies {
-        "testImplementation"(platform(libs.junit.platform))
-        "testImplementation"(libs.junit.jupiter)
+        "testImplementation"(platform(rootProject.libs.junit.bom))
+        "testImplementation"(rootProject.libs.junit.jupiter)
     }
 
     tasks.withType<Test> {
