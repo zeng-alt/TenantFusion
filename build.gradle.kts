@@ -16,8 +16,9 @@ allprojects {
 
 val myLibs = libs
 
-// 统一配置所有后端相关的模块（排除 frontend 模块）
-configure(subprojects) {
+subprojects {
+    if (!path.startsWith(":backend")) return@subprojects
+
     apply(plugin = "io.spring.dependency-management")
 
     the<io.spring.gradle.dependencymanagement.dsl.DependencyManagementExtension>().apply {
