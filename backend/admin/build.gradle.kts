@@ -1,5 +1,3 @@
-import org.apache.tools.ant.filters.ReplaceTokens
-
 description = "admin-application"
 group = "com.github.zeng.alt"
 version = "0.0.1-SNAPSHOT"
@@ -46,14 +44,6 @@ tasks.named<org.springframework.boot.gradle.tasks.run.BootRun>("bootRun") {
 
 // 接收外部传入的 profiles.active 参数，默认为 prod
 val activeProfile = project.findProperty("profiles.active") as? String ?: "dev"
-
-tasks.withType<ProcessResources> {
-    filesMatching("**/application.yml") {
-        // 解决 yml 文件中文乱码导致 MalformedInputException 的问题
-        filteringCharset = "UTF-8"
-        filter<ReplaceTokens>("tokens" to mapOf("profiles.active" to activeProfile))
-    }
-}
 
 dependencies {
     // 可以在这里引入 admin 模块特有的依赖，例如 Web, JPA 等
