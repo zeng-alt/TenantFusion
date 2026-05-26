@@ -1,8 +1,8 @@
 package com.github.zeng.alt.api.rest;
 
-import com.zjj.autoconfigure.component.core.ResponseEntity;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
+import org.springframework.lang.Nullable;
 
 import java.util.Collection;
 
@@ -11,14 +11,14 @@ import java.util.Collection;
  * @version 1.0
  * @crateTime 2025年02月25日 21:41
  */
-public class TurnPageResponseEntity<T, C> extends ResponseEntity<TurnPageEntity<Collection<T>, C>> {
+public class TurnPageResponseEntity<T, C> extends HttpEntityStatus<TurnPageEntity<Collection<T>, C>> {
 
     public TurnPageResponseEntity(HttpStatusCode status) {
-        super(status);
+        this(null, status);
     }
 
-    public TurnPageResponseEntity(TurnPageEntity<Collection<T>, C> body, HttpStatusCode status) {
-        super(body, status);
+    public TurnPageResponseEntity(@Nullable TurnPageEntity<Collection<T>, C> body, HttpStatusCode status) {
+        super(body, status.value());
     }
 
     public static <T, C> TurnPageResponseEntity<T, C> of(boolean hasNext, boolean hasPre, C currentCursor, C nextCursor, Collection<T> data) {

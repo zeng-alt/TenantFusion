@@ -1,8 +1,8 @@
 package com.github.zeng.alt.api.rest;
 
-import com.zjj.bean.componenet.BeanHelper;
 import io.github.linpeilie.Converter;
 import jakarta.annotation.Resource;
+import org.springframework.beans.BeanUtils;
 
 import java.util.function.Consumer;
 
@@ -18,7 +18,6 @@ public abstract class BaseController {
         <T> Consumer<Consumer<T>> to(Class<T> t);
     }
 
-
     @Resource
     protected Converter converter;
 
@@ -30,7 +29,11 @@ public abstract class BaseController {
         return new Convert() {
             @Override
             public <T> Consumer<Consumer<T>> to(Class<T> t) {
-                return tConsumer -> tConsumer.accept(BeanHelper.copyToObject(s, t));
+                return tConsumer -> {
+                    T target = BeanUtils.instantiateClass(t);
+                    BeanUtils.copyProperties(s, target);
+                    tConsumer.accept(target);
+                };
             }
         };
     }

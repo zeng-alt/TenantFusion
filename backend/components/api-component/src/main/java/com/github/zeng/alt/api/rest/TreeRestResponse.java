@@ -1,7 +1,5 @@
 package com.github.zeng.alt.api.rest;
 
-import com.zjj.autoconfigure.component.core.Response;
-import com.zjj.autoconfigure.component.core.ResponseEnum;
 import lombok.Getter;
 import org.springframework.util.CollectionUtils;
 
@@ -19,7 +17,7 @@ public class TreeRestResponse<T extends Parent<P>, P extends Comparable<P>> exte
 
 
     protected TreeRestResponse(Collection<T> data) {
-        super(ResponseEnum.SUCCESS.getCode(), ResponseEnum.SUCCESS.getMessage());
+        super(RestResponse.SUCCESS_CODE, "success");
         super.setData(parse(data));
     }
 

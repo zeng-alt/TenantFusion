@@ -33,7 +33,16 @@ public class PageRestResponse<T extends Serializable> extends RestResponse<Colle
 	}
 
 	@Override
-	public List<T> getData() {
+	public Collection<T> getData() {
+		Collection<T> data = super.getData();
+		if (null == data) {
+			return Collections.emptyList();
+		}
+		return data;
+	}
+
+	public List<T> getDataList() {
+		Collection<T> data = super.getData();
 		if (null == data) {
 			return Collections.emptyList();
 		}

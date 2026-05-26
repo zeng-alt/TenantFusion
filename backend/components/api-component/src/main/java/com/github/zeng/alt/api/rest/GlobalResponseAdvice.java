@@ -3,7 +3,6 @@ package com.github.zeng.alt.api.rest;
 
 import org.springframework.context.support.MessageSourceAccessor;
 import org.springframework.core.MethodParameter;
-import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.converter.HttpMessageConverter;
@@ -30,9 +29,8 @@ public class GlobalResponseAdvice implements ResponseBodyAdvice<Object> {
     public boolean supports(MethodParameter returnType, Class<? extends HttpMessageConverter<?>> converterType) {
         Class<?> type = returnType.getParameterType();
 
-
-
-        return !HttpEntity.class.isAssignableFrom(type)
+        return !org.springframework.http.HttpEntity.class.isAssignableFrom(type)
+                && !HttpEntity.class.isAssignableFrom(type)
                 && !HttpEntityStatus.class.isAssignableFrom(type);
     }
 
@@ -48,7 +46,7 @@ public class GlobalResponseAdvice implements ResponseBodyAdvice<Object> {
                 return ErrorResponseEntity.of();
             } else if (s.startsWith("ok:")) {
                 String message = extractMessage(s);
-                return RestResponse.success().setMessage(message);
+                return RestResponse.success().message(message);
             } else if (s.startsWith("fail:")) {
                 String msg = extractMessage(s);
                 String message = messageSourceAccessor.getMessage("GlobalExceptionAdvice.exception.error", msg);

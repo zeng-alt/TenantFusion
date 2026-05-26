@@ -1,7 +1,5 @@
 package com.github.zeng.alt.api.rest;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.zjj.autoconfigure.component.core.Response;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
@@ -16,7 +14,6 @@ import java.util.List;
  */
 @EqualsAndHashCode(callSuper = true)
 @Data
-@JsonInclude(JsonInclude.Include.NON_NULL)
 public class TurnPageRestResponse<T, C extends Serializable> extends RestResponse<List<T>> {
 
     @Serial

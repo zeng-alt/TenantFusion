@@ -11,14 +11,30 @@ import java.util.List;
  */
 public class TreeEntity<T extends Parent<P>, P extends Comparable<P>> {
     private final T current;
-    private List<TreeRestResponse.TreeNodeResponse<T, P>> children;
+    private List<TreeEntity<T, P>> children;
 
     private TreeEntity(T current) {
         this.current = current;
     }
 
+    public static <T extends Parent<P>, P extends Comparable<P>> TreeEntity<T, P> of(T current) {
+        return new TreeEntity<>(current);
+    }
+
     public P getCurrentId() {
         return current.current();
+    }
+
+    public T getCurrent() {
+        return current;
+    }
+
+    public List<TreeEntity<T, P>> getChildren() {
+        return children;
+    }
+
+    public void setChildren(List<TreeEntity<T, P>> children) {
+        this.children = children;
     }
 
     public boolean hasNext() {

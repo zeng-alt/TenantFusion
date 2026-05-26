@@ -1,4 +1,4 @@
-package com.github.zeng.alt.api.rest;
+﻿package com.github.zeng.alt.api.rest;
 
 
 import org.springframework.http.HttpStatus;
@@ -9,48 +9,25 @@ import org.springframework.web.ErrorResponse;
 
 import java.net.URI;
 
-/**
- * @author zengJiaJun
- * @version 1.0
- * @crateTime 2025年02月20日 15:32
- */
 public class ErrorResponseEntity extends HttpEntityStatus<ProblemDetail> implements ErrorResponse {
 
     private final ProblemDetail body;
-
     private final String messageDetailCode;
-
     @Nullable
     private final Object[] messageDetailArguments;
 
-    /**
-     * Constructor with an {@link HttpStatusCode}.
-     */
     public ErrorResponseEntity(HttpStatusCode status) {
         this(status, null);
     }
 
-    /**
-     * Constructor with an {@link HttpStatusCode} and an optional cause.
-     */
     public ErrorResponseEntity(HttpStatusCode status, @Nullable Throwable cause) {
         this(status, ProblemDetail.forStatus(status), cause);
     }
 
-    /**
-     * Constructor with a given {@link ProblemDetail} instance, possibly a
-     * subclass of {@code ProblemDetail} with extended fields.
-     */
     public ErrorResponseEntity(HttpStatusCode status, ProblemDetail body, @Nullable Throwable cause) {
         this(status, body, cause, null, null);
     }
 
-    /**
-     * Constructor with a given {@link ProblemDetail}, and a
-     * {@link org.springframework.context.MessageSource} code and arguments to
-     * resolve the detail message with.
-     * @since 6.0
-     */
     public ErrorResponseEntity(
             HttpStatusCode status, ProblemDetail body, @Nullable Throwable cause,
             @Nullable String messageDetailCode, @Nullable Object[] messageDetailArguments) {
@@ -118,68 +95,31 @@ public class ErrorResponseEntity extends HttpEntityStatus<ProblemDetail> impleme
                 messageDetailCode : ErrorResponse.getDefaultDetailMessageCode(getClass(), null));
     }
 
-
     @Override
     public HttpStatusCode getStatusCode() {
         return HttpStatus.valueOf(this.code);
     }
 
-//    @Override
-//    public HttpHeaders getHeaders() {
-//        return this.headers;
-//    }
-
-    /**
-     * Set the {@link ProblemDetail#setType(URI) type} field of the response body.
-     * @param type the problem type
-     */
     public ErrorResponseEntity setType(URI type) {
         this.body.setType(type);
         return this;
     }
 
-    /**
-     * Set the {@link ProblemDetail#setTitle(String) title} field of the response body.
-     * @param title the problem title
-     */
     public ErrorResponseEntity setTitle(@Nullable String title) {
         this.body.setTitle(title);
         return this;
     }
 
-    /**
-     * Set the {@link ProblemDetail#setDetail(String) detail} field of the response body.
-     * @param detail the problem detail
-     */
     public ErrorResponseEntity setDetail(@Nullable String detail) {
         this.body.setDetail(detail);
         return this;
     }
 
-    /**
-     * Set the {@link ProblemDetail#setInstance(URI) instance} field of the response body.
-     * @param instance the problem instance
-     */
     public ErrorResponseEntity setInstance(@Nullable URI instance) {
         this.body.setInstance(instance);
         return this;
     }
 
-    /**
-     * Return the body for the response. To customize the body content, use:
-     * <ul>
-     * <li>{@link #setType(URI)}
-     * <li>{@link #setTitle(String)}
-     * <li>{@link #setDetail(String)}
-     * <li>{@link #setInstance(URI)}
-     * </ul>
-     * <p>By default, the status field of {@link ProblemDetail} is initialized
-     * from the status provided to the constructor, which in turn may also
-     * initialize the title field from the status reason phrase, if the status
-     * is well-known. The instance field, if not set, is initialized from the
-     * request path when a {@code ProblemDetail} is returned from an
-     * {@code @ExceptionHandler} method.
-     */
     @Override
     public final ProblemDetail getBody() {
         return this.body;
@@ -196,8 +136,7 @@ public class ErrorResponseEntity extends HttpEntityStatus<ProblemDetail> impleme
         return this.messageDetailArguments;
     }
 
-
     public String getMessage() {
-        return this.code + (!this.getHeaders().isEmpty() ? ", headers=" + this.getHeaders() : "") + ", " + this.body;
+        return "status=" + this.code + ", " + this.body;
     }
 }

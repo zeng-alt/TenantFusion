@@ -1,6 +1,7 @@
 package com.github.zeng.alt.api.rest;
 
-import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
 
 import java.io.Serial;
 import java.io.Serializable;
@@ -11,10 +12,11 @@ import java.util.Objects;
 
 /**
  * @author zengJiaJun
- * @crateTime 2024年06月16日 20:19
+ * @crateTime 2024年06月26日 20:19
  * @version 1.0
  */
-@Data
+@Getter
+@Setter
 public class RestResponse<T> implements Serializable {
 
 	@Serial
@@ -27,7 +29,7 @@ public class RestResponse<T> implements Serializable {
 	private Integer code;
 	private String message;
 	private List<Object> error;
-	protected T data;
+	private T data;
 	private LocalDateTime time = LocalDateTime.now();
 
 	protected RestResponse() {
@@ -38,76 +40,63 @@ public class RestResponse<T> implements Serializable {
 		this.message = message;
 	}
 
-
-	protected RestResponse<T> setError(List<Object> error) {
+	public RestResponse<T> error(List<Object> error) {
 		this.error = error;
 		return this;
 	}
 
-	protected RestResponse<T> setData(T data) {
-		this.data = data;
-		return this;
-	}
-
-	protected RestResponse<T> setMessage(String message) {
-		this.message = message;
-		return this;
-	}
-
-	protected RestResponse<T> setCode(Integer code) {
+	public RestResponse<T> code(Integer code) {
 		this.code = code;
 		return this;
 	}
 
-
-
 	public static <T extends Serializable> RestResponse<T> success() {
-		return new RestResponse<T>().setCode(SUCCESS_CODE).setMessage("success");
+		return new RestResponse<T>().code(SUCCESS_CODE).message("success");
 	}
 
 	public static <T extends Serializable> RestResponse<T> success(T data) {
-		return new RestResponse<T>().setCode(SUCCESS_CODE).setMessage("success").setData(data);
+		return new RestResponse<T>().code(SUCCESS_CODE).message("success").data(data);
 	}
 
 	public static RestResponse<Void> fail() {
-		return new RestResponse<Void>().setCode(FAIL_CODE).setMessage("fail").setError(new ArrayList<>());
+		return new RestResponse<Void>().code(FAIL_CODE).message("fail").error(new ArrayList<>());
 	}
 
 	public static RestResponse<Void> fail(String message) {
-		return new RestResponse<Void>().setCode(FAIL_CODE).setMessage(message).setData(null).setError(new ArrayList<>());
+		return new RestResponse<Void>().code(FAIL_CODE).message(message).data(null).error(new ArrayList<>());
 	}
 
 	public static <T extends Serializable> RestResponse<T> warn() {
-		return new RestResponse<T>().setCode(WARN_CODE).setMessage("warn").setData(null).setError(new ArrayList<>());
+		return new RestResponse<T>().code(WARN_CODE).message("warn").data(null).error(new ArrayList<>());
 	}
 
 	public static <T extends Serializable> RestResponse<T> warn(String message) {
-		return new RestResponse<T>().setCode(WARN_CODE).setMessage(message).setData(null);
+		return new RestResponse<T>().code(WARN_CODE).message(message).data(null);
 	}
 
 	public static <T extends Serializable> RestResponse<T> warn(T data) {
-		return new RestResponse<T>().setCode(WARN_CODE).setMessage("warn").setData(data);
+		return new RestResponse<T>().code(WARN_CODE).message("warn").data(data);
 	}
 
 	public RestResponse<T> addError(Object error) {
+		if (this.error == null) {
+			this.error = new ArrayList<>();
+		}
 		this.error.add(error);
 		return this;
 	}
 
 	public RestResponse<T> message(String message) {
-		return new RestResponse<T>().setCode(code).setMessage(message).setData(data);
-	}
-
-	public RestResponse<T> code(int code) {
-		return new RestResponse<T>().setCode(code).setMessage(message).setData(data);
+		this.message = message;
+		return this;
 	}
 
 	public RestResponse<T> data(T data) {
-		return new RestResponse<T>().setCode(code).setMessage(message).setData(data);
+		this.data = data;
+		return this;
 	}
 
 	public boolean isSuccess() {
-		return Objects.equals(RestResponse.SUCCESS_CODE, code);
+		return Objects.equals(SUCCESS_CODE, code);
 	}
-
 }
