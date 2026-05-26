@@ -1,10 +1,10 @@
 package com.github.zeng.alt.api.rest;
 
 
-import com.zjj.autoconfigure.component.core.HttpEntity;
-import com.zjj.autoconfigure.component.core.HttpEntityStatus;
-import com.zjj.autoconfigure.component.core.ResponseEntity;
+
 import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpStatusCode;
+import org.springframework.http.ResponseEntity;
 import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 
@@ -194,7 +194,7 @@ public class PageResponseEntity<T> extends HttpEntityStatus<PageEntity<Collectio
      * @return the created builder
      * @since 4.1
      */
-    public static ResponseEntity.BodyBuilder<?> notFound() {
+    public static ResponseEntity.BodyBuilder notFound() {
         return status(HttpStatus.NOT_FOUND);
     }
 

@@ -15,17 +15,17 @@ import java.util.Optional;
  * @version 1.0
  * @crateTime 2024年07月23日 15:07
  */
-public class TreeResponse<T extends Parent<P>, P extends Comparable<P>> extends Response<TreeResponse.TreeNodeResponse<T, P>> {
+public class TreeRestResponse<T extends Parent<P>, P extends Comparable<P>> extends RestResponse<TreeRestResponse.TreeNodeResponse<T, P>> {
 
 
-    protected TreeResponse(Collection<T> data) {
+    protected TreeRestResponse(Collection<T> data) {
         super(ResponseEnum.SUCCESS.getCode(), ResponseEnum.SUCCESS.getMessage());
         super.setData(parse(data));
     }
 
 
-    public static <T extends Parent<P>, P extends Comparable<P>> TreeResponse<T, P> apply(Collection<T> data) {
-        return new TreeResponse<>(data);
+    public static <T extends Parent<P>, P extends Comparable<P>> TreeRestResponse<T, P> apply(Collection<T> data) {
+        return new TreeRestResponse<>(data);
     }
 
     public TreeNodeResponse<T, P> parse(Collection<T> data) {
@@ -55,8 +55,8 @@ public class TreeResponse<T extends Parent<P>, P extends Comparable<P>> extends 
         parent.children = children;
     }
 
-    public static <T extends Parent<P>, P extends Comparable<P>> TreeResponse<T, P> apply(List<T> data) {
-        return new TreeResponse<>(data);
+    public static <T extends Parent<P>, P extends Comparable<P>> TreeRestResponse<T, P> apply(List<T> data) {
+        return new TreeRestResponse<>(data);
     }
 
 

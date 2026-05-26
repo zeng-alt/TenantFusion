@@ -13,20 +13,20 @@ import java.util.Optional;
  * @version 1.0
  * @crateTime 2024年10月22日 21:41
  */
-public class TreeTableResponse<T extends Parent<P>, P extends Comparable<P>> extends Response<Collection<T>> {
+public class TreeTableRestResponse<T extends Parent<P>, P extends Comparable<P>> extends RestResponse<Collection<T>> {
 
-    protected TreeTableResponse(Collection<T> data) {
+    protected TreeTableRestResponse(Collection<T> data) {
         super(ResponseEnum.SUCCESS.getCode(), ResponseEnum.SUCCESS.getMessage());
         setData(data);
     }
 
-    public static <T extends Parent<P>, P extends Comparable<P>> TreeTableResponse<T, P> apply(Collection<T> data) {
-        return new TreeTableResponse<>(data);
+    public static <T extends Parent<P>, P extends Comparable<P>> TreeTableRestResponse<T, P> apply(Collection<T> data) {
+        return new TreeTableRestResponse<>(data);
     }
 
 
     @Override
-    protected Response<Collection<T>> setData(Collection<T> data) {
+    protected RestResponse<Collection<T>> setData(Collection<T> data) {
         List<T> result = new LinkedList<>();
         if (data != null) {
 

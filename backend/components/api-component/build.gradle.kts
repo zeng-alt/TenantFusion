@@ -13,6 +13,7 @@ dependencies {
     api(rootProject.libs.lombok)
     api("org.springframework.boot:spring-boot-autoconfigure")
     implementation("org.springframework:spring-web")
+    implementation("org.springframework:spring-webmvc")
 }
 
 tasks.test {

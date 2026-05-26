@@ -17,7 +17,7 @@ import java.util.List;
 @EqualsAndHashCode(callSuper = true)
 @Data
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public class TurnPageResponse<T, C extends Serializable> extends Response<List<T>> {
+public class TurnPageRestResponse<T, C extends Serializable> extends RestResponse<List<T>> {
 
     @Serial
     private static final long serialVersionUID = 1L;

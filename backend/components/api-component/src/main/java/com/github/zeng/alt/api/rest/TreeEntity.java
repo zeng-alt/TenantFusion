@@ -11,7 +11,7 @@ import java.util.List;
  */
 public class TreeEntity<T extends Parent<P>, P extends Comparable<P>> {
     private final T current;
-    private List<TreeResponse.TreeNodeResponse<T, P>> children;
+    private List<TreeRestResponse.TreeNodeResponse<T, P>> children;
 
     private TreeEntity(T current) {
         this.current = current;

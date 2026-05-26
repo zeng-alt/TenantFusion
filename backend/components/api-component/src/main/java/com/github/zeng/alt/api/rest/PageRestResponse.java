@@ -1,6 +1,5 @@
 package com.github.zeng.alt.api.rest;
 
-import com.zjj.autoconfigure.component.core.Response;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -17,7 +16,7 @@ import java.util.List;
  */
 @Getter
 @Setter
-public class PageResponse<T extends Serializable> extends Response<Collection<T>> {
+public class PageRestResponse<T extends Serializable> extends RestResponse<Collection<T>> {
 
 	private Integer pageNum;
 
@@ -44,8 +43,8 @@ public class PageResponse<T extends Serializable> extends Response<Collection<T>
 		return new ArrayList<>(data);
 	}
 
-	public static <T extends Serializable> PageResponse<T> of(int pageSize, int pageNum) {
-		PageResponse<T> response = new PageResponse<>();
+	public static <T extends Serializable> PageRestResponse<T> of(int pageSize, int pageNum) {
+		PageRestResponse<T> response = new PageRestResponse<>();
 		response.setData(Collections.emptyList());
 		response.setTotal(0L);
 		response.setPageSize(pageSize);
@@ -54,9 +53,9 @@ public class PageResponse<T extends Serializable> extends Response<Collection<T>
 		return response;
 	}
 
-	public static <T extends Serializable> PageResponse<T> of(Collection<T> data, long totalCount, int pageSize,
-			int pageNum) {
-		PageResponse<T> response = new PageResponse<>();
+	public static <T extends Serializable> PageRestResponse<T> of(Collection<T> data, long totalCount, int pageSize,
+																  int pageNum) {
+		PageRestResponse<T> response = new PageRestResponse<>();
 		response.setData(data);
 		response.setTotal(totalCount);
 		response.setPageSize(pageSize);

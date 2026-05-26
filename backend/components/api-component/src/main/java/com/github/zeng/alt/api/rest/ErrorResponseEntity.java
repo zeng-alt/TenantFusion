@@ -121,7 +121,7 @@ public class ErrorResponseEntity extends HttpEntityStatus<ProblemDetail> impleme
 
     @Override
     public HttpStatusCode getStatusCode() {
-        return HttpStatus.valueOf(this.status);
+        return HttpStatus.valueOf(this.code);
     }
 
 //    @Override
@@ -198,6 +198,6 @@ public class ErrorResponseEntity extends HttpEntityStatus<ProblemDetail> impleme
 
 
     public String getMessage() {
-        return this.status + (!this.getHeaders().isEmpty() ? ", headers=" + this.getHeaders() : "") + ", " + this.body;
+        return this.code + (!this.getHeaders().isEmpty() ? ", headers=" + this.getHeaders() : "") + ", " + this.body;
     }
 }

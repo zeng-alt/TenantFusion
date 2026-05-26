@@ -1,7 +1,6 @@
 package com.github.zeng.alt.api.rest;
 
-import com.zjj.autoconfigure.component.core.HttpEntityStatus;
-import com.zjj.autoconfigure.component.core.ResponseEntity;
+
 import org.springframework.context.support.MessageSourceAccessor;
 import org.springframework.core.MethodParameter;
 import org.springframework.http.HttpEntity;
@@ -44,22 +43,22 @@ public class GlobalResponseAdvice implements ResponseBodyAdvice<Object> {
         }
         if (body instanceof String s) {
             if ("ok".equals(s)) {
-                return ResponseEntity.ok("ok");
+                return RestResponse.success();
             } else if ("fail".equals(s)) {
                 return ErrorResponseEntity.of();
             } else if (s.startsWith("ok:")) {
                 String message = extractMessage(s);
-                return ResponseEntity.ok(message);
+                return RestResponse.success().setMessage(message);
             } else if (s.startsWith("fail:")) {
                 String msg = extractMessage(s);
                 String message = messageSourceAccessor.getMessage("GlobalExceptionAdvice.exception.error", msg);
                 return ErrorResponseEntity.of(HttpStatus.INTERNAL_SERVER_ERROR, message, msg);
             } else {
-                return ResponseEntity.ok(body);
+                return body;
             }
         }
 
-        return ResponseEntity.of(body);
+        return body;
     }
 
     private String extractMessage(String body) {
