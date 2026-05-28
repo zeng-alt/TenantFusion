@@ -10,8 +10,15 @@ repositories {
 }
 
 dependencies {
-    testImplementation(platform("org.junit:junit-bom:5.9.1"))
-    testImplementation("org.junit.jupiter:junit-jupiter")
+    api(project(":backend:components:api-component"))
+    api(project(":backend:components:json-component"))
+    api(project(":backend:components:bean-component"))
+    api("org.springframework.boot:spring-boot-starter-logging")
+    implementation("org.springframework:spring-web")
+    implementation("org.springframework:spring-webmvc")
+    implementation("jakarta.servlet:jakarta.servlet-api")
+    compileOnly(rootProject.libs.lombok)
+    annotationProcessor(rootProject.libs.lombok)
 }
 
 tasks.test {
