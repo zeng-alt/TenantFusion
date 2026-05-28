@@ -1,4 +1,4 @@
-﻿package com.github.zeng.alt.api.rest;
+package com.github.zeng.alt.api.rest;
 
 
 import org.springframework.http.HttpStatus;

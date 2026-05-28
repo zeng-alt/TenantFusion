@@ -10,7 +10,8 @@ repositories {
 }
 
 dependencies {
-    api(rootProject.libs.lombok)
+    compileOnly(rootProject.libs.lombok)
+    annotationProcessor(rootProject.libs.lombok)
     api("org.springframework.boot:spring-boot-autoconfigure")
     api(rootProject.libs.swagger.annotations.jakarta)
     implementation("org.springframework:spring-web")
@@ -20,3 +21,4 @@ dependencies {
 tasks.test {
     useJUnitPlatform()
 }
+

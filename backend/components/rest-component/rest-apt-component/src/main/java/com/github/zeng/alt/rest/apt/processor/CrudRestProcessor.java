@@ -6,6 +6,8 @@ import com.github.zeng.alt.rest.apt.generator.RouterGenerator;
 import com.github.zeng.alt.rest.apt.meta.MethodMeta;
 import com.github.zeng.alt.rest.apt.meta.RepositoryMeta;
 import com.github.zeng.alt.rest.apt.validator.RepositoryValidator;
+import com.github.zeng.alt.rest.annotation.CrudRest;
+
 import com.google.auto.service.AutoService;
 import com.squareup.javapoet.ClassName;
 
@@ -36,7 +38,7 @@ import java.util.Set;
  * @version 1.0
  */
 @AutoService(Processor.class)
-@SupportedAnnotationTypes("com.github.zeng.alt.rest.apt.annotation.CrudRest")
+@SupportedAnnotationTypes("com.github.zeng.alt.rest.annotation.CrudRest")
 @SupportedSourceVersion(SourceVersion.RELEASE_17)
 public class CrudRestProcessor extends AbstractProcessor {
 
