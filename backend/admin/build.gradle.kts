@@ -71,4 +71,7 @@ dependencies {
     testCompileOnly(libs.lombok)
     testRuntimeOnly(libs.junit.platform.launcher)
     testAnnotationProcessor(libs.lombok)
+
+    implementation(project(":backend:components:rest-component:rest-annotation-component"))
+    annotationProcessor(project(":backend:components:rest-component:rest-apt-component"))
 }

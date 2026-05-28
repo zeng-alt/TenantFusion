@@ -40,46 +40,46 @@ subprojects {
         // implementation(platform("com.fasterxml.jackson:jackson-bom:2.17.0"))
     }
 }
-
-// 前端任务（与之前相同）
-val frontendDir = file("${rootDir}/frontend")
-val frontendDistDir = file("${frontendDir}/dist")
-val staticDir = file("${rootDir}/backend/admin/src/main/resources/static")
-
-tasks.register<Delete>("cleanFrontend") {
-    group = "build"
-    description = "Clean Vue frontend static resources"
-    delete(staticDir)
-}
-
-tasks.register<Exec>("buildFrontend") {
-    dependsOn("cleanFrontend")
-    workingDir(frontendDir)
-    group = "build"
-    description = "Build Vue frontend"
-    val npmCmd = if (System.getProperty("os.name").lowercase().contains("windows")) "pnpm.cmd" else "pnpm"
-    commandLine(npmCmd, "run", "build")
-    inputs.dir(file("${frontendDir}/src"))
-    inputs.file(file("${frontendDir}/package.json"))
-    inputs.file(file("${frontendDir}/pnpm-lock.yaml"))
-    outputs.dir(frontendDistDir)
-}
-
-tasks.register<Copy>("copyFrontend") {
-    group = "build"
-    description = "Copy Vue frontend to backend static resources"
-    dependsOn("buildFrontend")
-    from(frontendDistDir)
-    into(staticDir)
-}
-
-project(":backend:admin") {
-    plugins.withId("java") {
-        tasks.named("compileJava") {
-           dependsOn(rootProject.tasks.named("copyFrontend"))
-        }
-        tasks.named("processResources") {
-           dependsOn(rootProject.tasks.named("copyFrontend"))
-        }
-    }
-}
+//
+//// 前端任务（与之前相同）
+//val frontendDir = file("${rootDir}/frontend")
+//val frontendDistDir = file("${frontendDir}/dist")
+//val staticDir = file("${rootDir}/backend/admin/src/main/resources/static")
+//
+//tasks.register<Delete>("cleanFrontend") {
+//    group = "build"
+//    description = "Clean Vue frontend static resources"
+//    delete(staticDir)
+//}
+//
+//tasks.register<Exec>("buildFrontend") {
+//    dependsOn("cleanFrontend")
+//    workingDir(frontendDir)
+//    group = "build"
+//    description = "Build Vue frontend"
+//    val npmCmd = if (System.getProperty("os.name").lowercase().contains("windows")) "pnpm.cmd" else "pnpm"
+//    commandLine(npmCmd, "run", "build")
+//    inputs.dir(file("${frontendDir}/src"))
+//    inputs.file(file("${frontendDir}/package.json"))
+//    inputs.file(file("${frontendDir}/pnpm-lock.yaml"))
+//    outputs.dir(frontendDistDir)
+//}
+//
+//tasks.register<Copy>("copyFrontend") {
+//    group = "build"
+//    description = "Copy Vue frontend to backend static resources"
+//    dependsOn("buildFrontend")
+//    from(frontendDistDir)
+//    into(staticDir)
+//}
+//
+//project(":backend:admin") {
+//    plugins.withId("java") {
+//        tasks.named("compileJava") {
+//           dependsOn(rootProject.tasks.named("copyFrontend"))
+//        }
+//        tasks.named("processResources") {
+//           dependsOn(rootProject.tasks.named("copyFrontend"))
+//        }
+//    }
+//}

@@ -1,7 +1,7 @@
 rootProject.name = "app-native"
 
 include("backend")
-include("frontend")
+//include("frontend")
 include("backend:admin")
 include("backend:components")
 include("backend:components:core-component")

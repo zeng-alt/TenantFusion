@@ -1,6 +1,6 @@
 package com.github.zeng.alt.rest.apt.processor;
 
-import com.github.zeng.alt.rest.apt.annotation.CrudRest;
+
 import com.github.zeng.alt.rest.apt.generator.HandlerGenerator;
 import com.github.zeng.alt.rest.apt.generator.RouterGenerator;
 import com.github.zeng.alt.rest.apt.meta.MethodMeta;
