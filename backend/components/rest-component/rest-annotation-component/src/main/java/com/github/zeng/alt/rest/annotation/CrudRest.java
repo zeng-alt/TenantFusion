@@ -1,4 +1,4 @@
-package com.github.zeng.alt.rest.apt.annotation;
+package com.github.zeng.alt.rest.annotation;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
