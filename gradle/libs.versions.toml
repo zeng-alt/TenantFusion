@@ -5,6 +5,9 @@ hibernate-orm = "6.6.45.Final"
 graalvm-native = "0.10.6"
 spring-modulith = "1.4.10"
 junit = "5.9.1"
+vavr = "0.10.3"
+querydsl = "6.10.1"
+swagger = "2.2.49"
 
 [libraries]
 spring-modulith-bom = { module = "org.springframework.modulith:spring-modulith-bom", version.ref = "spring-modulith" }
@@ -14,6 +17,7 @@ junit-jupiter = { module = "org.junit.jupiter:junit-jupiter" }
 liquibase-core = { module = "org.liquibase:liquibase-core" }
 postgresql = { module = "org.postgresql:postgresql" }
 h2 = { module = "com.h2database:h2" }
+lombok = { module = "org.projectlombok:lombok" }
 
 spring-boot-starter-data-jpa = { module = "org.springframework.boot:spring-boot-starter-data-jpa" }
 spring-boot-starter-security = { module = "org.springframework.boot:spring-boot-starter-security" }
@@ -30,8 +34,17 @@ spring-modulith-starter-test = { module = "org.springframework.modulith:spring-m
 
 spring-security-test = { module = "org.springframework.security:spring-security-test" }
 
-lombok = { module = "org.projectlombok:lombok" }
+
 junit-platform-launcher = { module = "org.junit.platform:junit-platform-launcher" }
+
+commons-lang3 = {module = "org.apache.commons:commons-lang3"}
+
+# 第三方
+vavr = {module = "io.vavr:vavr", version.ref = "vavr"}
+vavr-jackson = {module = "io.vavr:vavr-jackson", version.ref = "vavr"}
+querydsl-jpa = {module = "io.github.openfeign.querydsl:querydsl-jpa", version.ref = "querydsl"}
+querydsl-apt = {module = "io.github.openfeign.querydsl:querydsl-apt", version.ref = "querydsl"}
+swagger-annotations-jakarta = {module = "io.swagger.core.v3:swagger-annotations-jakarta", version.ref = "swagger"}
 
 [plugins]
 spring-boot = { id = "org.springframework.boot", version.ref = "spring-boot" }

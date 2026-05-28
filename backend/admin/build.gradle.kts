@@ -1,13 +1,13 @@
-import org.apache.tools.ant.filters.ReplaceTokens
-
 description = "admin-application"
 group = "com.github.zeng.alt"
 version = "0.0.1-SNAPSHOT"
 
 plugins {
     id("java")
-    alias(libs.plugins.graalvm.native)
-    alias(libs.plugins.hibernate.orm)
+    id("org.springframework.boot")
+    id("io.spring.dependency-management")
+    id("org.hibernate.orm")
+    id("org.graalvm.buildtools.native")
 }
 
 
@@ -20,17 +20,17 @@ graalvmNative {
                 "--install-exit-handlers",
                 "--enable-url-protocols=http,https",
 
-                // 字符编码相关
-                "-Dfile.encoding=UTF-8",                 // 设置文件编码
-                "-Duser.country=CN",                     // 设置国家
-                "-Duser.language=zh"                     // 设置语言
+                // 瀛楃�︾紪鐮佺浉鍏�
+                "-Dfile.encoding=UTF-8",                 // 璁剧疆鏂囦欢缂栫爜
+                "-Duser.country=CN",                     // 璁剧疆鍥藉��
+                "-Duser.language=zh"                     // 璁剧疆璇�瑷�
             )
         }
     }
     metadataRepository {
         enabled.set(true)
-        // 可以指定 metadata 仓库版本
-        version.set("0.3.15") // 或更高
+        // 鍙�浠ユ寚瀹� metadata 浠撳簱鐗堟湰
+        version.set("0.3.15") // 鎴栨洿楂?
     }
 }
 
@@ -39,30 +39,22 @@ tasks.named<org.springframework.boot.gradle.tasks.bundling.BootJar>("bootJar") {
 }
 
 tasks.named<org.springframework.boot.gradle.tasks.run.BootRun>("bootRun") {
-    // 本地开发运行（bootRun）时默认使用 dev 配置文件
+    // 鏈�鍦板紑鍙戣繍琛岋紙bootRun锛夋椂榛樿�や娇鐢� dev 閰嶇疆鏂囦欢
     systemProperty("spring.profiles.active", System.getProperty("spring.profiles.active", "dev"))
 }
 
-// 接收外部传入的 profiles.active 参数，默认为 prod
+// 鎺ユ敹澶栭儴浼犲叆鐨?profiles.active 鍙傛暟锛岄粯璁や负 prod
 val activeProfile = project.findProperty("profiles.active") as? String ?: "dev"
 
-tasks.withType<ProcessResources> {
-    filesMatching("**/application.yml") {
-        // 解决 yml 文件中文乱码导致 MalformedInputException 的问题
-        filteringCharset = "UTF-8"
-        filter<ReplaceTokens>("tokens" to mapOf("profiles.active" to activeProfile))
-    }
-}
-
 dependencies {
-    // 可以在这里引入 admin 模块特有的依赖，例如 Web, JPA 等
+    // 鍙�浠ュ湪杩欓噷寮曞�?admin 妯″潡鐗规湁鐨勪緷璧栵紝渚嬪�� Web, JPA 绛?
     if (activeProfile != "prod") {
         implementation(libs.liquibase.core)
     }
     runtimeOnly(libs.postgresql)
     runtimeOnly(libs.h2)
-    implementation(libs.spring.boot.starter.data.jpa)
-    implementation(libs.spring.boot.starter.security)
+    implementation("org.springframework.boot:spring-boot-starter-data-jpa")
+    implementation("org.springframework.boot:spring-boot-starter-security")
     implementation(libs.spring.boot.starter.validation)
     implementation(libs.spring.boot.starter.web)
     implementation(libs.spring.modulith.starter.core)
@@ -72,10 +64,16 @@ dependencies {
     implementation(libs.spring.boot.starter.data.redis)
     annotationProcessor(libs.spring.boot.configuration.processor)
     annotationProcessor(libs.lombok)
+    annotationProcessor("com.squareup:javapoet:1.13.0")
     testImplementation(libs.spring.boot.starter.test)
     testImplementation(libs.spring.modulith.starter.test)
     testImplementation(libs.spring.security.test)
     testCompileOnly(libs.lombok)
     testRuntimeOnly(libs.junit.platform.launcher)
     testAnnotationProcessor(libs.lombok)
+
+    implementation(project(":backend:components:rest-component:rest-annotation-component"))
+    implementation(project(":backend:components:core-component"))
+    implementation(project(":backend:components:domain-component"))
+    annotationProcessor(project(":backend:components:rest-component:rest-apt-component"))
 }
