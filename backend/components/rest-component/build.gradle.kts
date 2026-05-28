@@ -8,6 +8,10 @@ dependencies {
 
 }
 
+tasks.withType<Jar> {
+    enabled = false
+}
+
 tasks.withType<JavaCompile> {
     options.encoding = "UTF-8"
 }

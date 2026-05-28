@@ -12,4 +12,6 @@ dependencies {
     implementation("org.springframework:spring-web")
     implementation("org.springframework:spring-webmvc")
     implementation("jakarta.servlet:jakarta.servlet-api")
+    compileOnly(rootProject.libs.lombok)
+    annotationProcessor(rootProject.libs.lombok)
 }
