@@ -6,6 +6,8 @@ description = "核心包"
 
 dependencies {
     api(project(":backend:components:bean-component"))
+    api(project(":backend:components:json-component"))
+    api(project(":backend:components:api-component"))
     api("org.springframework.boot:spring-boot-starter-logging")
     implementation("org.springframework:spring-web")
     implementation("org.springframework:spring-webmvc")

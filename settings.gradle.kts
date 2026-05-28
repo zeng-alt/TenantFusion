@@ -11,3 +11,6 @@ include("backend:components:security-component")
 include("backend:components:storage-component")
 include("backend:components:bean-component")
 include("backend:components:api-component")
+
+include("backend:components:json-component")
+include("backend:components:rest-apt-component")
