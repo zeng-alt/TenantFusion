@@ -73,5 +73,7 @@ dependencies {
     testAnnotationProcessor(libs.lombok)
 
     implementation(project(":backend:components:rest-component:rest-annotation-component"))
+    implementation(project(":backend:components:core-component"))
+    implementation(project(":backend:components:domain-component"))
     annotationProcessor(project(":backend:components:rest-component:rest-apt-component"))
 }

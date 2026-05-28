@@ -119,7 +119,7 @@ public class CrudRestProcessor extends AbstractProcessor {
                 .getPackageOf(typeElement).getQualifiedName().toString();
 
         // 生成包名 = Repository 所在包 + ".rest"
-        String generatedPackage = repoPackage + ".rest";
+        String generatedPackage = repoPackage;
 
         // 构建启用的方法列表
         RepositoryMeta.Builder metaBuilder = RepositoryMeta.builder()

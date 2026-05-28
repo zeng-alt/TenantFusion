@@ -16,12 +16,15 @@ import com.squareup.javapoet.TypeSpec;
 import javax.annotation.processing.Generated;
 import javax.lang.model.element.Modifier;
 
+import io.vavr.control.Option;
+import jakarta.servlet.ServletException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.function.ServerRequest;
 import org.springframework.web.servlet.function.ServerResponse;
 
+import java.io.IOException;
 import java.util.Optional;
 
 /**
@@ -104,13 +107,13 @@ public final class HandlerGenerator {
     private static void buildDetailMethod(RepositoryMeta meta, MethodSpec.Builder builder) {
         TypeName entityTypeName = meta.getEntityType();
         TypeName idTypeName = meta.getIdType();
-        TypeName optionalType = ParameterizedTypeName.get(ClassName.get(Optional.class), entityTypeName);
+        TypeName optionalType = ParameterizedTypeName.get(ClassName.get(Option.class), entityTypeName);
 
         builder.addStatement("$T id = $T.valueOf(request.pathVariable($S))",
                         idTypeName, ClassName.get(Long.class), "id")
                 .addStatement("$T result = repository.findById(id)", optionalType)
                 .addStatement("return result.map(value -> $T.ok().body($T.success(value)))" +
-                                ".orElse($T.notFound().build())",
+                                ".getOrElse($T.notFound().build())",
                         SERVER_RESPONSE, REST_RESPONSE, SERVER_RESPONSE);
     }
 
@@ -120,13 +123,15 @@ public final class HandlerGenerator {
         builder.addStatement("$T entity = request.body($T.class)", entityTypeName, entityTypeName)
                 .addStatement("$T saved = repository.save(entity)", entityTypeName)
                 .addStatement("return $T.ok().body($T.success(saved))",
-                        SERVER_RESPONSE, REST_RESPONSE);
+                        SERVER_RESPONSE, REST_RESPONSE)
+                .addException(ServletException.class)
+                .addException(IOException.class);
     }
 
     private static void buildUpdateMethod(RepositoryMeta meta, MethodSpec.Builder builder) {
         TypeName entityTypeName = meta.getEntityType();
         TypeName idTypeName = meta.getIdType();
-        TypeName optionalType = ParameterizedTypeName.get(ClassName.get(Optional.class), entityTypeName);
+        TypeName optionalType = ParameterizedTypeName.get(ClassName.get(Option.class), entityTypeName);
 
         builder.addStatement("$T id = $T.valueOf(request.pathVariable($S))",
                         idTypeName, ClassName.get(Long.class), "id")
@@ -137,7 +142,9 @@ public final class HandlerGenerator {
                 .endControlFlow()
                 .addStatement("repository.save(entity)")
                 .addStatement("return $T.ok().body($T.success(entity))",
-                        SERVER_RESPONSE, REST_RESPONSE);
+                        SERVER_RESPONSE, REST_RESPONSE)
+                .addException(ServletException.class)
+                .addException(IOException.class);
     }
 
     private static void buildDeleteMethod(RepositoryMeta meta, MethodSpec.Builder builder) {
