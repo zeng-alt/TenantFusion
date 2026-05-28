@@ -1,6 +1,8 @@
 package com.github.zeng.alt.domain.base;
 
 import io.vavr.control.Option;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.querydsl.QuerydslPredicateExecutor;
 import org.springframework.data.repository.NoRepositoryBean;
 import org.springframework.data.repository.Repository;
@@ -32,4 +34,6 @@ public interface BaseRepository<T, ID> extends Repository<T, ID>, QuerydslPredic
     <S extends T> List<S> findAll();
 
     void deleteAllById(Iterable<? extends ID> ids);
+
+    Page<T> findAll(Pageable pageable);
 }

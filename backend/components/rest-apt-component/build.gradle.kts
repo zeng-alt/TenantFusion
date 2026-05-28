@@ -1,27 +1,32 @@
-
-
-group = "com.github.zeng.alt"
-version = "0.0.1-SNAPSHOT"
-description = "REST API 注解处理器模块，编译期通过 JavaPoet 生成 Spring Functional CRUD 代码"
-
 plugins {
     id("java-library")
 }
 
+group = "com.github.zeng.alt"
+
 dependencies {
-    api(project(":backend:components:core-component"))
-    api(libs.spring.boot.starter.data.jpa)
-    api(libs.querydsl.apt)
-    api(libs.querydsl.jpa)
+    // JavaPoet — 编译期源码生成
+    implementation("com.squareup:javapoet:1.13.0")
 
-    // JavaPoet - 代码生成
-    api("com.squareup:javapoet:1.13.0")
+    // AutoService — 自动注册 Processor
+    implementation("com.google.auto.service:auto-service-annotations:1.1.1")
+    annotationProcessor("com.google.auto.service:auto-service:1.1.1")
 
-    // 注解处理器 API（JDK 内置，但显式声明以支持 IDE）
-    compileOnly("java.compiler:java.compiler:9")
+    // 依赖 domain-component（获取 BaseRepository、RestResponse 等类型）
+    api(project(":backend:components:domain-component"))
+
+    // Spring 类型依赖
+    api("org.springframework:spring-webmvc")
+    api("org.springframework.data:spring-data-commons")
+    api("org.springframework.boot:spring-boot-autoconfigure")
+
+    compileOnly("jakarta.annotation:jakarta.annotation-api")
 }
 
-// 告知编译器该模块包含注解处理器
 tasks.withType<JavaCompile> {
-    options.annotationProcessorPath = configurations.annotationProcessor.getOrElse(configurations.compileOnly.get())
+    options.encoding = "UTF-8"
+}
+
+tasks.test {
+    useJUnitPlatform()
 }
