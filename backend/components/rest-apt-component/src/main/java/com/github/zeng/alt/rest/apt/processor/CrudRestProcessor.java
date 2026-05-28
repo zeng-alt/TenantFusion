@@ -21,6 +21,7 @@ import javax.lang.model.SourceVersion;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.type.TypeMirror;
+import javax.lang.model.util.Elements;
 import javax.lang.model.util.Types;
 import javax.tools.Diagnostic;
 import java.io.IOException;
@@ -42,6 +43,7 @@ public class CrudRestProcessor extends AbstractProcessor {
     private Filer filer;
     private Messager messager;
     private Types typeUtils;
+    private Elements elementUtils;
 
     @Override
     public synchronized void init(ProcessingEnvironment processingEnv) {
@@ -49,6 +51,7 @@ public class CrudRestProcessor extends AbstractProcessor {
         this.filer = processingEnv.getFiler();
         this.messager = processingEnv.getMessager();
         this.typeUtils = processingEnv.getTypeUtils();
+        this.elementUtils = processingEnv.getElementUtils();
     }
 
     @Override
@@ -62,7 +65,7 @@ public class CrudRestProcessor extends AbstractProcessor {
 
     private void processCrudRest(Element element) {
         // 校验
-        if (!RepositoryValidator.validate(element, messager, typeUtils)) {
+        if (!RepositoryValidator.validate(element, messager, typeUtils, elementUtils)) {
             return;
         }
 
@@ -99,7 +102,7 @@ public class CrudRestProcessor extends AbstractProcessor {
 
     private RepositoryMeta buildMeta(TypeElement typeElement, CrudRest annotation) {
         List<? extends TypeMirror> typeArgs =
-                RepositoryValidator.getBaseRepositoryTypeArgs(typeElement, typeUtils);
+                RepositoryValidator.getBaseRepositoryTypeArgs(typeElement, typeUtils, elementUtils);
         if (typeArgs == null || typeArgs.size() < 2) {
             return null;
         }
