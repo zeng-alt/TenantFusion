@@ -14,7 +14,13 @@ dependencies {
     compileOnly("org.springframework.boot:spring-boot-starter-webflux")
 
     annotationProcessor(rootProject.libs.spring.boot.configuration.processor)
+    annotationProcessor(rootProject.libs.querydsl.apt) {
+        artifact {
+            classifier = "jakarta"
+        }
+    }
 
     testImplementation("org.springframework.boot:spring-boot-starter-test")
     testImplementation(rootProject.libs.h2)
+    testImplementation("org.springframework.boot:spring-boot-starter-validation")
 }

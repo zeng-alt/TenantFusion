@@ -1,6 +1,5 @@
 package com.github.zeng.alt.i18n;
 
-import com.github.zeng.alt.i18n.config.I18nAutoConfiguration;
 import com.github.zeng.alt.i18n.core.I18nMessageService;
 import com.github.zeng.alt.i18n.entity.I18nMessageDO;
 import com.github.zeng.alt.i18n.repository.I18nMessageRepository;
@@ -8,6 +7,7 @@ import io.vavr.control.Option;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.MessageSource;
 
@@ -15,7 +15,7 @@ import java.util.Locale;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-@SpringBootTest(classes = I18nAutoConfiguration.class, properties = {
+@SpringBootTest(classes = I18nMessageServiceDatabaseModeTest.TestApplication.class, properties = {
         "alt.i18n.mode=database",
         "spring.datasource.url=jdbc:h2:mem:i18n_test;DB_CLOSE_DELAY=-1",
         "spring.datasource.driver-class-name=org.h2.Driver",
@@ -27,6 +27,10 @@ import static org.junit.jupiter.api.Assertions.*;
         "spring.main.web-application-type=none"
 })
 class I18nMessageServiceDatabaseModeTest {
+
+    @SpringBootApplication
+    static class TestApplication {
+    }
 
     @Autowired
     private I18nMessageService i18nMessageService;

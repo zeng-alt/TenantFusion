@@ -26,4 +26,15 @@ subprojects {
             mavenBom(rootProject.libs.spring.modulith.bom.get().toString())
         }
     }
+
+    tasks.withType<Test>().configureEach {
+        useJUnitPlatform()
+    }
+
+    plugins.withType<JavaPlugin>().configureEach {
+        dependencies {
+            "testRuntimeOnly"("org.junit.platform:junit-platform-launcher")
+        }
+    }
+
 }
