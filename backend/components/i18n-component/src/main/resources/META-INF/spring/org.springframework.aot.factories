@@ -1,0 +1,1 @@
+org.springframework.aot.hint.RuntimeHintsRegistrar=com.github.zeng.alt.i18n.I18nRuntimeHints

@@ -50,11 +50,11 @@ public class RestResponse<T> implements Serializable {
 		return this;
 	}
 
-	public static <T extends Serializable> RestResponse<T> success() {
+	public static <T> RestResponse<T> success() {
 		return new RestResponse<T>().code(SUCCESS_CODE).message("success");
 	}
 
-	public static <T extends Serializable> RestResponse<T> success(T data) {
+	public static <T> RestResponse<T> success(T data) {
 		return new RestResponse<T>().code(SUCCESS_CODE).message("success").data(data);
 	}
 
@@ -66,15 +66,15 @@ public class RestResponse<T> implements Serializable {
 		return new RestResponse<Void>().code(FAIL_CODE).message(message).data(null).error(new ArrayList<>());
 	}
 
-	public static <T extends Serializable> RestResponse<T> warn() {
+	public static <T> RestResponse<T> warn() {
 		return new RestResponse<T>().code(WARN_CODE).message("warn").data(null).error(new ArrayList<>());
 	}
 
-	public static <T extends Serializable> RestResponse<T> warn(String message) {
+	public static <T> RestResponse<T> warn(String message) {
 		return new RestResponse<T>().code(WARN_CODE).message(message).data(null);
 	}
 
-	public static <T extends Serializable> RestResponse<T> warn(T data) {
+	public static <T> RestResponse<T> warn(T data) {
 		return new RestResponse<T>().code(WARN_CODE).message("warn").data(data);
 	}
 

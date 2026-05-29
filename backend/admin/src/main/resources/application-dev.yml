@@ -23,7 +23,7 @@ spring:
 
   jpa:
     hibernate:
-      ddl-auto: none # 因为使用了 Liquibase，所以将其设为 validate（或 none）以防止 Hibernate 自动修改表结构
+      ddl-auto: update # 因为使用了 Liquibase，所以将其设为 validate（或 none）以防止 Hibernate 自动修改表结构
     show-sql: true
     properties:
       hibernate:
@@ -41,3 +41,8 @@ spring:
     console:
       enabled: true
       path: /h2-console
+
+# 国际化-数据库模式配置（取消注释以启用数据库模式）
+# alt:
+#   i18n:
+#     mode: database

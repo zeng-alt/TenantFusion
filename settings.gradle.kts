@@ -12,7 +12,11 @@ include("backend:components:storage-component")
 include("backend:components:bean-component")
 include("backend:components:api-component")
 include("backend:components:json-component")
+include("backend:components:i18n-component")
+
 include("backend:components:rest-component")
 
 include("backend:components:rest-component:rest-annotation-component")
 include("backend:components:rest-component:rest-apt-component")
+include("backend:components:excel-component")
+include("backend:components:i18n-component")

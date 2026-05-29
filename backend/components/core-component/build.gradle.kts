@@ -1,13 +1,9 @@
 plugins {
-    id("java")
+    id("java-library")
 }
 
 group = "com.github.zeng.alt"
 version = "0.0.1-SNAPSHOT"
-
-repositories {
-    mavenCentral()
-}
 
 dependencies {
     api(project(":backend:components:api-component"))

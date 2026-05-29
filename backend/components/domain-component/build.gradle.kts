@@ -5,10 +5,6 @@ plugins {
 group = "com.github.zeng.alt"
 version = "0.0.1-SNAPSHOT"
 
-repositories {
-    mavenCentral()
-}
-
 dependencies {
     api(project(":backend:components:core-component"))
     api("org.springframework.data:spring-data-commons")

@@ -1,4 +1,4 @@
-description = "admin-application"
+﻿description = "admin-application"
 group = "com.github.zeng.alt"
 version = "0.0.1-SNAPSHOT"
 
@@ -20,17 +20,17 @@ graalvmNative {
                 "--install-exit-handlers",
                 "--enable-url-protocols=http,https",
 
-                // 瀛楃�︾紪鐮佺浉鍏�
-                "-Dfile.encoding=UTF-8",                 // 璁剧疆鏂囦欢缂栫爜
-                "-Duser.country=CN",                     // 璁剧疆鍥藉��
-                "-Duser.language=zh"                     // 璁剧疆璇�瑷�
+                // 鐎涙锟斤妇绱惍浣烘祲閸忥拷
+                "-Dfile.encoding=UTF-8",                 // 鐠佸墽鐤嗛弬鍥︽缂傛牜鐖?
+                "-Duser.country=CN",                     // 鐠佸墽鐤嗛崶钘夛拷锟?
+                "-Duser.language=zh"                     // 鐠佸墽鐤嗙拠锟界懛锟?
             )
         }
     }
     metadataRepository {
         enabled.set(true)
-        // 鍙�浠ユ寚瀹� metadata 浠撳簱鐗堟湰
-        version.set("0.3.15") // 鎴栨洿楂?
+        // 閸欙拷娴犮儲瀵氱€癸拷 metadata 娴犳挸绨遍悧鍫熸拱
+        version.set("0.3.15") // 閹存牗娲挎?
     }
 }
 
@@ -39,15 +39,15 @@ tasks.named<org.springframework.boot.gradle.tasks.bundling.BootJar>("bootJar") {
 }
 
 tasks.named<org.springframework.boot.gradle.tasks.run.BootRun>("bootRun") {
-    // 鏈�鍦板紑鍙戣繍琛岋紙bootRun锛夋椂榛樿�や娇鐢� dev 閰嶇疆鏂囦欢
+    // 閺堬拷閸︽澘绱戦崣鎴ｇ箥鐞涘矉绱檅ootRun閿涘妞傛妯匡拷銈勫▏閻拷 dev 闁板秶鐤嗛弬鍥︽
     systemProperty("spring.profiles.active", System.getProperty("spring.profiles.active", "dev"))
 }
 
-// 鎺ユ敹澶栭儴浼犲叆鐨?profiles.active 鍙傛暟锛岄粯璁や负 prod
+// 閹恒儲鏁规径鏍劥娴肩姴鍙嗛惃?profiles.active 閸欏倹鏆熼敍宀勭帛鐠併倓璐?prod
 val activeProfile = project.findProperty("profiles.active") as? String ?: "dev"
 
 dependencies {
-    // 鍙�浠ュ湪杩欓噷寮曞�?admin 妯″潡鐗规湁鐨勪緷璧栵紝渚嬪�� Web, JPA 绛?
+    // 閸欙拷娴犮儱婀潻娆撳櫡瀵洖锟?admin 濡€虫健閻楄婀侀惃鍕贩鐠ф牭绱濇笟瀣拷锟?Web, JPA 缁?
     if (activeProfile != "prod") {
         implementation(libs.liquibase.core)
     }
@@ -75,5 +75,6 @@ dependencies {
     implementation(project(":backend:components:rest-component:rest-annotation-component"))
     implementation(project(":backend:components:core-component"))
     implementation(project(":backend:components:domain-component"))
+    implementation(project(":backend:components:i18n-component"))
     annotationProcessor(project(":backend:components:rest-component:rest-apt-component"))
 }

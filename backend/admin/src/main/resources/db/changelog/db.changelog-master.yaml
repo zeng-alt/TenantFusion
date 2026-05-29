@@ -1,4 +1,9 @@
 databaseChangeLog:
+  - include:
+      file: i18n/2026-05-29-init-i18n-message.sql
+      relativeToChangelogFile: true
+
+
   - includeAll:
       path: pg/
       relativeToChangelogFile: true
