@@ -2,12 +2,7 @@ plugins {
     id("java-library")
 }
 
-group = "com.github.zeng.alt"
+description = "REST 注解定义"
 
-tasks.withType<JavaCompile> {
-    options.encoding = "UTF-8"
-}
-
-tasks.test {
-    useJUnitPlatform()
+dependencies {
 }

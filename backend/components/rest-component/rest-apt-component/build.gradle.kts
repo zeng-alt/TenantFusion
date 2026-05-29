@@ -2,7 +2,7 @@ plugins {
     id("java-library")
 }
 
-group = "com.github.zeng.alt"
+description = "REST 注解 APT 处理器"
 
 dependencies {
     api(project(":backend:components:rest-component:rest-annotation-component"))
@@ -12,16 +12,8 @@ dependencies {
     annotationProcessor("com.google.auto.service:auto-service:1.1.1")
 
     implementation("org.springframework:spring-webmvc")
-    implementation(libs.vavr)
+    implementation(rootProject.libs.vavr)
     implementation("org.springframework.data:spring-data-commons")
     implementation("org.springframework:spring-context")
     implementation("jakarta.servlet:jakarta.servlet-api")
-}
-
-tasks.withType<JavaCompile> {
-    options.encoding = "UTF-8"
-}
-
-tasks.test {
-    useJUnitPlatform()
 }

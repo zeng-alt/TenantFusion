@@ -2,20 +2,8 @@ plugins {
     id("java-library")
 }
 
-group = "com.github.zeng.alt"
-
-dependencies {
-
-}
+description = "REST 注解与 APT 代码生成"
 
 tasks.withType<Jar> {
     enabled = false
-}
-
-tasks.withType<JavaCompile> {
-    options.encoding = "UTF-8"
-}
-
-tasks.test {
-    useJUnitPlatform()
 }

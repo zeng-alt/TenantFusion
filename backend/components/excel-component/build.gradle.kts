@@ -2,15 +2,8 @@ plugins {
     id("java-library")
 }
 
-group = "com.github.zeng.alt"
-version = "0.0.1-SNAPSHOT"
+description = "Excel 导入导出组件（预留）"
 
 dependencies {
-    compileOnly(rootProject.libs.lombok)
-    annotationProcessor(rootProject.libs.lombok)
-    annotationProcessor(rootProject.libs.spring.boot.configuration.processor)
-}
-
-tasks.test {
-    useJUnitPlatform()
+    api(project(":backend:components:core-component"))
 }

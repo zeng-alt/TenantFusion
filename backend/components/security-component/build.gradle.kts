@@ -1,19 +1,11 @@
 plugins {
-    id("java")
+    id("java-library")
 }
 
-group = "com.github.zeng.alt"
-version = "0.0.1-SNAPSHOT"
-
-repositories {
-    mavenCentral()
-}
+description = "安全认证与授权组件"
 
 dependencies {
-    testImplementation(platform("org.junit:junit-bom:5.9.1"))
-    testImplementation("org.junit.jupiter:junit-jupiter")
-}
-
-tasks.test {
-    useJUnitPlatform()
+    api(project(":backend:components:core-component"))
+    api(project(":backend:components:domain-component"))
+    api("org.springframework.boot:spring-boot-starter-security")
 }

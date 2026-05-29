@@ -2,9 +2,6 @@ plugins {
     id("java-library")
 }
 
-group = "com.github.zeng.alt"
-version = "0.0.1-SNAPSHOT"
-
 dependencies {
     api(project(":backend:components:api-component"))
     api(project(":backend:components:json-component"))
@@ -13,10 +10,4 @@ dependencies {
     implementation("org.springframework:spring-web")
     implementation("org.springframework:spring-webmvc")
     implementation("jakarta.servlet:jakarta.servlet-api")
-    compileOnly(rootProject.libs.lombok)
-    annotationProcessor(rootProject.libs.lombok)
-}
-
-tasks.test {
-    useJUnitPlatform()
 }
