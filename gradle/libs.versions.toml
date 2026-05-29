@@ -4,15 +4,13 @@ spring-dependency-management = "1.1.7"
 hibernate-orm = "6.6.45.Final"
 graalvm-native = "0.10.6"
 spring-modulith = "1.4.10"
-junit = "5.9.1"
+
 vavr = "0.10.3"
 querydsl = "6.10.1"
 swagger = "2.2.49"
 
 [libraries]
 spring-modulith-bom = { module = "org.springframework.modulith:spring-modulith-bom", version.ref = "spring-modulith" }
-junit-bom = { module = "org.junit:junit-bom", version.ref = "junit" }
-junit-jupiter = { module = "org.junit.jupiter:junit-jupiter" }
 
 liquibase-core = { module = "org.liquibase:liquibase-core" }
 postgresql = { module = "org.postgresql:postgresql" }
@@ -33,9 +31,6 @@ spring-modulith-starter-jpa = { module = "org.springframework.modulith:spring-mo
 spring-modulith-starter-test = { module = "org.springframework.modulith:spring-modulith-starter-test" }
 
 spring-security-test = { module = "org.springframework.security:spring-security-test" }
-
-
-junit-platform-launcher = { module = "org.junit.platform:junit-platform-launcher" }
 
 commons-lang3 = {module = "org.apache.commons:commons-lang3"}
 

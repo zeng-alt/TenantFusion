@@ -75,7 +75,4 @@ dependencies {
     testImplementation(libs.spring.boot.starter.test)
     testImplementation(libs.spring.modulith.starter.test)
     testImplementation(libs.spring.security.test)
-    testCompileOnly(libs.lombok)
-    testAnnotationProcessor(libs.lombok)
-    testRuntimeOnly(libs.junit.platform.launcher)
 }

@@ -20,11 +20,9 @@ subprojects {
         add("annotationProcessor", rootProject.libs.lombok)
         add("testCompileOnly", rootProject.libs.lombok)
         add("testAnnotationProcessor", rootProject.libs.lombok)
-        add("testImplementation", platform(rootProject.libs.junit.bom))
-        add("testImplementation", rootProject.libs.junit.jupiter)
     }
 
-    tasks.withType<Test> {
-        useJUnitPlatform()
-    }
+//    tasks.withType<Test> {
+//        useJUnitPlatform()
+//    }
 }
