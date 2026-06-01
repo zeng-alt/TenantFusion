@@ -11,6 +11,7 @@ import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import org.hibernate.annotations.TenantId;
 
 /**
  * 国际化消息实体
@@ -57,4 +58,7 @@ public class I18nMessageDO extends BaseEntity<Long> {
      */
     @Column(name = "module", length = 100)
     private String module;
+
+    @TenantId
+    private String tenantBy;
 }

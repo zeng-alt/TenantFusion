@@ -20,6 +20,7 @@ dependencies {
         }
     }
 
+
     testImplementation("org.springframework.boot:spring-boot-starter-test")
     testImplementation(rootProject.libs.h2)
     testImplementation("org.springframework.boot:spring-boot-starter-validation")

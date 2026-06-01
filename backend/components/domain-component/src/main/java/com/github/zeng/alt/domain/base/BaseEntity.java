@@ -2,6 +2,7 @@ package com.github.zeng.alt.domain.base;
 
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.github.zeng.alt.api.tenant.TenantAuditable;
 import com.querydsl.core.annotations.QueryTransient;
 import jakarta.persistence.Column;
 import jakarta.persistence.EntityListeners;
@@ -30,7 +31,7 @@ import java.util.Optional;
 @Getter
 @MappedSuperclass
 @EntityListeners({AuditingEntityListener.class})
-public abstract class BaseEntity<PK extends Serializable> implements Auditable<String, PK, LocalDateTime>, Serializable {
+public abstract class BaseEntity<PK extends Serializable> implements Auditable<String, PK, LocalDateTime>, TenantAuditable, Serializable {
 
     @Serial
     private static final long serialVersionUID = 1L;
