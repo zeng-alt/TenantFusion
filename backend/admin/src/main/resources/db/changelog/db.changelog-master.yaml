@@ -4,6 +4,12 @@ databaseChangeLog:
       relativeToChangelogFile: true
 
 
+  - include:
+      file: lock/2026-06-04-init-distributed-lock.sql
+      relativeToChangelogFile: true
+
+
+
   - includeAll:
       path: pg/
       relativeToChangelogFile: true

@@ -63,6 +63,8 @@ dependencies {
     implementation(project(":backend:components:lock-component:api-lock-component"))
     implementation(project(":backend:components:lock-component:redisson-lock-component"))
     implementation(project(":backend:components:lock-component:simple-lock-component"))
+    implementation(project(":backend:components:lock-component:database-lock-component"))
+
 
 
     // Spring Boot Starters（从组件模块继承，显式声明确保 IDE 感知）
