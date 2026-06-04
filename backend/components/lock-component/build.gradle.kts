@@ -1,5 +1,4 @@
-description = "缓存 组件"
-
+description = "lock-components"
 
 tasks.withType<Jar> {
     enabled = false
