@@ -1,13 +1,15 @@
 package com.github.zeng.alt.storage.springcache;
 
 import com.github.zeng.alt.storage.api.*;
-import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.cache.Cache;
+import org.springframework.cache.CacheManager;
 
 import java.util.concurrent.TimeUnit;
 
 /**
- * Spring Data Redis 实现 StorageTemplate
- * 基于 StringRedisTemplate 实现 String、List、Hash、ZSet 操作
+ * Spring Cache 实现 StorageTemplate
+ * Spring Cache 是键值缓存抽象，仅支持 String 结构操作
+ * List / Hash / ZSet 操作使用 NoOp 空实现（不支持复杂数据结构）
  *
  * @author zengJiaJun
  * @since 2026年06月04日
@@ -15,20 +17,22 @@ import java.util.concurrent.TimeUnit;
  */
 public class SpringCacheStorageTemplate extends AbstractStorageTemplate {
 
-    private final StringRedisTemplate redisTemplate;
+    private final CacheManager cacheManager;
+    private final Cache cache;
 
     private final CacheStringOperations stringOps;
     private final CacheListOperations listOps;
     private final CacheHashOperations hashOps;
     private final CacheZSetOperations zSetOps;
 
-    public SpringCacheStorageTemplate(StringRedisTemplate redisTemplate, KeyPrefixStrategy keyPrefixStrategy) {
+    public SpringCacheStorageTemplate(CacheManager cacheManager, KeyPrefixStrategy keyPrefixStrategy) {
         super(keyPrefixStrategy);
-        this.redisTemplate = redisTemplate;
-        this.stringOps = new SpringCacheStringOperations(redisTemplate, keyPrefixStrategy);
-        this.listOps = new SpringCacheListOperations(redisTemplate, keyPrefixStrategy);
-        this.hashOps = new SpringCacheHashOperations(redisTemplate, keyPrefixStrategy);
-        this.zSetOps = new SpringCacheZSetOperations(redisTemplate, keyPrefixStrategy);
+        this.cacheManager = cacheManager;
+        this.cache = cacheManager.getCache("default");
+        this.stringOps = new SpringCacheStringOperations(cacheManager, keyPrefixStrategy);
+        this.listOps = new NoOpCacheListOperations();
+        this.hashOps = new NoOpCacheHashOperations();
+        this.zSetOps = new NoOpCacheZSetOperations();
     }
 
     @Override
@@ -53,21 +57,35 @@ public class SpringCacheStorageTemplate extends AbstractStorageTemplate {
 
     @Override
     public Boolean delete(String key) {
-        return redisTemplate.delete(wrapKey(key));
+        Cache cache = getCache();
+        if (cache != null) {
+            return cache.evictIfPresent(wrapKey(key));
+        }
+        return false;
     }
 
     @Override
     public Boolean hasKey(String key) {
-        return Boolean.TRUE.equals(redisTemplate.hasKey(wrapKey(key)));
+        Cache cache = getCache();
+        if (cache != null) {
+            return cache.get(wrapKey(key)) != null;
+        }
+        return false;
     }
 
     @Override
     public Boolean expire(String key, long timeout, TimeUnit unit) {
-        return Boolean.TRUE.equals(redisTemplate.expire(wrapKey(key), timeout, unit));
+        // Spring Cache 不支持单独设置过期时间
+        return false;
     }
 
     @Override
     public Long getExpire(String key) {
-        return redisTemplate.getExpire(wrapKey(key));
+        // Spring Cache 不支持获取过期时间
+        return -1L;
+    }
+
+    private Cache getCache() {
+        return cache;
     }
 }

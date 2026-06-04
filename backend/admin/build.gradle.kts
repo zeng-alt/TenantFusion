@@ -66,6 +66,7 @@ dependencies {
     implementation(libs.spring.boot.starter.validation)
     implementation(libs.spring.modulith.starter.core)
     implementation(libs.spring.modulith.starter.jpa)
+    implementation(libs.spring.boot.starter.cache)
     implementation(libs.spring.boot.starter.data.redis)
 
     // 编译时工具
