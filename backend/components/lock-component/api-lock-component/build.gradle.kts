@@ -5,4 +5,6 @@ plugins {
 description = "api-lock-component"
 
 dependencies {
+    implementation(project(":backend:components:api-component"))
+
 }

@@ -59,6 +59,12 @@ dependencies {
     implementation(project(":backend:components:storage-component:spring-cache-storage-component"))
 
 
+    // 锁组件
+    implementation(project(":backend:components:lock-component:api-lock-component"))
+    implementation(project(":backend:components:lock-component:redisson-lock-component"))
+    implementation(project(":backend:components:lock-component:simple-lock-component"))
+
+
     // Spring Boot Starters（从组件模块继承，显式声明确保 IDE 感知）
     implementation("org.springframework.boot:spring-boot-starter-web")
     implementation("org.springframework.boot:spring-boot-starter-data-jpa")
