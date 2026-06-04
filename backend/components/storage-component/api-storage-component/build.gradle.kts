@@ -5,4 +5,6 @@ plugins {
 description = "缓存api"
 
 dependencies {
+    implementation(project(":backend:components:api-component"))
+
 }

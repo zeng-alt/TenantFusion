@@ -54,6 +54,11 @@ dependencies {
     implementation(project(":backend:components:i18n-component"))
     annotationProcessor(project(":backend:components:rest-component:rest-apt-component"))
 
+    // 存储组件
+    implementation(project(":backend:components:storage-component:api-storage-component"))
+    implementation(project(":backend:components:storage-component:spring-cache-storage-component"))
+
+
     // Spring Boot Starters（从组件模块继承，显式声明确保 IDE 感知）
     implementation("org.springframework.boot:spring-boot-starter-web")
     implementation("org.springframework.boot:spring-boot-starter-data-jpa")
