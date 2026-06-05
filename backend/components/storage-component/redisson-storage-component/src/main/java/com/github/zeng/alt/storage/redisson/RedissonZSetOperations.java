@@ -50,23 +50,26 @@ public class RedissonZSetOperations implements CacheZSetOperations {
 
     @Override
     public Set<String> range(String key, long start, long end) {
-        return redissonClient.getScoredSortedSet(wrap(key)).valueRange((int) start, (int) end);
+        Collection<String> values = redissonClient.getScoredSortedSet(wrap(key)).valueRange((int) start, (int) end);
+        return new LinkedHashSet<>(values);
     }
 
     @Override
     public Set<String> reverseRange(String key, long start, long end) {
-        return redissonClient.getScoredSortedSet(wrap(key)).valueRangeReversed((int) start, (int) end);
+        Collection<String> values = redissonClient.getScoredSortedSet(wrap(key)).valueRangeReversed((int) start, (int) end);
+        return new LinkedHashSet<>(values);
     }
 
     @Override
     public Set<String> rangeByScore(String key, double min, double max) {
-        return redissonClient.getScoredSortedSet(wrap(key)).valueRange(min, true, max, true);
+        Collection<String> values = redissonClient.getScoredSortedSet(wrap(key)).valueRange(min, true, max, true);
+        return new LinkedHashSet<>(values);
     }
 
     @Override
     public Set<String> reverseRangeByScore(String key, double min, double max) {
         RScoredSortedSet<String> set = redissonClient.getScoredSortedSet(wrap(key));
-        Set<String> values = set.valueRange(min, true, max, true);
+        Collection<String> values = set.valueRange(min, true, max, true);
         // 按分数从高到低排列
         LinkedHashSet<String> reversed = new LinkedHashSet<>();
         new ArrayList<>(values).reversed().forEach(reversed::add);
@@ -75,12 +78,14 @@ public class RedissonZSetOperations implements CacheZSetOperations {
 
     @Override
     public Long rank(String key, String value) {
-        return redissonClient.getScoredSortedSet(wrap(key)).rank(value);
+        Integer rank = redissonClient.getScoredSortedSet(wrap(key)).rank(value);
+        return rank != null ? rank.longValue() : null;
     }
 
     @Override
     public Long reverseRank(String key, String value) {
-        return redissonClient.getScoredSortedSet(wrap(key)).revRank(value);
+        Integer rank = redissonClient.getScoredSortedSet(wrap(key)).revRank(value);
+        return rank != null ? rank.longValue() : null;
     }
 
     @Override
@@ -90,18 +95,16 @@ public class RedissonZSetOperations implements CacheZSetOperations {
 
     @Override
     public Long count(String key, double min, double max) {
-        return redissonClient.getScoredSortedSet(wrap(key)).count(min, true, max, true);
+        return (long) redissonClient.getScoredSortedSet(wrap(key)).count(min, true, max, true);
     }
 
     @Override
     public Long removeRange(String key, long start, long end) {
-        RScoredSortedSet<String> set = redissonClient.getScoredSortedSet(wrap(key));
-        Set<String> toRemove = set.valueRange((int) start, (int) end);
-        return (long) set.removeAll(toRemove);
+        return (long) redissonClient.getScoredSortedSet(wrap(key)).removeRangeByRank((int) start, (int) end);
     }
 
     @Override
     public Long removeRangeByScore(String key, double min, double max) {
-        return redissonClient.getScoredSortedSet(wrap(key)).removeRangeByScore(min, true, max, true);
+        return (long) redissonClient.getScoredSortedSet(wrap(key)).removeRangeByScore(min, true, max, true);
     }
 }

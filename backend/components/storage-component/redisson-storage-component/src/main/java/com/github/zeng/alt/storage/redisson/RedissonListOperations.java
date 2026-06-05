@@ -10,10 +10,10 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Redisson List 缁撴瀯鎿嶄綔瀹炵幇
+ * Redisson List 结构操作实现
  *
  * @author zengJiaJun
- * @since 2026骞?6鏈?4鏃?
+ * @since 2026年06月04日
  * @version 1.0
  */
 public class RedissonListOperations implements CacheListOperations {
