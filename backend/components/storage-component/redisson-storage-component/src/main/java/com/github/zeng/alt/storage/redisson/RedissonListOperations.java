@@ -10,10 +10,10 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Redisson List 结构操作实现
+ * Redisson List 缁撴瀯鎿嶄綔瀹炵幇
  *
  * @author zengJiaJun
- * @since 2026年06月04日
+ * @since 2026骞?6鏈?4鏃?
  * @version 1.0
  */
 public class RedissonListOperations implements CacheListOperations {
@@ -32,7 +32,9 @@ public class RedissonListOperations implements CacheListOperations {
 
     @Override
     public Long leftPush(String key, String value) {
-        return redissonClient.getList(wrap(key)).addFirst(value);
+        RList<String> list = redissonClient.getList(wrap(key));
+        list.addFirst(value);
+        return (long) list.size();
     }
 
     @Override
@@ -44,7 +46,9 @@ public class RedissonListOperations implements CacheListOperations {
 
     @Override
     public Long rightPush(String key, String value) {
-        return redissonClient.getList(wrap(key)).add(value);
+        RList<String> list = redissonClient.getList(wrap(key));
+        list.add(value);
+        return (long) list.size();
     }
 
     @Override
@@ -62,7 +66,12 @@ public class RedissonListOperations implements CacheListOperations {
 
     @Override
     public String leftPop(String key, long timeout, TimeUnit unit) {
-        return redissonClient.getBlockingQueue(wrap(key)).poll(timeout, unit);
+        try {
+            return redissonClient.getBlockingQueue(wrap(key)).poll(timeout, unit);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            return null;
+        }
     }
 
     @Override
@@ -73,7 +82,12 @@ public class RedissonListOperations implements CacheListOperations {
 
     @Override
     public String rightPop(String key, long timeout, TimeUnit unit) {
-        return redissonClient.getBlockingDeque(wrap(key)).pollLast(timeout, unit);
+        try {
+            return redissonClient.getBlockingDeque(wrap(key)).pollLast(timeout, unit);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            return null;
+        }
     }
 
     @Override
