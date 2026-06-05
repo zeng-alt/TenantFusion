@@ -29,24 +29,25 @@ public class RedissonHashOperations implements CacheHashOperations {
     }
 
     @Override
-    public void put(String key, String hashKey, String value) {
+    public void put(String key, String hashKey, Object value) {
         redissonClient.getMap(wrap(key)).put(hashKey, value);
     }
 
     @Override
-    public void putAll(String key, Map<String, String> map) {
+    public void putAll(String key, Map<String, Object> map) {
         redissonClient.getMap(wrap(key)).putAll(map);
     }
 
     @Override
-    public String get(String key, String hashKey) {
-        return (String) redissonClient.getMap(wrap(key)).get(hashKey);
+    public <T> T get(String key, String hashKey) {
+        RMap<String, T> map = redissonClient.getMap(wrap(key));
+        return map.get(hashKey);
     }
 
     @Override
     @SuppressWarnings("unchecked")
-    public Map<String, String> entries(String key) {
-        return (Map<String, String>) (Map<?, ?>) redissonClient.getMap(wrap(key)).readAllMap();
+    public Map<String, Object> entries(String key) {
+        return (Map<String, Object>) (Map<?, ?>) redissonClient.getMap(wrap(key)).readAllMap();
     }
 
     @Override
@@ -56,16 +57,16 @@ public class RedissonHashOperations implements CacheHashOperations {
     }
 
     @Override
-    @SuppressWarnings("unchecked")
-    public List<String> values(String key) {
-        return new ArrayList<>((Collection<String>) (Collection<?>) redissonClient.getMap(wrap(key)).readAllValues());
+    public List<Object> values(String key) {
+        return new ArrayList<>(redissonClient.getMap(wrap(key)).readAllValues());
     }
 
     @Override
-    public List<String> multiGet(String key, String... hashKeys) {
+    public List<Object> multiGet(String key, String... hashKeys) {
         RMap<String, Object> map = redissonClient.getMap(wrap(key));
-        return map.getAll(Set.of(hashKeys)).values().stream()
-                .map(v -> (String) v)
+        return map.getAll(Set.of(hashKeys))
+                .values()
+                .stream()
                 .toList();
     }
 

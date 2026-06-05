@@ -2,6 +2,8 @@ package com.github.zeng.alt.storage.redisson;
 
 import com.github.zeng.alt.storage.api.CacheListOperations;
 import com.github.zeng.alt.storage.api.KeyPrefixStrategy;
+import org.redisson.api.RBlockingDeque;
+import org.redisson.api.RBlockingQueue;
 import org.redisson.api.RList;
 import org.redisson.api.RedissonClient;
 
@@ -40,7 +42,7 @@ public class RedissonListOperations implements CacheListOperations {
     @Override
     public Long leftPushAll(String key, String... values) {
         RList<String> list = redissonClient.getList(wrap(key));
-        list.addAllFirst(Arrays.asList(values));
+        list.addAll(0, Arrays.asList(values));
         return (long) list.size();
     }
 
@@ -67,7 +69,8 @@ public class RedissonListOperations implements CacheListOperations {
     @Override
     public String leftPop(String key, long timeout, TimeUnit unit) {
         try {
-            return redissonClient.getBlockingQueue(wrap(key)).poll(timeout, unit);
+            RBlockingQueue<String> blockingQueue = redissonClient.getBlockingQueue(wrap(key));
+            return blockingQueue.poll(timeout, unit);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             return null;
@@ -83,7 +86,8 @@ public class RedissonListOperations implements CacheListOperations {
     @Override
     public String rightPop(String key, long timeout, TimeUnit unit) {
         try {
-            return redissonClient.getBlockingDeque(wrap(key)).pollLast(timeout, unit);
+            RBlockingDeque<String> blockingDeque = redissonClient.getBlockingDeque(wrap(key));
+            return blockingDeque.pollLast(timeout, unit);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             return null;
@@ -92,7 +96,8 @@ public class RedissonListOperations implements CacheListOperations {
 
     @Override
     public List<String> range(String key, long start, long end) {
-        return redissonClient.getList(wrap(key)).range((int) start, (int) end);
+        RList<String> list = redissonClient.getList(wrap(key));
+        return list.range((int) start, (int) end);
     }
 
     @Override
@@ -102,7 +107,8 @@ public class RedissonListOperations implements CacheListOperations {
 
     @Override
     public String index(String key, long index) {
-        return redissonClient.getList(wrap(key)).get((int) index);
+        RList<String> list = redissonClient.getList(wrap(key));
+        return list.get((int) index);
     }
 
     @Override

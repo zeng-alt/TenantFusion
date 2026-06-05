@@ -50,19 +50,22 @@ public class RedissonZSetOperations implements CacheZSetOperations {
 
     @Override
     public Set<String> range(String key, long start, long end) {
-        Collection<String> values = redissonClient.getScoredSortedSet(wrap(key)).valueRange((int) start, (int) end);
+        RScoredSortedSet<String> scoredSortedSet = redissonClient.getScoredSortedSet(wrap(key));
+        Collection<String> values = scoredSortedSet.valueRange((int) start, (int) end);
         return new LinkedHashSet<>(values);
     }
 
     @Override
     public Set<String> reverseRange(String key, long start, long end) {
-        Collection<String> values = redissonClient.getScoredSortedSet(wrap(key)).valueRangeReversed((int) start, (int) end);
+        RScoredSortedSet<String> scoredSortedSet = redissonClient.getScoredSortedSet(wrap(key));
+        Collection<String> values = scoredSortedSet.valueRangeReversed((int) start, (int) end);
         return new LinkedHashSet<>(values);
     }
 
     @Override
     public Set<String> rangeByScore(String key, double min, double max) {
-        Collection<String> values = redissonClient.getScoredSortedSet(wrap(key)).valueRange(min, true, max, true);
+        RScoredSortedSet<String> scoredSortedSet = redissonClient.getScoredSortedSet(wrap(key));
+        Collection<String> values = scoredSortedSet.valueRange(min, true, max, true);
         return new LinkedHashSet<>(values);
     }
 
@@ -71,9 +74,7 @@ public class RedissonZSetOperations implements CacheZSetOperations {
         RScoredSortedSet<String> set = redissonClient.getScoredSortedSet(wrap(key));
         Collection<String> values = set.valueRange(min, true, max, true);
         // 按分数从高到低排列
-        LinkedHashSet<String> reversed = new LinkedHashSet<>();
-        new ArrayList<>(values).reversed().forEach(reversed::add);
-        return reversed;
+        return new LinkedHashSet<>(new ArrayList<>(values).reversed());
     }
 
     @Override

@@ -20,7 +20,7 @@ public interface CacheHashOperations {
      * @param hashKey hash key
      * @param value   value
      */
-    void put(String key, String hashKey, String value);
+    void put(String key, String hashKey, Object value);
 
     /**
      * 批量设置 hash 中的字段值
@@ -28,7 +28,7 @@ public interface CacheHashOperations {
      * @param key  key
      * @param map 字段-值映射
      */
-    void putAll(String key, Map<String, String> map);
+    void putAll(String key, Map<String, Object> map);
 
     /**
      * 获取 hash 中的字段值
@@ -37,7 +37,7 @@ public interface CacheHashOperations {
      * @param hashKey hash key
      * @return value
      */
-    String get(String key, String hashKey);
+    <T> T get(String key, String hashKey);
 
     /**
      * 获取 hash 中所有字段的值
@@ -45,7 +45,7 @@ public interface CacheHashOperations {
      * @param key key
      * @return hash 所有字段-值映射
      */
-    Map<String, String> entries(String key);
+    Map<String, Object> entries(String key);
 
     /**
      * 获取 hash 中所有字段名
@@ -61,7 +61,7 @@ public interface CacheHashOperations {
      * @param key key
      * @return 值列表
      */
-    List<String> values(String key);
+    List<Object> values(String key);
 
     /**
      * 获取 hash 中多个字段的值
@@ -70,7 +70,7 @@ public interface CacheHashOperations {
      * @param hashKeys hash keys
      * @return 值列表
      */
-    List<String> multiGet(String key, String... hashKeys);
+    List<Object> multiGet(String key, String... hashKeys);
 
     /**
      * 删除 hash 中的字段

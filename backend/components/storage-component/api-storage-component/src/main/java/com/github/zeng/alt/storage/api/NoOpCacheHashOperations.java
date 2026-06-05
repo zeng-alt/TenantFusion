@@ -15,22 +15,22 @@ import java.util.Set;
 public class NoOpCacheHashOperations implements CacheHashOperations {
 
     @Override
-    public void put(String key, String hashKey, String value) {
+    public void put(String key, String hashKey, Object value) {
         // no-op
     }
 
     @Override
-    public void putAll(String key, Map<String, String> map) {
+    public void putAll(String key, Map<String, Object> map) {
         // no-op
     }
 
     @Override
-    public String get(String key, String hashKey) {
+    public <T> T get(String key, String hashKey) {
         return null;
     }
 
     @Override
-    public Map<String, String> entries(String key) {
+    public Map<String, Object> entries(String key) {
         return Collections.emptyMap();
     }
 
@@ -40,12 +40,12 @@ public class NoOpCacheHashOperations implements CacheHashOperations {
     }
 
     @Override
-    public List<String> values(String key) {
+    public List<Object> values(String key) {
         return Collections.emptyList();
     }
 
     @Override
-    public List<String> multiGet(String key, String... hashKeys) {
+    public List<Object> multiGet(String key, String... hashKeys) {
         return Collections.emptyList();
     }
 
