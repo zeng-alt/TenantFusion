@@ -34,8 +34,8 @@ public class RedissonZSetOperations implements CacheZSetOperations {
     }
 
     @Override
-    public Long remove(String key, String... values) {
-        return (long) redissonClient.getScoredSortedSet(wrap(key)).removeAll(Arrays.asList(values));
+    public boolean remove(String key, String... values) {
+        return redissonClient.getScoredSortedSet(wrap(key)).removeAll(Arrays.asList(values));
     }
 
     @Override

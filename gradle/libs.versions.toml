@@ -8,7 +8,7 @@ spring-modulith = "1.4.10"
 vavr = "0.10.3"
 querydsl = "6.10.1"
 swagger = "2.2.49"
-redisson = "3.41.1"
+redisson = "3.52.0"
 jetcache = "2.7.7"
 
 [libraries]

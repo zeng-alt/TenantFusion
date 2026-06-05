@@ -18,8 +18,8 @@ public class NoOpCacheZSetOperations implements CacheZSetOperations {
     }
 
     @Override
-    public Long remove(String key, String... values) {
-        return 0L;
+    public boolean remove(String key, String... values) {
+        return false;
     }
 
     @Override

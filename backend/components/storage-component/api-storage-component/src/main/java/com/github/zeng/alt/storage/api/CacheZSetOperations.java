@@ -28,7 +28,7 @@ public interface CacheZSetOperations {
      * @param values values
      * @return 移除数量
      */
-    Long remove(String key, String... values);
+    boolean remove(String key, String... values);
 
     /**
      * 获取元素的分数

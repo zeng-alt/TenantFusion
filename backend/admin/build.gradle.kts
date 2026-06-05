@@ -61,9 +61,7 @@ dependencies {
 
     // 锁组件
     implementation(project(":backend:components:lock-component:api-lock-component"))
-    implementation(project(":backend:components:lock-component:redisson-lock-component"))
     implementation(project(":backend:components:lock-component:simple-lock-component"))
-    implementation(project(":backend:components:lock-component:database-lock-component"))
 
 
 

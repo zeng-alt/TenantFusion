@@ -6,7 +6,6 @@ import org.redisson.api.RMap;
 import org.redisson.api.RedissonClient;
 
 import java.util.*;
-import java.util.stream.Collectors;
 
 /**
  * Redisson Hash 结构操作实现
@@ -40,7 +39,6 @@ public class RedissonHashOperations implements CacheHashOperations {
     }
 
     @Override
-    @SuppressWarnings("unchecked")
     public String get(String key, String hashKey) {
         return (String) redissonClient.getMap(wrap(key)).get(hashKey);
     }
@@ -53,7 +51,8 @@ public class RedissonHashOperations implements CacheHashOperations {
 
     @Override
     public Set<String> keys(String key) {
-        return redissonClient.getMap(wrap(key)).readAllKeySet();
+        RMap<String, String> map = redissonClient.getMap(wrap(key));
+        return map.readAllKeySet();
     }
 
     @Override
@@ -63,17 +62,16 @@ public class RedissonHashOperations implements CacheHashOperations {
     }
 
     @Override
-    @SuppressWarnings("unchecked")
     public List<String> multiGet(String key, String... hashKeys) {
         RMap<String, Object> map = redissonClient.getMap(wrap(key));
         return map.getAll(Set.of(hashKeys)).values().stream()
                 .map(v -> (String) v)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     @Override
     public Long delete(String key, String... hashKeys) {
-        return (long) redissonClient.getMap(wrap(key)).fastRemove(hashKeys);
+        return redissonClient.getMap(wrap(key)).fastRemove(hashKeys);
     }
 
     @Override
@@ -88,6 +86,7 @@ public class RedissonHashOperations implements CacheHashOperations {
 
     @Override
     public Long increment(String key, String hashKey, long delta) {
-        return redissonClient.getMap(wrap(key)).addAndGet(hashKey, delta);
+        RMap<String, Long> map = redissonClient.getMap(wrap(key));
+        return map.addAndGet(hashKey, delta);
     }
 }

@@ -64,7 +64,7 @@ public class JetCacheStorageTemplate extends AbstractStorageTemplate {
 
     @Override
     public Boolean hasKey(String key) {
-        return cache.containsKey(wrapKey(key));
+        return cache.GET(wrapKey(key)).isSuccess();
     }
 
     @Override

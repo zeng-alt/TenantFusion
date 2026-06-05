@@ -112,7 +112,7 @@ public class DatabaseLockTemplate implements LockTemplate {
     /**
      * 锁是否被任何实例持有
      */
-    boolean isLocked(String lockName) {
+    public boolean isLocked(String lockName) {
         Integer count = jdbcClient.sql("""
                 SELECT COUNT(*) FROM sys_distributed_lock
                 WHERE lock_name = ? AND (expire_at IS NULL OR expire_at > CURRENT_TIMESTAMP)

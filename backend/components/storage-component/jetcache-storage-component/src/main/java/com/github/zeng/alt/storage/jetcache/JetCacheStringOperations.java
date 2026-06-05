@@ -50,7 +50,7 @@ public class JetCacheStringOperations implements CacheStringOperations {
 
     @Override
     public Boolean setIfAbsent(String key, String value, long timeout, TimeUnit unit) {
-        return cache.putIfAbsent(wrap(key), value, timeout, unit);
+        return cache.PUT_IF_ABSENT(wrap(key), value, timeout, unit).isSuccess();
     }
 
     @Override
@@ -76,7 +76,7 @@ public class JetCacheStringOperations implements CacheStringOperations {
 
     @Override
     public Boolean hasKey(String key) {
-        return cache.containsKey(wrap(key));
+        return cache.GET(key).isSuccess();
     }
 
     @Override
@@ -85,14 +85,18 @@ public class JetCacheStringOperations implements CacheStringOperations {
     }
 
     @Override
-    public Long increment(String key, long delta) {
-        // JetCache 不直接支持原子递增，通过 computeIfAbsent 实现
-        return cache.computeIfAbsent(wrap(key), k -> "0")
-                .map(v -> {
-                    long newVal = Long.parseLong(v) + delta;
-                    cache.put(wrap(key), String.valueOf(newVal));
-                    return newVal;
-                })
-                .orElse(delta);
+    public synchronized Long increment(String key, long delta) {
+        // JetCache 不直接支持原子递增 TODO在分布式下无法保证原子性
+        String realKey = wrap(key);
+
+        String old = cache.get(realKey);
+        if (old == null) {
+            old = "0";
+        }
+
+        long newVal = Long.parseLong(old) + delta;
+        cache.put(realKey, String.valueOf(newVal));
+
+        return newVal;
     }
 }
