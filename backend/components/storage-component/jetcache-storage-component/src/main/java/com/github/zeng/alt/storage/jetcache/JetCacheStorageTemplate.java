@@ -2,6 +2,7 @@ package com.github.zeng.alt.storage.jetcache;
 
 import com.alicp.jetcache.Cache;
 import com.alicp.jetcache.CacheManager;
+import com.github.zeng.alt.lock.api.LockTemplate;
 import com.github.zeng.alt.storage.api.*;
 
 import java.util.concurrent.TimeUnit;
@@ -26,12 +27,12 @@ public class JetCacheStorageTemplate extends AbstractStorageTemplate {
     private final CacheHashOperations hashOps;
     private final CacheZSetOperations zSetOps;
 
-    public JetCacheStorageTemplate(CacheManager cacheManager, KeyPrefixStrategy keyPrefixStrategy) {
+    public JetCacheStorageTemplate(CacheManager cacheManager, KeyPrefixStrategy keyPrefixStrategy, LockTemplate lockTemplate) {
         super(keyPrefixStrategy);
         this.cacheManager = cacheManager;
         // 使用默认区域缓存，可通过配置文件自定义
         this.cache = cacheManager.getCache("jetCacheStorage");
-        this.stringOps = new JetCacheStringOperations(cache, keyPrefixStrategy);
+        this.stringOps = new JetCacheStringOperations(cache, keyPrefixStrategy, lockTemplate);
         this.listOps = new NoOpCacheListOperations();
         this.hashOps = new NoOpCacheHashOperations();
         this.zSetOps = new NoOpCacheZSetOperations();

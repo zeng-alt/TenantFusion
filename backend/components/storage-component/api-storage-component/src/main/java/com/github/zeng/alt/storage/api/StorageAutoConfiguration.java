@@ -21,8 +21,38 @@ public class StorageAutoConfiguration {
      */
     @Bean
     @ConditionalOnMissingBean(StorageTemplate.class)
-    public StorageTemplate noOpStorageTemplate() {
-        return new NoOpStorageTemplate();
+    public StorageTemplate noOpStorageTemplate(
+            CacheStringOperations cacheStringOperations,
+            CacheListOperations cacheListOperations,
+            CacheHashOperations cacheHashOperations,
+            CacheZSetOperations cacheZSetOperations
+    ) {
+        return new NoOpStorageTemplate(cacheStringOperations, cacheListOperations, cacheHashOperations, cacheZSetOperations);
+    }
+
+
+    @Bean
+    @ConditionalOnMissingBean(CacheStringOperations.class)
+    public CacheStringOperations noOpCacheStringOperations() {
+        return new NoOpCacheStringOperations();
+    }
+
+    @Bean
+    @ConditionalOnMissingBean(CacheListOperations.class)
+    public CacheListOperations noOpCacheListOperations() {
+        return new NoOpCacheListOperations();
+    }
+
+    @Bean
+    @ConditionalOnMissingBean(CacheHashOperations.class)
+    public CacheHashOperations noOpCacheHashOperations() {
+        return new NoOpCacheHashOperations();
+    }
+
+    @Bean
+    @ConditionalOnMissingBean(CacheZSetOperations.class)
+    public CacheZSetOperations noOpCacheZSetOperations() {
+        return new NoOpCacheZSetOperations();
     }
 
     /**

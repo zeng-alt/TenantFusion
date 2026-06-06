@@ -1,5 +1,6 @@
 package com.github.zeng.alt.storage.springcache;
 
+import com.github.zeng.alt.lock.api.LockTemplate;
 import com.github.zeng.alt.storage.api.CacheStringOperations;
 import com.github.zeng.alt.storage.api.KeyPrefixStrategy;
 import org.springframework.cache.Cache;
@@ -19,10 +20,12 @@ public class SpringCacheStringOperations implements CacheStringOperations {
 
     private final CacheManager cacheManager;
     private final KeyPrefixStrategy keyPrefixStrategy;
+    private final LockTemplate lockTemplate;
 
-    public SpringCacheStringOperations(CacheManager cacheManager, KeyPrefixStrategy keyPrefixStrategy) {
+    public SpringCacheStringOperations(CacheManager cacheManager, KeyPrefixStrategy keyPrefixStrategy, LockTemplate lockTemplate) {
         this.cacheManager = cacheManager;
         this.keyPrefixStrategy = keyPrefixStrategy;
+        this.lockTemplate = lockTemplate;
     }
 
     private String wrap(String key) {
@@ -119,18 +122,25 @@ public class SpringCacheStringOperations implements CacheStringOperations {
     }
 
     @Override
-    public Long increment(String key, long delta) {
-        // Spring Cache 不支持原子递增操作
-        Cache cache = getCache();
-        if (cache != null) {
-            Cache.ValueWrapper wrapper = cache.get(wrap(key));
-            long newVal = delta;
-            if (wrapper != null && wrapper.get() instanceof Number) {
-                newVal = ((Number) wrapper.get()).longValue() + delta;
-            }
-            cache.put(wrap(key), String.valueOf(newVal));
-            return newVal;
-        }
-        return delta;
+    public synchronized Long increment(String key, long delta) {
+        return lockTemplate.execute(
+                "lock:" + wrap(key),
+                5,               // 最多等待 5 秒
+                10,                      // 锁持有 10 秒
+                TimeUnit.SECONDS,
+                () -> {
+                    Cache cache = getCache();
+                    if (cache != null) {
+                        Cache.ValueWrapper wrapper = cache.get(wrap(key));
+                        long newVal = delta;
+                        if (wrapper != null && wrapper.get() instanceof Number) {
+                            newVal = ((Number) wrapper.get()).longValue() + delta;
+                        }
+                        cache.put(wrap(key), String.valueOf(newVal));
+                        return newVal;
+                    }
+                    return delta;
+                }
+        );
     }
 }

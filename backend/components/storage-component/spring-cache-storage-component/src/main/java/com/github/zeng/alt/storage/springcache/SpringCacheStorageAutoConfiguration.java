@@ -1,6 +1,9 @@
 package com.github.zeng.alt.storage.springcache;
 
+import com.github.zeng.alt.lock.api.LockTemplate;
+import com.github.zeng.alt.storage.api.CacheStringOperations;
 import com.github.zeng.alt.storage.api.KeyPrefixStrategy;
+import com.github.zeng.alt.storage.api.StorageAutoConfiguration;
 import com.github.zeng.alt.storage.api.StorageTemplate;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
@@ -16,13 +19,18 @@ import org.springframework.context.annotation.Bean;
  * @since 2026年06月04日
  * @version 1.0
  */
-@AutoConfiguration
+@AutoConfiguration(before = StorageAutoConfiguration.class)
 @ConditionalOnBean(CacheManager.class)
 @ConditionalOnMissingBean(StorageTemplate.class)
 public class SpringCacheStorageAutoConfiguration {
 
     @Bean
-    public StorageTemplate springCacheStorageTemplate(CacheManager cacheManager, KeyPrefixStrategy keyPrefixStrategy) {
-        return new SpringCacheStorageTemplate(cacheManager, keyPrefixStrategy);
+    public StorageTemplate springCacheStorageTemplate(CacheManager cacheManager, KeyPrefixStrategy keyPrefixStrategy, CacheStringOperations cacheStringOperations) {
+        return new SpringCacheStorageTemplate(cacheManager, keyPrefixStrategy, cacheStringOperations);
+    }
+
+    @Bean
+    public CacheStringOperations cacheStringOperations(CacheManager cacheManager, KeyPrefixStrategy keyPrefixStrategy, LockTemplate lockTemplate) {
+        return new SpringCacheStringOperations(cacheManager, keyPrefixStrategy, lockTemplate);
     }
 }

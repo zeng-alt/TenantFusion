@@ -25,11 +25,11 @@ public class SpringCacheStorageTemplate extends AbstractStorageTemplate {
     private final CacheHashOperations hashOps;
     private final CacheZSetOperations zSetOps;
 
-    public SpringCacheStorageTemplate(CacheManager cacheManager, KeyPrefixStrategy keyPrefixStrategy) {
+    public SpringCacheStorageTemplate(CacheManager cacheManager, KeyPrefixStrategy keyPrefixStrategy, CacheStringOperations cacheStringOperations) {
         super(keyPrefixStrategy);
         this.cacheManager = cacheManager;
         this.cache = cacheManager.getCache("default");
-        this.stringOps = new SpringCacheStringOperations(cacheManager, keyPrefixStrategy);
+        this.stringOps = cacheStringOperations;
         this.listOps = new NoOpCacheListOperations();
         this.hashOps = new NoOpCacheHashOperations();
         this.zSetOps = new NoOpCacheZSetOperations();

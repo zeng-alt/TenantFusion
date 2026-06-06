@@ -1,6 +1,7 @@
 package com.github.zeng.alt.storage.jetcache;
 
 import com.alicp.jetcache.Cache;
+import com.github.zeng.alt.lock.api.LockTemplate;
 import com.github.zeng.alt.storage.api.CacheStringOperations;
 import com.github.zeng.alt.storage.api.KeyPrefixStrategy;
 
@@ -18,10 +19,12 @@ public class JetCacheStringOperations implements CacheStringOperations {
 
     private final Cache<String, String> cache;
     private final KeyPrefixStrategy keyPrefixStrategy;
+    private final LockTemplate lockTemplate;
 
-    public JetCacheStringOperations(Cache<String, String> cache, KeyPrefixStrategy keyPrefixStrategy) {
+    public JetCacheStringOperations(Cache<String, String> cache, KeyPrefixStrategy keyPrefixStrategy, LockTemplate lockTemplate) {
         this.cache = cache;
         this.keyPrefixStrategy = keyPrefixStrategy;
+        this.lockTemplate = lockTemplate;
     }
 
     private String wrap(String key) {
@@ -86,17 +89,25 @@ public class JetCacheStringOperations implements CacheStringOperations {
 
     @Override
     public synchronized Long increment(String key, long delta) {
-        // JetCache 不直接支持原子递增 TODO在分布式下无法保证原子性
+        // JetCache 不直接支持原子递增
         String realKey = wrap(key);
 
-        String old = cache.get(realKey);
-        if (old == null) {
-            old = "0";
-        }
+        return lockTemplate.execute(
+                "lock:" + realKey,
+                5,               // 最多等待 5 秒
+                10,                      // 锁持有 10 秒
+                TimeUnit.SECONDS,
+                () -> {
+                    String old = cache.get(realKey);
+                    if (old == null) {
+                        old = "0";
+                    }
 
-        long newVal = Long.parseLong(old) + delta;
-        cache.put(realKey, String.valueOf(newVal));
+                    long newVal = Long.parseLong(old) + delta;
+                    cache.put(realKey, String.valueOf(newVal));
 
-        return newVal;
+                    return newVal;
+                }
+        );
     }
 }

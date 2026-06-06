@@ -22,13 +22,20 @@ public class RedissonStorageTemplate extends AbstractStorageTemplate {
     private final CacheHashOperations hashOps;
     private final CacheZSetOperations zSetOps;
 
-    public RedissonStorageTemplate(RedissonClient redissonClient, KeyPrefixStrategy keyPrefixStrategy) {
+    public RedissonStorageTemplate(
+            RedissonClient redissonClient,
+            KeyPrefixStrategy keyPrefixStrategy,
+            CacheStringOperations cacheStringOperations,
+            CacheListOperations cacheListOperations,
+            CacheHashOperations cacheHashOperations,
+            CacheZSetOperations cacheZSetOperations
+    ) {
         super(keyPrefixStrategy);
         this.redissonClient = redissonClient;
-        this.stringOps = new RedissonStringOperations(redissonClient, keyPrefixStrategy);
-        this.listOps = new RedissonListOperations(redissonClient, keyPrefixStrategy);
-        this.hashOps = new RedissonHashOperations(redissonClient, keyPrefixStrategy);
-        this.zSetOps = new RedissonZSetOperations(redissonClient, keyPrefixStrategy);
+        this.stringOps = cacheStringOperations;
+        this.listOps = cacheListOperations;
+        this.hashOps = cacheHashOperations;
+        this.zSetOps = cacheZSetOperations;
     }
 
     @Override

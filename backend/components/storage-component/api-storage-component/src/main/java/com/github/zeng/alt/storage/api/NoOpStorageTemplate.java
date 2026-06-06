@@ -12,10 +12,24 @@ import java.util.concurrent.TimeUnit;
  */
 public class NoOpStorageTemplate implements StorageTemplate {
 
-    private static final NoOpCacheStringOperations STRING_OPS = new NoOpCacheStringOperations();
-    private static final NoOpCacheListOperations LIST_OPS = new NoOpCacheListOperations();
-    private static final NoOpCacheHashOperations HASH_OPS = new NoOpCacheHashOperations();
-    private static final NoOpCacheZSetOperations ZSET_OPS = new NoOpCacheZSetOperations();
+    private final CacheStringOperations STRING_OPS;
+    private final CacheListOperations LIST_OPS;
+    private final CacheHashOperations HASH_OPS;
+    private final CacheZSetOperations ZSET_OPS;
+
+
+    public NoOpStorageTemplate(
+            CacheStringOperations cacheStringOperations,
+            CacheListOperations cacheListOperations,
+            CacheHashOperations cacheHashOperations,
+            CacheZSetOperations cacheZSetOperations
+    ) {
+        this.STRING_OPS =  cacheStringOperations;
+        this.LIST_OPS = cacheListOperations;
+        this.HASH_OPS = cacheHashOperations;
+        this.ZSET_OPS  = cacheZSetOperations;
+    }
+
 
     @Override
     public CacheStringOperations opsForString() {
