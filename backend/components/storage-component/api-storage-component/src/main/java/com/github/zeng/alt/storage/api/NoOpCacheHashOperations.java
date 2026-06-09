@@ -50,7 +50,7 @@ public class NoOpCacheHashOperations implements CacheHashOperations {
     }
 
     @Override
-    public Long delete(String key, String... hashKeys) {
+    public Long delete(String key, String[] hashKeys) {
         return 0L;
     }
 

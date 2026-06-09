@@ -1,9 +1,11 @@
-﻿package com.github.zeng.alt.lock.api;
+package com.github.zeng.alt.lock.config;
 
 import com.github.zeng.alt.lock.MethodBasedExpressionEvaluator;
 import com.github.zeng.alt.lock.SpelMethodBasedExpressionEvaluator;
 import com.github.zeng.alt.lock.aop.LockAnnotationAdvisor;
 import com.github.zeng.alt.lock.aop.LockInterceptor;
+import com.github.zeng.alt.lock.api.LockTemplate;
+import com.github.zeng.alt.lock.api.NoOpLockTemplate;
 import com.github.zeng.alt.lock.model.DefaultLockFailureStrategy;
 import com.github.zeng.alt.lock.model.DefaultLockKeyBuilder;
 import com.github.zeng.alt.lock.model.LockFailureStrategy;

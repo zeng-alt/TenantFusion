@@ -9,18 +9,7 @@ import java.util.concurrent.TimeUnit;
  * @since 2026年06月04日
  * @version 1.0
  */
-public class NoOpDistributedLock implements DistributedLock {
-
-    private final String name;
-
-    public NoOpDistributedLock(String name) {
-        this.name = name;
-    }
-
-    @Override
-    public String getName() {
-        return name;
-    }
+public record NoOpDistributedLock(String name) implements DistributedLock {
 
     @Override
     public boolean tryLock() {

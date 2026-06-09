@@ -79,7 +79,7 @@ public interface CacheHashOperations {
      * @param hashKeys hash keys
      * @return 删除数量
      */
-    Long delete(String key, String... hashKeys);
+    Long delete(String key, String[] hashKeys);
 
     /**
      * 判断 hash 中是否存在指定字段

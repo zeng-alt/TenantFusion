@@ -71,8 +71,9 @@ public class RedissonHashOperations implements CacheHashOperations {
     }
 
     @Override
-    public Long delete(String key, String... hashKeys) {
-        return redissonClient.getMap(wrap(key)).fastRemove(hashKeys);
+    public Long delete(String key, String[] hashKeys) {
+        RMap<String, Object> map = redissonClient.getMap(wrap(key));
+        return map.fastRemove(hashKeys);
     }
 
     @Override

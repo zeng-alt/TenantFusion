@@ -1,4 +1,4 @@
-﻿package com.github.zeng.alt.lock.api;
+package com.github.zeng.alt.lock.api;
 
 import com.github.zeng.alt.lock.executor.LockExecutor;
 import com.github.zeng.alt.lock.model.LockInfo;

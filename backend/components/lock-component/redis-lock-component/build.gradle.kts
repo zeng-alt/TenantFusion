@@ -5,7 +5,7 @@ plugins {
 description = "redis-lock-component"
 
 dependencies {
-    implementation(project(":backend:components:lock-component:api-lock-component"))
+    api(project(":backend:components:lock-component:api-lock-component"))
     implementation(rootProject.libs.redisson.spring.boot.starter)
 
 }

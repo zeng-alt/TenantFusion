@@ -1,4 +1,4 @@
-﻿package com.github.zeng.alt.lock.simple;
+package com.github.zeng.alt.lock.simple;
 
 import com.github.zeng.alt.lock.api.LockTemplate;
 import com.github.zeng.alt.lock.executor.LockExecutor;

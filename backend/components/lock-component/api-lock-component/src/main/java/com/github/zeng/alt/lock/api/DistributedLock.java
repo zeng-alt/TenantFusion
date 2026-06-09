@@ -16,7 +16,7 @@ public interface DistributedLock extends AutoCloseable {
      *
      * @return 锁名称
      */
-    String getName();
+    String name();
 
     /**
      * 尝试获取锁，立即返回

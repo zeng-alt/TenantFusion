@@ -20,6 +20,10 @@ import org.springframework.context.annotation.Bean;
 @ConditionalOnMissingBean(StorageTemplate.class)
 public class RedissonStorageAutoConfiguration {
 
+
+
+
+
     @Bean
     public StorageTemplate redissonStorageTemplate(
             RedissonClient redissonClient,

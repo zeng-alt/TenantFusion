@@ -23,7 +23,7 @@ public class DatabaseDistributedLock implements DistributedLock {
     }
 
     @Override
-    public String getName() {
+    public String name() {
         return name;
     }
 

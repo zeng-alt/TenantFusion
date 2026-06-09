@@ -13,6 +13,10 @@ public class UtilException extends BaseException {
         super(throwable);
     }
 
+    public UtilException(String message, Throwable cause) {
+        super(message, cause);
+    }
+
     public UtilException(String message) {
         super(message);
     }

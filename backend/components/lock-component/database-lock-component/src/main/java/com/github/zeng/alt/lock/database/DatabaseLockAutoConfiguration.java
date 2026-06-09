@@ -1,4 +1,4 @@
-﻿package com.github.zeng.alt.lock.database;
+package com.github.zeng.alt.lock.database;
 
 import com.github.zeng.alt.lock.api.LockTemplate;
 import com.github.zeng.alt.lock.executor.LockExecutor;

@@ -1,4 +1,4 @@
-﻿package com.github.zeng.alt.lock.aop;
+package com.github.zeng.alt.lock.aop;
 
 import com.github.zeng.alt.lock.MethodBasedExpressionEvaluator;
 import com.github.zeng.alt.lock.annotation.Lock;
@@ -90,9 +90,9 @@ public class LockInterceptor implements MethodInterceptor, InitializingBean, Bea
             return invocation.proceed();
         }
 
-        Lock Lock = AnnotatedElementUtils.findMergedAnnotation(
+        Lock lock = AnnotatedElementUtils.findMergedAnnotation(
                 invocation.getMethod(), Lock.class);
-        if (Lock == null) {
+        if (lock == null) {
             return invocation.proceed();
         }
 
@@ -106,7 +106,7 @@ public class LockInterceptor implements MethodInterceptor, InitializingBean, Bea
             }
         }
 
-        LockOperation lockOp = buildLockOperation(Lock);
+        LockOperation lockOp = buildLockOperation(lock);
 
         String prefix = lockProperties.getLockKeyPrefix() + ":";
         Method method = invocation.getMethod();
@@ -156,7 +156,7 @@ public class LockInterceptor implements MethodInterceptor, InitializingBean, Bea
         }
     }
 
-    private LockOperation buildLockOperation(Lock Lock) {
+    private LockOperation buildLockOperation(Lock lock) {
         LockKeyBuilder keyBuilder;
         LockFailureStrategy failureStrategy;
 

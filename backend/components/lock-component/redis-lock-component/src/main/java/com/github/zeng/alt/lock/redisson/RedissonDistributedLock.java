@@ -21,7 +21,7 @@ public class RedissonDistributedLock implements DistributedLock {
     }
 
     @Override
-    public String getName() {
+    public String name() {
         return lock.getName();
     }
 

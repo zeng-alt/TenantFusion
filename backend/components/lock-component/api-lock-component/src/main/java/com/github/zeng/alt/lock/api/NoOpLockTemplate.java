@@ -1,4 +1,4 @@
-﻿package com.github.zeng.alt.lock.api;
+package com.github.zeng.alt.lock.api;
 
 import java.util.concurrent.TimeUnit;
 import com.github.zeng.alt.lock.executor.LockExecutor;
@@ -7,11 +7,11 @@ import com.github.zeng.alt.lock.model.LockInfo;
 import java.util.function.Supplier;
 
 /**
- * 閿佹ā鏉跨┖瀹炵幇锛屾墍鏈夋搷浣滀笉鎵ц浠讳綍瀹為檯閿佸畾閫昏緫
- * 褰撴湭閰嶇疆浠讳綍閿佸疄鐜版椂浣滀负榛樿 fallback
+ * 方法为空实现，则不会执行接口默认方法
+ * 如果未配置接口调用时会使用默认 fallback
  *
  * @author zengJiaJun
- * @since 2026骞?6鏈?4鏃?
+ * @since 2026年06月04日
  * @version 1.0
  */
 public class NoOpLockTemplate implements LockTemplate {

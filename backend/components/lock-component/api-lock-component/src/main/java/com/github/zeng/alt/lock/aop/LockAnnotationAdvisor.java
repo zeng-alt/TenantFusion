@@ -1,4 +1,4 @@
-﻿package com.github.zeng.alt.lock.aop;
+package com.github.zeng.alt.lock.aop;
 
 import com.github.zeng.alt.lock.annotation.Lock;
 import org.aopalliance.aop.Advice;
@@ -12,6 +12,7 @@ import org.springframework.aop.support.StaticMethodMatcher;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.BeanFactoryAware;
+import org.springframework.cglib.proxy.Proxy;
 import org.springframework.core.annotation.AnnotatedElementUtils;
 import org.springframework.util.Assert;
 
