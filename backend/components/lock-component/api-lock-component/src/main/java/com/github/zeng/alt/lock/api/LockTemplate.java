@@ -54,7 +54,7 @@ public interface LockTemplate {
      * @return 锁信息，失败返回 null
      */
     default LockInfo lock(String key, long expire, long acquireTimeout) {
-        return lock(key, expire, acquireTimeout, LockExecutor.class);
+        return lock(key, expire, acquireTimeout, null);
     }
 
     /**

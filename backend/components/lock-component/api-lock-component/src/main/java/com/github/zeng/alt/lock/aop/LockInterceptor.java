@@ -1,4 +1,4 @@
-package com.github.zeng.alt.lock.aop;
+﻿package com.github.zeng.alt.lock.aop;
 
 import com.github.zeng.alt.lock.MethodBasedExpressionEvaluator;
 import com.github.zeng.alt.lock.annotation.AltLock;
@@ -7,6 +7,7 @@ import com.github.zeng.alt.lock.model.LockFailureStrategy;
 import com.github.zeng.alt.lock.model.LockInfo;
 import com.github.zeng.alt.lock.model.LockKeyBuilder;
 import com.github.zeng.alt.lock.model.LockProperties;
+import com.github.zeng.alt.lock.executor.LockExecutor;
 import org.aopalliance.intercept.MethodInterceptor;
 import org.aopalliance.intercept.MethodInvocation;
 import org.slf4j.Logger;
@@ -25,10 +26,10 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 /**
- * {@link AltLock} 注解的方法拦截器
+ * {@link AltLock} 娉ㄨВ鐨勬柟娉曟嫤鎴櫒
  *
  * @author zengJiaJun
- * @since 2026年06月09日
+ * @since 2026骞?6鏈?9鏃?
  * @version 1.0
  */
 public class LockInterceptor implements MethodInterceptor, InitializingBean, BeanFactoryAware {
@@ -122,10 +123,17 @@ public class LockInterceptor implements MethodInterceptor, InitializingBean, Bea
         }
 
         long expire = altLock.expire() > 0 ? altLock.expire() : lockProperties.getExpire();
+
+        // LockExecutor.class 为 sentinel 值，表示使用默认执行器
+        Class<? extends LockExecutor<?>> executorClass = altLock.executor();
+        if (executorClass == LockExecutor.class) {
+            executorClass = null;
+        }
+
         long acquireTimeout = altLock.acquireTimeout() > 0
                 ? altLock.acquireTimeout() : lockProperties.getAcquireTimeout();
 
-        LockInfo lockInfo = lockTemplate.lock(key, expire, acquireTimeout, altLock.executor());
+        LockInfo lockInfo = lockTemplate.lock(key, expire, acquireTimeout, executorClass);
 
         try {
             if (lockInfo != null) {
