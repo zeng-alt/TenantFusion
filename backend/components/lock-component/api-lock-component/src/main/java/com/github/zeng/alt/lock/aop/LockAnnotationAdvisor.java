@@ -1,6 +1,6 @@
-package com.github.zeng.alt.lock.aop;
+﻿package com.github.zeng.alt.lock.aop;
 
-import com.github.zeng.alt.lock.annotation.AltLock;
+import com.github.zeng.alt.lock.annotation.Lock;
 import org.aopalliance.aop.Advice;
 import org.springframework.aop.ClassFilter;
 import org.springframework.aop.MethodMatcher;
@@ -20,10 +20,10 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 
 /**
- * {@link AltLock} 注解的 AOP 通知器
+ * {@link Lock} 娉ㄨВ鐨?AOP 閫氱煡鍣?
  *
  * @author zengJiaJun
- * @since 2026年06月09日
+ * @since 2026骞?6鏈?9鏃?
  * @version 1.0
  */
 public class LockAnnotationAdvisor extends AbstractPointcutAdvisor implements BeanFactoryAware {
@@ -33,8 +33,8 @@ public class LockAnnotationAdvisor extends AbstractPointcutAdvisor implements Be
 
     public LockAnnotationAdvisor(LockInterceptor interceptor, int order) {
         this.advice = interceptor;
-        this.pointcut = new ComposablePointcut(new AnnotationMethodPoint(AltLock.class))
-                .union(new ComposablePointcut(new AnnotationMethodPoint(AltLock.List.class)));
+        this.pointcut = new ComposablePointcut(new AnnotationMethodPoint(Lock.class))
+                .union(new ComposablePointcut(new AnnotationMethodPoint(Lock.List.class)));
         setOrder(order);
     }
 
@@ -56,7 +56,7 @@ public class LockAnnotationAdvisor extends AbstractPointcutAdvisor implements Be
     }
 
     /**
-     * 基于注解的方法级 Pointcut
+     * 鍩轰簬娉ㄨВ鐨勬柟娉曠骇 Pointcut
      */
     private static class AnnotationMethodPoint implements Pointcut {
 

@@ -12,12 +12,12 @@ import java.lang.annotation.*;
  * @since 2026骞?6鏈?9鏃?
  * @version 1.0
  */
-@Repeatable(AltLock.List.class)
+@Repeatable(Lock.List.class)
 @Target({ElementType.METHOD, ElementType.ANNOTATION_TYPE})
 @Retention(RetentionPolicy.RUNTIME)
 @Inherited
 @Documented
-public @interface AltLock {
+public @interface Lock {
     /**
      * 鏉′欢琛ㄨ揪寮忥紝褰撶粨鏋滀负 {@code true} 鎴?{@code 'true'} 鏃舵墠鎵ц閿佹搷浣?
      */
@@ -62,6 +62,6 @@ public @interface AltLock {
     @Inherited
     @Documented
     @interface List {
-        AltLock[] value();
+        Lock[] value();
     }
 }

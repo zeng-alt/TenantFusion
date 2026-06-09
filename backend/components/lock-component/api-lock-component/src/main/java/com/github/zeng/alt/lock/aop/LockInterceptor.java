@@ -1,7 +1,7 @@
 ﻿package com.github.zeng.alt.lock.aop;
 
 import com.github.zeng.alt.lock.MethodBasedExpressionEvaluator;
-import com.github.zeng.alt.lock.annotation.AltLock;
+import com.github.zeng.alt.lock.annotation.Lock;
 import com.github.zeng.alt.lock.api.LockTemplate;
 import com.github.zeng.alt.lock.model.LockFailureStrategy;
 import com.github.zeng.alt.lock.model.LockInfo;
@@ -26,7 +26,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 /**
- * {@link AltLock} 娉ㄨВ鐨勬柟娉曟嫤鎴櫒
+ * {@link Lock} 娉ㄨВ鐨勬柟娉曟嫤鎴櫒
  *
  * @author zengJiaJun
  * @since 2026骞?6鏈?9鏃?
@@ -90,31 +90,31 @@ public class LockInterceptor implements MethodInterceptor, InitializingBean, Bea
             return invocation.proceed();
         }
 
-        AltLock altLock = AnnotatedElementUtils.findMergedAnnotation(
-                invocation.getMethod(), AltLock.class);
-        if (altLock == null) {
+        Lock Lock = AnnotatedElementUtils.findMergedAnnotation(
+                invocation.getMethod(), Lock.class);
+        if (Lock == null) {
             return invocation.proceed();
         }
 
-        if (StringUtils.hasText(altLock.condition())) {
+        if (StringUtils.hasText(Lock.condition())) {
             String conditionResult = expressionEvaluator.getValue(
                     invocation.getMethod(), invocation.getArguments(),
-                    altLock.condition(), String.class);
+                    Lock.condition(), String.class);
             if (!"true".equalsIgnoreCase(conditionResult)) {
-                log.debug("Lock condition not met for key [{}], skip locking", altLock.name());
+                log.debug("Lock condition not met for key [{}], skip locking", Lock.name());
                 return invocation.proceed();
             }
         }
 
-        LockOperation lockOp = buildLockOperation(altLock);
+        LockOperation lockOp = buildLockOperation(Lock);
 
         String prefix = lockProperties.getLockKeyPrefix() + ":";
         Method method = invocation.getMethod();
-        prefix += StringUtils.hasText(altLock.name())
-                ? altLock.name()
+        prefix += StringUtils.hasText(Lock.name())
+                ? Lock.name()
                 : method.getDeclaringClass().getName() + "." + method.getName();
 
-        String keySuffix = lockOp.lockKeyBuilder.buildKey(invocation, altLock.keys());
+        String keySuffix = lockOp.lockKeyBuilder.buildKey(invocation, Lock.keys());
         String key = prefix + (StringUtils.hasText(keySuffix) ? "#" + keySuffix : "");
 
         if (log.isDebugEnabled()) {
@@ -122,16 +122,16 @@ public class LockInterceptor implements MethodInterceptor, InitializingBean, Bea
                     key, method.getDeclaringClass().getSimpleName(), method.getName());
         }
 
-        long expire = altLock.expire() > 0 ? altLock.expire() : lockProperties.getExpire();
+        long expire = Lock.expire() > 0 ? Lock.expire() : lockProperties.getExpire();
 
         // LockExecutor.class 为 sentinel 值，表示使用默认执行器
-        Class<? extends LockExecutor<?>> executorClass = altLock.executor();
+        Class<? extends LockExecutor<?>> executorClass = Lock.executor();
         if (executorClass == LockExecutor.class) {
             executorClass = null;
         }
 
-        long acquireTimeout = altLock.acquireTimeout() > 0
-                ? altLock.acquireTimeout() : lockProperties.getAcquireTimeout();
+        long acquireTimeout = Lock.acquireTimeout() > 0
+                ? Lock.acquireTimeout() : lockProperties.getAcquireTimeout();
 
         LockInfo lockInfo = lockTemplate.lock(key, expire, acquireTimeout, executorClass);
 
@@ -145,7 +145,7 @@ public class LockInterceptor implements MethodInterceptor, InitializingBean, Bea
             lockOp.lockFailureStrategy.onLockFailure(key, method, invocation.getArguments());
             return null;
         } finally {
-            if (lockInfo != null && altLock.autoRelease()) {
+            if (lockInfo != null && Lock.autoRelease()) {
                 boolean released = lockTemplate.releaseLock(lockInfo);
                 if (released) {
                     log.debug("Lock released successfully, key={}", key);
@@ -156,12 +156,12 @@ public class LockInterceptor implements MethodInterceptor, InitializingBean, Bea
         }
     }
 
-    private LockOperation buildLockOperation(AltLock altLock) {
+    private LockOperation buildLockOperation(Lock Lock) {
         LockKeyBuilder keyBuilder;
         LockFailureStrategy failureStrategy;
 
-        Class<? extends LockFailureStrategy> failStrategyClass = altLock.failStrategy();
-        Class<? extends LockKeyBuilder> keyBuilderClass = altLock.keyBuilderStrategy();
+        Class<? extends LockFailureStrategy> failStrategyClass = Lock.failStrategy();
+        Class<? extends LockKeyBuilder> keyBuilderClass = Lock.keyBuilderStrategy();
 
         if (keyBuilderClass == null || keyBuilderClass == LockKeyBuilder.class) {
             keyBuilder = defaultLockOperation.lockKeyBuilder;
