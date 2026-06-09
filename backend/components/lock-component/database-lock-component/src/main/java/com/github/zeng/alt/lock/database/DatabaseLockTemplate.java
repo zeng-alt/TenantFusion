@@ -184,7 +184,7 @@ public class DatabaseLockTemplate implements LockTemplate {
     // ========== Lock4j 兼容 API ==========
 
     @Override
-    public LockInfo lock(String key, long expire, long acquireTimeout, Class<? extends LockExecutor<?>> executor) {
+    public LockInfo lock(String key, long expire, long acquireTimeout, Class<? extends LockExecutor> executor) {
         String lockValue = LockUtils.simpleUUID();
         long expireAtMillis = expire > 0 ? System.currentTimeMillis() + expire : -1L;
 

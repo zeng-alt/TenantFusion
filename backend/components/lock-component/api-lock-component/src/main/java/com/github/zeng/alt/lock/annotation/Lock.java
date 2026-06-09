@@ -41,7 +41,7 @@ public @interface Lock {
     /**
      * 閿佹墽琛屽櫒
      */
-    Class<? extends LockExecutor<?>> executor() default LockExecutor.class;
+    Class<? extends LockExecutor> executor() default LockExecutor.class;
     /**
      * 鏂规硶鎵ц瀹屾垚鍚庢槸鍚﹁嚜鍔ㄩ噴鏀鹃攣
      */

@@ -96,12 +96,12 @@ public class LockInterceptor implements MethodInterceptor, InitializingBean, Bea
             return invocation.proceed();
         }
 
-        if (StringUtils.hasText(Lock.condition())) {
+        if (StringUtils.hasText(lock.condition())) {
             String conditionResult = expressionEvaluator.getValue(
                     invocation.getMethod(), invocation.getArguments(),
-                    Lock.condition(), String.class);
+                    lock.condition(), String.class);
             if (!"true".equalsIgnoreCase(conditionResult)) {
-                log.debug("Lock condition not met for key [{}], skip locking", Lock.name());
+                log.debug("Lock condition not met for key [{}], skip locking", lock.name());
                 return invocation.proceed();
             }
         }
@@ -110,11 +110,11 @@ public class LockInterceptor implements MethodInterceptor, InitializingBean, Bea
 
         String prefix = lockProperties.getLockKeyPrefix() + ":";
         Method method = invocation.getMethod();
-        prefix += StringUtils.hasText(Lock.name())
-                ? Lock.name()
+        prefix += StringUtils.hasText(lock.name())
+                ? lock.name()
                 : method.getDeclaringClass().getName() + "." + method.getName();
 
-        String keySuffix = lockOp.lockKeyBuilder.buildKey(invocation, Lock.keys());
+        String keySuffix = lockOp.lockKeyBuilder.buildKey(invocation, lock.keys());
         String key = prefix + (StringUtils.hasText(keySuffix) ? "#" + keySuffix : "");
 
         if (log.isDebugEnabled()) {
@@ -122,16 +122,16 @@ public class LockInterceptor implements MethodInterceptor, InitializingBean, Bea
                     key, method.getDeclaringClass().getSimpleName(), method.getName());
         }
 
-        long expire = Lock.expire() > 0 ? Lock.expire() : lockProperties.getExpire();
+        long expire = lock.expire() > 0 ? lock.expire() : lockProperties.getExpire();
 
         // LockExecutor.class 为 sentinel 值，表示使用默认执行器
-        Class<? extends LockExecutor<?>> executorClass = Lock.executor();
+        Class<? extends LockExecutor> executorClass = lock.executor();
         if (executorClass == LockExecutor.class) {
             executorClass = null;
         }
 
-        long acquireTimeout = Lock.acquireTimeout() > 0
-                ? Lock.acquireTimeout() : lockProperties.getAcquireTimeout();
+        long acquireTimeout = lock.acquireTimeout() > 0
+                ? lock.acquireTimeout() : lockProperties.getAcquireTimeout();
 
         LockInfo lockInfo = lockTemplate.lock(key, expire, acquireTimeout, executorClass);
 
@@ -145,7 +145,7 @@ public class LockInterceptor implements MethodInterceptor, InitializingBean, Bea
             lockOp.lockFailureStrategy.onLockFailure(key, method, invocation.getArguments());
             return null;
         } finally {
-            if (lockInfo != null && Lock.autoRelease()) {
+            if (lockInfo != null && lock.autoRelease()) {
                 boolean released = lockTemplate.releaseLock(lockInfo);
                 if (released) {
                     log.debug("Lock released successfully, key={}", key);
@@ -160,8 +160,8 @@ public class LockInterceptor implements MethodInterceptor, InitializingBean, Bea
         LockKeyBuilder keyBuilder;
         LockFailureStrategy failureStrategy;
 
-        Class<? extends LockFailureStrategy> failStrategyClass = Lock.failStrategy();
-        Class<? extends LockKeyBuilder> keyBuilderClass = Lock.keyBuilderStrategy();
+        Class<? extends LockFailureStrategy> failStrategyClass = lock.failStrategy();
+        Class<? extends LockKeyBuilder> keyBuilderClass = lock.keyBuilderStrategy();
 
         if (keyBuilderClass == null || keyBuilderClass == LockKeyBuilder.class) {
             keyBuilder = defaultLockOperation.lockKeyBuilder;

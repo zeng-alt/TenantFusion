@@ -72,7 +72,7 @@ public class NoOpLockTemplate implements LockTemplate {
     }
 
     @Override
-    public LockInfo lock(String key, long expire, long acquireTimeout, Class<? extends LockExecutor<?>> executor) {
+    public LockInfo lock(String key, long expire, long acquireTimeout, Class<? extends LockExecutor> executor) {
         return new LockInfo(key, "noop", expire, acquireTimeout, 1, null, null);
     }
 

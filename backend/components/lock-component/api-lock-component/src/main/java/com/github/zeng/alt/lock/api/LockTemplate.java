@@ -66,7 +66,7 @@ public interface LockTemplate {
      * @param executor       锁执行器类型
      * @return 锁信息，失败返回 null
      */
-    LockInfo lock(String key, long expire, long acquireTimeout, Class<? extends LockExecutor<?>> executor);
+    LockInfo lock(String key, long expire, long acquireTimeout, Class<? extends LockExecutor> executor);
 
     /**
      * 释放锁

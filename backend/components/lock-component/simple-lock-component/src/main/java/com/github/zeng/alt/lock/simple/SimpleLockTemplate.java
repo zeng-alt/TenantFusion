@@ -143,7 +143,7 @@ public class SimpleLockTemplate implements LockTemplate {
     // ========== Lock4j 兼容 API ==========
 
     @Override
-    public LockInfo lock(String key, long expire, long acquireTimeout, Class<? extends LockExecutor<?>> executor) {
+    public LockInfo lock(String key, long expire, long acquireTimeout, Class<? extends LockExecutor> executor) {
         ReentrantLock lock = getLockInternal(key);
         String lockValue = LockUtils.simpleUUID();
         try {
