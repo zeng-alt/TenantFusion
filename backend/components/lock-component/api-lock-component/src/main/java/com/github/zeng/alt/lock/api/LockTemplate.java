@@ -1,4 +1,7 @@
-package com.github.zeng.alt.lock.api;
+﻿package com.github.zeng.alt.lock.api;
+
+import com.github.zeng.alt.lock.executor.LockExecutor;
+import com.github.zeng.alt.lock.model.LockInfo;
 
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
@@ -14,105 +17,62 @@ public interface LockTemplate {
 
     // ========== 函数式执行 ==========
 
-    /**
-     * 获取锁后执行，自动释放锁（默认一直等待）
-     *
-     * @param lockName 锁名称
-     * @param supplier 执行逻辑
-     * @param <T>      返回值类型
-     * @return 执行结果
-     */
     <T> T execute(String lockName, Supplier<T> supplier);
 
-    /**
-     * 获取锁后执行，自动释放锁（默认一直等待）
-     *
-     * @param lockName 锁名称
-     * @param runnable 执行逻辑
-     */
     void execute(String lockName, Runnable runnable);
 
-    /**
-     * 尝试获取锁后执行，自动释放锁
-     *
-     * @param lockName  锁名称
-     * @param waitTime  最大等待时间
-     * @param leaseTime 锁持有时间
-     * @param unit      时间单位
-     * @param supplier  执行逻辑
-     * @param <T>       返回值类型
-     * @return 执行结果（获取锁失败返回 null）
-     */
     <T> T execute(String lockName, long waitTime, long leaseTime, TimeUnit unit, Supplier<T> supplier);
 
-    /**
-     * 尝试获取锁后执行，自动释放锁
-     *
-     * @param lockName  锁名称
-     * @param waitTime  最大等待时间
-     * @param leaseTime 锁持有时间
-     * @param unit      时间单位
-     * @param runnable  执行逻辑
-     */
     void execute(String lockName, long waitTime, long leaseTime, TimeUnit unit, Runnable runnable);
 
     // ========== 锁管理 ==========
 
-    /**
-     * 获取可重入锁
-     *
-     * @param lockName 锁名称
-     * @return DistributedLock
-     */
     DistributedLock getLock(String lockName);
 
-    /**
-     * 获取公平锁
-     *
-     * @param lockName 锁名称
-     * @return DistributedLock
-     */
     DistributedLock getFairLock(String lockName);
 
     // ========== 直接操作 ==========
 
-    /**
-     * 尝试获取锁
-     *
-     * @param lockName 锁名称
-     * @return true 获取成功
-     */
     boolean tryLock(String lockName);
 
-    /**
-     * 尝试获取锁
-     *
-     * @param lockName 锁名称
-     * @param waitTime 最大等待时间
-     * @param unit     时间单位
-     * @return true 获取成功
-     */
     boolean tryLock(String lockName, long waitTime, TimeUnit unit);
 
-    /**
-     * 阻塞直到获取锁
-     *
-     * @param lockName 锁名称
-     */
     void lock(String lockName);
+
+    void unlock(String lockName);
+
+    boolean isLocked(String lockName);
+
+    // ========== Lock4j 兼容 API ==========
+
+    /**
+     * 获取锁，默认使用主执行器
+     *
+     * @param key            锁 key
+     * @param expire         锁过期时间（毫秒）
+     * @param acquireTimeout 获取锁超时时间（毫秒）
+     * @return 锁信息，失败返回 null
+     */
+    default LockInfo lock(String key, long expire, long acquireTimeout) {
+        return lock(key, expire, acquireTimeout, LockExecutor.class);
+    }
+
+    /**
+     * 获取锁，指定执行器
+     *
+     * @param key            锁 key
+     * @param expire         锁过期时间（毫秒）
+     * @param acquireTimeout 获取锁超时时间（毫秒）
+     * @param executor       锁执行器类型
+     * @return 锁信息，失败返回 null
+     */
+    LockInfo lock(String key, long expire, long acquireTimeout, Class<? extends LockExecutor<?>> executor);
 
     /**
      * 释放锁
      *
-     * @param lockName 锁名称
+     * @param lockInfo 锁信息
+     * @return true 释放成功
      */
-    void unlock(String lockName);
-
-    /**
-     * 锁是否被持有
-     *
-     * @param lockName 锁名称
-     * @return true 已锁定
-     */
-    boolean isLocked(String lockName);
+    boolean releaseLock(LockInfo lockInfo);
 }

@@ -1,7 +1,10 @@
-package com.github.zeng.alt.lock.simple;
+﻿package com.github.zeng.alt.lock.simple;
 
 import com.github.zeng.alt.lock.api.DistributedLock;
 import com.github.zeng.alt.lock.api.LockTemplate;
+import com.github.zeng.alt.lock.executor.LockExecutor;
+import com.github.zeng.alt.lock.model.LockInfo;
+import com.github.zeng.alt.lock.model.LockUtils;
 
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -21,13 +24,13 @@ import java.util.function.Supplier;
 public class SimpleLockTemplate implements LockTemplate {
 
     private final ConcurrentMap<String, ReentrantLock> lockMap = new ConcurrentHashMap<>();
+    private final ConcurrentMap<String, LockExecutor<?>> executorMap = new ConcurrentHashMap<>();
 
-    /**
-     * 根据锁名称获取或创建对应的 ReentrantLock
-     */
     private ReentrantLock getLockInternal(String lockName) {
         return lockMap.computeIfAbsent(lockName, k -> new ReentrantLock());
     }
+
+    // ========== 函数式执行 ==========
 
     @Override
     public <T> T execute(String lockName, Supplier<T> supplier) {
@@ -89,6 +92,8 @@ public class SimpleLockTemplate implements LockTemplate {
         }
     }
 
+    // ========== 锁管理 ==========
+
     @Override
     public DistributedLock getLock(String lockName) {
         return new SimpleDistributedLock(lockName);
@@ -96,9 +101,10 @@ public class SimpleLockTemplate implements LockTemplate {
 
     @Override
     public DistributedLock getFairLock(String lockName) {
-        // Simple 实现不支持公平锁，返回普通锁
         return new SimpleDistributedLock(lockName);
     }
+
+    // ========== 直接操作 ==========
 
     @Override
     public boolean tryLock(String lockName) {
@@ -132,5 +138,41 @@ public class SimpleLockTemplate implements LockTemplate {
     public boolean isLocked(String lockName) {
         ReentrantLock lock = lockMap.get(lockName);
         return lock != null && lock.isLocked();
+    }
+
+    // ========== Lock4j 兼容 API ==========
+
+    @Override
+    public LockInfo lock(String key, long expire, long acquireTimeout, Class<? extends LockExecutor<?>> executor) {
+        ReentrantLock lock = getLockInternal(key);
+        String lockValue = LockUtils.simpleUUID();
+        try {
+            boolean acquired;
+            if (acquireTimeout > 0) {
+                acquired = lock.tryLock(acquireTimeout, TimeUnit.MILLISECONDS);
+            } else {
+                lock.lock();
+                acquired = true;
+            }
+            if (acquired) {
+                return new LockInfo(key, lockValue, expire, acquireTimeout, 1, lock, null);
+            }
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+        return null;
+    }
+
+    @Override
+    public boolean releaseLock(LockInfo lockInfo) {
+        if (lockInfo == null) {
+            return false;
+        }
+        ReentrantLock lock = lockMap.get(lockInfo.getLockKey());
+        if (lock != null && lock.isHeldByCurrentThread()) {
+            lock.unlock();
+            return true;
+        }
+        return false;
     }
 }

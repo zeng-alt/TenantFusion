@@ -1,6 +1,9 @@
 package com.github.zeng.alt.lock.api;
 
 import java.util.concurrent.TimeUnit;
+import com.github.zeng.alt.lock.executor.LockExecutor;
+import com.github.zeng.alt.lock.model.LockInfo;
+
 import java.util.function.Supplier;
 
 /**
@@ -66,5 +69,16 @@ public class NoOpLockTemplate implements LockTemplate {
     @Override
     public boolean isLocked(String lockName) {
         return false;
+    }
+}
+
+    @Override
+    public LockInfo lock(String key, long expire, long acquireTimeout, Class<? extends LockExecutor<?>> executor) {
+        return new LockInfo(key, "noop", expire, acquireTimeout, 1, null, null);
+    }
+
+    @Override
+    public boolean releaseLock(LockInfo lockInfo) {
+        return true;
     }
 }

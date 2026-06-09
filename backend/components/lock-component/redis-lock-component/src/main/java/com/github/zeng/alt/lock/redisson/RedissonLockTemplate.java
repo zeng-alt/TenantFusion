@@ -1,7 +1,10 @@
-package com.github.zeng.alt.lock.redisson;
+﻿package com.github.zeng.alt.lock.redisson;
 
 import com.github.zeng.alt.lock.api.DistributedLock;
 import com.github.zeng.alt.lock.api.LockTemplate;
+import com.github.zeng.alt.lock.executor.LockExecutor;
+import com.github.zeng.alt.lock.model.LockInfo;
+import com.github.zeng.alt.lock.model.LockUtils;
 import org.redisson.api.RLock;
 import org.redisson.api.RedissonClient;
 
@@ -23,6 +26,8 @@ public class RedissonLockTemplate implements LockTemplate {
     public RedissonLockTemplate(RedissonClient redissonClient) {
         this.redissonClient = redissonClient;
     }
+
+    // ========== 函数式执行 ==========
 
     @Override
     public <T> T execute(String lockName, Supplier<T> supplier) {
@@ -84,6 +89,8 @@ public class RedissonLockTemplate implements LockTemplate {
         }
     }
 
+    // ========== 锁管理 ==========
+
     @Override
     public DistributedLock getLock(String lockName) {
         return new RedissonDistributedLock(redissonClient.getLock(lockName));
@@ -93,6 +100,8 @@ public class RedissonLockTemplate implements LockTemplate {
     public DistributedLock getFairLock(String lockName) {
         return new RedissonDistributedLock(redissonClient.getFairLock(lockName));
     }
+
+    // ========== 直接操作 ==========
 
     @Override
     public boolean tryLock(String lockName) {
@@ -125,5 +134,45 @@ public class RedissonLockTemplate implements LockTemplate {
     @Override
     public boolean isLocked(String lockName) {
         return redissonClient.getLock(lockName).isLocked();
+    }
+
+    // ========== Lock4j 兼容 API ==========
+
+    @Override
+    public LockInfo lock(String key, long expire, long acquireTimeout, Class<? extends LockExecutor<?>> executor) {
+        RLock lock = redissonClient.getLock(key);
+        String lockValue = LockUtils.simpleUUID();
+        try {
+            boolean acquired;
+            if (acquireTimeout > 0) {
+                if (expire > 0) {
+                    acquired = lock.tryLock(acquireTimeout, expire, TimeUnit.MILLISECONDS);
+                } else {
+                    acquired = lock.tryLock(acquireTimeout, TimeUnit.MILLISECONDS);
+                }
+            } else {
+                lock.lock();
+                acquired = true;
+            }
+            if (acquired) {
+                return new LockInfo(key, lockValue, expire, acquireTimeout, 1, lock, null);
+            }
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+        return null;
+    }
+
+    @Override
+    public boolean releaseLock(LockInfo lockInfo) {
+        if (lockInfo == null) {
+            return false;
+        }
+        RLock lock = redissonClient.getLock(lockInfo.getLockKey());
+        if (lock.isHeldByCurrentThread()) {
+            lock.unlock();
+            return true;
+        }
+        return false;
     }
 }

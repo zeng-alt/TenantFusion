@@ -1,7 +1,10 @@
-package com.github.zeng.alt.lock.database;
+﻿package com.github.zeng.alt.lock.database;
 
 import com.github.zeng.alt.lock.api.DistributedLock;
 import com.github.zeng.alt.lock.api.LockTemplate;
+import com.github.zeng.alt.lock.executor.LockExecutor;
+import com.github.zeng.alt.lock.model.LockInfo;
+import com.github.zeng.alt.lock.model.LockUtils;
 import org.springframework.jdbc.core.simple.JdbcClient;
 
 import java.time.LocalDateTime;
@@ -15,23 +18,6 @@ import java.util.function.Supplier;
 /**
  * 数据库分布式锁模板实现
  * 基于 JdbcClient 和 sys_distributed_lock 表实现跨进程分布式锁
- *
- * <h3>锁获取策略</h3>
- * <ol>
- *   <li>尝试 INSERT 新记录（持有锁）</li>
- *   <li>如果主键冲突（锁已存在），检查是否已过期</li>
- *   <li>如果已过期，尝试 UPDATE 抢占锁</li>
- * </ol>
- *
- * <h3>表结构</h3>
- * <pre>{@code
- * CREATE TABLE sys_distributed_lock (
- *     lock_name   VARCHAR(255) PRIMARY KEY,
- *     instance_id VARCHAR(255) NOT NULL,
- *     locked_at   TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
- *     expire_at   TIMESTAMP NULL
- * );
- * }</pre>
  *
  * @author zengJiaJun
  * @since 2026年06月04日
@@ -49,20 +35,11 @@ public class DatabaseLockTemplate implements LockTemplate {
         this.lockHolders = new ConcurrentHashMap<>();
     }
 
-
-    /**
-     * 尝试获取锁
-     *
-     * @param lockName       锁名称
-     * @param expireAtMillis 过期时间戳（毫秒），-1 表示不过期
-     * @return true 获取成功
-     */
     boolean acquireLock(String lockName, long expireAtMillis) {
         LocalDateTime expireAt = expireAtMillis > 0
                 ? LocalDateTime.ofInstant(java.time.Instant.ofEpochMilli(expireAtMillis), ZoneId.systemDefault())
                 : null;
 
-        // 1. 尝试插入新记录
         int inserted = jdbcClient.sql("""
                 INSERT INTO sys_distributed_lock (lock_name, instance_id, locked_at, expire_at)
                 VALUES (?, ?, CURRENT_TIMESTAMP, ?)
@@ -75,7 +52,6 @@ public class DatabaseLockTemplate implements LockTemplate {
             return true;
         }
 
-        // 2. 插入失败，检查是否已过期，尝试抢占
         int updated = jdbcClient.sql("""
                 UPDATE sys_distributed_lock
                 SET instance_id = ?, locked_at = CURRENT_TIMESTAMP, expire_at = ?
@@ -92,9 +68,6 @@ public class DatabaseLockTemplate implements LockTemplate {
         return false;
     }
 
-    /**
-     * 释放锁（仅当持有者匹配时）
-     */
     void releaseLock(String lockName) {
         jdbcClient.sql("DELETE FROM sys_distributed_lock WHERE lock_name = ? AND instance_id = ?")
                 .params(lockName, instanceId)
@@ -102,28 +75,11 @@ public class DatabaseLockTemplate implements LockTemplate {
         lockHolders.remove(lockName);
     }
 
-    /**
-     * 当前线程是否持有该锁
-     */
     boolean isHeldByCurrentThread(String lockName) {
         return Thread.currentThread().equals(lockHolders.get(lockName));
     }
 
-    /**
-     * 锁是否被任何实例持有
-     */
-    public boolean isLocked(String lockName) {
-        Integer count = jdbcClient.sql("""
-                SELECT COUNT(*) FROM sys_distributed_lock
-                WHERE lock_name = ? AND (expire_at IS NULL OR expire_at > CURRENT_TIMESTAMP)
-                """)
-                .param(lockName)
-                .query(Integer.class)
-                .single();
-        return count != null && count > 0;
-    }
-
-    // ========== LockTemplate 实现 ==========
+    // ========== 函数式执行 ==========
 
     @Override
     public <T> T execute(String lockName, Supplier<T> supplier) {
@@ -172,6 +128,8 @@ public class DatabaseLockTemplate implements LockTemplate {
         }
     }
 
+    // ========== 锁管理 ==========
+
     @Override
     public DistributedLock getLock(String lockName) {
         return new DatabaseDistributedLock(this, lockName);
@@ -179,9 +137,10 @@ public class DatabaseLockTemplate implements LockTemplate {
 
     @Override
     public DistributedLock getFairLock(String lockName) {
-        // 数据库锁天然不支持公平语义，返回普通锁
         return getLock(lockName);
     }
+
+    // ========== 直接操作 ==========
 
     @Override
     public boolean tryLock(String lockName) {
@@ -209,6 +168,46 @@ public class DatabaseLockTemplate implements LockTemplate {
     @Override
     public void unlock(String lockName) {
         releaseLock(lockName);
+    }
+
+    @Override
+    public boolean isLocked(String lockName) {
+        Integer count = jdbcClient.sql("""
+                SELECT COUNT(*) FROM sys_distributed_lock
+                WHERE lock_name = ? AND (expire_at IS NULL OR expire_at > CURRENT_TIMESTAMP)
+                """)
+                .param(lockName)
+                .query(Integer.class)
+                .single();
+        return count != null && count > 0;
+    }
+    // ========== Lock4j 兼容 API ==========
+
+    @Override
+    public LockInfo lock(String key, long expire, long acquireTimeout, Class<? extends LockExecutor<?>> executor) {
+        String lockValue = LockUtils.simpleUUID();
+        long expireAtMillis = expire > 0 ? System.currentTimeMillis() + expire : -1L;
+
+        long deadline = System.currentTimeMillis() + acquireTimeout;
+        int acquireCount = 0;
+        do {
+            acquireCount++;
+            if (acquireLock(key, expireAtMillis)) {
+                return new LockInfo(key, lockValue, expire, acquireTimeout, acquireCount, null, null);
+            }
+            sleepQuietly(50);
+        } while (System.currentTimeMillis() < deadline);
+
+        return null;
+    }
+
+    @Override
+    public boolean releaseLock(LockInfo lockInfo) {
+        if (lockInfo == null) {
+            return false;
+        }
+        releaseLock(lockInfo.getLockKey());
+        return true;
     }
 
     private static void sleepQuietly(long millis) {
