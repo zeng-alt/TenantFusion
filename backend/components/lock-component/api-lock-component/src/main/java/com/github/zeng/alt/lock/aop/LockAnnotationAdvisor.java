@@ -17,15 +17,14 @@ import org.springframework.util.Assert;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
-import java.lang.reflect.Proxy;
-
 /**
- * {@link Lock} 娉ㄨВ鐨?AOP 閫氱煡鍣?
+ * {@link Lock} 注解的 AOP 通知器
  *
  * @author zengJiaJun
- * @since 2026骞?6鏈?9鏃?
+ * @since 2026年06月09日
  * @version 1.0
  */
+
 public class LockAnnotationAdvisor extends AbstractPointcutAdvisor implements BeanFactoryAware {
 
     private final Advice advice;
@@ -55,9 +54,6 @@ public class LockAnnotationAdvisor extends AbstractPointcutAdvisor implements Be
         }
     }
 
-    /**
-     * 鍩轰簬娉ㄨВ鐨勬柟娉曠骇 Pointcut
-     */
     private static class AnnotationMethodPoint implements Pointcut {
 
         private final Class<? extends Annotation> annotationType;
@@ -101,4 +97,5 @@ public class LockAnnotationAdvisor extends AbstractPointcutAdvisor implements Be
             }
         }
     }
+
 }

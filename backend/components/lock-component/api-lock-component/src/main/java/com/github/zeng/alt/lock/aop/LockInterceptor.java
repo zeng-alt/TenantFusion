@@ -26,10 +26,10 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 /**
- * {@link Lock} 娉ㄨВ鐨勬柟娉曟嫤鎴櫒
+ * {@link Lock} 注解的方法拦截器
  *
  * @author zengJiaJun
- * @since 2026骞?6鏈?9鏃?
+ * @since 2026年06月09日
  * @version 1.0
  */
 public class LockInterceptor implements MethodInterceptor, InitializingBean, BeanFactoryAware {

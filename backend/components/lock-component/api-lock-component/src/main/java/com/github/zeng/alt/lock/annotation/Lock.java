@@ -1,15 +1,12 @@
 ﻿package com.github.zeng.alt.lock.annotation;
-import com.github.zeng.alt.lock.executor.LockExecutor;
 import com.github.zeng.alt.lock.model.DefaultLockFailureStrategy;
-import com.github.zeng.alt.lock.model.DefaultLockKeyBuilder;
-import com.github.zeng.alt.lock.model.LockFailureStrategy;
 import com.github.zeng.alt.lock.model.LockKeyBuilder;
 import java.lang.annotation.*;
 /**
- * 鍒嗗竷寮忛攣娉ㄨВ锛屾敮鎸?SpEL 琛ㄨ揪寮忚В鏋?key
- *
+ * 分布式锁注解，支持 SpEL 表达式解析 key
+
  * @author zengJiaJun
- * @since 2026骞?6鏈?9鏃?
+ * @since 2026年06月09日
  * @version 1.0
  */
 @Repeatable(Lock.List.class)
