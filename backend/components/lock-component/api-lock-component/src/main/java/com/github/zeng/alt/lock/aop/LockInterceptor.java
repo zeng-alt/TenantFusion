@@ -24,6 +24,46 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
+/**
+ * {@link AltLock} 注解的方法拦截器
+ *
+ * @author zengJiaJun
+ * @since 2026年06月09日
+ * @version 1.0
+ */
+public class LockInterceptor implements MethodInterceptor, InitializingBean, BeanFactoryAware {
+
+    private static final Logger log = LoggerFactory.getLogger(LockInterceptor.class);
+
+    private final Map<Class<? extends LockKeyBuilder>, LockKeyBuilder> keyBuilderMap = new ConcurrentHashMap<>();
+    private final Map<Class<? extends LockFailureStrategy>, LockFailureStrategy> failureStrategyMap = new ConcurrentHashMap<>();
+
+    private final LockTemplate lockTemplate;
+    private final Collection<LockKeyBuilder> keyBuilders;
+    private final Collection<LockFailureStrategy> failureStrategies;
+    private final LockProperties lockProperties;
+    private final MethodBasedExpressionEvaluator expressionEvaluator;
+
+    private LockOperation defaultLockOperation;
+    private BeanFactory beanFactory;
+
+    public LockInterceptor(
+            LockTemplate lockTemplate,
+            Collection<LockKeyBuilder> keyBuilders,
+            Collection<LockFailureStrategy> failureStrategies,
+            LockProperties lockProperties,
+            MethodBasedExpressionEvaluator expressionEvaluator) {
+        this.lockTemplate = lockTemplate;
+        this.keyBuilders = keyBuilders;
+        this.failureStrategies = failureStrategies;
+        this.lockProperties = lockProperties;
+        this.expressionEvaluator = expressionEvaluator;
+    }
+
+    @Override
+    public void setBeanFactory(BeanFactory beanFactory) {
+        this.beanFactory = beanFactory;
+    }
 
     @Override
     public void afterPropertiesSet() {
@@ -104,6 +144,9 @@ import java.util.concurrent.ConcurrentHashMap;
                 } else {
                     log.error("Lock release failed, key={}, value={}", key, lockInfo.getLockValue());
                 }
+            }
+        }
+    }
 
     private LockOperation buildLockOperation(AltLock altLock) {
         LockKeyBuilder keyBuilder;

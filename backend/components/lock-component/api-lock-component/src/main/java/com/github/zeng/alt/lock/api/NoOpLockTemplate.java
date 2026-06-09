@@ -1,4 +1,4 @@
-package com.github.zeng.alt.lock.api;
+﻿package com.github.zeng.alt.lock.api;
 
 import java.util.concurrent.TimeUnit;
 import com.github.zeng.alt.lock.executor.LockExecutor;
@@ -7,11 +7,11 @@ import com.github.zeng.alt.lock.model.LockInfo;
 import java.util.function.Supplier;
 
 /**
- * 锁模板空实现，所有操作不执行任何实际锁定逻辑
- * 当未配置任何锁实现时作为默认 fallback
+ * 閿佹ā鏉跨┖瀹炵幇锛屾墍鏈夋搷浣滀笉鎵ц浠讳綍瀹為檯閿佸畾閫昏緫
+ * 褰撴湭閰嶇疆浠讳綍閿佸疄鐜版椂浣滀负榛樿 fallback
  *
  * @author zengJiaJun
- * @since 2026年06月04日
+ * @since 2026骞?6鏈?4鏃?
  * @version 1.0
  */
 public class NoOpLockTemplate implements LockTemplate {
@@ -70,7 +70,6 @@ public class NoOpLockTemplate implements LockTemplate {
     public boolean isLocked(String lockName) {
         return false;
     }
-}
 
     @Override
     public LockInfo lock(String key, long expire, long acquireTimeout, Class<? extends LockExecutor<?>> executor) {
