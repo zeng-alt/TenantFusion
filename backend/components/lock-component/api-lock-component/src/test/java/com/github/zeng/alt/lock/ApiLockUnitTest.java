@@ -7,7 +7,7 @@ import com.github.zeng.alt.lock.exception.LockException;
 import com.github.zeng.alt.lock.exception.LockFailureException;
 import com.github.zeng.alt.lock.executor.AbstractLockExecutor;
 import com.github.zeng.alt.lock.model.LockInfo;
-import com.github.zeng.alt.lock.model.LockProperties;
+import com.github.zeng.alt.lock.config.LockProperties;
 import com.github.zeng.alt.lock.model.LockUtils;
 import org.junit.jupiter.api.Test;
 

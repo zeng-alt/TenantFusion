@@ -5,11 +5,15 @@ import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.context.MessageSourceAutoConfiguration;
 import org.springframework.context.MessageSource;
+import org.springframework.context.MessageSourceResolvable;
+import org.springframework.context.NoSuchMessageException;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.support.MessageSourceAccessor;
 import org.springframework.context.support.ResourceBundleMessageSource;
 import org.springframework.validation.beanvalidation.LocalValidatorFactoryBean;
+
+import java.util.Locale;
 
 /**
  * @author zengJiaJun
@@ -32,10 +36,46 @@ public class LocaleConfiguration {
     }
 
     @Bean
-    public MessageSourceAccessor messageSourceAccessor(MessageSource messageSource, ObjectProvider<MessageBaseNameProvider> messageBaseNameProviders) {
-        if (messageSource instanceof ResourceBundleMessageSource resourceBundleMessageSource) {
-            messageBaseNameProviders.orderedStream().forEach(m -> resourceBundleMessageSource.addBasenames(m.getMessageBaseName()));
+    public MessageSourceAccessor messageSourceAccessor(
+            MessageSource messageSource,
+            ObjectProvider<MessageBaseNameProvider> messageBaseNameProviders) {
+        ResourceBundleMessageSource resourceBundle;
+        if (messageSource instanceof ResourceBundleMessageSource r) {
+            resourceBundle = r;
+        } else {
+            resourceBundle = null;
         }
-        return new MessageSourceAccessor(messageSource);
+
+        MessageSourceAccessor accessor = null;
+
+        if (resourceBundle != null) {
+            // 延迟执行
+            MessageSourceAccessor finalAccessor = accessor;
+            accessor = new MessageSourceAccessor(new MessageSource() {
+                @Override
+                public String getMessage(String code, Object[] args, String defaultMessage, Locale locale) {
+                    resourceBundle.addBasenames(
+                            messageBaseNameProviders.orderedStream()
+                                    .map(MessageBaseNameProvider::getMessageBaseName)
+                                    .toArray(String[]::new)
+                    );
+                    return finalAccessor.getMessage(code, args, defaultMessage, locale);
+                }
+
+                @Override
+                public String getMessage(String code, Object[] args, Locale locale) throws NoSuchMessageException {
+                    return finalAccessor.getMessage(code, args, locale);
+                }
+
+                @Override
+                public String getMessage(MessageSourceResolvable resolvable, Locale locale) throws NoSuchMessageException {
+                    return finalAccessor.getMessage(resolvable, locale);
+                }
+            });
+        } else {
+            accessor = new MessageSourceAccessor(messageSource);
+        }
+
+        return accessor;
     }
 }

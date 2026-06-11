@@ -1,6 +1,8 @@
-package com.github.zeng.alt.lock.model;
+package com.github.zeng.alt.lock.config;
 
 import com.github.zeng.alt.lock.executor.LockExecutor;
+import com.github.zeng.alt.lock.model.LockFailureStrategy;
+import com.github.zeng.alt.lock.model.LockKeyBuilder;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 /**
@@ -31,7 +33,7 @@ public class LockProperties {
     /**
      * 锁 key 前缀
      */
-    private String lockKeyPrefix = "alt:lock";
+    private String lockKeyPrefix = "lock";
 
     /**
      * 主执行器类型

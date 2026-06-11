@@ -7,6 +7,7 @@ import com.github.zeng.alt.lock.api.DistributedLock;
 import com.github.zeng.alt.lock.api.LockTemplate;
 import com.github.zeng.alt.lock.api.NoOpDistributedLock;
 import com.github.zeng.alt.lock.api.NoOpLockTemplate;
+import com.github.zeng.alt.lock.config.LockProperties;
 import com.github.zeng.alt.lock.exception.LockException;
 import com.github.zeng.alt.lock.exception.LockFailureException;
 import com.github.zeng.alt.lock.executor.AbstractLockExecutor;
@@ -23,7 +24,9 @@ import org.springframework.aot.hint.RuntimeHintsRegistrar;
  * required to work correctly in a native image.
  *
  * @author zengJiaJun
- * @since 2026骞?6鏈?1鏃? * @version 1.0
+ * @since 2026-06-11
+ * @version 1.0
+ *
  */
 public class LockRuntimeHints implements RuntimeHintsRegistrar {
 

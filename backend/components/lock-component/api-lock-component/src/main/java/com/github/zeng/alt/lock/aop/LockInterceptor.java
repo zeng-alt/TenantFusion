@@ -6,7 +6,7 @@ import com.github.zeng.alt.lock.api.LockTemplate;
 import com.github.zeng.alt.lock.model.LockFailureStrategy;
 import com.github.zeng.alt.lock.model.LockInfo;
 import com.github.zeng.alt.lock.model.LockKeyBuilder;
-import com.github.zeng.alt.lock.model.LockProperties;
+import com.github.zeng.alt.lock.config.LockProperties;
 import com.github.zeng.alt.lock.executor.LockExecutor;
 import org.aopalliance.intercept.MethodInterceptor;
 import org.aopalliance.intercept.MethodInvocation;

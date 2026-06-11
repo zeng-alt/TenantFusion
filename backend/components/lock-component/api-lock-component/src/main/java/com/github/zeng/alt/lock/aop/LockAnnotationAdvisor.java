@@ -83,14 +83,24 @@ public class LockAnnotationAdvisor extends AbstractPointcutAdvisor implements Be
 
             @Override
             public boolean matches(Method method, Class<?> targetClass) {
+
                 if (matchesMethod(method)) {
                     return true;
                 }
-                if (Proxy.isProxyClass(targetClass)) {
+
+                if (targetClass == null) {
                     return false;
                 }
-                Method specificMethod = AopUtils.getMostSpecificMethod(method, targetClass);
-                return specificMethod != method && matchesMethod(specificMethod);
+
+                try {
+                    Method specificMethod =
+                            AopUtils.getMostSpecificMethod(method, targetClass);
+
+                    return specificMethod != method
+                            && matchesMethod(specificMethod);
+                } catch (Throwable ex) {
+                    return false;
+                }
             }
 
             private boolean matchesMethod(Method method) {

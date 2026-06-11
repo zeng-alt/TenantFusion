@@ -11,7 +11,6 @@ import com.github.zeng.alt.lock.model.DefaultLockFailureStrategy;
 import com.github.zeng.alt.lock.model.DefaultLockKeyBuilder;
 import com.github.zeng.alt.lock.model.LockFailureStrategy;
 import com.github.zeng.alt.lock.model.LockKeyBuilder;
-import com.github.zeng.alt.lock.model.LockProperties;
 import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
