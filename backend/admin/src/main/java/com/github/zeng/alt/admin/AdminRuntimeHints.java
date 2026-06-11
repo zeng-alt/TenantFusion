@@ -19,8 +19,7 @@ import org.springframework.aot.hint.RuntimeHintsRegistrar;
  * for the entire application to work correctly in a native image.
  *
  * @author zengJiaJun
- * @since 2026年06月11日
- * @version 1.0
+ * @since 2026骞?6鏈?1鏃? * @version 1.0
  */
 public class AdminRuntimeHints implements RuntimeHintsRegistrar {
 
@@ -80,7 +79,7 @@ public class AdminRuntimeHints implements RuntimeHintsRegistrar {
         for (Class<?> clazz : classes) {
             hints.reflection().registerType(clazz,
                     MemberCategory.INTROSPECT_DECLARED_METHODS,
-                    MemberCategory.INTROSPECT_DECLARED_FIELDS,
+                    MemberCategory.DECLARED_FIELDS,
                     MemberCategory.INVOKE_DECLARED_CONSTRUCTORS,
                     MemberCategory.INVOKE_DECLARED_METHODS,
                     MemberCategory.DECLARED_FIELDS);

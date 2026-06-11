@@ -1,5 +1,6 @@
 package com.github.zeng.alt.lock.config;
 
+import com.github.zeng.alt.lock.LockRuntimeHints;
 import com.github.zeng.alt.lock.MethodBasedExpressionEvaluator;
 import com.github.zeng.alt.lock.SpelMethodBasedExpressionEvaluator;
 import com.github.zeng.alt.lock.aop.LockAnnotationAdvisor;
@@ -16,13 +17,14 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.ImportRuntimeHints;
 import org.springframework.context.annotation.Role;
 import org.springframework.core.Ordered;
 
 import java.util.List;
 
 /**
- * 锁模块自动配置
+ * Lock module auto-configuration
  *
  * @author zengJiaJun
  * @since 2026年06月09日
@@ -30,6 +32,7 @@ import java.util.List;
  */
 @Configuration
 @EnableConfigurationProperties(LockProperties.class)
+@ImportRuntimeHints(LockRuntimeHints.class)
 public class LockAutoConfiguration {
 
     @Role(BeanDefinition.ROLE_INFRASTRUCTURE)
