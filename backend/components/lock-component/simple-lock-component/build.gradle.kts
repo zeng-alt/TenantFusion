@@ -9,4 +9,6 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-autoconfigure")
     implementation("org.springframework.boot:spring-boot-starter-logging")
 
+    testImplementation("org.springframework.boot:spring-boot-starter-test")
+
 }

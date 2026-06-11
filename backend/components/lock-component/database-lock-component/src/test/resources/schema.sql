@@ -1,0 +1,6 @@
+CREATE TABLE IF NOT EXISTS sys_distributed_lock (
+    lock_name VARCHAR(256) NOT NULL PRIMARY KEY,
+    instance_id VARCHAR(128) NOT NULL,
+    locked_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    expire_at TIMESTAMP NULL
+);
