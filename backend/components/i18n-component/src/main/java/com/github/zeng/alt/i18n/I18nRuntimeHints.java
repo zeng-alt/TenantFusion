@@ -1,5 +1,15 @@
 package com.github.zeng.alt.i18n;
 
+import com.github.zeng.alt.i18n.config.I18nAutoConfiguration;
+import com.github.zeng.alt.i18n.config.I18nProperties;
+import com.github.zeng.alt.i18n.core.DatabaseI18nMessageService;
+import com.github.zeng.alt.i18n.core.DatabaseMessageSource;
+import com.github.zeng.alt.i18n.core.I18nMessageService;
+import com.github.zeng.alt.i18n.core.ResourceI18nMessageService;
+import com.github.zeng.alt.i18n.entity.I18nMessageDO;
+import com.github.zeng.alt.i18n.repository.I18nMessageRepository;
+import com.github.zeng.alt.i18n.rest.I18nMvcHandler;
+import com.github.zeng.alt.i18n.rest.I18nWebFluxHandler;
 import org.springframework.aot.hint.MemberCategory;
 import org.springframework.aot.hint.RuntimeHints;
 import org.springframework.aot.hint.RuntimeHintsRegistrar;
@@ -18,34 +28,39 @@ public class I18nRuntimeHints implements RuntimeHintsRegistrar {
 
     @Override
     public void registerHints(RuntimeHints hints, ClassLoader classLoader) {
-        // Register MessageSourceHelper for reflection (ApplicationContextAware)
-        hints.reflection().registerType(
+        // ========== Configuration ==========
+        registerType(hints,
+                I18nAutoConfiguration.class,
+                I18nProperties.class);
+
+        // ========== Entity ==========
+        registerType(hints,
+                I18nMessageDO.class);
+
+        // ========== Repository ==========
+        registerType(hints,
+                I18nMessageRepository.class);
+
+        // ========== Service / MessageSource ==========
+        registerType(hints,
+                I18nMessageService.class,
+                DatabaseMessageSource.class,
+                DatabaseI18nMessageService.class,
+                ResourceI18nMessageService.class);
+
+        // ========== Handlers ==========
+        registerType(hints,
+                I18nMvcHandler.class,
+                I18nWebFluxHandler.class);
+
+        // ========== Utility / Provider ==========
+        registerType(hints,
                 MessageSourceHelper.class,
-                MemberCategory.INVOKE_DECLARED_CONSTRUCTORS,
-                MemberCategory.INVOKE_DECLARED_METHODS
-        );
-
-        // Register MessageBaseNameProvider for reflection
-        hints.reflection().registerType(
                 MessageBaseNameProvider.class,
-                MemberCategory.INVOKE_DECLARED_METHODS
-        );
-
-        // Register ResponseAdviceProvider for reflection
-        hints.reflection().registerType(
                 ResponseAdviceProvider.class,
-                MemberCategory.INVOKE_DECLARED_METHODS
-        );
+                LocaleConfiguration.class);
 
-        // Register LocaleConfiguration for reflection (used in auto-configuration)
-        hints.reflection().registerType(
-                LocaleConfiguration.class,
-                MemberCategory.INVOKE_DECLARED_CONSTRUCTORS,
-                MemberCategory.INVOKE_DECLARED_METHODS
-        );
-
-        // Register resource patterns for i18n message bundles
-        // ResourceBundleMessageSource loads .properties files at runtime
+        // ========== Resource patterns for i18n message bundles ==========
         hints.resources().registerPattern("messages*.properties");
         hints.resources().registerPattern("i18n/*.properties");
         hints.resources().registerPattern("ValidationMessages*.properties");
@@ -53,4 +68,16 @@ public class I18nRuntimeHints implements RuntimeHintsRegistrar {
         // Register the auto-configuration imports file as a resource
         hints.resources().registerPattern("META-INF/spring/*.imports");
     }
+
+    private static void registerType(RuntimeHints hints, Class<?>... classes) {
+        for (Class<?> clazz : classes) {
+            hints.reflection().registerType(clazz,
+                    MemberCategory.INTROSPECT_DECLARED_METHODS,
+                    MemberCategory.DECLARED_FIELDS,
+                    MemberCategory.INVOKE_DECLARED_CONSTRUCTORS,
+                    MemberCategory.INVOKE_DECLARED_METHODS);
+        }
+    }
 }
+
+

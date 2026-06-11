@@ -8,7 +8,6 @@ import org.springframework.context.MessageSource;
 import org.springframework.context.MessageSourceResolvable;
 import org.springframework.context.NoSuchMessageException;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
 import org.springframework.context.support.MessageSourceAccessor;
 import org.springframework.context.support.ResourceBundleMessageSource;
 import org.springframework.validation.beanvalidation.LocalValidatorFactoryBean;
@@ -20,7 +19,6 @@ import java.util.Locale;
  * @version 1.0
  * @crateTime 2024年11月06日 20:50
  */
-@Configuration
 @AutoConfiguration(after = MessageSourceAutoConfiguration.class)
 public class LocaleConfiguration {
 
