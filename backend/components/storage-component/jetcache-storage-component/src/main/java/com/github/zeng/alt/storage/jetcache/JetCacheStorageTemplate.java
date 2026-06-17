@@ -20,7 +20,7 @@ import java.util.concurrent.TimeUnit;
 public class JetCacheStorageTemplate extends AbstractStorageTemplate {
 
     private final CacheManager cacheManager;
-    private final Cache<String, String> cache;
+    private final Cache<String, Object> cache;
 
     private final CacheStringOperations stringOps;
     private final CacheListOperations listOps;
@@ -72,7 +72,7 @@ public class JetCacheStorageTemplate extends AbstractStorageTemplate {
     public Boolean expire(String key, long timeout, TimeUnit unit) {
         // JetCache 的 Cache API 不支持单独设置过期时间，需要通过 put 时指定
         // 尝试读取再写入来更新 TTL
-        String value = cache.get(wrapKey(key));
+        Object value = cache.get(wrapKey(key));
         if (value != null) {
             cache.put(wrapKey(key), value, timeout, unit);
             return true;

@@ -6,6 +6,7 @@ import com.github.zeng.alt.storage.api.KeyPrefixStrategy;
 import org.springframework.cache.Cache;
 import org.springframework.cache.CacheManager;
 
+import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -45,7 +46,7 @@ public class SpringCacheStringOperations implements CacheStringOperations {
     }
 
     @Override
-    public void set(String key, String value) {
+    public <T> void set(String key, T value) {
         Cache cache = getCache();
         if (cache != null) {
             cache.put(wrap(key), value);
@@ -53,26 +54,26 @@ public class SpringCacheStringOperations implements CacheStringOperations {
     }
 
     @Override
-    public void set(String key, String value, long timeout, TimeUnit unit) {
+    public <T> void set(String key, T value, Duration duration) {
         // Spring Cache 不支持在 put 时指定过期时间
         set(key, value);
     }
 
     @Override
-    public String get(String key) {
+    public <T> T get(String key, Class<T> tClass) {
         Cache cache = getCache();
         if (cache != null) {
             Cache.ValueWrapper wrapper = cache.get(wrap(key));
             if (wrapper != null) {
                 Object value = wrapper.get();
-                return value instanceof String ? (String) value : null;
+                return tClass.cast(value);
             }
         }
         return null;
     }
 
     @Override
-    public Boolean setIfAbsent(String key, String value) {
+    public <T> Boolean setIfAbsent(String key, T value) {
         Cache cache = getCache();
         if (cache != null) {
             return cache.putIfAbsent(wrap(key), value) == null;
@@ -81,13 +82,13 @@ public class SpringCacheStringOperations implements CacheStringOperations {
     }
 
     @Override
-    public Boolean setIfAbsent(String key, String value, long timeout, TimeUnit unit) {
+    public <T> Boolean setIfAbsent(String key, T value, Duration duration) {
         // Spring Cache 不支持在 putIfAbsent 时指定过期时间
         return setIfAbsent(key, value);
     }
 
     @Override
-    public Boolean expire(String key, long timeout, TimeUnit unit) {
+    public Boolean expire(String key, Duration duration) {
         // Spring Cache 不支持单独设置过期时间
         return false;
     }
@@ -105,6 +106,37 @@ public class SpringCacheStringOperations implements CacheStringOperations {
             return cache.evictIfPresent(wrap(key));
         }
         return false;
+    }
+
+    @Override
+    public long delete(String... keys) {
+
+        if (keys == null || keys.length == 0) {
+            return 0;
+        }
+
+        Cache cache = getCache();
+        if (cache == null) {
+            return 0;
+        }
+
+        long count = 0;
+
+        for (String key : keys) {
+            if (cache.evictIfPresent(wrap(key))) {
+                count++;
+            }
+        }
+
+        return count;
+    }
+
+    @Override
+    public long deleteByPattern(String pattern) {
+        throw new UnsupportedOperationException(
+                "Pattern delete is not supported for this cache type: "
+                        + getCache().getClass().getName()
+        );
     }
 
     @Override
@@ -133,10 +165,10 @@ public class SpringCacheStringOperations implements CacheStringOperations {
                     if (cache != null) {
                         Cache.ValueWrapper wrapper = cache.get(wrap(key));
                         long newVal = delta;
-                        if (wrapper != null && wrapper.get() instanceof Number) {
-                            newVal = ((Number) wrapper.get()).longValue() + delta;
+                        if (wrapper != null) {
+                            newVal = ((Long) wrapper.get()) + delta;
                         }
-                        cache.put(wrap(key), String.valueOf(newVal));
+                        cache.put(wrap(key), newVal);
                         return newVal;
                     }
                     return delta;

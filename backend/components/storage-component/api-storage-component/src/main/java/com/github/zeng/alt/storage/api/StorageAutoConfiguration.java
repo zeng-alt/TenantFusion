@@ -34,7 +34,7 @@ public class StorageAutoConfiguration {
     @Bean
     @ConditionalOnMissingBean(CacheStringOperations.class)
     public CacheStringOperations noOpCacheStringOperations() {
-        return new NoOpCacheStringOperations();
+        return new GuavaCacheStringOperations();
     }
 
     @Bean

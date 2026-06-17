@@ -2,10 +2,11 @@ package com.github.zeng.alt.storage.redisson;
 
 import com.github.zeng.alt.storage.api.CacheStringOperations;
 import com.github.zeng.alt.storage.api.KeyPrefixStrategy;
-import org.redisson.api.RBucket;
-import org.redisson.api.RedissonClient;
+import org.redisson.api.*;
 
-import java.util.concurrent.TimeUnit;
+import java.time.Duration;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Redisson String 结构操作实现
@@ -29,33 +30,35 @@ public class RedissonStringOperations implements CacheStringOperations {
     }
 
     @Override
-    public void set(String key, String value) {
+    public <T> void set(String key, T value) {
         redissonClient.getBucket(wrap(key)).set(value);
     }
 
     @Override
-    public void set(String key, String value, long timeout, TimeUnit unit) {
-        redissonClient.getBucket(wrap(key)).set(value, timeout, unit);
+    public <T> void set(String key, T value, Duration duration) {
+        RBucket<T> bucket = redissonClient.getBucket(wrap(key));
+        bucket.set(value, duration);
     }
 
     @Override
-    public String get(String key) {
-        return (String) redissonClient.getBucket(wrap(key)).get();
+    public <T> T get(String key, Class<T> tClass) {
+        RBucket<T> bucket = redissonClient.getBucket(wrap(key));
+        return bucket.get();
     }
 
     @Override
-    public Boolean setIfAbsent(String key, String value) {
-        return redissonClient.getBucket(wrap(key)).trySet(value);
+    public <T> Boolean setIfAbsent(String key, T value) {
+        return redissonClient.getBucket(wrap(key)).setIfAbsent(value);
     }
 
     @Override
-    public Boolean setIfAbsent(String key, String value, long timeout, TimeUnit unit) {
-        return redissonClient.getBucket(wrap(key)).trySet(value, timeout, unit);
+    public <T> Boolean setIfAbsent(String key, T value, Duration duration) {
+        return redissonClient.getBucket(wrap(key)).setIfAbsent(value, duration);
     }
 
     @Override
-    public Boolean expire(String key, long timeout, TimeUnit unit) {
-        return redissonClient.getBucket(wrap(key)).expire(timeout, unit);
+    public Boolean expire(String key, Duration duration) {
+        return redissonClient.getBucket(wrap(key)).expire(duration);
     }
 
     @Override
@@ -68,6 +71,58 @@ public class RedissonStringOperations implements CacheStringOperations {
     @Override
     public Boolean delete(String key) {
         return redissonClient.getBucket(wrap(key)).delete();
+    }
+
+    @Override
+    public long delete(String... keys) {
+
+        if (keys == null || keys.length == 0) {
+            return 0;
+        }
+
+        RBatch batch = redissonClient.createBatch();
+
+        for (String key : keys) {
+            batch.getBucket(wrap(key)).deleteAsync();
+        }
+
+        BatchResult<?> result = batch.execute();
+
+        List<?> responses = result.getResponses();
+
+        long count = 0;
+
+        for (Object r : responses) {
+            if (Boolean.TRUE.equals(r)) {
+                count++;
+            }
+        }
+
+        return count;
+    }
+
+    @Override
+    public long deleteByPattern(String pattern) {
+
+        RKeys keys = redissonClient.getKeys();
+
+        Iterable<String> matchedKeys = keys.getKeysByPattern(wrap(pattern));
+
+        List<String> keyList = new ArrayList<>();
+        matchedKeys.forEach(keyList::add);
+
+        if (keyList.isEmpty()) {
+            return 0;
+        }
+
+        long count = 0;
+
+        for (String key : keyList) {
+            if (redissonClient.getBucket(key).delete()) {
+                count++;
+            }
+        }
+        return count;
     }
 
     @Override

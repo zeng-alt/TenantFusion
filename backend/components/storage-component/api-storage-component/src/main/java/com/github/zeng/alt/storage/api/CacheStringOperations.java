@@ -1,6 +1,6 @@
 package com.github.zeng.alt.storage.api;
 
-import java.util.concurrent.TimeUnit;
+import java.time.Duration;
 
 /**
  * 缓存 String 结构操作接口
@@ -17,17 +17,16 @@ public interface CacheStringOperations {
      * @param key   key
      * @param value value
      */
-    void set(String key, String value);
+    <T> void set(String key, T value);
 
     /**
      * 设置缓存（带过期时间）
      *
      * @param key     key
      * @param value   value
-     * @param timeout 超时时间
-     * @param unit    时间单位
+     * @param duration 超时时间
      */
-    void set(String key, String value, long timeout, TimeUnit unit);
+    <T> void set(String key, T value, Duration duration);
 
     /**
      * 获取缓存
@@ -35,7 +34,7 @@ public interface CacheStringOperations {
      * @param key key
      * @return value
      */
-    String get(String key);
+    <T> T get(String key, Class<T> clazz);
 
     /**
      * 当 key 不存在时设置缓存
@@ -44,28 +43,26 @@ public interface CacheStringOperations {
      * @param value value
      * @return true 设置成功，false key 已存在
      */
-    Boolean setIfAbsent(String key, String value);
+    <T> Boolean setIfAbsent(String key, T value);
 
     /**
      * 当 key 不存在时设置缓存（带过期时间）
      *
      * @param key     key
      * @param value   value
-     * @param timeout 超时时间
-     * @param unit    时间单位
+     * @param duration 超时时间
      * @return true 设置成功，false key 已存在
      */
-    Boolean setIfAbsent(String key, String value, long timeout, TimeUnit unit);
+    <T> Boolean setIfAbsent(String key, T value, Duration duration);
 
     /**
      * 设置过期时间
      *
      * @param key     key
-     * @param timeout 超时时间
-     * @param unit    时间单位
+     * @param duration 超时时间
      * @return true 设置成功
      */
-    Boolean expire(String key, long timeout, TimeUnit unit);
+    Boolean expire(String key, Duration duration);
 
     /**
      * 获取过期时间
@@ -82,6 +79,10 @@ public interface CacheStringOperations {
      * @return true 删除成功
      */
     Boolean delete(String key);
+
+    public long delete(String... keys);
+
+    public long deleteByPattern(String pattern);
 
     /**
      * 判断 key 是否存在

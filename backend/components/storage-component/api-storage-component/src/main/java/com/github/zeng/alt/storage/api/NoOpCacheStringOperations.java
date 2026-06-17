@@ -1,6 +1,6 @@
 package com.github.zeng.alt.storage.api;
 
-import java.util.concurrent.TimeUnit;
+import java.time.Duration;
 
 /**
  * String 结构空实现，所有操作不执行任何实际逻辑
@@ -12,32 +12,32 @@ import java.util.concurrent.TimeUnit;
 public class NoOpCacheStringOperations implements CacheStringOperations {
 
     @Override
-    public void set(String key, String value) {
+    public <T> void set(String key, T value) {
         // no-op
     }
 
     @Override
-    public void set(String key, String value, long timeout, TimeUnit unit) {
+    public <T> void set(String key, T value, Duration duration) {
         // no-op
     }
 
     @Override
-    public String get(String key) {
+    public <T> T get(String key, Class<T> tClass) {
         return null;
     }
 
     @Override
-    public Boolean setIfAbsent(String key, String value) {
+    public <T> Boolean setIfAbsent(String key, T value) {
         return false;
     }
 
     @Override
-    public Boolean setIfAbsent(String key, String value, long timeout, TimeUnit unit) {
+    public <T> Boolean setIfAbsent(String key, T value, Duration duration) {
         return false;
     }
 
     @Override
-    public Boolean expire(String key, long timeout, TimeUnit unit) {
+    public Boolean expire(String key, Duration duration) {
         return false;
     }
 
@@ -49,6 +49,16 @@ public class NoOpCacheStringOperations implements CacheStringOperations {
     @Override
     public Boolean delete(String key) {
         return false;
+    }
+
+    @Override
+    public long delete(String... keys) {
+        return 0;
+    }
+
+    @Override
+    public long deleteByPattern(String pattern) {
+        return 0;
     }
 
     @Override

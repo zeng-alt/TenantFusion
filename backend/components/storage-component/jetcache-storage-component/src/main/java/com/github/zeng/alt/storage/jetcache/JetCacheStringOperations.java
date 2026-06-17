@@ -5,6 +5,7 @@ import com.github.zeng.alt.lock.api.LockTemplate;
 import com.github.zeng.alt.storage.api.CacheStringOperations;
 import com.github.zeng.alt.storage.api.KeyPrefixStrategy;
 
+import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -17,11 +18,11 @@ import java.util.concurrent.TimeUnit;
  */
 public class JetCacheStringOperations implements CacheStringOperations {
 
-    private final Cache<String, String> cache;
+    private final Cache<String, Object> cache;
     private final KeyPrefixStrategy keyPrefixStrategy;
     private final LockTemplate lockTemplate;
 
-    public JetCacheStringOperations(Cache<String, String> cache, KeyPrefixStrategy keyPrefixStrategy, LockTemplate lockTemplate) {
+    public JetCacheStringOperations(Cache<String, Object> cache, KeyPrefixStrategy keyPrefixStrategy, LockTemplate lockTemplate) {
         this.cache = cache;
         this.keyPrefixStrategy = keyPrefixStrategy;
         this.lockTemplate = lockTemplate;
@@ -32,35 +33,35 @@ public class JetCacheStringOperations implements CacheStringOperations {
     }
 
     @Override
-    public void set(String key, String value) {
+    public <T> void set(String key, T value) {
         cache.put(wrap(key), value);
     }
 
     @Override
-    public void set(String key, String value, long timeout, TimeUnit unit) {
-        cache.put(wrap(key), value, timeout, unit);
+    public <T> void set(String key, T value, Duration duration) {
+        cache.put(wrap(key), value, duration.toMillis(), TimeUnit.MINUTES);
     }
 
     @Override
-    public String get(String key) {
-        return cache.get(wrap(key));
+    public <T> T get(String key, Class<T> tClass) {
+        return tClass.cast(cache.get(wrap(key)));
     }
 
     @Override
-    public Boolean setIfAbsent(String key, String value) {
+    public <T> Boolean setIfAbsent(String key, T value) {
         return cache.putIfAbsent(wrap(key), value);
     }
 
     @Override
-    public Boolean setIfAbsent(String key, String value, long timeout, TimeUnit unit) {
-        return cache.PUT_IF_ABSENT(wrap(key), value, timeout, unit).isSuccess();
+    public <T> Boolean setIfAbsent(String key, T value, Duration duration) {
+        return cache.PUT_IF_ABSENT(wrap(key), value, duration.toMillis(), TimeUnit.MINUTES).isSuccess();
     }
 
     @Override
-    public Boolean expire(String key, long timeout, TimeUnit unit) {
-        String value = cache.get(wrap(key));
+    public Boolean expire(String key, Duration duration) {
+        Object value = cache.get(wrap(key));
         if (value != null) {
-            cache.put(wrap(key), value, timeout, unit);
+            cache.put(wrap(key), value, duration.toMillis(), TimeUnit.MINUTES);
             return true;
         }
         return false;
@@ -75,6 +76,31 @@ public class JetCacheStringOperations implements CacheStringOperations {
     @Override
     public Boolean delete(String key) {
         return cache.remove(wrap(key));
+    }
+
+    @Override
+    public long delete(String... keys) {
+
+        if (keys == null || keys.length == 0) {
+            return 0;
+        }
+
+        long count = 0;
+        for (String key : keys) {
+            if (cache.remove(wrap(key))) {
+                count++;
+            }
+        }
+
+        return count;
+    }
+
+    @Override
+    public long deleteByPattern(String pattern) {
+        throw new UnsupportedOperationException(
+                "Pattern delete is not supported for this cache type: "
+                        + cache.getClass().getName()
+        );
     }
 
     @Override
@@ -98,13 +124,13 @@ public class JetCacheStringOperations implements CacheStringOperations {
                 10,                      // 锁持有 10 秒
                 TimeUnit.SECONDS,
                 () -> {
-                    String old = cache.get(realKey);
+                    Object old = cache.get(realKey);
                     if (old == null) {
                         old = "0";
                     }
 
-                    long newVal = Long.parseLong(old) + delta;
-                    cache.put(realKey, String.valueOf(newVal));
+                    long newVal = ((Long) old) + delta;
+                    cache.put(realKey, newVal);
 
                     return newVal;
                 }
