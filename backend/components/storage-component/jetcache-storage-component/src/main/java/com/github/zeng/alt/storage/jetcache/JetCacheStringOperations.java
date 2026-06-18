@@ -3,7 +3,7 @@ package com.github.zeng.alt.storage.jetcache;
 import com.alicp.jetcache.Cache;
 import com.github.zeng.alt.lock.api.LockTemplate;
 import com.github.zeng.alt.storage.CacheStringOperations;
-import com.github.zeng.alt.storage.api.KeyPrefixStrategy;
+import com.github.zeng.alt.storage.KeyPrefixStrategy;
 
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;

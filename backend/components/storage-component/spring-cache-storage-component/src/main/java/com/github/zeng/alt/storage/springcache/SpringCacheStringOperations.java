@@ -2,7 +2,7 @@ package com.github.zeng.alt.storage.springcache;
 
 import com.github.zeng.alt.lock.api.LockTemplate;
 import com.github.zeng.alt.storage.CacheStringOperations;
-import com.github.zeng.alt.storage.api.KeyPrefixStrategy;
+import com.github.zeng.alt.storage.KeyPrefixStrategy;
 import org.springframework.cache.Cache;
 
 import java.time.Duration;

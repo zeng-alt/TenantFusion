@@ -53,7 +53,6 @@ public class SpringCacheStorageTemplate extends AbstractStorageTemplate {
 
     @Override
     public Boolean delete(String key) {
-        Cache cache = getCache();
         if (cache != null) {
             return cache.evictIfPresent(wrapKey(key));
         }
@@ -62,7 +61,6 @@ public class SpringCacheStorageTemplate extends AbstractStorageTemplate {
 
     @Override
     public Boolean hasKey(String key) {
-        Cache cache = getCache();
         if (cache != null) {
             return cache.get(wrapKey(key)) != null;
         }
@@ -79,9 +77,5 @@ public class SpringCacheStorageTemplate extends AbstractStorageTemplate {
     public Long getExpire(String key) {
         // Spring Cache 不支持获取过期时间
         return -1L;
-    }
-
-    private Cache getCache() {
-        return cache;
     }
 }
