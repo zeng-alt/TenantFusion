@@ -1,8 +1,7 @@
 package com.github.zeng.alt.storage.springcache;
 
-import com.github.zeng.alt.storage.api.*;
+import com.github.zeng.alt.storage.*;
 import org.springframework.cache.Cache;
-import org.springframework.cache.CacheManager;
 
 import java.util.concurrent.TimeUnit;
 
@@ -17,18 +16,15 @@ import java.util.concurrent.TimeUnit;
  */
 public class SpringCacheStorageTemplate extends AbstractStorageTemplate {
 
-    private final CacheManager cacheManager;
     private final Cache cache;
-
     private final CacheStringOperations stringOps;
     private final CacheListOperations listOps;
     private final CacheHashOperations hashOps;
     private final CacheZSetOperations zSetOps;
 
-    public SpringCacheStorageTemplate(CacheManager cacheManager, KeyPrefixStrategy keyPrefixStrategy, CacheStringOperations cacheStringOperations) {
+    public SpringCacheStorageTemplate(Cache cache, KeyPrefixStrategy keyPrefixStrategy, CacheStringOperations cacheStringOperations) {
         super(keyPrefixStrategy);
-        this.cacheManager = cacheManager;
-        this.cache = cacheManager.getCache("default");
+        this.cache = cache;
         this.stringOps = cacheStringOperations;
         this.listOps = new NoOpCacheListOperations();
         this.hashOps = new NoOpCacheHashOperations();

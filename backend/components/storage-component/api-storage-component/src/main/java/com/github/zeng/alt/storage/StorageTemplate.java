@@ -1,4 +1,4 @@
-package com.github.zeng.alt.storage.api;
+package com.github.zeng.alt.storage;
 
 /**
  * 缓存操作模板，聚合了 String、List、Hash、ZSet 四种数据结构操作

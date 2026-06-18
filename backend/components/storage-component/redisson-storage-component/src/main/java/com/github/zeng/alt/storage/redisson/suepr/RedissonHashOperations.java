@@ -1,7 +1,7 @@
-package com.github.zeng.alt.storage.redisson;
+package com.github.zeng.alt.storage.redisson.suepr;
 
-import com.github.zeng.alt.storage.api.CacheHashOperations;
-import com.github.zeng.alt.storage.api.KeyPrefixStrategy;
+import com.github.zeng.alt.storage.CacheHashOperations;
+import com.github.zeng.alt.storage.KeyPrefixStrategy;
 import org.redisson.api.RMap;
 import org.redisson.api.RedissonClient;
 
@@ -25,7 +25,7 @@ public class RedissonHashOperations implements CacheHashOperations {
     }
 
     private String wrap(String key) {
-        return keyPrefixStrategy.wrapKey(key);
+        return keyPrefixStrategy.map(key);
     }
 
     @Override

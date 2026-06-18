@@ -1,4 +1,4 @@
-package com.github.zeng.alt.storage.api;
+package com.github.zeng.alt.storage;
 
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;

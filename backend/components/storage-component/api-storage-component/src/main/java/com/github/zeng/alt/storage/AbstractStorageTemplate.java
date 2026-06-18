@@ -1,4 +1,4 @@
-package com.github.zeng.alt.storage.api;
+package com.github.zeng.alt.storage;
 
 /**
  * 抽象 StorageTemplate 基类，提供 key 前缀包装能力
@@ -22,7 +22,7 @@ public abstract class AbstractStorageTemplate implements StorageTemplate {
      * @return 添加前缀后的 key
      */
     protected String wrapKey(String key) {
-        return keyPrefixStrategy.wrapKey(key);
+        return keyPrefixStrategy.map(key);
     }
 
     /**

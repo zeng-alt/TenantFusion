@@ -2,7 +2,7 @@ package com.github.zeng.alt.storage.jetcache;
 
 import com.alicp.jetcache.Cache;
 import com.github.zeng.alt.lock.api.LockTemplate;
-import com.github.zeng.alt.storage.api.CacheStringOperations;
+import com.github.zeng.alt.storage.CacheStringOperations;
 import com.github.zeng.alt.storage.api.KeyPrefixStrategy;
 
 import java.time.Duration;
@@ -29,7 +29,7 @@ public class JetCacheStringOperations implements CacheStringOperations {
     }
 
     private String wrap(String key) {
-        return keyPrefixStrategy.wrapKey(key);
+        return keyPrefixStrategy.map(key);
     }
 
     @Override

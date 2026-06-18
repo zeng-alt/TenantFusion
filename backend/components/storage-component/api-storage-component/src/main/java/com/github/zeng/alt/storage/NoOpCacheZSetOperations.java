@@ -1,4 +1,4 @@
-package com.github.zeng.alt.storage.api;
+package com.github.zeng.alt.storage;
 
 import java.util.Collections;
 import java.util.Set;

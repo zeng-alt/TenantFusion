@@ -1,8 +1,11 @@
-package com.github.zeng.alt.storage.api;
+package com.github.zeng.alt.storage;
 
+import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Primary;
 
 /**
  * 存储模块自动配置
@@ -12,7 +15,8 @@ import org.springframework.context.annotation.Configuration;
  * @since 2026年06月04日
  * @version 1.0
  */
-@Configuration
+@AutoConfiguration
+@EnableConfigurationProperties({StorageProperties.class})
 public class StorageAutoConfiguration {
 
     /**
@@ -59,8 +63,12 @@ public class StorageAutoConfiguration {
      * 默认提供 KeyPrefixStrategy 空实现（不做前缀处理）
      */
     @Bean
-    @ConditionalOnMissingBean(KeyPrefixStrategy.class)
-    public KeyPrefixStrategy noOpKeyPrefixStrategy() {
-        return KeyPrefixStrategy.noOp();
+    @Primary
+    public KeyPrefixStrategy defaultKeyPrefixStrategy(ObjectProvider<KeyPrefixStrategy> prefixStrategies) {
+        return prefixStrategies.orderedStream()
+                .reduce(
+                        KeyPrefixStrategy.noOp(),
+                        KeyPrefixStrategy::andThen
+                );
     }
 }
