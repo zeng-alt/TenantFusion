@@ -5,11 +5,12 @@ hibernate-orm = "6.6.45.Final"
 graalvm-native = "0.10.6"
 spring-modulith = "1.4.10"
 
-vavr = "0.10.3"
+vavr = "1.0.0"
 querydsl = "6.10.1"
 swagger = "2.2.49"
 redisson = "3.52.0"
 jetcache = "2.7.7"
+guava = "33.5.0-jre"
 
 [libraries]
 spring-modulith-bom = { module = "org.springframework.modulith:spring-modulith-bom", version.ref = "spring-modulith" }
@@ -38,6 +39,7 @@ spring-security-test = { module = "org.springframework.security:spring-security-
 commons-lang3 = {module = "org.apache.commons:commons-lang3"}
 
 # 第三方
+guava = {module = "com.google.guava:guava", version.ref = "guava"}
 vavr = {module = "io.vavr:vavr", version.ref = "vavr"}
 vavr-jackson = {module = "io.vavr:vavr-jackson", version.ref = "vavr"}
 querydsl-jpa = {module = "io.github.openfeign.querydsl:querydsl-jpa", version.ref = "querydsl"}
