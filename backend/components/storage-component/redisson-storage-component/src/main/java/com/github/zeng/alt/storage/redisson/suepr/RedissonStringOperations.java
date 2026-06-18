@@ -1,7 +1,6 @@
 package com.github.zeng.alt.storage.redisson.suepr;
 
 import com.github.zeng.alt.storage.CacheStringOperations;
-import com.github.zeng.alt.storage.KeyPrefixStrategy;
 import org.redisson.api.*;
 
 import java.time.Duration;
@@ -18,59 +17,53 @@ import java.util.List;
 public class RedissonStringOperations implements CacheStringOperations {
 
     private final RedissonClient redissonClient;
-    private final KeyPrefixStrategy keyPrefixStrategy;
 
-    public RedissonStringOperations(RedissonClient redissonClient, KeyPrefixStrategy keyPrefixStrategy) {
+    public RedissonStringOperations(RedissonClient redissonClient) {
         this.redissonClient = redissonClient;
-        this.keyPrefixStrategy = keyPrefixStrategy;
-    }
-
-    private String wrap(String key) {
-        return keyPrefixStrategy.map(key);
     }
 
     @Override
     public <T> void set(String key, T value) {
-        redissonClient.getBucket(wrap(key)).set(value);
+        redissonClient.getBucket(key).set(value);
     }
 
     @Override
     public <T> void set(String key, T value, Duration duration) {
-        RBucket<T> bucket = redissonClient.getBucket(wrap(key));
+        RBucket<T> bucket = redissonClient.getBucket(key);
         bucket.set(value, duration);
     }
 
     @Override
     public <T> T get(String key, Class<T> tClass) {
-        RBucket<T> bucket = redissonClient.getBucket(wrap(key));
+        RBucket<T> bucket = redissonClient.getBucket(key);
         return bucket.get();
     }
 
     @Override
     public <T> Boolean setIfAbsent(String key, T value) {
-        return redissonClient.getBucket(wrap(key)).setIfAbsent(value);
+        return redissonClient.getBucket(key).setIfAbsent(value);
     }
 
     @Override
     public <T> Boolean setIfAbsent(String key, T value, Duration duration) {
-        return redissonClient.getBucket(wrap(key)).setIfAbsent(value, duration);
+        return redissonClient.getBucket(key).setIfAbsent(value, duration);
     }
 
     @Override
     public Boolean expire(String key, Duration duration) {
-        return redissonClient.getBucket(wrap(key)).expire(duration);
+        return redissonClient.getBucket(key).expire(duration);
     }
 
     @Override
     public Long getExpire(String key) {
-        RBucket<Object> bucket = redissonClient.getBucket(wrap(key));
+        RBucket<Object> bucket = redissonClient.getBucket(key);
         long ttl = bucket.remainTimeToLive();
         return ttl < 0 ? ttl : ttl / 1000;
     }
 
     @Override
     public Boolean delete(String key) {
-        return redissonClient.getBucket(wrap(key)).delete();
+        return redissonClient.getBucket(key).delete();
     }
 
     @Override
@@ -83,7 +76,7 @@ public class RedissonStringOperations implements CacheStringOperations {
         RBatch batch = redissonClient.createBatch();
 
         for (String key : keys) {
-            batch.getBucket(wrap(key)).deleteAsync();
+            batch.getBucket(key).deleteAsync();
         }
 
         BatchResult<?> result = batch.execute();
@@ -106,7 +99,7 @@ public class RedissonStringOperations implements CacheStringOperations {
 
         RKeys keys = redissonClient.getKeys();
 
-        Iterable<String> matchedKeys = keys.getKeysByPattern(wrap(pattern));
+        Iterable<String> matchedKeys = keys.getKeysByPattern((pattern));
 
         List<String> keyList = new ArrayList<>();
         matchedKeys.forEach(keyList::add);
@@ -127,16 +120,16 @@ public class RedissonStringOperations implements CacheStringOperations {
 
     @Override
     public Boolean hasKey(String key) {
-        return redissonClient.getBucket(wrap(key)).isExists();
+        return redissonClient.getBucket(key).isExists();
     }
 
     @Override
     public Long increment(String key) {
-        return redissonClient.getAtomicLong(wrap(key)).incrementAndGet();
+        return redissonClient.getAtomicLong(key).incrementAndGet();
     }
 
     @Override
     public Long increment(String key, long delta) {
-        return redissonClient.getAtomicLong(wrap(key)).addAndGet(delta);
+        return redissonClient.getAtomicLong(key).addAndGet(delta);
     }
 }

@@ -130,22 +130,22 @@ public class RedissonStorageAutoConfiguration {
     }
 
     @Bean
-    public CacheStringOperations noOpCacheStringOperations(RedissonClient redissonClient, KeyPrefixStrategy keyPrefixStrategy) {
-        return new RedissonStringOperations(redissonClient, keyPrefixStrategy);
+    public CacheStringOperations noOpCacheStringOperations(RedissonClient redissonClient) {
+        return new RedissonStringOperations(redissonClient);
     }
 
     @Bean
-    public CacheListOperations noOpCacheListOperations(RedissonClient redissonClient, KeyPrefixStrategy keyPrefixStrategy) {
-        return new RedissonListOperations(redissonClient, keyPrefixStrategy);
+    public CacheListOperations noOpCacheListOperations(RedissonClient redissonClient) {
+        return new RedissonListOperations(redissonClient);
     }
 
     @Bean
-    public CacheHashOperations noOpCacheHashOperations(RedissonClient redissonClient, KeyPrefixStrategy keyPrefixStrategy) {
-        return new RedissonHashOperations(redissonClient, keyPrefixStrategy);
+    public CacheHashOperations noOpCacheHashOperations(RedissonClient redissonClient) {
+        return new RedissonHashOperations(redissonClient);
     }
 
     @Bean
-    public CacheZSetOperations noOpCacheZSetOperations(RedissonClient redissonClient, KeyPrefixStrategy keyPrefixStrategy) {
-        return new RedissonZSetOperations(redissonClient, keyPrefixStrategy);
+    public CacheZSetOperations noOpCacheZSetOperations(RedissonClient redissonClient) {
+        return new RedissonZSetOperations(redissonClient);
     }
 }
