@@ -12,7 +12,7 @@ import java.util.Objects;
 
 /**
  * @author zengJiaJun
- * @crateTime 2024年06月26日 20:19
+ * @since 2024年06月26日 20:19
  * @version 1.0
  */
 @Getter
@@ -48,6 +48,10 @@ public class RestResponse<T> implements Serializable {
 	public RestResponse<T> code(Integer code) {
 		this.code = code;
 		return this;
+	}
+
+	public static <T> RestResponse<T> status(Integer status) {
+		return new RestResponse<T>().code(status);
 	}
 
 	public static <T> RestResponse<T> success() {

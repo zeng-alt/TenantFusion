@@ -22,6 +22,7 @@ subprojects {
 
     the<io.spring.gradle.dependencymanagement.dsl.DependencyManagementExtension>().apply {
         imports {
+            mavenBom("org.springdoc:springdoc-openapi-bom:2.8.17")
             mavenBom(org.springframework.boot.gradle.plugin.SpringBootPlugin.BOM_COORDINATES)
             mavenBom(rootProject.libs.spring.modulith.bom.get().toString())
             mavenBom("io.opentelemetry.instrumentation:opentelemetry-instrumentation-bom:2.28.1")

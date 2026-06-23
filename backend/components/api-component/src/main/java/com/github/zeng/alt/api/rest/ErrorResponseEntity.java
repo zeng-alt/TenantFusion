@@ -76,6 +76,14 @@ public class ErrorResponseEntity extends HttpEntityStatus<ProblemDetail> impleme
         return of(HttpStatus.INTERNAL_SERVER_ERROR, message);
     }
 
+    public static ErrorResponseEntity of(Integer code) {
+        return of(HttpStatus.INTERNAL_SERVER_ERROR, code, "Internal Server Error");
+    }
+
+    public static ErrorResponseEntity of(HttpStatusCode status) {
+        return of(status, status.value(), "Internal Server Error");
+    }
+
     public static ErrorResponseEntity of() {
         return of(HttpStatus.INTERNAL_SERVER_ERROR, "Internal Server Error");
     }
