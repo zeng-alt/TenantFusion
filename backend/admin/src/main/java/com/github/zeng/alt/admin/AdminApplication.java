@@ -5,6 +5,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.ImportRuntimeHints;
 
 @SpringBootApplication
+@ImportRuntimeHints(AdminRuntimeHints.class)
 public class AdminApplication {
 
     public static void main(String[] args) {

@@ -24,6 +24,7 @@ subprojects {
         imports {
             mavenBom(org.springframework.boot.gradle.plugin.SpringBootPlugin.BOM_COORDINATES)
             mavenBom(rootProject.libs.spring.modulith.bom.get().toString())
+            mavenBom("io.opentelemetry.instrumentation:opentelemetry-instrumentation-bom:2.28.1")
         }
     }
 

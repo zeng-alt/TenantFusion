@@ -23,7 +23,7 @@ import java.util.Locale;
 public class LocaleConfiguration {
 
     /**
-     * 使用自定义LocalValidatorFactoryBean，
+     * 使用自定义LocalValidatorFactoryBean
      * 设置Spring国际化消息源，用户jsr303验证信息实现自定义国际化
      */
     @Bean

@@ -1,8 +1,11 @@
-spring:
+﻿spring:
   application:
     name: admin-application
   profiles:
-    active: ${SPRING_PROFILES_ACTIVE:dev}
+    active: 
+
+logging:
+  register-shutdown-hook: false
 
 # i18n configuration (default: file mode)
 alt:

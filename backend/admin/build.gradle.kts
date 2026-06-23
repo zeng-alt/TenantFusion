@@ -1,4 +1,4 @@
-description = "admin-application"
+﻿description = "admin-application"
 
 plugins {
     id("java")
@@ -11,13 +11,17 @@ graalvmNative {
     binaries {
         named("main") {
             buildArgs.addAll(
+                "-H:+ReportExceptionStackTraces", // 打印完整异常堆栈
                 "-H:-CheckToolchain",
                 "--no-fallback",
+                "--report-unsupported-elements-at-runtime",
                 "--install-exit-handlers",
                 "--enable-url-protocols=http,https",
                 "-Dfile.encoding=UTF-8",
                 "-Duser.country=CN",
-                "-Duser.language=zh"
+                "-Duser.language=zh",
+                "-H:+AddAllCharsets",
+                "-H:ClassInitialization=org.apache.commons.logging.LogFactory:run_time"
             )
         }
     }
@@ -38,34 +42,22 @@ tasks.named<org.springframework.boot.gradle.tasks.run.BootRun>("bootRun") {
 val activeProfile = project.findProperty("profiles.active") as? String ?: "dev"
 
 dependencies {
-    // 仅在非生产环境引入 Liquibase
     if (activeProfile != "prod") {
         implementation(libs.liquibase.core)
     }
-
-    // 运行时数据库驱动
     runtimeOnly(libs.postgresql)
     runtimeOnly(libs.h2)
-
-    // 组件模块依赖
     implementation(project(":backend:components:rest-component:rest-annotation-component"))
     implementation(project(":backend:components:core-component"))
     implementation(project(":backend:components:domain-component"))
     implementation(project(":backend:components:i18n-component"))
     annotationProcessor(project(":backend:components:rest-component:rest-apt-component"))
-
-    // 存储组件
     implementation(project(":backend:components:storage-component:api-storage-component"))
     implementation(project(":backend:components:storage-component:spring-cache-storage-component"))
-
-
-    // 锁组件
     implementation(project(":backend:components:lock-component:api-lock-component"))
     implementation(project(":backend:components:lock-component:simple-lock-component"))
-
-
-
-    // Spring Boot Starters（从组件模块继承，显式声明确保 IDE 感知）
+    implementation(project(":backend:components:security-component:jwt-auth-security-component"))
+    implementation(project(":backend:components:security-component:cookie-auth-security-component"))
     implementation("org.springframework.boot:spring-boot-starter-web")
     implementation("org.springframework.boot:spring-boot-starter-data-jpa")
     implementation("org.springframework.boot:spring-boot-starter-security")
@@ -74,16 +66,10 @@ dependencies {
     implementation(libs.spring.modulith.starter.jpa)
     implementation(libs.spring.boot.starter.cache)
     implementation(libs.spring.boot.starter.data.redis)
-
-    // 编译时工具
     compileOnly(libs.lombok)
     annotationProcessor(libs.lombok)
     annotationProcessor(libs.spring.boot.configuration.processor)
-
-    // Docker Compose 开发支持
     developmentOnly(libs.spring.boot.docker.compose)
-
-    // 测试
     testImplementation(libs.spring.boot.starter.test)
     testImplementation(libs.spring.modulith.starter.test)
     testImplementation(libs.spring.security.test)

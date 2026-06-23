@@ -1,0 +1,3 @@
+com.github.zeng.alt.security.core.SecurityAutoConfiguration
+com.github.zeng.alt.security.core.web.config.WebSecurityAutoConfiguration
+com.github.zeng.alt.security.core.reactive.config.ReactiveSecurityAutoConfiguration
