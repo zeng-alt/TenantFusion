@@ -12,7 +12,7 @@ import java.util.List;
 /**
  * @author zengJiaJun
  * @version 1.0
- * @crateTime 2024年06月26日 19:30
+ * @since 2024年06月26日 19:30
  */
 @Getter
 @Setter
@@ -24,10 +24,16 @@ public class PageRestResponse<T extends Serializable> extends RestResponse<Colle
 
 	private Long total;
 
+	/**
+	 * @return 当前页第一条数据的偏移量（offset）
+	 */
 	public Integer getFirstNum() {
 		return (pageNum - 1) * pageSize;
 	}
 
+	/**
+	 * @return 总页数
+	 */
 	public long getTotalPages() {
 		return this.total % this.pageSize == 0 ? this.total / this.pageSize : (this.total / this.pageSize) + 1;
 	}
@@ -39,17 +45,6 @@ public class PageRestResponse<T extends Serializable> extends RestResponse<Colle
 			return Collections.emptyList();
 		}
 		return data;
-	}
-
-	public List<T> getDataList() {
-		Collection<T> data = super.getData();
-		if (null == data) {
-			return Collections.emptyList();
-		}
-		if (data instanceof List) {
-			return (List<T>) data;
-		}
-		return new ArrayList<>(data);
 	}
 
 	public static <T extends Serializable> PageRestResponse<T> of(int pageSize, int pageNum) {

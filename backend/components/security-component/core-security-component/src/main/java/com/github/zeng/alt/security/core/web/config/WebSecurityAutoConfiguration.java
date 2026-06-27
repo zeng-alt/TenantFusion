@@ -52,7 +52,7 @@ import java.util.List;
 @RequiredArgsConstructor
 @ConditionalOnWebApplication(type = ConditionalOnWebApplication.Type.SERVLET)
 @EnableWebSecurity
-@EnableConfigurationProperties({UsernameLoginProperties.class, LogoutProperties.class, })
+@EnableConfigurationProperties({UsernameLoginProperties.class})
 @Import({ LoginAutoConfiguration.class})
 public class WebSecurityAutoConfiguration {
 

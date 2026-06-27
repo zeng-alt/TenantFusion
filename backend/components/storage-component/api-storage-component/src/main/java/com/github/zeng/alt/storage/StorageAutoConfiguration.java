@@ -64,11 +64,13 @@ public class StorageAutoConfiguration {
      */
     @Bean
     @Primary
-    public KeyPrefixStrategy defaultKeyPrefixStrategy(ObjectProvider<KeyPrefixStrategy> prefixStrategies) {
-        return prefixStrategies.orderedStream()
-                .reduce(
-                        KeyPrefixStrategy.noOp(),
-                        KeyPrefixStrategy::andThen
-                );
+    public KeyPrefixStrategy keyPrefixStrategy(
+            ObjectProvider<KeyPrefixContributor> contributors) {
+
+        return new CompositeKeyPrefixStrategy(
+                contributors.orderedStream()
+                        .map(KeyPrefixContributor::strategy)
+                        .toList()
+        );
     }
 }

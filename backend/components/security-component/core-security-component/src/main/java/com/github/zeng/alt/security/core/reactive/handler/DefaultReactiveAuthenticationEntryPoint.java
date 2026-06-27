@@ -1,6 +1,6 @@
 package com.github.zeng.alt.security.core.reactive.handler;
 
-import com.zjj.autoconfigure.component.json.JsonUtils;
+//import com.zjj.autoconfigure.component.json.JsonUtils;
 import org.springframework.core.io.buffer.DataBuffer;
 import org.springframework.core.io.buffer.DataBufferFactory;
 import org.springframework.http.HttpStatus;
@@ -24,17 +24,18 @@ public class DefaultReactiveAuthenticationEntryPoint implements ServerAuthentica
 
     @Override
     public Mono<Void> commence(ServerWebExchange exchange, AuthenticationException ex) {
-        ServerHttpResponse response = exchange.getResponse();
-//        exchange.getResponse().getHeaders().setContentType(MediaType.APPLICATION_JSON);
-        response.setStatusCode(HttpStatus.UNAUTHORIZED);
-        DataBufferFactory dataBufferFactory = response.bufferFactory();
-        ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(HttpStatus.UNAUTHORIZED, ex.getMessage());
-        problemDetail.setInstance(exchange.getRequest().getURI());
-        problemDetail.setTitle("验证失败");
+//        ServerHttpResponse response = exchange.getResponse();
+////        exchange.getResponse().getHeaders().setContentType(MediaType.APPLICATION_JSON);
+//        response.setStatusCode(HttpStatus.UNAUTHORIZED);
+//        DataBufferFactory dataBufferFactory = response.bufferFactory();
+//        ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(HttpStatus.UNAUTHORIZED, ex.getMessage());
+//        problemDetail.setInstance(exchange.getRequest().getURI());
+//        problemDetail.setTitle("验证失败");
+//
+//        DataBuffer dataBuffer = dataBufferFactory.wrap(JsonUtils.toJsonString(problemDetail).getBytes(StandardCharsets.UTF_8));
 
-        DataBuffer dataBuffer = dataBufferFactory.wrap(JsonUtils.toJsonString(problemDetail).getBytes(StandardCharsets.UTF_8));
-
-        return exchange.getResponse().writeWith(Mono.just(dataBuffer));
+//        return exchange.getResponse().writeWith(Mono.just(dataBuffer));
+        return null;
     }
 
     public static ServerAuthenticationEntryPoint handler() {

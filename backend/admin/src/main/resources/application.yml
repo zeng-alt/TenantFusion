@@ -1,8 +1,11 @@
-﻿spring:
+﻿server:
+  port: 8080
+
+spring:
   application:
     name: admin-application
-  profiles:
-    active: 
+#  profiles:
+#    active:
 
 logging:
   register-shutdown-hook: false

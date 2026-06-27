@@ -1,6 +1,7 @@
 package com.github.zeng.alt.security.core.properties;
 
 import lombok.Data;
+import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.http.HttpMethod;
 
 /**
@@ -10,9 +11,9 @@ import org.springframework.http.HttpMethod;
  */
 @Data
 public class LoginProperties {
-	private static final String DEFAULT_LOGOUT_PATH = "/logout";
+	private static final String DEFAULT_LOGIN_PATH = "/login";
 
-	private String loginPath = DEFAULT_LOGOUT_PATH;
+	private String loginPath = DEFAULT_LOGIN_PATH;
 	private HttpMethod method = HttpMethod.POST;
 
 	public static LoginProperties of(String loginPath, HttpMethod method) {

@@ -125,6 +125,7 @@ public abstract class BaseEntity<PK extends Serializable> implements Auditable<S
 
     @Override
     @Transient
+    @JsonIgnore
     public boolean isNew() {
         return getId() == null;
     }

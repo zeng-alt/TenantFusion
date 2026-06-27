@@ -1,11 +1,14 @@
 package com.github.zeng.alt.domain.config;
 
+import com.github.zeng.alt.domain.key.IdGenerator;
+import com.github.zeng.alt.domain.key.IdGeneratorProperties;
 import org.hibernate.cfg.MultiTenancySettings;
 import org.hibernate.context.spi.CurrentTenantIdentifierResolver;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.orm.jpa.HibernatePropertiesCustomizer;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.core.annotation.Order;
 
@@ -15,7 +18,13 @@ import org.springframework.core.annotation.Order;
  * @version 1.0
  */
 @AutoConfiguration
+@EnableConfigurationProperties(IdGeneratorProperties.class)
 public class DomainAutoConfiguration {
+
+    @Bean
+    public IdGenerator idGenerator(IdGeneratorProperties idGeneratorProperties) {
+        return new IdGenerator(idGeneratorProperties);
+    }
 
     @Bean
     @Order(Integer.MIN_VALUE)

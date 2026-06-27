@@ -9,7 +9,7 @@ import java.lang.annotation.Target;
  * 标记 Repository 接口自动生成 CRUD REST 接口
  *
  * @author zengJiaJun
- * @crateTime 2026年05月28日
+ * @since 2026年05月28日
  * @version 1.0
  */
 @Target(ElementType.TYPE)

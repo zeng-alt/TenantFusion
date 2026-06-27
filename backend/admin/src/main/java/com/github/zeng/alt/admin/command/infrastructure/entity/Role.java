@@ -1,0 +1,46 @@
+package com.github.zeng.alt.admin.command.infrastructure.entity;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.github.zeng.alt.domain.base.BaseEntity;
+import com.github.zeng.alt.domain.key.SnowflakeId;
+import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.Setter;
+import org.jspecify.annotations.Nullable;
+
+import java.util.HashSet;
+import java.util.Set;
+
+@Entity
+@Table(name = "main_role")
+@Getter @Setter
+public class Role extends BaseEntity<Long> {
+
+    @Id @SnowflakeId
+    private Long roleId;
+
+    @Column(length = 64)
+    private String code;
+    private String name;
+    private Integer roleSort = 0;
+
+    @Column(name = "is_enabled")
+    private Boolean enabled = true;
+
+    @Column(name = "is_deleted")
+    private Boolean deleted = false;
+
+    @JsonIgnore
+    @OneToMany(mappedBy = "role", fetch = FetchType.LAZY)
+    private Set<UserRole> userRoles = new HashSet<>();
+
+    @JsonIgnore
+    @OneToMany(mappedBy = "role", fetch = FetchType.LAZY)
+    private Set<RolePermission> rolePermissions = new HashSet<>();
+
+    @Override
+    @JsonIgnore
+    public @Nullable Long getId() {
+        return roleId;
+    }
+}

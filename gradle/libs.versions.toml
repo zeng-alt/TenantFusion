@@ -5,7 +5,7 @@ hibernate-orm = "6.6.45.Final"
 graalvm-native = "0.10.6"
 spring-modulith = "1.4.10"
 
-vavr = "1.0.0"
+vavr = "0.10.3"
 querydsl = "6.10.1"
 swagger = "2.2.49"
 redisson = "3.52.0"

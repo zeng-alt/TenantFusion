@@ -51,26 +51,28 @@ dependencies {
     implementation(project(":backend:components:core-component"))
     implementation(project(":backend:components:domain-component"))
     implementation(project(":backend:components:i18n-component"))
-    annotationProcessor(project(":backend:components:rest-component:rest-apt-component"))
-    implementation(project(":backend:components:storage-component:api-storage-component"))
     implementation(project(":backend:components:storage-component:spring-cache-storage-component"))
-    implementation(project(":backend:components:lock-component:api-lock-component"))
     implementation(project(":backend:components:lock-component:simple-lock-component"))
-    implementation(project(":backend:components:security-component:jwt-auth-security-component"))
-    implementation(project(":backend:components:security-component:cookie-auth-security-component"))
+//    implementation(project(":backend:components:security-component:jwt-auth-security-component"))
     implementation("org.springframework.boot:spring-boot-starter-web")
     implementation("org.springframework.boot:spring-boot-starter-data-jpa")
     implementation("org.springframework.boot:spring-boot-starter-security")
     implementation(libs.spring.boot.starter.validation)
-    implementation(libs.spring.modulith.starter.core)
     implementation(libs.spring.modulith.starter.jpa)
-    implementation(libs.spring.boot.starter.cache)
-    implementation(libs.spring.boot.starter.data.redis)
+//    implementation(libs.spring.boot.starter.cache)
+//    implementation(libs.spring.boot.starter.data.redis)
     compileOnly(libs.lombok)
-    annotationProcessor(libs.lombok)
-    annotationProcessor(libs.spring.boot.configuration.processor)
     developmentOnly(libs.spring.boot.docker.compose)
     testImplementation(libs.spring.boot.starter.test)
     testImplementation(libs.spring.modulith.starter.test)
     testImplementation(libs.spring.security.test)
+
+    annotationProcessor(libs.lombok)
+    annotationProcessor(libs.spring.boot.configuration.processor)
+    annotationProcessor(project(":backend:components:rest-component:rest-apt-component"))
+    annotationProcessor(rootProject.libs.querydsl.apt) {
+        artifact {
+            classifier = "jakarta"
+        }
+    }
 }

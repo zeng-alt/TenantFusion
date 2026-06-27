@@ -1,6 +1,6 @@
 package com.github.zeng.alt.security.core.web.config;
 
-import com.github.zeng.alt.security.core.properties.LogoutProperties;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.zeng.alt.security.core.properties.UsernameLoginProperties;
 import com.github.zeng.alt.security.core.web.handler.DefaultLoginFailureHandler;
 import com.github.zeng.alt.security.core.web.SecurityBuilderCustomizer;
@@ -15,7 +15,6 @@ import org.springframework.security.config.annotation.web.configurers.AbstractHt
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.authentication.AuthenticationFailureHandler;
-import tools.jackson.databind.ObjectMapper;
 
 /**
  * @author zengJiaJun

@@ -12,6 +12,6 @@ dependencies {
     implementation("jakarta.servlet:jakarta.servlet-api")
 
     api("org.apache.commons:commons-lang3")
-    api("commons-io:commons-io")
-    api("commons-codec:commons-codec")
+//    api("commons-io:commons-io")
+//    api("commons-codec:commons-codec")
 }

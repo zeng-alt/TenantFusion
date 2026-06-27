@@ -3,7 +3,7 @@ package com.github.zeng.alt.api.tenant;
 /**
  * @author zengJiaJun
  * @version 1.0
- * @crateTime 2024年11月13日 10:31
+ * @since 2024年11月13日 10:31
  */
 public interface TenantAuditable {
 
