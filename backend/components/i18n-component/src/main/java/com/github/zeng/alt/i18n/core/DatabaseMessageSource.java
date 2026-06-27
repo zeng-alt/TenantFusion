@@ -1,6 +1,6 @@
 package com.github.zeng.alt.i18n.core;
 
-import com.github.zeng.alt.i18n.entity.I18nMessageDO;
+import com.github.zeng.alt.i18n.entity.SystemI18nMessageDO;
 import com.github.zeng.alt.i18n.repository.I18nMessageRepository;
 import io.vavr.control.Option;
 import org.slf4j.Logger;
@@ -71,7 +71,7 @@ public class DatabaseMessageSource extends AbstractMessageSource {
             return cached;
         }
         // 2. 从数据库查询
-        Option<I18nMessageDO> result = i18nMessageRepository.findByCodeAndLocale(code, locale.toString());
+        Option<SystemI18nMessageDO> result = i18nMessageRepository.findByCodeAndLocale(code, locale.toString());
         if (result.isDefined()) {
             String message = result.get().getMessage();
             cache.put(cacheKey, message);

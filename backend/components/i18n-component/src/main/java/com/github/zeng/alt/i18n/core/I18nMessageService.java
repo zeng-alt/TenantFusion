@@ -1,6 +1,6 @@
 package com.github.zeng.alt.i18n.core;
 
-import com.github.zeng.alt.i18n.entity.I18nMessageDO;
+import com.github.zeng.alt.i18n.entity.SystemI18nMessageDO;
 import io.vavr.control.Option;
 
 import java.util.List;
@@ -26,27 +26,27 @@ public interface I18nMessageService {
     /**
      * 根据编码和区域查询消息
      */
-    Option<I18nMessageDO> findByCodeAndLocale(String code, String locale);
+    Option<SystemI18nMessageDO> findByCodeAndLocale(String code, String locale);
 
     /**
      * 根据编码查询所有区域的消息
      */
-    List<I18nMessageDO> findByCode(String code);
+    List<SystemI18nMessageDO> findByCode(String code);
 
     /**
      * 根据区域查询所有消息
      */
-    List<I18nMessageDO> findByLocale(String locale);
+    List<SystemI18nMessageDO> findByLocale(String locale);
 
     /**
      * 查询所有消息
      */
-    List<I18nMessageDO> findAll();
+    List<SystemI18nMessageDO> findAll();
 
     /**
      * 保存或更新消息
      */
-    I18nMessageDO save(I18nMessageDO message);
+    SystemI18nMessageDO save(SystemI18nMessageDO message);
 
     /**
      * 根据 ID 删除消息

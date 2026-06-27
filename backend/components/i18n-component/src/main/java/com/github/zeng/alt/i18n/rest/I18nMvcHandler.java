@@ -2,7 +2,7 @@ package com.github.zeng.alt.i18n.rest;
 
 import com.github.zeng.alt.api.rest.RestResponse;
 import com.github.zeng.alt.i18n.core.I18nMessageService;
-import com.github.zeng.alt.i18n.entity.I18nMessageDO;
+import com.github.zeng.alt.i18n.entity.SystemI18nMessageDO;
 import jakarta.servlet.ServletException;
 import org.springframework.web.servlet.function.ServerRequest;
 import org.springframework.web.servlet.function.ServerResponse;
@@ -26,7 +26,7 @@ public class I18nMvcHandler {
     }
 
     public ServerResponse findAll(ServerRequest request) {
-        List<I18nMessageDO> list = i18nMessageService.findAll();
+        List<SystemI18nMessageDO> list = i18nMessageService.findAll();
         return ServerResponse.ok().body(RestResponse.success(list));
     }
 
@@ -40,32 +40,32 @@ public class I18nMvcHandler {
 
     public ServerResponse findByCode(ServerRequest request) {
         String code = request.pathVariable("code");
-        List<I18nMessageDO> list = i18nMessageService.findByCode(code);
+        List<SystemI18nMessageDO> list = i18nMessageService.findByCode(code);
         return ServerResponse.ok().body(RestResponse.success(list));
     }
 
     public ServerResponse findByLocale(ServerRequest request) {
         String locale = request.pathVariable("locale");
-        List<I18nMessageDO> list = i18nMessageService.findByLocale(locale);
+        List<SystemI18nMessageDO> list = i18nMessageService.findByLocale(locale);
         return ServerResponse.ok().body(RestResponse.success(list));
     }
 
     public ServerResponse create(ServerRequest request) throws IOException, ServletException {
-        I18nMessageDO message = request.body(I18nMessageDO.class);
+        SystemI18nMessageDO message = request.body(SystemI18nMessageDO.class);
         if (message.getId() != null) {
             return ServerResponse.badRequest().body(RestResponse.fail("新增时不能携带 ID"));
         }
-        I18nMessageDO saved = i18nMessageService.save(message);
+        SystemI18nMessageDO saved = i18nMessageService.save(message);
         return ServerResponse.ok().body(RestResponse.success(saved));
     }
 
     public ServerResponse update(ServerRequest request) throws IOException, ServletException {
-        I18nMessageDO message = request.body(I18nMessageDO.class);
+        SystemI18nMessageDO message = request.body(SystemI18nMessageDO.class);
         return i18nMessageService.findByCodeAndLocale(message.getCode(), message.getLocale())
                 .map(existing -> {
                     existing.setMessage(message.getMessage());
                     existing.setModule(message.getModule());
-                    I18nMessageDO saved = i18nMessageService.save(existing);
+                    SystemI18nMessageDO saved = i18nMessageService.save(existing);
                     return ServerResponse.ok().body(RestResponse.success(saved));
                 })
                 .getOrElse(ServerResponse.notFound().build());

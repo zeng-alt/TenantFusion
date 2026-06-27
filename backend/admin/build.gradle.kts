@@ -21,7 +21,7 @@ graalvmNative {
                 "-Duser.country=CN",
                 "-Duser.language=zh",
                 "-H:+AddAllCharsets",
-                "-H:ClassInitialization=org.apache.commons.logging.LogFactory:run_time"
+                "-H:ClassInitialization=org.apache.commons.logging.LogFactory:run_time",
             )
         }
     }
@@ -42,9 +42,11 @@ tasks.named<org.springframework.boot.gradle.tasks.run.BootRun>("bootRun") {
 val activeProfile = project.findProperty("profiles.active") as? String ?: "dev"
 
 dependencies {
-    if (activeProfile != "prod") {
-        implementation(libs.liquibase.core)
-    }
+implementation("org.springframework.boot:spring-boot-starter-actuator")
+    implementation("org.springframework.boot:spring-boot-starter-actuator")
+    //    if (activeProfile != "prod") {
+//        implementation("org.liquibase:liquibase-core")
+//    }
     runtimeOnly(libs.postgresql)
     runtimeOnly(libs.h2)
     implementation(project(":backend:components:rest-component:rest-annotation-component"))
@@ -52,11 +54,10 @@ dependencies {
     implementation(project(":backend:components:domain-component"))
     implementation(project(":backend:components:i18n-component"))
     implementation(project(":backend:components:storage-component:spring-cache-storage-component"))
-    implementation(project(":backend:components:lock-component:simple-lock-component"))
+    implementation(project(":backend:components:lock-component:database-lock-component"))
 //    implementation(project(":backend:components:security-component:jwt-auth-security-component"))
     implementation("org.springframework.boot:spring-boot-starter-web")
     implementation("org.springframework.boot:spring-boot-starter-data-jpa")
-    implementation("org.springframework.boot:spring-boot-starter-security")
     implementation(libs.spring.boot.starter.validation)
     implementation(libs.spring.modulith.starter.jpa)
 //    implementation(libs.spring.boot.starter.cache)
@@ -66,6 +67,8 @@ dependencies {
     testImplementation(libs.spring.boot.starter.test)
     testImplementation(libs.spring.modulith.starter.test)
     testImplementation(libs.spring.security.test)
+
+
 
     annotationProcessor(libs.lombok)
     annotationProcessor(libs.spring.boot.configuration.processor)

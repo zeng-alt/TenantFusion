@@ -1,7 +1,7 @@
 package com.github.zeng.alt.i18n.repository;
 
 import com.github.zeng.alt.domain.base.BaseRepository;
-import com.github.zeng.alt.i18n.entity.I18nMessageDO;
+import com.github.zeng.alt.i18n.entity.SystemI18nMessageDO;
 import io.vavr.control.Option;
 
 import java.util.List;
@@ -13,13 +13,13 @@ import java.util.List;
  * @since 2026年05月29日
  * @version 1.0
  */
-public interface I18nMessageRepository extends BaseRepository<I18nMessageDO, Long> {
+public interface I18nMessageRepository extends BaseRepository<SystemI18nMessageDO, Long> {
 
-    Option<I18nMessageDO> findByCodeAndLocale(String code, String locale);
+    Option<SystemI18nMessageDO> findByCodeAndLocale(String code, String locale);
 
-    List<I18nMessageDO> findByLocale(String locale);
+    List<SystemI18nMessageDO> findByLocale(String locale);
 
-    List<I18nMessageDO> findByCode(String code);
+    List<SystemI18nMessageDO> findByCode(String code);
 
     void deleteAll();
 }

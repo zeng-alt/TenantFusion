@@ -6,9 +6,8 @@ description = "databases-lock-component"
 
 dependencies {
     api(project(":backend:components:lock-component:api-lock-component"))
-    implementation("org.springframework.boot:spring-boot-starter-jdbc")
+    api(project(":backend:components:domain-component"))
+    api("org.springframework.boot:spring-boot-starter-data-jpa")
     testImplementation("org.springframework.boot:spring-boot-starter-test")
     testRuntimeOnly(rootProject.libs.h2)
-
-
 }

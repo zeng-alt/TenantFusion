@@ -1,6 +1,6 @@
 package com.github.zeng.alt.i18n.core;
 
-import com.github.zeng.alt.i18n.entity.I18nMessageDO;
+import com.github.zeng.alt.i18n.entity.SystemI18nMessageDO;
 import com.github.zeng.alt.i18n.repository.I18nMessageRepository;
 import io.vavr.control.Option;
 import org.springframework.context.MessageSource;
@@ -31,29 +31,29 @@ public class DatabaseI18nMessageService implements I18nMessageService {
     }
 
     @Override
-    public Option<I18nMessageDO> findByCodeAndLocale(String code, String locale) {
+    public Option<SystemI18nMessageDO> findByCodeAndLocale(String code, String locale) {
         return i18nMessageRepository.findByCodeAndLocale(code, locale);
     }
 
     @Override
-    public List<I18nMessageDO> findByCode(String code) {
+    public List<SystemI18nMessageDO> findByCode(String code) {
         return i18nMessageRepository.findByCode(code);
     }
 
     @Override
-    public List<I18nMessageDO> findByLocale(String locale) {
+    public List<SystemI18nMessageDO> findByLocale(String locale) {
         return i18nMessageRepository.findByLocale(locale);
     }
 
     @Override
-    public List<I18nMessageDO> findAll() {
+    public List<SystemI18nMessageDO> findAll() {
         return i18nMessageRepository.findAll();
     }
 
     @Override
     @Transactional
-    public I18nMessageDO save(I18nMessageDO message) {
-        I18nMessageDO saved = i18nMessageRepository.save(message);
+    public SystemI18nMessageDO save(SystemI18nMessageDO message) {
+        SystemI18nMessageDO saved = i18nMessageRepository.save(message);
         evictCache(saved.getCode(), saved.getLocale());
         return saved;
     }

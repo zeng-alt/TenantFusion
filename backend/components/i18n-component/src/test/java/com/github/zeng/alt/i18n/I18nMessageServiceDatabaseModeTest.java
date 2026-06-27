@@ -1,7 +1,7 @@
 package com.github.zeng.alt.i18n;
 
 import com.github.zeng.alt.i18n.core.I18nMessageService;
-import com.github.zeng.alt.i18n.entity.I18nMessageDO;
+import com.github.zeng.alt.i18n.entity.SystemI18nMessageDO;
 import com.github.zeng.alt.i18n.repository.I18nMessageRepository;
 import io.vavr.control.Option;
 import org.junit.jupiter.api.BeforeEach;
@@ -49,7 +49,7 @@ class I18nMessageServiceDatabaseModeTest {
     @Test
     void testSaveAndFindByCodeAndLocale() {
         i18nMessageService.save(createMessage("user.login.success", "zh_CN", "登录成功"));
-        Option<I18nMessageDO> found = i18nMessageService.findByCodeAndLocale("user.login.success", "zh_CN");
+        Option<SystemI18nMessageDO> found = i18nMessageService.findByCodeAndLocale("user.login.success", "zh_CN");
         assertTrue(found.isDefined());
         assertEquals("登录成功", found.get().getMessage());
     }
@@ -90,7 +90,7 @@ class I18nMessageServiceDatabaseModeTest {
     @Test
     void testUpdateMessage() {
         i18nMessageService.save(createMessage("update.key", "zh_CN", "旧值"));
-        I18nMessageDO existing = i18nMessageService.findByCodeAndLocale("update.key", "zh_CN").get();
+        SystemI18nMessageDO existing = i18nMessageService.findByCodeAndLocale("update.key", "zh_CN").get();
         existing.setMessage("新值");
         i18nMessageService.save(existing);
         assertEquals("新值",
@@ -99,7 +99,7 @@ class I18nMessageServiceDatabaseModeTest {
 
     @Test
     void testDeleteById() {
-        I18nMessageDO saved = i18nMessageService.save(createMessage("del", "zh_CN", "删除"));
+        SystemI18nMessageDO saved = i18nMessageService.save(createMessage("del", "zh_CN", "删除"));
         assertTrue(i18nMessageService.findByCodeAndLocale("del", "zh_CN").isDefined());
         i18nMessageService.deleteById(saved.getId());
         assertTrue(i18nMessageService.findByCodeAndLocale("del", "zh_CN").isEmpty());
@@ -129,7 +129,7 @@ class I18nMessageServiceDatabaseModeTest {
     void testCacheEvictionOnUpdate() {
         i18nMessageService.save(createMessage("cache.test", "zh_CN", "原值"));
         assertEquals("原值", messageSource.getMessage("cache.test", null, Locale.CHINA));
-        I18nMessageDO msg = i18nMessageService.findByCodeAndLocale("cache.test", "zh_CN").get();
+        SystemI18nMessageDO msg = i18nMessageService.findByCodeAndLocale("cache.test", "zh_CN").get();
         msg.setMessage("新值");
         i18nMessageService.save(msg);
         assertEquals("新值", messageSource.getMessage("cache.test", null, Locale.CHINA));
@@ -137,15 +137,15 @@ class I18nMessageServiceDatabaseModeTest {
 
     @Test
     void testCacheEvictionOnDelete() {
-        I18nMessageDO saved = i18nMessageService.save(createMessage("cache.del", "zh_CN", "将被删除"));
+        SystemI18nMessageDO saved = i18nMessageService.save(createMessage("cache.del", "zh_CN", "将被删除"));
         assertEquals("将被删除", messageSource.getMessage("cache.del", null, Locale.CHINA));
         i18nMessageService.deleteById(saved.getId());
         assertThrows(org.springframework.context.NoSuchMessageException.class,
                 () -> messageSource.getMessage("cache.del", null, Locale.CHINA));
     }
 
-    private I18nMessageDO createMessage(String code, String locale, String message) {
-        I18nMessageDO msg = new I18nMessageDO();
+    private SystemI18nMessageDO createMessage(String code, String locale, String message) {
+        SystemI18nMessageDO msg = new SystemI18nMessageDO();
         msg.setCode(code);
         msg.setLocale(locale);
         msg.setMessage(message);

@@ -2,7 +2,7 @@ package com.github.zeng.alt.i18n;
 
 import com.github.zeng.alt.i18n.config.I18nAutoConfiguration;
 import com.github.zeng.alt.i18n.core.I18nMessageService;
-import com.github.zeng.alt.i18n.entity.I18nMessageDO;
+import com.github.zeng.alt.i18n.entity.SystemI18nMessageDO;
 import io.vavr.control.Option;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -56,33 +56,33 @@ class I18nMessageServiceFileModeTest {
 
     @Test
     void testFindByCodeAndLocaleExisting() {
-        Option<I18nMessageDO> result = i18nMessageService.findByCodeAndLocale("test.hello", "zh_CN");
+        Option<SystemI18nMessageDO> result = i18nMessageService.findByCodeAndLocale("test.hello", "zh_CN");
         assertTrue(result.isDefined());
         assertEquals("你好", result.get().getMessage());
     }
 
     @Test
     void testFindByCodeAndLocaleMissing() {
-        Option<I18nMessageDO> result = i18nMessageService.findByCodeAndLocale("nonexistent", "zh_CN");
+        Option<SystemI18nMessageDO> result = i18nMessageService.findByCodeAndLocale("nonexistent", "zh_CN");
         assertTrue(result.isEmpty());
     }
 
     @Test
     void testFindByLocaleReturnsMessages() {
-        List<I18nMessageDO> list = i18nMessageService.findByLocale("zh_CN");
+        List<SystemI18nMessageDO> list = i18nMessageService.findByLocale("zh_CN");
         assertFalse(list.isEmpty());
         assertTrue(list.stream().anyMatch(m -> "test.hello".equals(m.getCode())));
     }
 
     @Test
     void testFindAllReturnsMessages() {
-        List<I18nMessageDO> list = i18nMessageService.findAll();
+        List<SystemI18nMessageDO> list = i18nMessageService.findAll();
         assertFalse(list.isEmpty());
     }
 
     @Test
     void testSaveThrowsUnsupportedOperation() {
-        I18nMessageDO msg = new I18nMessageDO();
+        SystemI18nMessageDO msg = new SystemI18nMessageDO();
         msg.setCode("test.new");
         msg.setLocale("zh_CN");
         msg.setMessage("新消息");

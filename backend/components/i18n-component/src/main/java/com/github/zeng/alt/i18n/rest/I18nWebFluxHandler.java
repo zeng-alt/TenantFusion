@@ -2,7 +2,7 @@ package com.github.zeng.alt.i18n.rest;
 
 import com.github.zeng.alt.api.rest.RestResponse;
 import com.github.zeng.alt.i18n.core.I18nMessageService;
-import com.github.zeng.alt.i18n.entity.I18nMessageDO;
+import com.github.zeng.alt.i18n.entity.SystemI18nMessageDO;
 import io.vavr.control.Option;
 import org.springframework.web.reactive.function.server.ServerRequest;
 import org.springframework.web.reactive.function.server.ServerResponse;
@@ -19,14 +19,14 @@ public class I18nWebFluxHandler {
     }
 
     public Mono<ServerResponse> findAll(ServerRequest request) {
-        List<I18nMessageDO> list = i18nMessageService.findAll();
+        List<SystemI18nMessageDO> list = i18nMessageService.findAll();
         return ServerResponse.ok().bodyValue(RestResponse.success(list));
     }
 
     public Mono<ServerResponse> findByCodeAndLocale(ServerRequest request) {
         String code = request.pathVariable("code");
         String locale = request.pathVariable("locale");
-        Option<I18nMessageDO> result = i18nMessageService.findByCodeAndLocale(code, locale);
+        Option<SystemI18nMessageDO> result = i18nMessageService.findByCodeAndLocale(code, locale);
         if (result.isDefined()) {
             return ServerResponse.ok().bodyValue(RestResponse.success(result.get()));
         }
@@ -35,42 +35,42 @@ public class I18nWebFluxHandler {
 
     public Mono<ServerResponse> findByCode(ServerRequest request) {
         String code = request.pathVariable("code");
-        List<I18nMessageDO> list = i18nMessageService.findByCode(code);
+        List<SystemI18nMessageDO> list = i18nMessageService.findByCode(code);
         return ServerResponse.ok().bodyValue(RestResponse.success(list));
     }
 
     public Mono<ServerResponse> findByLocale(ServerRequest request) {
         String locale = request.pathVariable("locale");
-        List<I18nMessageDO> list = i18nMessageService.findByLocale(locale);
+        List<SystemI18nMessageDO> list = i18nMessageService.findByLocale(locale);
         return ServerResponse.ok().bodyValue(RestResponse.success(list));
     }
 
     public Mono<ServerResponse> create(ServerRequest request) {
-        return request.bodyToMono(I18nMessageDO.class)
+        return request.bodyToMono(SystemI18nMessageDO.class)
                 .flatMap(message -> {
                     if (message.getId() != null) {
                         return ServerResponse.badRequest()
                                 .bodyValue(RestResponse.fail("新增时不能携带 ID"));
                     }
-                    I18nMessageDO saved = i18nMessageService.save(message);
+                    SystemI18nMessageDO saved = i18nMessageService.save(message);
                     return ServerResponse.ok().bodyValue(RestResponse.success(saved));
                 });
     }
 
     public Mono<ServerResponse> update(ServerRequest request) {
-        return request.bodyToMono(I18nMessageDO.class)
+        return request.bodyToMono(SystemI18nMessageDO.class)
                 .flatMap(message -> {
                     String code = message.getCode();
                     String locale = message.getLocale();
-                    Option<I18nMessageDO> existingOpt = i18nMessageService
+                    Option<SystemI18nMessageDO> existingOpt = i18nMessageService
                             .findByCodeAndLocale(code, locale);
                     if (existingOpt.isEmpty()) {
                         return ServerResponse.notFound().build();
                     }
-                    I18nMessageDO existing = existingOpt.get();
+                    SystemI18nMessageDO existing = existingOpt.get();
                     existing.setMessage(message.getMessage());
                     existing.setModule(message.getModule());
-                    I18nMessageDO saved = i18nMessageService.save(existing);
+                    SystemI18nMessageDO saved = i18nMessageService.save(existing);
                     return ServerResponse.ok().bodyValue(RestResponse.success(saved));
                 });
     }

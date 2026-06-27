@@ -23,13 +23,13 @@ import org.hibernate.annotations.TenantId;
 @Data
 @EqualsAndHashCode(callSuper = true)
 @Entity
-@Table(name = "alt_i18n_message", uniqueConstraints = {
+@Table(name = "sys_i18n_message", uniqueConstraints = {
         @UniqueConstraint(name = "uk_i18n_message_code_locale", columnNames = {"code", "locale"})
 }, indexes = {
         @Index(name = "idx_i18n_message_code", columnList = "code"),
         @Index(name = "idx_i18n_message_locale", columnList = "locale")
 })
-public class I18nMessageDO extends BaseEntity<Long> {
+public class SystemI18nMessageDO extends BaseEntity<Long> {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

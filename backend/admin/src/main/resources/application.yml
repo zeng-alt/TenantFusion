@@ -4,8 +4,8 @@
 spring:
   application:
     name: admin-application
-#  profiles:
-#    active:
+  profiles:
+    active: dev
 
 logging:
   register-shutdown-hook: false
@@ -13,6 +13,6 @@ logging:
 # i18n configuration (default: file mode)
 alt:
   i18n:
-    mode: file
+    mode: database
     basename: messages
     prefix: /api/i18n-messages

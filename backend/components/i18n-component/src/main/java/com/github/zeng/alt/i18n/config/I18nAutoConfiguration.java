@@ -5,21 +5,20 @@ import com.github.zeng.alt.i18n.core.DatabaseI18nMessageService;
 import com.github.zeng.alt.i18n.core.DatabaseMessageSource;
 import com.github.zeng.alt.i18n.core.I18nMessageService;
 import com.github.zeng.alt.i18n.core.ResourceI18nMessageService;
-import com.github.zeng.alt.i18n.entity.I18nMessageDO;
+import com.github.zeng.alt.i18n.entity.SystemI18nMessageDO;
 import com.github.zeng.alt.i18n.repository.I18nMessageRepository;
 import com.github.zeng.alt.i18n.rest.I18nMvcHandler;
 import com.github.zeng.alt.i18n.rest.I18nWebFluxHandler;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
+import org.springframework.boot.autoconfigure.AutoConfigurationPackage;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.autoconfigure.context.MessageSourceAutoConfiguration;
-import org.springframework.boot.autoconfigure.domain.EntityScan;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.MessageSource;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.ImportRuntimeHints;
-import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 import org.springframework.context.support.ResourceBundleMessageSource;
 
 /**
@@ -56,8 +55,7 @@ public class I18nAutoConfiguration {
 
     @Configuration
     @ConditionalOnProperty(prefix = "alt.i18n", name = "mode", havingValue = "database")
-    @EntityScan(basePackageClasses = I18nMessageDO.class)
-    @EnableJpaRepositories(basePackageClasses = I18nMessageRepository.class)
+    @AutoConfigurationPackage(basePackageClasses = {SystemI18nMessageDO.class, I18nMessageRepository.class})
     static class I18nJpaConfig {
 
         @Bean(name = "messageSource")

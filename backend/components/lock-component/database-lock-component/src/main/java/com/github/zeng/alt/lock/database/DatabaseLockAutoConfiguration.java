@@ -3,6 +3,7 @@ package com.github.zeng.alt.lock.database;
 import com.github.zeng.alt.lock.api.LockTemplate;
 import com.github.zeng.alt.lock.executor.LockExecutor;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
+import org.springframework.boot.autoconfigure.AutoConfigurationPackage;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.context.annotation.Bean;
@@ -20,6 +21,7 @@ import javax.sql.DataSource;
  */
 @AutoConfiguration
 @ConditionalOnClass(JdbcClient.class)
+@AutoConfigurationPackage(basePackageClasses = SysDistributedLock.class)
 public class DatabaseLockAutoConfiguration {
 
     @Bean

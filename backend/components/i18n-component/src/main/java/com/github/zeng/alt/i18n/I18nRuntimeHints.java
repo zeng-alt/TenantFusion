@@ -6,7 +6,7 @@ import com.github.zeng.alt.i18n.core.DatabaseI18nMessageService;
 import com.github.zeng.alt.i18n.core.DatabaseMessageSource;
 import com.github.zeng.alt.i18n.core.I18nMessageService;
 import com.github.zeng.alt.i18n.core.ResourceI18nMessageService;
-import com.github.zeng.alt.i18n.entity.I18nMessageDO;
+import com.github.zeng.alt.i18n.entity.SystemI18nMessageDO;
 import com.github.zeng.alt.i18n.repository.I18nMessageRepository;
 import com.github.zeng.alt.i18n.rest.I18nMvcHandler;
 import com.github.zeng.alt.i18n.rest.I18nWebFluxHandler;
@@ -35,7 +35,7 @@ public class I18nRuntimeHints implements RuntimeHintsRegistrar {
 
         // ========== Entity ==========
         registerType(hints,
-                I18nMessageDO.class);
+                SystemI18nMessageDO.class);
 
         // ========== Repository ==========
         registerType(hints,
