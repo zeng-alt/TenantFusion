@@ -26,9 +26,9 @@ public class RestResponse<T> implements Serializable {
 	public static final Integer WARN_CODE = 601;
 	public static final Integer FAIL_CODE = 500;
 
-	private Integer code;
-	private String message;
-	private List<Object> error;
+	private Integer status;
+	private String title;
+	private List<String> error = new ArrayList<>();
 	private T data;
 	private LocalDateTime time = LocalDateTime.now();
 
@@ -36,17 +36,17 @@ public class RestResponse<T> implements Serializable {
 	}
 
 	protected RestResponse(Integer code, String message) {
-		this.code = code;
-		this.message = message;
+		this.status = code;
+		this.title = message;
 	}
 
-	public RestResponse<T> error(List<Object> error) {
+	public RestResponse<T> error(List<String> error) {
 		this.error = error;
 		return this;
 	}
 
 	public RestResponse<T> code(Integer code) {
-		this.code = code;
+		this.status = code;
 		return this;
 	}
 
@@ -82,7 +82,7 @@ public class RestResponse<T> implements Serializable {
 		return new RestResponse<T>().code(WARN_CODE).message("warn").data(data);
 	}
 
-	public RestResponse<T> addError(Object error) {
+	public RestResponse<T> addError(String error) {
 		if (this.error == null) {
 			this.error = new ArrayList<>();
 		}
@@ -91,7 +91,7 @@ public class RestResponse<T> implements Serializable {
 	}
 
 	public RestResponse<T> message(String message) {
-		this.message = message;
+		this.title = message;
 		return this;
 	}
 
@@ -100,7 +100,15 @@ public class RestResponse<T> implements Serializable {
 		return this;
 	}
 
+	public int getCode() {
+		return status;
+	}
+
+	public String getDetail() {
+		return String.join("\n", error);
+	}
+
 	public boolean isSuccess() {
-		return Objects.equals(SUCCESS_CODE, code);
+		return Objects.equals(SUCCESS_CODE, status);
 	}
 }

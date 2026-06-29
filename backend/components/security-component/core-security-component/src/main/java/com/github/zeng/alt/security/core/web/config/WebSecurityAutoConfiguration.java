@@ -1,9 +1,9 @@
 package com.github.zeng.alt.security.core.web.config;
 
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.zeng.alt.security.api.AuthorizationManagerProvider;
 import com.github.zeng.alt.security.api.WhiteListService;
-import com.github.zeng.alt.security.core.properties.LogoutProperties;
 import com.github.zeng.alt.security.core.properties.SecurityProperties;
 import com.github.zeng.alt.security.core.properties.UsernameLoginProperties;
 import com.github.zeng.alt.security.core.web.handler.DefaultAccessDeniedHandler;
@@ -84,7 +84,7 @@ public class WebSecurityAutoConfiguration {
 							.requestMatchers("/tenant/graphiql/**").permitAll()
 							.requestMatchers("/tenant/graphql/**").permitAll()
 							.requestMatchers(HttpMethod.POST, "/actuator/startup").permitAll();
-					if (securityProperties.getEnabledAccess()) {
+					if (Boolean.TRUE.equals(securityProperties.getEnabledAccess())) {
 						author.anyRequest().access(compositeAuthorizationManager(authorizationManagerProviders, whiteListService));
 					} else {
 						author.anyRequest().permitAll();
@@ -150,14 +150,14 @@ public class WebSecurityAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
-	public AuthenticationEntryPoint authenticationEntryPoint() {
-		return new DefaultAuthenticationEntryPoint();
+	public AuthenticationEntryPoint authenticationEntryPoint(ObjectMapper objectMapper) {
+		return new DefaultAuthenticationEntryPoint(objectMapper);
 	}
 
 	@Bean
 	@ConditionalOnMissingBean
-	public AccessDeniedHandler accessDeniedHandler() {
-		return new DefaultAccessDeniedHandler();
+	public AccessDeniedHandler accessDeniedHandler(ObjectMapper objectMapper) {
+		return new DefaultAccessDeniedHandler(objectMapper);
 	}
 
 

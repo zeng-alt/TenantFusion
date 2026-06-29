@@ -2,9 +2,12 @@ package com.github.zeng.alt.security.jwt;
 
 import com.github.zeng.alt.security.core.properties.LoginProperties;
 import com.github.zeng.alt.security.core.properties.LogoutProperties;
+import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
+import org.hibernate.validator.constraints.Length;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.http.HttpMethod;
+import org.springframework.validation.annotation.Validated;
 
 /**
  * JWT 认证配置属性.
@@ -17,6 +20,7 @@ import org.springframework.http.HttpMethod;
  */
 @Data
 @ConfigurationProperties(prefix = "security.jwt")
+@Validated
 public class JwtProperties {
 
     private LoginProperties login = LoginProperties.of("/login/jwt", HttpMethod.POST);
@@ -29,10 +33,12 @@ public class JwtProperties {
     private Boolean validation = false;
 
     /** Base64 编码的 HMAC 签名密钥（至少 256 位） */
+    @NotBlank(message = "HMAC 签名密钥不能为空")
+    @Length(min = 256, message = "HMAC 签名密钥长度最小为【256】位")
     private String base64Secret;
 
     /** Token 过期时间（秒），默认 24 小时 */
-    private Long expiration = 86400L;
+    private Long expiration = 60 * 60 * 24L;
 
     /** Token 类型 */
     private String tokenType = "Bearer";

@@ -42,7 +42,7 @@ tasks.named<org.springframework.boot.gradle.tasks.run.BootRun>("bootRun") {
 val activeProfile = project.findProperty("profiles.active") as? String ?: "dev"
 
 dependencies {
-implementation("org.springframework.boot:spring-boot-starter-actuator")
+
     implementation("org.springframework.boot:spring-boot-starter-actuator")
     //    if (activeProfile != "prod") {
 //        implementation("org.liquibase:liquibase-core")
@@ -52,10 +52,10 @@ implementation("org.springframework.boot:spring-boot-starter-actuator")
     implementation(project(":backend:components:rest-component:rest-annotation-component"))
     implementation(project(":backend:components:core-component"))
     implementation(project(":backend:components:domain-component"))
-    implementation(project(":backend:components:i18n-component"))
+//    implementation(project(":backend:components:i18n-component"))
     implementation(project(":backend:components:storage-component:spring-cache-storage-component"))
     implementation(project(":backend:components:lock-component:database-lock-component"))
-//    implementation(project(":backend:components:security-component:jwt-auth-security-component"))
+    implementation(project(":backend:components:security-component:jwt-auth-security-component"))
     implementation("org.springframework.boot:spring-boot-starter-web")
     implementation("org.springframework.boot:spring-boot-starter-data-jpa")
     implementation(libs.spring.boot.starter.validation)

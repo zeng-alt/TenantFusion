@@ -46,3 +46,10 @@ spring:
 # alt:
 #   i18n:
 #     mode: database
+
+
+security:
+  jwt:
+    base64-secret: "aGRzaGRnYWhkampydXV1dWtkZGRkamZzc2ZqamlrZHNzZGdkZ2RzamdrLGIvY24yNTQ0Ly4tPT1bXTIzOTQ0NzUwLWpmZHNzZ2htdGtqanR0dGV0NGJhZGFocG9laW9uYmlqcGRpYW9oamo0MzA4MDUzMGhnanl5aW9wc29vcGRvZmZqbm1rbW1tbWdoMFtbWzQ4M3FodTMyMm9yNjY0NDY0OHd3YWhzandiYWRoYWhkYWFhYWZlcmhhd2VlYzNmZGpzZGRzaA=="
+  username-login:
+    enabled: true

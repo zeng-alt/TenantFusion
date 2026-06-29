@@ -101,6 +101,7 @@ public class JwtAuthAutoConfiguration {
             JwtTokenProvider jwtTokenProvider,
             StorageTemplate storageTemplate,
             JwtProperties jwtProperties) {
+
         return new JwtLoginHelper(
                 authenticationManager, jwtTokenProvider, storageTemplate, jwtProperties.getExpiration());
     }

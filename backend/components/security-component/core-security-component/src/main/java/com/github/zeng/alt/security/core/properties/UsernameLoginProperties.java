@@ -13,7 +13,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 @ConfigurationProperties(prefix = "security.username-login")
 public class UsernameLoginProperties {
 
-	private Boolean enabled = false;
+	private Boolean enabled = true;
 	private String usernameParameter = "username";
 	private String passwordParameter = "password";
 }
