@@ -2,6 +2,8 @@ plugins {
     id("java-library")
 }
 
+description = "核心组件：全局异常处理、统一响应增强等"
+
 dependencies {
     api(project(":backend:components:api-component"))
     api(project(":backend:components:json-component"))

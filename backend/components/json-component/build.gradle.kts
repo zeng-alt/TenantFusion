@@ -2,6 +2,8 @@ plugins {
     id("java-library")
 }
 
+description = "JSON 序列化配置：Jackson 定制（BigNumber、日期格式等）"
+
 dependencies {
     api(project(":backend:components:api-component"))
     api("com.fasterxml.jackson.core:jackson-databind")

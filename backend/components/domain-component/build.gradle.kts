@@ -2,6 +2,8 @@ plugins {
     id("java-library")
 }
 
+description = "领域模型基础：JPA 实体、Repository、QueryDSL 支持等"
+
 dependencies {
     api(project(":backend:components:core-component"))
     api("jakarta.persistence:jakarta.persistence-api")

@@ -53,7 +53,7 @@ public class PageRestResponse<T extends Serializable> extends RestResponse<Colle
 		response.setTotal(0L);
 		response.setPageSize(pageSize);
 		response.setPageNum(pageNum);
-		response.setCode(SUCCESS_CODE);
+		response.code(SUCCESS_CODE);
 		return response;
 	}
 
@@ -64,7 +64,7 @@ public class PageRestResponse<T extends Serializable> extends RestResponse<Colle
 		response.setTotal(totalCount);
 		response.setPageSize(pageSize);
 		response.setPageNum(pageNum);
-		response.setCode(SUCCESS_CODE);
+		response.code(SUCCESS_CODE);
 		return response;
 	}
 
