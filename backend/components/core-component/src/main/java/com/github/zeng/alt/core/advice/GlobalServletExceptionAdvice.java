@@ -2,28 +2,22 @@ package com.github.zeng.alt.core.advice;
 
 
 import com.github.zeng.alt.api.rest.ErrorResponseEntity;
-import jakarta.servlet.RequestDispatcher;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
 import org.springframework.web.ErrorResponse;
 import org.springframework.web.bind.annotation.ExceptionHandler;
-import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
-import org.springframework.web.servlet.ModelAndView;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import java.net.URI;
-import java.util.Collections;
-import java.util.Map;
 
 /**
  * @author zengJiaJun
  * @version 1.0
- * @crateTime 2024年12月31日 21:20
+ * @since 2024年12月31日
  */
 @Slf4j
 @RestControllerAdvice

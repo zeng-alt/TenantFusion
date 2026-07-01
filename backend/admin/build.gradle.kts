@@ -56,6 +56,7 @@ dependencies {
     implementation(project(":backend:components:storage-component:spring-cache-storage-component"))
     implementation(project(":backend:components:lock-component:database-lock-component"))
     implementation(project(":backend:components:security-component:jwt-auth-security-component"))
+    implementation(project(":backend:components:doc-component"))
     implementation("org.springframework.boot:spring-boot-starter-web")
     implementation("org.springframework.boot:spring-boot-starter-data-jpa")
     implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui")

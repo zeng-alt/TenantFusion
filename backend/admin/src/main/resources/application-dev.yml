@@ -62,3 +62,52 @@ security:
       - "/webjars/**"
   context:
     enabled-access: true
+
+springdoc:
+
+  info:
+    title: zengAlt
+    description: app--native接口文档
+    version: 1.0.0
+
+    contact:
+      name: zengAlt
+      email: admin@example.com
+      url: https://example.com
+
+    license:
+      name: Apache License 2.0
+      identifier: Apache-2.0
+      # 或者使用 url（二选一）
+      # url: https://www.apache.org/licenses/LICENSE-2.0.html
+
+  external-docs:
+    description: 开发文档
+    url: https://example.com/docs
+
+  servers:
+    - url: http://localhost:8080
+      description: 本地环境
+
+    - url: https://api.example.com
+      description: 生产环境
+
+  tags:
+
+    - name: 系统管理
+      description: 系统管理接口
+
+  components:
+
+    security-schemes:
+
+      bearerAuth:
+        type: http
+        scheme: bearer
+        bearer-format: JWT
+        description: JWT Bearer Token
+      session:
+        type: apiKey
+        in: cookie
+        name: JSESSIONID
+        description: Session Cookie

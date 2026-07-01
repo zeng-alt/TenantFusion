@@ -43,7 +43,7 @@ dependencyResolutionManagement {
         mavenCentral()
     }
 }
-include("backend:components:doc-componenet")
+include("backend:components:doc-component")
 include("backend:components:oss-component")
 include("backend:components:oss-component:api-oss-component")
 include("backend:components:oss-component:core-oss-component")

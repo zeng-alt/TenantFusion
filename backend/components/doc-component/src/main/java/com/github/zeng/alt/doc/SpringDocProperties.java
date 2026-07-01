@@ -1,7 +1,6 @@
 package com.github.zeng.alt.doc;
 
 import lombok.Data;
-import org.springframework.boot.autoconfigure.web.ServerProperties;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
 
@@ -23,5 +22,5 @@ public class SpringDocProperties {
     @NestedConfigurationProperty
     private ExternalDocsProperties externalDocs;
 
-    private List<ServerProperties> servers = new ArrayList<>();
+    private List<OpenApiServerProperties> servers = new ArrayList<>();
 }

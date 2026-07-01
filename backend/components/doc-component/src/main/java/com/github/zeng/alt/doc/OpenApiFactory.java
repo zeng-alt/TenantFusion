@@ -14,10 +14,13 @@ public class OpenApiFactory {
 
     private final TagBuilder tagBuilder;
 
+    private final ServerBuilder serverBuilder;
+
     public OpenApiFactory() {
         this.infoBuilder = new InfoBuilder();
         this.componentsBuilder = new ComponentsBuilder();
         this.tagBuilder = new TagBuilder();
+        this.serverBuilder = new ServerBuilder();
     }
 
 
@@ -35,6 +38,8 @@ public class OpenApiFactory {
         openApi.components(components);
 
         addSecurity(openApi, components);
+
+        openApi.servers(serverBuilder.build(p.getServers()));
 
         return openApi;
     }
