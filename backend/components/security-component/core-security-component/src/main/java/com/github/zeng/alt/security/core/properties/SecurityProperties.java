@@ -14,6 +14,5 @@ import org.springframework.stereotype.Component;
 @ConfigurationProperties(prefix = "security.context")
 public class SecurityProperties {
     private Boolean enabledAccess = true;
-    private Boolean enabledLoginHandler = false;
     private String abacPrefix = "/";
 }

@@ -1,5 +1,6 @@
 plugins {
     `maven-publish`
+    id("org.springframework.boot")
 }
 
 description = "components"
@@ -39,7 +40,7 @@ subprojects {
             }
             repositories {
                 maven {
-                    url = uri("http://192.168.56.106:8081/repository/maven-releases/")
+                    url = uri("http://192.168.56.106:8081/repository/maven-snapshots")
                     isAllowInsecureProtocol = true
                     credentials {
                         username = "admin"

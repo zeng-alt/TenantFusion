@@ -19,7 +19,7 @@ import org.springframework.validation.annotation.Validated;
  * @since 2024年10月07日
  */
 @Data
-@ConfigurationProperties(prefix = "security.jwt")
+@ConfigurationProperties(prefix = "security.jwt-auth")
 @Validated
 public class JwtProperties {
 

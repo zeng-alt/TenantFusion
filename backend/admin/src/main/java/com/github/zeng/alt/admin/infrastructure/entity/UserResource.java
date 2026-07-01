@@ -1,4 +1,4 @@
-package com.github.zeng.alt.admin.command.infrastructure.entity;
+package com.github.zeng.alt.admin.infrastructure.entity;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.github.zeng.alt.domain.base.BaseEntity;
@@ -9,24 +9,26 @@ import lombok.Setter;
 import org.jspecify.annotations.Nullable;
 
 @Entity
-@Table(name = "main_user_role")
+@Table(name = "main_user_resource")
 @Getter @Setter
-public class UserRole extends BaseEntity<Long> {
+public class UserResource extends BaseEntity<Long> {
 
     @Id @SnowflakeId
-    private Long userRoleId;
+    private Long userResourceId;
 
+    @JsonIgnore
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id")
     private User user;
 
+    @JsonIgnore
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "role_id")
-    private Role role;
+    @JoinColumn(name = "resource_id")
+    private Permission resource;    // 指向 main_permission.id
 
     @Override
     @JsonIgnore
     public @Nullable Long getId() {
-        return userRoleId;
+        return userResourceId;
     }
 }

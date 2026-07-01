@@ -1,7 +1,6 @@
-package com.github.zeng.alt.admin.command.infrastructure.entity;
+package com.github.zeng.alt.admin.infrastructure.entity;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.github.zeng.alt.rest.annotation.CrudRest;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;

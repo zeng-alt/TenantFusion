@@ -1,4 +1,4 @@
-package com.github.zeng.alt.admin.command.infrastructure.entity;
+package com.github.zeng.alt.admin.infrastructure.entity;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.github.zeng.alt.domain.base.BaseEntity;

@@ -4,7 +4,7 @@ package com.github.zeng.alt.rest.apt.meta;
  * 方法元模型 — 描述单个 CRUD 方法的信息
  *
  * @author zengJiaJun
- * @crateTime 2026年05月28日
+ * @since 2026年05月28日
  * @version 1.0
  */
 public enum MethodMeta {

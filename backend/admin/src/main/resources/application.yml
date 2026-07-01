@@ -11,8 +11,8 @@ logging:
   register-shutdown-hook: false
 
 # i18n configuration (default: file mode)
-alt:
-  i18n:
-    mode: database
-    basename: messages
-    prefix: /api/i18n-messages
+#alt:
+#  i18n:
+#    mode: database
+#    basename: messages
+#    prefix: /api/i18n-messages

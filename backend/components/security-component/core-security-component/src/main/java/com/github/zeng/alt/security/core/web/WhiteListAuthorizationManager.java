@@ -24,13 +24,17 @@ import java.util.function.Supplier;
  * @version 1.0
  * @crateTime 2024年11月27日 21:33
  */
-@RequiredArgsConstructor
 public class WhiteListAuthorizationManager implements AuthorizationManager<RequestAuthorizationContext> {
 
-    private final WhiteListService whiteListService;
+    private WhiteListService whiteListService;
 
     private final AtomicReference<List<PathPatternRequestMatcher>> whiteMatchers =
             new AtomicReference<>(List.of());
+
+    public WhiteListAuthorizationManager(WhiteListService whiteListService) {
+        this.whiteListService = whiteListService;
+        refreshWhiteList();
+    }
 
     @Override
     public AuthorizationDecision check(

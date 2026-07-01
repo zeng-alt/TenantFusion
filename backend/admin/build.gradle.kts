@@ -58,6 +58,7 @@ dependencies {
     implementation(project(":backend:components:security-component:jwt-auth-security-component"))
     implementation("org.springframework.boot:spring-boot-starter-web")
     implementation("org.springframework.boot:spring-boot-starter-data-jpa")
+    implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui")
     implementation(libs.spring.boot.starter.validation)
     implementation(libs.spring.modulith.starter.jpa)
 //    implementation(libs.spring.boot.starter.cache)

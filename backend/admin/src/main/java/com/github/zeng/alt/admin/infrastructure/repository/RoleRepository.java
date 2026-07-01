@@ -1,7 +1,7 @@
-package com.github.zeng.alt.admin.command.infrastructure.repository;
+package com.github.zeng.alt.admin.infrastructure.repository;
 
 
-import com.github.zeng.alt.admin.command.infrastructure.entity.Role;
+import com.github.zeng.alt.admin.infrastructure.entity.Role;
 import com.github.zeng.alt.domain.base.BaseRepository;
 
 import java.util.List;

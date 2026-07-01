@@ -180,6 +180,7 @@ public class JwtAuthAutoConfiguration {
 
 
         @Bean
+        @ConditionalOnProperty(prefix = "security.jwt-auth", name = "authentication", havingValue = "true")
         public OpenApiCustomizer loginApiCustomizer(UsernameLoginProperties usernameLoginProperties, JwtProperties jwtProperties) {
             return openApi -> {
 
@@ -194,7 +195,7 @@ public class JwtAuthAutoConfiguration {
                                 .required(true)
                                 .content(new Content()
                                         .addMediaType(
-                                                "loginBody",
+                                                org.springframework.http.MediaType.APPLICATION_JSON_VALUE,
                                                 new MediaType().schema(loginRequest)
                                         )
                                 ))
