@@ -8,6 +8,7 @@ dependencies {
     api(project(":backend:components:message-component:api-message-component"))
     implementation("org.springframework.boot:spring-boot-starter")
     implementation("org.springframework.kafka:spring-kafka")
+    api(rootProject.libs.spring.modulith.events.kafka)
 
     testImplementation("org.springframework.boot:spring-boot-starter-test")
     testImplementation("org.springframework.kafka:spring-kafka-test")
