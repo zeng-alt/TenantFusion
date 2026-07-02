@@ -2,6 +2,9 @@ package com.github.zeng.alt.oss.core;
 
 import com.github.zeng.alt.oss.*;
 import com.github.zeng.alt.oss.core.aot.OssRuntimeHints;
+import com.github.zeng.alt.oss.core.local.FileSystemOssTemplate;
+import com.github.zeng.alt.oss.core.s3.S3MultipartUploadService;
+import com.github.zeng.alt.oss.core.s3.S3OssTemplate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.ObjectProvider;
@@ -17,31 +20,26 @@ import software.amazon.awssdk.services.s3.S3Client;
 /**
  * OSS 核心自动配置。
  * <p>
- * 当 {@code oss.s3.enabled=true}（默认）时，创建 {@link DefaultOssConnectionManager}，
- * 其内部维护一个可动态刷新的 {@link RefreshableOssTemplate}。
+ * 根据 {@link StorageType} 自动选择底层存储实现：
+ * <ul>
+ *   <li><b>S3 兼容类型</b>（MINIO / AWS_S3 / ALIYUN_OSS / TENCENT_COS / HUAWEI_OBS）：
+ *       使用 {@link DefaultOssConnectionManager} + {@link S3OssTemplate}，基于 AWS S3 协议</li>
+ *   <li><b>本地文件系统</b>（FILE）：
+ *       使用 {@link FileSystemOssTemplate}，基于 {@code file://} 协议</li>
+ * </ul>
  * <p>
  * 同时注册以下可选组件：
  * <ul>
  *   <li>{@link DefaultBucketStrategy} — 自动桶策略（按文件类型分桶 + 按日期分路径）</li>
- *   <li>{@link S3MultipartUploadService} — 分片上传与断点续传</li>
+ *   <li>{@link S3MultipartUploadService} — 分片上传与断点续传（仅 S3 类型）</li>
  *   <li>{@link DefaultThumbnailService} — 图片缩略图生成</li>
  * </ul>
  *
- * <b>配置刷新集成</b>（Spring Cloud Config / Nacos / Apollo）：
- * <ol>
- *   <li>配置中心更新 {@code oss.s3.*} 属性后，Spring 发布 {@code EnvironmentChangeEvent}</li>
- *   <li>{@link DefaultOssConnectionManager} 监听该事件并自动触发刷新</li>
- *   <li>刷新时，管理器通过 {@link ObjectProvider} 获取最新的 {@link OssProperties}</li>
- *   <li>创建新连接 → 原子性切换 → 异步关闭旧连接</li>
- * </ol>
- * 也可通过 {@code POST /api/oss/refresh}（启用 {@code oss.s3.management.enabled=true}）手动触发。
- *
  * @author zengJiaJun
  * @since 2026-07-02
- * @version 2.0
+ * @version 3.0
  */
 @AutoConfiguration
-@ConditionalOnClass(S3Client.class)
 @ConditionalOnProperty(prefix = "oss.s3", name = "enabled", havingValue = "true", matchIfMissing = true)
 @EnableConfigurationProperties({OssProperties.class, ThumbnailProperties.class})
 @ImportRuntimeHints(OssRuntimeHints.class)
@@ -49,18 +47,90 @@ public class OssCoreAutoConfiguration {
 
     private static final Logger log = LoggerFactory.getLogger(OssCoreAutoConfiguration.class);
 
+    // ==================== OssTemplate ====================
+
     /**
-     * 创建 OSS 连接管理器（单例）。
+     * 根据存储类型创建 {@link OssTemplate}。
+     * <p>
+     * - {@link StorageType#FILE}: 本地文件系统 {@link FileSystemOssTemplate}
+     * - S3 兼容类型: {@link DefaultOssConnectionManager}（包装 {@link S3OssTemplate}）
      */
     @Bean
     @ConditionalOnMissingBean
-    public DefaultOssConnectionManager ossConnectionManager(ObjectProvider<OssProperties> propertiesProvider) {
+    public OssTemplate ossTemplate(ObjectProvider<OssProperties> propertiesProvider) {
         OssProperties props = propertiesProvider.getIfAvailable();
         if (props == null) {
             props = new OssProperties();
         }
-        final OssProperties initialProps = props;
 
+        StorageType storageType = props.getStorageType();
+        log.info("Initializing OSS with storage type: {}, endpoint: {}", storageType, props.getEndpoint());
+
+        if (storageType == StorageType.FILE) {
+            // ===== 本地文件系统 =====
+            return createFileSystemTemplate(props);
+        }
+
+        // ===== S3 兼容类型 (MINIO / AWS_S3 / ALIYUN_OSS / TENCENT_COS / HUAWEI_OBS) =====
+        if (!isS3ClientAvailable()) {
+            throw new IllegalStateException(
+                    "S3 storage type '" + storageType + "' requires S3Client on classpath, "
+                            + "but software.amazon.awssdk.services.s3.S3Client is not available. "
+                            + "Add the AWS S3 SDK dependency or use storage-type=file.");
+        }
+        return createS3Template(props, propertiesProvider);
+    }
+
+    // ==================== 自动桶策略 ====================
+
+    @Bean
+    @ConditionalOnMissingBean
+    @ConditionalOnProperty(prefix = "oss.s3", name = "bucket-strategy-enabled", havingValue = "true")
+    public BucketStrategy bucketStrategy(OssProperties properties) {
+        log.info("OSS bucket strategy enabled: prefix={}, datePath={}",
+                properties.getBucketPrefix(), properties.isDatePathEnabled());
+        return new DefaultBucketStrategy(properties);
+    }
+
+    // ==================== 分片上传 / 断点续传（仅 S3） ====================
+
+    @Bean
+    @ConditionalOnMissingBean
+    @ConditionalOnClass(S3Client.class)
+    @ConditionalOnProperty(prefix = "oss.s3.upload", name = "enabled", havingValue = "true", matchIfMissing = true)
+    public MultipartUploadService multipartUploadService(
+            ObjectProvider<OssConnectionManager> connectionManagerProvider,
+            OssProperties properties) {
+        OssConnectionManager connectionManager = connectionManagerProvider.getIfAvailable();
+        if (connectionManager == null) {
+            log.warn("Cannot create S3MultipartUploadService: OssConnectionManager not available");
+            return null;
+        }
+        S3Client s3Client = resolveS3Client(connectionManager);
+        if (s3Client == null) {
+            throw new IllegalStateException(
+                    "Cannot create S3MultipartUploadService: unable to resolve S3Client. "
+                            + "Ensure OssConnectionManager is properly initialized.");
+        }
+        return new S3MultipartUploadService(s3Client, properties);
+    }
+
+    // ==================== 缩略图生成 ====================
+
+    @Bean
+    @ConditionalOnMissingBean
+    @ConditionalOnProperty(prefix = "oss.thumbnail", name = "enabled", havingValue = "true", matchIfMissing = true)
+    public DefaultThumbnailService thumbnailService(ThumbnailProperties thumbnailProperties) {
+        return new DefaultThumbnailService(thumbnailProperties);
+    }
+
+    // ==================== 内部方法 ====================
+
+    /**
+     * 创建 S3 兼容模板（含连接管理器）。
+     */
+    private OssTemplate createS3Template(OssProperties initialProps,
+                                          ObjectProvider<OssProperties> propertiesProvider) {
         DefaultOssConnectionManager manager = new DefaultOssConnectionManager(
                 () -> {
                     OssProperties current = propertiesProvider.getIfAvailable();
@@ -75,90 +145,43 @@ public class OssCoreAutoConfiguration {
                 OssTemplate template = manager.getTemplate();
                 if (template instanceof RefreshableOssTemplate refreshable) {
                     if (refreshable.getDelegate() instanceof S3OssTemplate s3Template) {
-                        ensureBucketExists(s3Template.getS3Client(), initialProps.getBucketName());
+                        ensureS3BucketExists(s3Template, initialProps.getBucketName());
                     }
+                } else if (template instanceof S3OssTemplate s3Template) {
+                    ensureS3BucketExists(s3Template, initialProps.getBucketName());
                 }
             } catch (Exception e) {
                 log.warn("Failed to auto-create OSS bucket '{}': {}", initialProps.getBucketName(), e.getMessage());
             }
         }
 
-        return manager;
+        return manager.getTemplate();
     }
 
     /**
-     * 暴露 {@link OssTemplate} 给业务代码使用。
+     * 创建本地文件系统模板。
      */
-    @Bean
-    @ConditionalOnMissingBean
-    public OssTemplate ossTemplate(OssConnectionManager connectionManager) {
-        return connectionManager.getTemplate();
+    private OssTemplate createFileSystemTemplate(OssProperties props) {
+        return new FileSystemOssTemplate(props);
     }
 
-    // ==================== 自动桶策略 ====================
-
     /**
-     * 默认桶策略。
-     * <p>
-     * 仅在 {@code oss.s3.bucket-strategy-enabled=true} 时注册。
+     * 检查 S3Client 是否在类路径中。
      */
-    @Bean
-    @ConditionalOnMissingBean
-    @ConditionalOnProperty(prefix = "oss.s3", name = "bucket-strategy-enabled", havingValue = "true")
-    public BucketStrategy bucketStrategy(OssProperties properties) {
-        log.info("OSS bucket strategy enabled: prefix={}, datePath={}",
-                properties.getBucketPrefix(), properties.isDatePathEnabled());
-        return new DefaultBucketStrategy(properties);
-    }
-
-    // ==================== 分片上传 / 断点续传 ====================
-
-    /**
-     * 基于 S3 的多部分上传服务。
-     * <p>
-     * 需要获取底层 S3Client。从 {@link OssConnectionManager} 管理的
-     * {@link RefreshableOssTemplate} 中提取。
-     */
-    @Bean
-    @ConditionalOnMissingBean
-    @ConditionalOnProperty(prefix = "oss.s3.upload", name = "enabled", havingValue = "true", matchIfMissing = true)
-    public S3MultipartUploadService multipartUploadService(
-            OssConnectionManager connectionManager,
-            OssProperties properties) {
-        S3Client s3Client = resolveS3Client(connectionManager);
-        if (s3Client == null) {
-            throw new IllegalStateException(
-                    "Cannot create S3MultipartUploadService: unable to resolve S3Client. "
-                            + "Ensure OssConnectionManager is properly initialized.");
-        }
-        return new S3MultipartUploadService(s3Client, properties);
-    }
-
-    // ==================== 缩略图生成 ====================
-
-    /**
-     * 默认缩略图生成服务。
-     */
-    @Bean
-    @ConditionalOnMissingBean
-    @ConditionalOnProperty(prefix = "oss.thumbnail", name = "enabled", havingValue = "true", matchIfMissing = true)
-    public DefaultThumbnailService thumbnailService(ThumbnailProperties thumbnailProperties) {
-        return new DefaultThumbnailService(thumbnailProperties);
-    }
-
-    // ==================== 内部方法 ====================
-
-    /**
-     * 确保 Bucket 存在，不存在则创建。
-     */
-    private void ensureBucketExists(S3Client client, String bucketName) {
+    private static boolean isS3ClientAvailable() {
         try {
-            client.headBucket(b -> b.bucket(bucketName));
-            log.debug("OSS bucket already exists: {}", bucketName);
-        } catch (software.amazon.awssdk.services.s3.model.NoSuchBucketException e) {
-            client.createBucket(b -> b.bucket(bucketName));
-            log.info("OSS bucket created: {}", bucketName);
+            Class.forName("software.amazon.awssdk.services.s3.S3Client");
+            return true;
+        } catch (ClassNotFoundException e) {
+            return false;
         }
+    }
+
+    /**
+     * 确保 S3 Bucket 存在。
+     */
+    private void ensureS3BucketExists(S3OssTemplate template, String bucketName) {
+        template.ensureBucketExists(bucketName);
     }
 
     /**

@@ -1,13 +1,16 @@
 # OSS 组件模块
 
-基于 AWS S3 协议的统一对象存储服务组件，兼容 MinIO、阿里云 OSS、腾讯云 COS、华为云 OBS 等所有 S3 兼容存储，提供**文件上传下载**、**分片上传与断点续传**、**图片缩略图生成**、**自动桶策略**等能力。
+统一对象存储服务组件，支持多种存储后端：**本地文件系统**、**MinIO**、**AWS S3**、**阿里云 OSS**、**腾讯云 COS**、**华为云 OBS**。提供**文件上传下载**、**分片上传与断点续传**、**图片缩略图生成**、**自动桶策略**等能力。
 
 ## 模块结构
 
 ```
 oss-component/
 ├── api-oss-component/          -- API 接口层（接口、DTO、配置属性）
-├── core-oss-component/         -- 核心实现层（S3 协议实现、分片上传、缩略图）
+├── core-oss-component/         -- 核心实现层
+│   ├── core/                   --   公共基础（连接管理、桶策略、缩略图）
+│   │   ├── s3/                 --   S3 协议实现（S3OssTemplate）
+│   │   └── local/              --   本地文件系统实现（FileSystemOssTemplate）
 ├── jpa-oss-component/          -- JPA 持久化层（文件记录管理、MD5 去重）
 └── jdbc-oss-component/         -- JDBC 持久化层（JPA 轻量替代）
 ```
@@ -87,7 +90,79 @@ public class OssDemoController {
 
 ---
 
-## 核心 API
+### 3. 配置存储类型
+
+通过 `oss.s3.storage-type` 选择存储后端：
+
+```yaml
+oss:
+  s3:
+    storage-type: minio        # 可选值：file / minio / aws / aliyun / tencent / huawei
+```
+
+---
+
+## 存储后端支持
+
+组件支持以下存储后端，通过 `oss.s3.storage-type` 切换：
+
+| 存储类型 | 配置值 | endpoint 示例 | 说明 |
+|---------|--------|--------------|------|
+| **本地文件系统** | `file` | `file:///d:/data/oss` | 无需额外服务，适合开发测试 |
+| **MinIO** | `minio` | `http://localhost:9000` | 自建 S3 兼容服务 |
+| **AWS S3** | `aws` | `https://s3.amazonaws.com` | AWS 官方 S3 |
+| **阿里云 OSS** | `aliyun` | `https://oss-cn-hangzhou.aliyuncs.com` | - |
+| **腾讯云 COS** | `tencent` | `https://cos.ap-guangzhou.myqcloud.com` | - |
+| **华为云 OBS** | `huawei` | `https://obs.cn-north-4.myhuaweicloud.com` | - |
+
+> **注意**: 切换存储类型后，`pathStyleAccess`、`region` 等参数需根据目标服务调整。
+
+### 本地文件系统
+
+**endpoint 格式**: `file:///` 后跟绝对路径
+- Windows: `file:///D:/data/oss` 或 `file:///C:/storage`
+- Linux/Mac: `file:///data/oss` 或 `file:///home/user/oss`
+
+**目录结构**:
+```
+{basePath}/
+├── {bucketName}/
+│   ├── path/to/file1.jpg
+│   ├── path/to/file2.pdf
+│   └── ...
+└── ...
+```
+
+**配置示例**:
+```yaml
+oss:
+  s3:
+    storage-type: file
+    endpoint: file:///D:/data/oss
+    bucket-name: my-bucket
+    auto-create-bucket: true
+```
+
+> **注意**:
+> - 本地文件系统不支持预签名 URL（`presignedGetUrl` 返回文件直接 URI）
+> - 分片上传/断点续传端点在 FILE 模式下自动禁用
+> - 文件操作直接使用 java.nio API，无网络开销
+
+### MinIO / AWS / 阿里云 / 腾讯云 / 华为云
+
+这些 S3 兼容类型共享同一套实现（`S3OssTemplate`），仅 endpoint 和配置不同：
+
+```yaml
+oss:
+  s3:
+    storage-type: minio         # 或 aws / aliyun / tencent / huawei
+    endpoint: http://localhost:9000
+    access-key: your-access-key
+    secret-key: your-secret-key
+    bucket-name: my-bucket
+    path-style-access: true     # MinIO=true, AWS/Aliyun/Tencent/Huawei=false
+    region: us-east-1
+```
 
 ### OssTemplate — 统一操作模板
 
@@ -512,7 +587,8 @@ connectionManager.destroy();
 oss:
   s3:
     enabled: true                       # 是否启用 OSS
-    endpoint: http://localhost:9000      # S3 兼容服务地址
+    storage-type: minio                 # 存储类型：file/minio/aws/aliyun/tencent/huawei
+    endpoint: http://localhost:9000      # S3 服务地址（file:///path 用于本地文件系统）
     region: us-east-1                   # 区域
     access-key:                         # Access Key
     secret-key:                         # Secret Key
@@ -574,11 +650,12 @@ oss:
 
 | 存储服务 | endpoint 示例 | pathStyleAccess | 备注 |
 |---------|--------------|----------------|------|
-| **AWS S3** | `https://s3.amazonaws.com` | `false` | - |
-| **MinIO** | `http://localhost:9000` | `true` | 开发首选 |
-| **阿里云 OSS** | `https://oss-cn-hangzhou.aliyuncs.com` | `false` | - |
-| **腾讯云 COS** | `https://cos.ap-guangzhou.myqcloud.com` | `false` | - |
-| **华为云 OBS** | `https://obs.cn-north-4.myhuaweicloud.com` | `false` | - |
+| **本地文件系统** | `file:///d:/data/oss` | `file` | 自动 | 开发测试首选 |
+| **MinIO** | `http://localhost:9000` | `minio` | 自动=true | 开发首选 |
+| **AWS S3** | `https://s3.amazonaws.com` | `aws` | 自动=false | - |
+| **阿里云 OSS** | `https://oss-cn-hangzhou.aliyuncs.com` | `aliyun` | 自动=false | - |
+| **腾讯云 COS** | `https://cos.ap-guangzhou.myqcloud.com` | `tencent` | 自动=false | - |
+| **华为云 OBS** | `https://obs.cn-north-4.myhuaweicloud.com` | `huawei` | 自动=false | - |
 | **京东云 OSS** | `https://s3.cn-north-1.jdcloud-oss.com` | `false` | - |
 
 ---

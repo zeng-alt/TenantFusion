@@ -1,8 +1,9 @@
-package com.github.zeng.alt.oss.core;
+package com.github.zeng.alt.oss.core.s3;
 
 import com.github.zeng.alt.oss.OssFileInfo;
 import com.github.zeng.alt.oss.OssProperties;
 import com.github.zeng.alt.oss.OssTemplate;
+import com.github.zeng.alt.oss.core.OssException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.util.StringUtils;
@@ -26,7 +27,9 @@ import java.util.stream.Collectors;
 /**
  * AWS S3 协议 {@link OssTemplate} 实现。
  * <p>
- * 兼容 AWS S3、MinIO、腾讯云 COS、阿里云 OSS 等所有支持 S3 协议的对象存储服务。
+ * 兼容 AWS S3、MinIO、腾讯云 COS、阿里云 OSS、华为云 OBS 等所有支持 S3 协议的对象存储服务。
+ * <p>
+ * 根据 {@link StorageType} 自动选择：MINIO / AWS_S3 / ALIYUN_OSS / TENCENT_COS / HUAWEI_OBS。
  *
  * @author zengJiaJun
  * @since 2026-07-02
@@ -509,10 +512,6 @@ public class S3OssTemplate implements OssTemplate {
 
     /**
      * 优雅关闭底层客户端连接。
-     * <p>
-     * {@link S3Client#close()} 会等待所有正在进行的请求完成后才返回，
-     * 不会强制中断已提交的操作，确保正在运行的文件上传/下载不受影响。
-     * 调用后此实例不再可用。
      */
     public void destroy() {
         log.info("Shutting down OSS connection: bucket={}, endpoint={}",

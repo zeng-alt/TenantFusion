@@ -2,6 +2,9 @@ package com.github.zeng.alt.oss.core.aot;
 
 import com.github.zeng.alt.oss.*;
 import com.github.zeng.alt.oss.core.*;
+import com.github.zeng.alt.oss.core.local.FileSystemOssTemplate;
+import com.github.zeng.alt.oss.core.s3.S3MultipartUploadService;
+import com.github.zeng.alt.oss.core.s3.S3OssTemplate;
 import com.github.zeng.alt.oss.core.upload.UploadController;
 import org.springframework.aot.hint.ExecutableMode;
 import org.springframework.aot.hint.MemberCategory;
@@ -43,6 +46,7 @@ public class OssRuntimeHints implements RuntimeHintsRegistrar {
                 OssConnectionManager.class,
                 BucketStrategy.class,
                 FileType.class,
+                StorageType.class,
                 MultipartUploadService.class,
                 UploadPartInfo.class,
                 ThumbnailService.class,
@@ -59,6 +63,7 @@ public class OssRuntimeHints implements RuntimeHintsRegistrar {
                 DefaultBucketStrategy.class,
                 S3MultipartUploadService.class,
                 DefaultThumbnailService.class,
+                FileSystemOssTemplate.class,
                 UploadController.class,
                 UploadController.InitiateUploadRequest.class,
                 UploadController.CompleteUploadRequest.class);

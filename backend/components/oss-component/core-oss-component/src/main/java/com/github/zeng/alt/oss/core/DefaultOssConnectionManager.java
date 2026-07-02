@@ -3,6 +3,7 @@ package com.github.zeng.alt.oss.core;
 import com.github.zeng.alt.oss.OssConnectionManager;
 import com.github.zeng.alt.oss.OssProperties;
 import com.github.zeng.alt.oss.OssTemplate;
+import com.github.zeng.alt.oss.core.s3.S3OssTemplate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.util.StringUtils;

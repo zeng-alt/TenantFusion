@@ -1,6 +1,7 @@
-package com.github.zeng.alt.oss.core;
+package com.github.zeng.alt.oss.core.s3;
 
 import com.github.zeng.alt.oss.*;
+import com.github.zeng.alt.oss.core.OssException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.util.StringUtils;
@@ -55,7 +56,6 @@ public class S3MultipartUploadService implements MultipartUploadService {
             builder.contentType(contentType);
         }
         if (totalSize != null) {
-            // 部分 S3 兼容服务支持此属性
             try {
                 builder.metadata(java.util.Map.of("total-size", totalSize.toString()));
             } catch (Exception e) {
@@ -76,9 +76,6 @@ public class S3MultipartUploadService implements MultipartUploadService {
     @Override
     public UploadPartInfo uploadPart(String uploadId, int partNumber, long partSize, InputStream data) {
         String bucketName = properties.getBucketName();
-        // 使用最后一个已列出的文件名作为 key（需从 uploadId 追溯）
-        // 实际场景中，客户端应在初始化后自行记录 key，或通过查询接口获取
-        // 此处采用通用方式：从 S3 的 listMultipartUploads 获取 key
         String fileName = resolveKeyByUploadId(uploadId);
         if (fileName == null) {
             throw new OssException("Cannot resolve file key for uploadId: " + uploadId
@@ -112,7 +109,6 @@ public class S3MultipartUploadService implements MultipartUploadService {
                                       List<UploadPartInfo> completedParts) {
         String fullPath = buildFullPath(fileName);
 
-        // 如果未传入已上传分片列表，则自动从 S3 查询
         List<UploadPartInfo> parts = completedParts;
         if (parts == null || parts.isEmpty()) {
             parts = listParts(uploadId);
@@ -150,7 +146,6 @@ public class S3MultipartUploadService implements MultipartUploadService {
 
     @Override
     public void abortUpload(String uploadId) {
-        // 需要找到 uploadId 对应的 bucket 和 key
         String key = resolveKeyByUploadId(uploadId);
         if (key == null) {
             log.warn("Cannot abort upload {}: upload not found or already completed", uploadId);
@@ -202,7 +197,6 @@ public class S3MultipartUploadService implements MultipartUploadService {
                     }
                     result.add(info);
                 }
-                // AWS SDK v2: use the last part number as marker for pagination
                 isTruncated = Boolean.TRUE.equals(response.isTruncated());
                 if (isTruncated && !response.parts().isEmpty()) {
                     partNumberMarker = response.parts().getLast().partNumber();
@@ -220,10 +214,8 @@ public class S3MultipartUploadService implements MultipartUploadService {
     @Override
     public UploadSessionInfo getUploadStatus(String uploadId) {
         try {
-            // 通过查询已上传分片来推断上传状态
             List<UploadPartInfo> parts = listParts(uploadId);
             if (parts.isEmpty()) {
-                // 可能还未上传任何分片，或 uploadId 无效
                 UploadSessionInfo info = new UploadSessionInfo();
                 info.setUploadId(uploadId);
                 info.setUploadStatus("INITIATED");
@@ -243,12 +235,6 @@ public class S3MultipartUploadService implements MultipartUploadService {
 
     // ==================== 内部辅助方法 ====================
 
-    /**
-     * 通过 uploadId 查找对应的 S3 对象 key。
-     * <p>
-     * 遍历当前桶中所有正在进行的分片上传任务，匹配 uploadId。
-     * 如果上传已完成或已取消，则返回 {@code null}。
-     */
     private String resolveKeyByUploadId(String uploadId) {
         String bucketName = properties.getBucketName();
         String keyMarker = null;
@@ -279,9 +265,6 @@ public class S3MultipartUploadService implements MultipartUploadService {
         }
     }
 
-    /**
-     * 拼接完整路径（basePath + fileName）。
-     */
     private String buildFullPath(String fileName) {
         String basePath = properties.getBasePath();
         if (!StringUtils.hasText(basePath)) {
@@ -291,9 +274,6 @@ public class S3MultipartUploadService implements MultipartUploadService {
         return normalizedBase + fileName;
     }
 
-    /**
-     * 移除 basePath 前缀。
-     */
     private String stripBasePath(String fullPath) {
         String basePath = properties.getBasePath();
         if (!StringUtils.hasText(basePath) || !fullPath.startsWith(basePath)) {
@@ -303,9 +283,6 @@ public class S3MultipartUploadService implements MultipartUploadService {
         return stripped.startsWith("/") ? stripped.substring(1) : stripped;
     }
 
-    /**
-     * 构建对象访问 URL。
-     */
     private String buildObjectUrl(String bucketName, String fullPath) {
         String endpoint = properties.getEndpoint();
         if (endpoint == null) {

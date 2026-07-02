@@ -20,6 +20,9 @@ public class OssProperties {
     /** 对象存储服务的 URL */
     private String endpoint;
 
+    /** 存储类型，可选：file / minio / aws / aliyun / tencent / huawei，默认 minio */
+    private StorageType storageType = StorageType.MINIO;
+
     /** 区域 */
     private String region = "us-east-1";
 
@@ -38,10 +41,15 @@ public class OssProperties {
     /**
      * 路径风格访问。
      * <p>
-     * - {@code true}: 路径风格（MinIO 等兼容 S3 服务），格式为 {@code http://endpoint/bucket/key}
-     * - {@code false}: 虚拟主机风格（AWS S3），格式为 {@code http://bucket.endpoint/key}
+     * 当未显式设置时，根据 {@link #storageType} 自动推导：
+     * <ul>
+     *   <li>{@code MINIO} → {@code true}（路径风格）</li>
+     *   <li>{@code AWS_S3 / ALIYUN_OSS / TENCENT_COS / HUAWEI_OBS} → {@code false}（虚拟主机风格）</li>
+     *   <li>{@code FILE} → 不适用</li>
+     * </ul>
+     * 显式设置此值将覆盖自动推导。
      */
-    private boolean pathStyleAccess = false;
+    private Boolean pathStyleAccess;
 
     /** 最大上传文件大小（字节），默认 100MB */
     private long maxUploadSize = 104_857_600;
@@ -96,6 +104,14 @@ public class OssProperties {
         this.endpoint = endpoint;
     }
 
+    public StorageType getStorageType() {
+        return storageType;
+    }
+
+    public void setStorageType(StorageType storageType) {
+        this.storageType = storageType;
+    }
+
     public String getRegion() {
         return region;
     }
@@ -137,10 +153,21 @@ public class OssProperties {
     }
 
     public boolean isPathStyleAccess() {
+        if (pathStyleAccess != null) {
+            return pathStyleAccess;
+        }
+        // 未显式设置时，根据存储类型自动推导
+        return storageType == StorageType.MINIO;
+    }
+
+    /**
+     * 获取原始的 pathStyleAccess 设置值（可能为 null）。
+     */
+    public Boolean getPathStyleAccessRaw() {
         return pathStyleAccess;
     }
 
-    public void setPathStyleAccess(boolean pathStyleAccess) {
+    public void setPathStyleAccess(Boolean pathStyleAccess) {
         this.pathStyleAccess = pathStyleAccess;
     }
 
