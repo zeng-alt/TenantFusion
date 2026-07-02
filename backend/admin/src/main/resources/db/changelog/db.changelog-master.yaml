@@ -9,6 +9,15 @@ databaseChangeLog:
       relativeToChangelogFile: true
 
 
+  - include:
+      file: oss/2026-07-02-init-oss-file.sql
+      relativeToChangelogFile: true
+
+
+  - include:
+      file: oss/2026-07-02-add-thumbnail-strategy.sql
+      relativeToChangelogFile: true
+
 
   - includeAll:
       path: pg/
