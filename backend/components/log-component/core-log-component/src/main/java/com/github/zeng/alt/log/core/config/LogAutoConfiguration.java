@@ -13,6 +13,7 @@ import com.github.zeng.alt.log.core.operation.LogOperationSource;
 import com.github.zeng.alt.log.core.support.*;
 import org.springframework.aop.Advisor;
 import org.springframework.aop.support.annotation.AnnotationMatchingPointcut;
+import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
@@ -20,6 +21,8 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplicat
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ImportRuntimeHints;
+import org.springframework.context.annotation.Lazy;
+import org.springframework.context.annotation.Role;
 
 /**
  * 日志模块自动配置。
@@ -34,11 +37,13 @@ import org.springframework.context.annotation.ImportRuntimeHints;
  */
 @AutoConfiguration
 @ImportRuntimeHints(LogRuntimeHints.class)
+@Role(BeanDefinition.ROLE_INFRASTRUCTURE)
 public class LogAutoConfiguration {
 
     // ========== AOP 拦截 ==========
 
     @Bean
+    @Role(BeanDefinition.ROLE_INFRASTRUCTURE)
     public Advisor logAdvisor(LogHandler handler, LogOperationSource source) {
         return new LogMethodInterceptor(
                 handler,
@@ -49,6 +54,7 @@ public class LogAutoConfiguration {
     }
 
     @Bean
+    @Role(BeanDefinition.ROLE_INFRASTRUCTURE)
     @ConditionalOnMissingBean
     public LogOperationSource annotationLogOperationSource() {
         return new AnnotationLogOperationSource();
@@ -57,6 +63,7 @@ public class LogAutoConfiguration {
     // ========== 日志处理器 ==========
 
     @Bean
+    @Role(BeanDefinition.ROLE_INFRASTRUCTURE)
     @ConditionalOnMissingBean(LogHandler.class)
     public LogHandler defaultLogHandler(
             LogRecordFactory factory,
@@ -65,13 +72,14 @@ public class LogAutoConfiguration {
     }
 
     @Bean
+    @Role(BeanDefinition.ROLE_INFRASTRUCTURE)
     @ConditionalOnMissingBean(LogRecordFactory.class)
     public LogRecordFactory defaultLogRecordFactory(
             UserResolver userResolver,
             IpResolver ipResolver,
             RequestResolver requestResolver,
             RequestParameterResolver parameterResolver,
-            ObjectMapper objectMapper) {
+            @Lazy ObjectMapper objectMapper) {
         return new DefaultLogRecordFactory(
                 userResolver, ipResolver,
                 requestResolver, parameterResolver,
@@ -81,6 +89,7 @@ public class LogAutoConfiguration {
     // ========== 支持组件（Web 环境） ==========
 
     @Bean
+    @Role(BeanDefinition.ROLE_INFRASTRUCTURE)
     @ConditionalOnWebApplication(type = ConditionalOnWebApplication.Type.SERVLET)
     @ConditionalOnMissingBean(IpResolver.class)
     public IpResolver servletIpResolver() {
@@ -88,6 +97,7 @@ public class LogAutoConfiguration {
     }
 
     @Bean
+    @Role(BeanDefinition.ROLE_INFRASTRUCTURE)
     @ConditionalOnWebApplication(type = ConditionalOnWebApplication.Type.SERVLET)
     @ConditionalOnMissingBean(RequestResolver.class)
     public RequestResolver servletRequestResolver() {
@@ -95,15 +105,17 @@ public class LogAutoConfiguration {
     }
 
     @Bean
+    @Role(BeanDefinition.ROLE_INFRASTRUCTURE)
     @ConditionalOnWebApplication(type = ConditionalOnWebApplication.Type.SERVLET)
     @ConditionalOnMissingBean(RequestParameterResolver.class)
-    public RequestParameterResolver defaultRequestParameterResolver(ObjectMapper objectMapper) {
+    public RequestParameterResolver defaultRequestParameterResolver(@Lazy ObjectMapper objectMapper) {
         return new DefaultRequestParameterResolver(objectMapper);
     }
 
     // ========== 用户解析器（需要 security-api） ==========
 
     @Bean
+    @Role(BeanDefinition.ROLE_INFRASTRUCTURE)
     @ConditionalOnClass(name = "com.github.zeng.alt.security.api.UserContextHolder")
     @ConditionalOnMissingBean(UserResolver.class)
     public UserResolver defaultUserResolver() {

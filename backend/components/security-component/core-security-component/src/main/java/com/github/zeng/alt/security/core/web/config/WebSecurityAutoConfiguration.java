@@ -24,6 +24,7 @@ import org.springframework.security.authentication.AuthenticationEventPublisher;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.ProviderManager;
+import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.authorization.AuthenticatedAuthorizationManager;
 import org.springframework.security.authorization.AuthorizationManager;
 import org.springframework.security.config.Customizer;
@@ -32,6 +33,8 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.annotation.web.configurers.HeadersConfigurer;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.access.AccessDeniedHandler;
@@ -69,9 +72,18 @@ public class WebSecurityAutoConfiguration {
 			ObjectProvider<AuthenticationFailureHandler> loginFailureAuthenticationHandler,
 			AuthenticationManager authenticationManager,
 			AuthenticationEntryPoint authenticationEntryPoint, AccessDeniedHandler accessDeniedHandler,
-			ApplicationEventPublisher applicationEventPublisher
-
+			ApplicationEventPublisher applicationEventPublisher, ObjectProvider<UserDetailsService> userDetailsService,
+			ObjectProvider<PasswordEncoder> passwordEncoder,
+			UsernameLoginProperties usernameLoginProperties
 	) throws Exception {
+
+        if (Boolean.TRUE.equals(usernameLoginProperties.getEnabled())) {
+			DaoAuthenticationProvider provider = new DaoAuthenticationProvider(userDetailsService.getIfAvailable());
+			provider.setPasswordEncoder(passwordEncoder.getIfAvailable());
+			http.authenticationProvider(provider);
+        }
+
+
 		// UserDetails
 		HttpSecurity httpSecurity = http
 				.csrf(AbstractHttpConfigurer::disable)

@@ -1,8 +1,10 @@
 package com.github.zeng.alt.log.jpa.config;
 
+import com.github.zeng.alt.log.jpa.entity.LogEntity;
 import com.github.zeng.alt.log.jpa.event.LogEventPersistenceListener;
 import com.github.zeng.alt.log.jpa.repository.LogRepository;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
+import org.springframework.boot.autoconfigure.AutoConfigurationPackage;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
@@ -24,8 +26,7 @@ import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 @AutoConfiguration
 @ConditionalOnClass(name = "jakarta.persistence.EntityManager")
 @ConditionalOnBean(jakarta.persistence.EntityManagerFactory.class)
-@EntityScan(basePackages = "com.github.zeng.alt.log.jpa.entity")
-@EnableJpaRepositories(basePackages = "com.github.zeng.alt.log.jpa.repository")
+@AutoConfigurationPackage(basePackageClasses = {LogEntity.class, LogRepository.class})
 public class JpaLogAutoConfiguration {
 
     @Bean

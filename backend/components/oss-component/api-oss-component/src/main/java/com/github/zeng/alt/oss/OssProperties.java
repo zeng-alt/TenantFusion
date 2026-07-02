@@ -15,7 +15,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 public class OssProperties {
 
     /** 是否启用 */
-    private boolean enabled = true;
+    private boolean enabled = false;
 
     /** 对象存储服务的 URL */
     private String endpoint;

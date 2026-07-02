@@ -40,7 +40,7 @@ import software.amazon.awssdk.services.s3.S3Client;
  * @version 3.0
  */
 @AutoConfiguration
-@ConditionalOnProperty(prefix = "oss.s3", name = "enabled", havingValue = "true", matchIfMissing = true)
+@ConditionalOnProperty(prefix = "oss.s3", name = "enabled", havingValue = "true", matchIfMissing = false)
 @EnableConfigurationProperties({OssProperties.class, ThumbnailProperties.class})
 @ImportRuntimeHints(OssRuntimeHints.class)
 public class OssCoreAutoConfiguration {

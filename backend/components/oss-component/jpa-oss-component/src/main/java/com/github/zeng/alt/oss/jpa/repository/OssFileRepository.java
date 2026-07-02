@@ -2,7 +2,6 @@ package com.github.zeng.alt.oss.jpa.repository;
 
 import com.github.zeng.alt.domain.base.BaseRepository;
 import com.github.zeng.alt.oss.jpa.entity.OssFileEntity;
-import com.github.zeng.alt.rest.annotation.CrudRest;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -10,16 +9,13 @@ import java.util.List;
 /**
  * OSS 文件记录 Repository。
  * <p>
- * 标注 {@link CrudRest @CrudRest} 后，在配置了 {@code rest-apt-component}
- * 注解处理器的模块中编译时会自动生成 CRUD REST 接口。
- * 同时，{@code jpa-oss-component} 内置的 {@code OssFileController}
+ * {@code jpa-oss-component} 内置的 {@code OssFileController}
  * 提供同等功能的运行时 REST 接口，无需 APT 处理器。
  *
  * @author zengJiaJun
  * @since 2026-07-02
  * @version 1.0
  */
-@CrudRest(path = "/oss-files")
 public interface OssFileRepository extends BaseRepository<OssFileEntity, Long> {
 
     /**

@@ -27,14 +27,14 @@ import org.springframework.security.web.authentication.AuthenticationFailureHand
 public class LoginAutoConfiguration {
 
 
-	@Bean
-	@ConditionalOnMissingBean
-	@ConditionalOnProperty(name = "security.username-login.enabled", havingValue = "true")
-	public DaoAuthenticationProvider daoAuthenticationProvider(UserDetailsService userDetailsService, PasswordEncoder passwordEncoder) {
-		DaoAuthenticationProvider daoAuthenticationProvider = new DaoAuthenticationProvider(userDetailsService);
-		daoAuthenticationProvider.setPasswordEncoder(passwordEncoder);
-		return daoAuthenticationProvider;
-	}
+//	@Bean
+//	@ConditionalOnMissingBean
+//	@ConditionalOnProperty(name = "security.username-login.enabled", havingValue = "true")
+//	public DaoAuthenticationProvider daoAuthenticationProvider(UserDetailsService userDetailsService, PasswordEncoder passwordEncoder) {
+//		DaoAuthenticationProvider daoAuthenticationProvider = new DaoAuthenticationProvider(userDetailsService);
+//		daoAuthenticationProvider.setPasswordEncoder(passwordEncoder);
+//		return daoAuthenticationProvider;
+//	}
 
 
 

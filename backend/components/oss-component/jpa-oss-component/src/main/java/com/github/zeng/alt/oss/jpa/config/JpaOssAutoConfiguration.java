@@ -1,6 +1,7 @@
 package com.github.zeng.alt.oss.jpa.config;
 
 import com.github.zeng.alt.oss.*;
+import com.github.zeng.alt.oss.jpa.entity.OssFileEntity;
 import com.github.zeng.alt.oss.jpa.repository.OssFileRepository;
 import com.github.zeng.alt.oss.jpa.service.JpaOssFileRecordService;
 import com.github.zeng.alt.oss.jpa.service.PersistingOssTemplate;
@@ -9,6 +10,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
+import org.springframework.boot.autoconfigure.AutoConfigurationPackage;
 import org.springframework.boot.autoconfigure.AutoConfigureAfter;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
@@ -40,8 +42,7 @@ import java.util.function.Supplier;
 @AutoConfiguration
 @AutoConfigureAfter(HibernateJpaAutoConfiguration.class)
 @ConditionalOnClass(EntityManagerFactory.class)
-@EntityScan(basePackages = "com.github.zeng.alt.oss.jpa.entity")
-@EnableJpaRepositories(basePackages = "com.github.zeng.alt.oss.jpa.repository")
+@AutoConfigurationPackage(basePackageClasses = {OssFileEntity.class, OssFileRepository.class})
 public class JpaOssAutoConfiguration {
 
     private static final Logger log = LoggerFactory.getLogger(JpaOssAutoConfiguration.class);

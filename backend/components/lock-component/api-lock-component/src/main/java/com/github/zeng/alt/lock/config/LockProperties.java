@@ -3,7 +3,9 @@ package com.github.zeng.alt.lock.config;
 import com.github.zeng.alt.lock.executor.LockExecutor;
 import com.github.zeng.alt.lock.model.LockFailureStrategy;
 import com.github.zeng.alt.lock.model.LockKeyBuilder;
+import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.context.annotation.Role;
 
 /**
  * 分布式锁配置属性
@@ -12,6 +14,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
  * @since 2026年06月09日
  * @version 1.0
  */
+@Role(BeanDefinition.ROLE_INFRASTRUCTURE)
 @ConfigurationProperties(prefix = "alt.lock")
 public class LockProperties {
 

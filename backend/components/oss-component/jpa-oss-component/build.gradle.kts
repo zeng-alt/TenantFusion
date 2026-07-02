@@ -22,8 +22,6 @@ dependencies {
     implementation("org.springframework:spring-web")
     implementation("org.springframework:spring-webmvc")
     compileOnly("jakarta.servlet:jakarta.servlet-api")
-    // @CrudRest 注解（SOURCE 保留，仅编译时需要）
-    compileOnly(project(":backend:components:rest-component:rest-annotation-component"))
 
     annotationProcessor(rootProject.libs.querydsl.apt) {
         artifact {

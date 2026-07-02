@@ -12,12 +12,14 @@ import com.fasterxml.jackson.datatype.jsr310.ser.LocalDateTimeSerializer;
 import com.fasterxml.jackson.datatype.jsr310.ser.LocalTimeSerializer;
 import io.vavr.jackson.datatype.VavrModule;
 import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.jackson.JacksonAutoConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.DependsOn;
+import org.springframework.context.annotation.Role;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -31,7 +33,7 @@ import java.time.format.DateTimeFormatter;
  * @version 1.0
  * @crateTime 2024年07月05日 20:44
  */
-@Configuration
+@Role(BeanDefinition.ROLE_INFRASTRUCTURE)
 @AutoConfiguration(before = JacksonAutoConfiguration.class)
 public class JsonConfiguration {
 

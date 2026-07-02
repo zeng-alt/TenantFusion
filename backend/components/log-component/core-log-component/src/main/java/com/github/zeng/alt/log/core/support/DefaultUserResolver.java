@@ -1,7 +1,6 @@
 package com.github.zeng.alt.log.core.support;
 
 import com.github.zeng.alt.security.api.UserContextHolder;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 
 /**
  * 从 {@link UserContextHolder} 获取当前用户。
@@ -10,7 +9,6 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
  * @since 2026-07-01
  * @version 1.0
  */
-@ConditionalOnClass(UserContextHolder.class)
 public class DefaultUserResolver implements UserResolver {
 
     @Override
