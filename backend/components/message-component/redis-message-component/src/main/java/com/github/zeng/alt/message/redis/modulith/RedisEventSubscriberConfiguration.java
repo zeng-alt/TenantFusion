@@ -16,8 +16,6 @@ import org.springframework.data.redis.listener.PatternTopic;
 import org.springframework.data.redis.listener.RedisMessageListenerContainer;
 import org.springframework.data.redis.serializer.RedisSerializer;
 
-import java.nio.charset.StandardCharsets;
-
 /**
  * Redis Spring Modulith Events 订阅端配置。
  * <p>

@@ -6,7 +6,6 @@ import com.github.zeng.alt.message.codec.JacksonMessagePacketCodec;
 import com.github.zeng.alt.message.codec.MessagePacketCodec;
 import com.github.zeng.alt.message.subscription.MessageListenerBeanPostProcessor;
 import org.springframework.beans.factory.ListableBeanFactory;
-import org.springframework.boot.autoconfigure.AutoConfigureAfter;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.context.annotation.Bean;

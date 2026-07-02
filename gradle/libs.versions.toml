@@ -35,6 +35,8 @@ spring-boot-starter-test = { module = "org.springframework.boot:spring-boot-star
 spring-modulith-starter-core = { module = "org.springframework.modulith:spring-modulith-starter-core" }
 spring-modulith-starter-jpa = { module = "org.springframework.modulith:spring-modulith-starter-jpa" }
 spring-modulith-starter-test = { module = "org.springframework.modulith:spring-modulith-starter-test" }
+spring-modulith-events-amqp = { module = "org.springframework.modulith:spring-modulith-events-amqp" }
+spring-modulith-events-kafka = { module = "org.springframework.modulith:spring-modulith-events-kafka" }
 
 spring-security-test = { module = "org.springframework.security:spring-security-test" }
 
