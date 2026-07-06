@@ -1,10 +1,12 @@
 # ===== Build Stage =====
+# syntax=docker/dockerfile:1.4
 FROM gradle:8-jdk21 AS build
 
 WORKDIR /app
+
 COPY . .
 
-RUN chmod +x gradlew && \
+RUN --mount=type=cache,target=/home/gradle/.gradle \
     ./gradlew :backend:admin:bootJar --no-daemon
 
 # ===== Runtime Stage =====
