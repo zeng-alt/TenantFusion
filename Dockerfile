@@ -2,7 +2,7 @@
 FROM gradle:8-jdk21 AS build
 
 WORKDIR /app
-COPY backend/admin .
+COPY . .
 
 RUN chmod +x gradlew && \
     ./gradlew :backend:admin:bootJar --no-daemon

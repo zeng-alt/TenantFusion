@@ -8,6 +8,7 @@ plugins {
 
 
 
+
 allprojects {
     group = "com.github.zeng.alt"
     version = "0.0.1-SNAPSHOT"

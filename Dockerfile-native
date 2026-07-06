@@ -1,0 +1,12 @@
+# ===== Runtime =====
+FROM gcr.io/distroless/base-debian12:nonroot
+
+WORKDIR /app
+
+COPY backend/admin/build/native/nativeCompile/fusion-admin app
+
+EXPOSE 8080
+
+USER nonroot:nonroot
+
+ENTRYPOINT ["./app"]
