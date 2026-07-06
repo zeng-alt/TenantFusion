@@ -1,31 +1,44 @@
-# ========= Build =========
-FROM ghcr.io/graalvm/jdk-community:21 AS build
+# =========================
+# 1. Build Stage (Native Compile)
+# =========================
+FROM ghcr.io/graalvm/native-image-community:21 AS build
 
-# 安装 native-image 和 gradlew 需要的工具
-RUN microdnf install -y findutils tar gzip unzip \
-    && gu install native-image
+WORKDIR /app
 
-WORKDIR /workspace
+# 安装基础工具（Gradle需要）
+RUN microdnf install -y findutils tar gzip unzip
 
+# 复制项目
 COPY . .
 
+# 赋权 gradlew
 RUN chmod +x gradlew
 
+# 构建 native
 RUN ./gradlew :backend:admin:nativeCompile --no-daemon
 
-# ========= Runtime =========
+
+# =========================
+# 2. Runtime Stage (极简运行环境)
+# =========================
 FROM debian:bookworm-slim
 
+WORKDIR /app
+
+# TLS / HTTPS 必备
 RUN apt-get update && \
     apt-get install -y ca-certificates && \
     rm -rf /var/lib/apt/lists/*
 
-WORKDIR /app
-
+# 拷贝 native 可执行文件
 COPY --from=build \
-    /workspace/backend/admin/build/native/nativeCompile/admin \
-    ./admin
+    /app/backend/admin/build/native/nativeCompile/admin \
+    /app/app
+
+# Render 必须监听 8080
+ENV PORT=8080
 
 EXPOSE 8080
 
-ENTRYPOINT ["./admin"]
+# 启动
+ENTRYPOINT ["./app"]
