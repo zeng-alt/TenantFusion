@@ -1,7 +1,11 @@
-# ========= Build Native Image =========
-FROM ghcr.io/graalvm/native-image-community:21 AS build
+# ========= Build =========
+FROM ghcr.io/graalvm/jdk-community:21 AS build
 
-WORKDIR /app
+# 安装 native-image 和 gradlew 需要的工具
+RUN microdnf install -y findutils tar gzip unzip \
+    && gu install native-image
+
+WORKDIR /workspace
 
 COPY . .
 
@@ -12,12 +16,16 @@ RUN ./gradlew :backend:admin:nativeCompile --no-daemon
 # ========= Runtime =========
 FROM debian:bookworm-slim
 
+RUN apt-get update && \
+    apt-get install -y ca-certificates && \
+    rm -rf /var/lib/apt/lists/*
+
 WORKDIR /app
 
 COPY --from=build \
-    /app/backend/admin/build/native/nativeCompile/admin \
-    /app/admin
+    /workspace/backend/admin/build/native/nativeCompile/admin \
+    ./admin
 
 EXPOSE 8080
 
-CMD ["./admin"]
+ENTRYPOINT ["./admin"]
