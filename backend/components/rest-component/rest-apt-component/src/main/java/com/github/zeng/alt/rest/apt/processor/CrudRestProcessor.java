@@ -1,13 +1,14 @@
 package com.github.zeng.alt.rest.apt.processor;
 
-
+import com.github.zeng.alt.rest.annotation.CrudRest;
 import com.github.zeng.alt.rest.apt.generator.HandlerGenerator;
+import com.github.zeng.alt.rest.apt.generator.MapperGenerator;
+import com.github.zeng.alt.rest.apt.generator.PatchMapperGenerator;
 import com.github.zeng.alt.rest.apt.generator.RouterGenerator;
 import com.github.zeng.alt.rest.apt.meta.MethodMeta;
 import com.github.zeng.alt.rest.apt.meta.RepositoryMeta;
+import com.github.zeng.alt.rest.apt.scanner.FieldScanner;
 import com.github.zeng.alt.rest.apt.validator.RepositoryValidator;
-import com.github.zeng.alt.rest.annotation.CrudRest;
-
 import com.google.auto.service.AutoService;
 import com.squareup.javapoet.ClassName;
 
@@ -31,11 +32,12 @@ import java.util.List;
 import java.util.Set;
 
 /**
- * CrudRest APT 处理器 — 扫描 @CrudRest 注解并生成 CRUD REST 接口
+ * CrudRest APT 处理器 — 扫描 {@code @CrudRest} 注解并生成 CRUD REST 接口。
+ * <p>职责编排：校验 → 建元 → 字段扫描 → 代码生成。字段扫描委托给 {@link FieldScanner}。</p>
  *
  * @author zengJiaJun
  * @crateTime 2026年05月28日
- * @version 1.0
+ * @version 2.0
  */
 @AutoService(Processor.class)
 @SupportedAnnotationTypes("com.github.zeng.alt.rest.annotation.CrudRest")
@@ -46,6 +48,9 @@ public class CrudRestProcessor extends AbstractProcessor {
     private Messager messager;
     private Types typeUtils;
     private Elements elementUtils;
+    private FieldScanner fieldScanner;
+    private Boolean hasSpringDoc;
+    private Boolean hasMapStruct;
 
     @Override
     public synchronized void init(ProcessingEnvironment processingEnv) {
@@ -54,6 +59,7 @@ public class CrudRestProcessor extends AbstractProcessor {
         this.messager = processingEnv.getMessager();
         this.typeUtils = processingEnv.getTypeUtils();
         this.elementUtils = processingEnv.getElementUtils();
+        this.fieldScanner = new FieldScanner(typeUtils, elementUtils, messager);
     }
 
     @Override
@@ -64,9 +70,7 @@ public class CrudRestProcessor extends AbstractProcessor {
         return true;
     }
 
-
     private void processCrudRest(Element element) {
-        // 校验
         if (!RepositoryValidator.validate(element, messager, typeUtils, elementUtils)) {
             return;
         }
@@ -75,7 +79,6 @@ public class CrudRestProcessor extends AbstractProcessor {
             TypeElement typeElement = (TypeElement) element;
             CrudRest annotation = typeElement.getAnnotation(CrudRest.class);
 
-            // 构建 RepositoryMeta
             RepositoryMeta meta = buildMeta(typeElement, annotation);
             if (meta == null) {
                 messager.printMessage(Diagnostic.Kind.ERROR,
@@ -83,11 +86,24 @@ public class CrudRestProcessor extends AbstractProcessor {
                 return;
             }
 
-            // 生成 Handler
-            var handlerFile = HandlerGenerator.generate(meta);
+            boolean useMapStruct = checkMapStruct();
+
+            // 如果项目引入了 MapStruct，先生成 Mapper 接口
+            if (useMapStruct) {
+                var mapperFile = MapperGenerator.generate(meta, elementUtils);
+                mapperFile.writeTo(filer);
+                messager.printMessage(Diagnostic.Kind.NOTE,
+                        "已生成 MapStruct Mapper: " + meta.getEntitySimpleName() + "Mapper");
+
+                var patchMapperFile = PatchMapperGenerator.generate(meta, elementUtils);
+                patchMapperFile.writeTo(filer);
+                messager.printMessage(Diagnostic.Kind.NOTE,
+                        "已生成 MapStruct Patch Mapper: " + meta.getEntitySimpleName() + "Mapper");
+            }
+
+            var handlerFile = HandlerGenerator.generate(meta, useMapStruct, elementUtils);
             handlerFile.writeTo(filer);
 
-            // 生成 Router
             var routerFile = RouterGenerator.generate(meta);
             routerFile.writeTo(filer);
 
@@ -115,29 +131,102 @@ public class CrudRestProcessor extends AbstractProcessor {
         ClassName entityType = ClassName.get((TypeElement) typeUtils.asElement(entityMirror));
         ClassName idType = ClassName.get((TypeElement) typeUtils.asElement(idMirror));
 
-        String repoPackage = processingEnv.getElementUtils()
-                .getPackageOf(typeElement).getQualifiedName().toString();
+        String repoPackage = elementUtils.getPackageOf(typeElement).getQualifiedName().toString();
 
-        // 生成包名 = Repository 所在包 + ".rest"
-        String generatedPackage = repoPackage;
-
-        // 构建启用的方法列表
         RepositoryMeta.Builder metaBuilder = RepositoryMeta.builder()
                 .repositorySimpleName(typeElement.getSimpleName().toString())
                 .repositoryPackageName(repoPackage)
-                .generatedPackageName(generatedPackage)
+                .generatedPackageName(repoPackage)
                 .entityType(entityType)
                 .idType(idType)
                 .path(annotation.path())
                 .pageable(annotation.pageable())
-                .repositoryElement(typeElement);
+                .repositoryElement(typeElement)
+                .hasSpringDoc(checkSpringDoc());
 
         if (annotation.list()) metaBuilder.addEnabledMethod(MethodMeta.LIST);
         if (annotation.detail()) metaBuilder.addEnabledMethod(MethodMeta.DETAIL);
         if (annotation.create()) metaBuilder.addEnabledMethod(MethodMeta.CREATE);
         if (annotation.update()) metaBuilder.addEnabledMethod(MethodMeta.UPDATE);
+        if (annotation.patch()) metaBuilder.addEnabledMethod(MethodMeta.PATCH);
         if (annotation.delete()) metaBuilder.addEnabledMethod(MethodMeta.DELETE);
 
+        // 查询字段扫描
+        fieldScanner.parseQueryType(metaBuilder, annotation, entityMirror);
+
+        // 操作类型 DTO
+        ClassName createType = fieldScanner.parseOperationType(annotation::createType);
+        ClassName updateType = fieldScanner.parseOperationType(annotation::updateType);
+        ClassName patchType = fieldScanner.parseOperationType(annotation::patchType);
+        ClassName detailType = fieldScanner.parseOperationType(annotation::detailType);
+        ClassName listType = fieldScanner.parseOperationType(annotation::listType);
+        if (createType != null) metaBuilder.createType(createType);
+        if (updateType != null) metaBuilder.updateType(updateType);
+        if (patchType != null) metaBuilder.patchType(patchType);
+        if (detailType != null) metaBuilder.detailType(detailType);
+        if (listType != null) metaBuilder.listType(listType);
+
+        // 实体字段扫描（含 @JsonIgnore 的全量字段用于 DTO 转换，过滤后的用于 OpenAPI Schema）
+        TypeElement entityElement = (TypeElement) typeUtils.asElement(entityMirror);
+        fieldScanner.scanEntityFieldsAll(entityElement, metaBuilder::addEntityAllField);
+        fieldScanner.scanEntityFields(entityElement, metaBuilder::addEntityField);
+
+        if (createType != null && !createType.equals(entityType)) {
+            TypeElement createTypeEl = elementUtils.getTypeElement(createType.reflectionName());
+            if (createTypeEl != null) {
+                fieldScanner.scanEntityFields(createTypeEl, metaBuilder::addCreateTypeField);
+            }
+        }
+        if (updateType != null && !updateType.equals(entityType)) {
+            TypeElement updateTypeEl = elementUtils.getTypeElement(updateType.reflectionName());
+            if (updateTypeEl != null) {
+                fieldScanner.scanEntityFields(updateTypeEl, metaBuilder::addUpdateTypeField);
+            }
+        }
+        if (patchType != null && !patchType.equals(entityType)) {
+            TypeElement patchTypeEl = elementUtils.getTypeElement(patchType.reflectionName());
+            if (patchTypeEl != null) {
+                fieldScanner.scanEntityFields(patchTypeEl, metaBuilder::addPatchTypeField);
+            }
+        }
+        if (listType != null && !listType.equals(entityType)) {
+            TypeElement listTypeEl = elementUtils.getTypeElement(listType.reflectionName());
+            if (listTypeEl != null) {
+                fieldScanner.scanEntityFields(listTypeEl, metaBuilder::addListTypeField);
+            }
+        }
+        if (detailType != null && !detailType.equals(entityType)) {
+            TypeElement detailTypeEl = elementUtils.getTypeElement(detailType.reflectionName());
+            if (detailTypeEl != null) {
+                fieldScanner.scanEntityFields(detailTypeEl, metaBuilder::addDetailTypeField);
+            }
+        }
+
         return metaBuilder.build();
+    }
+
+    private boolean checkSpringDoc() {
+        if (hasSpringDoc == null) {
+            hasSpringDoc = elementUtils.getTypeElement(
+                    "org.springdoc.core.annotations.RouterOperation") != null;
+            if (hasSpringDoc) {
+                messager.printMessage(Diagnostic.Kind.NOTE, "检测到 springdoc-openapi，将生成 Swagger 注解");
+            }
+        }
+        return hasSpringDoc;
+    }
+
+    /**
+     * 检查类路径上是否存在 MapStruct，决定是否生成 Mapper 接口
+     */
+    private boolean checkMapStruct() {
+        if (hasMapStruct == null) {
+            hasMapStruct = elementUtils.getTypeElement("org.mapstruct.Mapper") != null;
+            if (hasMapStruct) {
+                messager.printMessage(Diagnostic.Kind.NOTE,
+                        "检测到 MapStruct，将为 CRUD REST 生成 Mapper 接口替换 BeanUtils");
+            }
+        }
+        return hasMapStruct;
     }
 }

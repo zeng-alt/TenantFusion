@@ -11,6 +11,7 @@ dependencies {
     compileOnly("com.google.auto.service:auto-service-annotations:1.1.1")
     annotationProcessor("com.google.auto.service:auto-service:1.1.1")
 
+    implementation("org.springdoc:springdoc-openapi-starter-common")
     implementation("org.springframework:spring-webmvc")
     implementation(rootProject.libs.vavr)
     implementation("org.springframework.data:spring-data-commons")

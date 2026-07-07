@@ -13,6 +13,7 @@ public enum MethodMeta {
     DETAIL("detail", "GET", "/{id}", false),
     CREATE("create", "POST", "", true),
     UPDATE("update", "PUT", "/{id}", true),
+    PATCH("patch", "PATCH", "/{id}", true),
     DELETE("delete", "DELETE", "/{id}", false);
 
     private final String methodName;

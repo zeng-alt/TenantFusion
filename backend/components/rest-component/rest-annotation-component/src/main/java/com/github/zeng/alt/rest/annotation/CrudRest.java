@@ -32,9 +32,14 @@ public @interface CrudRest {
     boolean create() default true;
 
     /**
-     * 是否生成 update 接口
+     * 是否生成 update 接口（全量更新 PUT）
      */
     boolean update() default true;
+
+    /**
+     * 是否生成 patch 接口（部分更新 PATCH，只更新非 null 字段）
+     */
+    boolean patch() default true;
 
     /**
      * 是否生成 delete 接口
@@ -50,4 +55,35 @@ public @interface CrudRest {
      * 是否生成 list 接口
      */
     boolean list() default true;
+
+    /**
+     * 查询条件 DTO
+     * 如果不填 → 使用 entity
+     */
+    Class<?> queryType() default Void.class;
+
+    /**
+     * 新增接口请求体 DTO，如果不填 → 使用 entity
+     */
+    Class<?> createType() default Void.class;
+
+    /**
+     * 更新接口请求体 DTO，如果不填 → 使用 entity
+     */
+    Class<?> updateType() default Void.class;
+
+    /**
+     * 部分更新接口请求体 DTO，如果不填 → 优先使用 updateType，其次使用 entity
+     */
+    Class<?> patchType() default Void.class;
+
+    /**
+     * 详情接口返回体 DTO，如果不填 → 使用 entity
+     */
+    Class<?> detailType() default Void.class;
+
+    /**
+     * 列表接口返回体 DTO，如果不填 → 使用 entity
+     */
+    Class<?> listType() default Void.class;
 }
