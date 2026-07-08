@@ -57,6 +57,22 @@ public @interface CrudRest {
     boolean list() default true;
 
     /**
+     * 是否生成查询 tree 接口
+     */
+    boolean tree() default false;
+
+    /**
+     * 是否生成 sort 接口
+     */
+    boolean sort() default false;
+
+
+    /**
+     * 是否生成 treeSort 接口
+     */
+    boolean treeSort() default false;
+
+    /**
      * 查询条件 DTO
      * 如果不填 → 使用 entity
      */
@@ -86,4 +102,10 @@ public @interface CrudRest {
      * 列表接口返回体 DTO，如果不填 → 使用 entity
      */
     Class<?> listType() default Void.class;
+
+
+    /**
+     * 树接口返回体 DTO，如果不填 → 使用 entity
+     */
+    Class<?> treeType() default Void.class;
 }

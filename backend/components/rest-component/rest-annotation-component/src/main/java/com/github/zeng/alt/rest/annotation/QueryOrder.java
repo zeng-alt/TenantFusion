@@ -8,5 +8,7 @@ import java.lang.annotation.Target;
 @Target(ElementType.FIELD)
 @Retention(RetentionPolicy.RUNTIME)
 public @interface QueryOrder {
+    int order() default 0;
     boolean asc() default true;
+    boolean autoSort() default false;
 }

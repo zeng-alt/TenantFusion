@@ -7,6 +7,7 @@ import com.github.zeng.alt.rest.apt.meta.QueryFieldMeta;
 import com.github.zeng.alt.rest.apt.meta.RepositoryMeta;
 import com.github.zeng.alt.rest.apt.meta.SchemaFieldMeta;
 import com.squareup.javapoet.AnnotationSpec;
+import com.squareup.javapoet.ArrayTypeName;
 import com.squareup.javapoet.ClassName;
 import com.squareup.javapoet.JavaFile;
 import com.squareup.javapoet.MethodSpec;
@@ -31,6 +32,7 @@ import org.springframework.web.servlet.function.ServerResponse;
 
 import java.io.IOException;
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static com.github.zeng.alt.rest.apt.generator.GeneratorUtils.*;
 
@@ -52,6 +54,8 @@ public final class HandlerGenerator {
     private static final ClassName SORT = ClassName.get("org.springframework.data.domain", "Sort");
     private static final ClassName SORT_DIRECTION = ClassName.get("org.springframework.data.domain.Sort", "Direction");
     private static final ClassName BEAN_UTILS = ClassName.get("org.springframework.beans", "BeanUtils");
+    private static final ClassName TRANSACTIONAL = ClassName.get("org.springframework.transaction.annotation", "Transactional");
+
 
     private HandlerGenerator() {}
 
@@ -173,6 +177,7 @@ public final class HandlerGenerator {
             case UPDATE -> buildUpdateMethod(meta, methodBuilder, useMapStruct, elements);
             case PATCH -> buildPatchMethod(meta, methodBuilder, useMapStruct, elements);
             case DELETE -> buildDeleteMethod(meta, methodBuilder);
+            case SORT -> buildSortBatchMethod(meta, methodBuilder, useMapStruct);
         }
 
         return methodBuilder.build();
@@ -295,6 +300,14 @@ public final class HandlerGenerator {
         TypeName entityType = meta.getEntityType();
         ClassName createType = meta.getCreateType();
 
+        builder.addAnnotation(
+                AnnotationSpec.builder(TRANSACTIONAL)
+                        .addMember(
+                                "rollbackFor",
+                                "$T.class",
+                                Exception.class)
+                        .build());
+
         if (createType != null) {
             if (useMapStruct) {
                 // 使用 MapStruct Mapper 转换 DTO → Entity
@@ -307,16 +320,81 @@ public final class HandlerGenerator {
                         .addStatement("$T.copyProperties(dto, entity)", BEAN_UTILS);
                 generateReverseNestedDtoConversions(builder, meta, elements, meta.getCreateTypeFields(), meta.getEntityAllFields(), "dto", "entity");
             }
+            generateAutoSortCode(builder, meta);
             builder.addStatement("$T saved = repository.save(entity)", entityType);
         } else {
-            builder.addStatement("$T entity = request.body($T.class)", entityType, entityType)
-                    .addStatement("$T saved = repository.save(entity)", entityType);
+            builder.addStatement("$T entity = request.body($T.class)", entityType, entityType);
+            generateAutoSortCode(builder, meta);
+            builder.addStatement("$T saved = repository.save(entity)", entityType);
         }
 
         builder.addStatement("return $T.ok().contentType($T.APPLICATION_JSON).body($T.success(saved))",
                         SERVER_RESPONSE, MediaType.class, REST_RESPONSE)
                 .addException(ServletException.class)
                 .addException(IOException.class);
+    }
+
+    // ========================================================================
+    //  AutoSort — 自动递增
+    // ========================================================================
+
+    /**
+     * 如果实体中存在 {@code @QueryOrder(autoSort = true)} 的数字类型字段，
+     * 在 CREATE 时自动查询当前最大值并 +1，实现排序字段自动递增。
+     * <p>生成代码示例（Integer 类型）：</p>
+     * <pre>{@code
+     * Sort __autoSort = Sort.by(Sort.Direction.DESC, "order");
+     * Page<Entity> __topPage = repository.findAll(PageRequest.of(0, 1, __autoSort));
+     * Integer __maxVal = __topPage.hasContent() ? __topPage.getContent().get(0).getOrder() + 1 : 1;
+     * entity.setOrder(__maxVal);
+     * }</pre>
+     */
+    private static void generateAutoSortCode(MethodSpec.Builder builder, RepositoryMeta meta) {
+        QueryFieldMeta autoSortField = meta.getQueryFields().stream()
+                .filter(f -> f.isAutoSort() && f.isNumberType())
+                .findFirst()
+                .orElse(null);
+        if (autoSortField == null) {
+            return;
+        }
+
+        TypeName entityType = meta.getEntityType();
+        String fieldName = autoSortField.getFieldName();
+        String cap = Character.toUpperCase(fieldName.charAt(0)) + fieldName.substring(1);
+        String typeQName = autoSortField.getTypeQualifiedName();
+        TypeName fieldType = ClassName.bestGuess(typeQName);
+
+        // Sort __autoSort = Sort.by(Sort.Direction.DESC, fieldName)
+        builder.addStatement("$T __autoSort = $T.by($T.$L, $S)",
+                SORT, SORT, SORT_DIRECTION, "DESC", fieldName);
+
+        // Page<EntityType> __topPage = repository.findAll(PageRequest.of(0, 1, __autoSort))
+        TypeName pageType = ParameterizedTypeName.get(ClassName.get(Page.class), entityType);
+        builder.addStatement("$T __topPage = repository.findAll($T.of(0, 1, __autoSort))",
+                pageType, PageRequest.class);
+
+        switch (typeQName) {
+            case "java.lang.Integer", "int":
+                builder.addStatement("$T __maxVal = __topPage.hasContent() ? __topPage.getContent().get(0).get$L() + 1 : 1",
+                        fieldType, cap);
+                break;
+            case "java.lang.Long", "long":
+                builder.addStatement("$T __maxVal = __topPage.hasContent() ? __topPage.getContent().get(0).get$L() + 1L : 1L",
+                        fieldType, cap);
+                break;
+            case "java.lang.Double", "double":
+                builder.addStatement("$T __maxVal = __topPage.hasContent() ? __topPage.getContent().get(0).get$L() + 1.0 : 1.0",
+                        fieldType, cap);
+                break;
+            case "java.math.BigDecimal":
+                builder.addStatement("$T __maxVal = __topPage.hasContent() ? __topPage.getContent().get(0).get$L().add(java.math.BigDecimal.ONE) : java.math.BigDecimal.ONE",
+                        fieldType, cap);
+                break;
+            default:
+                return;
+        }
+
+        builder.addStatement("entity.set$L(__maxVal)", cap);
     }
 
     // ========================================================================
@@ -328,6 +406,14 @@ public final class HandlerGenerator {
         TypeName idType = meta.getIdType();
         TypeName optionType = ParameterizedTypeName.get(ClassName.get(Option.class), entityType);
         ClassName updateType = meta.getUpdateType();
+
+        builder.addAnnotation(
+                AnnotationSpec.builder(TRANSACTIONAL)
+                        .addMember(
+                                "rollbackFor",
+                                "$T.class",
+                                Exception.class)
+                        .build());
 
         builder.addStatement("$T id = $T.valueOf(request.pathVariable($S))",
                 idType, ClassName.get(Long.class), "id");
@@ -379,6 +465,14 @@ public final class HandlerGenerator {
 
         // patchType → updateType → entityType（三级 fallback）
         ClassName patchBodyType = meta.getPatchType() != null ? meta.getPatchType() : meta.getEntityType();
+
+        builder.addAnnotation(
+                AnnotationSpec.builder(TRANSACTIONAL)
+                        .addMember(
+                                "rollbackFor",
+                                "$T.class",
+                                Exception.class)
+                        .build());
 
         builder.addStatement("$T id = $T.valueOf(request.pathVariable($S))",
                         idType, ClassName.get(Long.class), "id")
@@ -1007,11 +1101,158 @@ public final class HandlerGenerator {
     private static void buildDeleteMethod(RepositoryMeta meta, MethodSpec.Builder builder) {
         TypeName idType = meta.getIdType();
 
-        builder.addStatement("$T id = $T.valueOf(request.pathVariable($S))",
+        builder.addAnnotation(
+                AnnotationSpec.builder(TRANSACTIONAL)
+                        .addMember(
+                                "rollbackFor",
+                                "$T.class",
+                                Exception.class)
+                        .build())
+                .addStatement("$T id = $T.valueOf(request.pathVariable($S))",
                         idType, ClassName.get(Long.class), "id")
                 .addStatement("repository.deleteById(id)")
                 .addStatement("return $T.ok().contentType($T.APPLICATION_JSON).body($T.success())",
                         SERVER_RESPONSE, MediaType.class, REST_RESPONSE);
+    }
+
+    // ========================================================================
+    //  SORT（批量重排序）
+    // ========================================================================
+
+    /**
+     * 生成批量重排序 Handler 方法。
+     * <p>接受 {@code BaseSortReq[]} 请求体，逐条更新实体的排序字段。
+     * 排序字段名由 {@code @QueryOrder(autoSort = true)} 标注的字段决定。</p>
+     */
+    private static void buildSortBatchMethod(
+            RepositoryMeta meta,
+            MethodSpec.Builder builder,
+            boolean useMapStruct) {
+
+        QueryFieldMeta sortField = meta.getQueryFields().stream()
+                .filter(QueryFieldMeta::isAutoSort)
+                .findFirst()
+                .orElse(null);
+
+        if (sortField == null) {
+            return;
+        }
+
+        builder.addAnnotation(
+                AnnotationSpec.builder(TRANSACTIONAL)
+                        .addMember(
+                                "rollbackFor",
+                                "$T.class",
+                                Exception.class)
+                        .build());
+
+        TypeName entityType = meta.getEntityType();
+
+        String fieldName = sortField.getFieldName();
+
+        String cap =
+                Character.toUpperCase(fieldName.charAt(0))
+                        + fieldName.substring(1);
+
+        String typeQName = sortField.getTypeQualifiedName();
+
+        ClassName baseSortReq =
+                ClassName.get(
+                        "com.github.zeng.alt.api.base",
+                        "BaseSortReq");
+
+        TypeName baseSortReqArray =
+                ArrayTypeName.of(baseSortReq);
+
+        TypeName idList =
+                ParameterizedTypeName.get(
+                        ClassName.get(List.class),
+                        ClassName.get(Long.class));
+
+        TypeName entityList =
+                ParameterizedTypeName.get(
+                        ClassName.get(List.class),
+                        entityType);
+
+        TypeName entityMap =
+                ParameterizedTypeName.get(
+                        ClassName.get(Map.class),
+                        ClassName.get(Long.class),
+                        entityType);
+
+        // BaseSortReq[] reqArray = request.body(BaseSortReq[].class);
+        builder.addStatement(
+                "$T reqArray = request.body($T.class)",
+                baseSortReqArray,
+                baseSortReqArray);
+
+        // List<Long> ids = Arrays.stream(reqArray).map(BaseSortReq::getId).toList();
+        builder.addStatement(
+                "$T ids = $T.stream(reqArray).map($T::getId).toList()",
+                idList,
+                Arrays.class,
+                baseSortReq);
+
+        // List<Entity> entities = repository.findByIdIn(ids);
+        builder.addStatement(
+                "$T entities = repository.findByIdIn(ids)",
+                entityList);
+
+        // Map<Long, Entity> entityMap = entities.stream().collect(Collectors.toMap(Entity::getId, Function.identity()));
+        builder.addStatement(
+                "$T entityMap = entities.stream().collect($T.toMap($T::getId, $T.identity()))",
+                entityMap,
+                Collectors.class,
+                entityType,
+                java.util.function.Function.class);
+
+        // for (...)
+        builder.beginControlFlow(
+                "for ($T req : reqArray)",
+                baseSortReq);
+
+        builder.addStatement(
+                "$T entity = entityMap.get(req.getId())",
+                entityType);
+
+        builder.beginControlFlow(
+                "if (entity == null)");
+
+        builder.addStatement("continue");
+
+        builder.endControlFlow();
+
+        String setterExpr = switch (typeQName) {
+            case "java.lang.Long", "long" ->
+                    "req.getSort().longValue()";
+            case "java.lang.Double", "double" ->
+                    "req.getSort().doubleValue()";
+            case "java.math.BigDecimal" ->
+                    "new java.math.BigDecimal(req.getSort())";
+            default ->
+                    "req.getSort()";
+        };
+
+        builder.addStatement(
+                "entity.set$L($L)",
+                cap,
+                setterExpr);
+
+        builder.endControlFlow();
+
+        // repository.saveAll(entities);
+        builder.addStatement(
+                "repository.saveAll(entities)");
+
+        // return ...
+        builder.addStatement(
+                "return $T.ok().contentType($T.APPLICATION_JSON).body($T.success())",
+                SERVER_RESPONSE,
+                MediaType.class,
+                REST_RESPONSE);
+
+        builder.addException(ServletException.class)
+                .addException(IOException.class);
     }
 
     // ========================================================================
@@ -1081,6 +1322,7 @@ public final class HandlerGenerator {
     private static MethodSpec buildSortMethod(RepositoryMeta meta) {
         List<QueryFieldMeta> orderFields = meta.getQueryFields().stream()
                 .filter(QueryFieldMeta::isHasOrder)
+                .sorted(Comparator.comparingInt(QueryFieldMeta::getOrderPriority))
                 .toList();
 
         MethodSpec.Builder methodBuilder = MethodSpec.methodBuilder("buildSort")

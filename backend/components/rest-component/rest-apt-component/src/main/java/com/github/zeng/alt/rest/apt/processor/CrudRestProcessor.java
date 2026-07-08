@@ -6,6 +6,7 @@ import com.github.zeng.alt.rest.apt.generator.MapperGenerator;
 import com.github.zeng.alt.rest.apt.generator.PatchMapperGenerator;
 import com.github.zeng.alt.rest.apt.generator.RouterGenerator;
 import com.github.zeng.alt.rest.apt.meta.MethodMeta;
+import com.github.zeng.alt.rest.apt.meta.QueryFieldMeta;
 import com.github.zeng.alt.rest.apt.meta.RepositoryMeta;
 import com.github.zeng.alt.rest.apt.scanner.FieldScanner;
 import com.github.zeng.alt.rest.apt.validator.RepositoryValidator;
@@ -141,6 +142,7 @@ public class CrudRestProcessor extends AbstractProcessor {
                 .idType(idType)
                 .path(annotation.path())
                 .pageable(annotation.pageable())
+                .sort(annotation.sort())
                 .repositoryElement(typeElement)
                 .hasSpringDoc(checkSpringDoc());
 
@@ -153,6 +155,16 @@ public class CrudRestProcessor extends AbstractProcessor {
 
         // 查询字段扫描
         fieldScanner.parseQueryType(metaBuilder, annotation, entityMirror);
+
+        // swapSort + autoSort → 生成批量重排序接口
+        if (annotation.sort()) {
+            RepositoryMeta tempMeta = metaBuilder.build();
+            boolean hasAutoSort = tempMeta.getQueryFields().stream()
+                    .anyMatch(QueryFieldMeta::isAutoSort);
+            if (hasAutoSort) {
+                metaBuilder.addEnabledMethod(MethodMeta.SORT);
+            }
+        }
 
         // 操作类型 DTO
         ClassName createType = fieldScanner.parseOperationType(annotation::createType);

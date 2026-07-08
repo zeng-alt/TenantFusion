@@ -14,7 +14,8 @@ public enum MethodMeta {
     CREATE("create", "POST", "", true),
     UPDATE("update", "PUT", "/{id}", true),
     PATCH("patch", "PATCH", "/{id}", true),
-    DELETE("delete", "DELETE", "/{id}", false);
+    DELETE("delete", "DELETE", "/{id}", false),
+    SORT("sort", "PUT", "/sort", true);
 
     private final String methodName;
     private final String httpMethod;

@@ -232,6 +232,19 @@ public final class RouterGenerator {
             }
         }
 
+        // swapSort 开启时注册 BaseSortReq Schema
+        if (meta.isSort() && hasAutoSort(meta)) {
+            registerSchemaIfAbsent(body, "BaseSortReq",
+                    CodeBlock.builder()
+                            .add("new $T<>().type($S).description($S)" +
+                                            ".addProperty($S, new $T<>().type($S).format($S).description($S))" +
+                                            ".addProperty($S, new $T<>().type($S).format($S).description($S))",
+                                    SCHEMA, "object", "排序请求体",
+                                    "id", SCHEMA, "integer", "int64", "主键",
+                                    "sort", SCHEMA, "integer", "int32", "排序值")
+                            .build());
+        }
+
         // =============================
         // 2. 注册 Tag
         // =============================
@@ -276,6 +289,8 @@ public final class RouterGenerator {
                                 : (meta.getUpdateType() != null ? meta.getUpdateType() : meta.getEntityType());
                     }
                     requestBodyRef = "#/components/schemas/" + type.simpleName();
+                } else if (method == MethodMeta.SORT) {
+                    requestBodyRef = "#/components/schemas/BaseSortReq";
                 }
 
                 String respVar = opVar + "Resp";
@@ -374,6 +389,13 @@ public final class RouterGenerator {
         body.endControlFlow();
     }
 
+    /**
+     * 检查实体是否有 {@code @QueryOrder(autoSort = true)} 字段。
+     */
+    private static boolean hasAutoSort(RepositoryMeta meta) {
+        return meta.getQueryFields().stream().anyMatch(QueryFieldMeta::isAutoSort);
+    }
+
     private static String chineseSummary(String entityName, MethodMeta method) {
         return switch (method) {
             case LIST -> "分页查询" + entityName + "列表";
@@ -382,6 +404,7 @@ public final class RouterGenerator {
             case UPDATE -> "全量更新" + entityName;
             case PATCH -> "部分更新" + entityName;
             case DELETE -> "删除" + entityName;
+            case SORT -> "批量重排序" + entityName;
         };
     }
 
@@ -393,6 +416,7 @@ public final class RouterGenerator {
             case UPDATE -> "全量更新已有" + entityName + "，未传字段会被置为 null";
             case PATCH -> "部分更新已有" + entityName + "，仅更新非 null 字段";
             case DELETE -> "根据 ID 删除" + entityName + "记录";
+            case SORT -> "批量更新" + entityName + "的排序值，请求体为 BaseSortReq 数组";
         };
     }
 }

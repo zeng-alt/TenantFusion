@@ -24,6 +24,7 @@ public class RepositoryMeta {
     private final ClassName idType;
     private final String path;
     private final boolean pageable;
+    private final boolean sort;
     private final List<MethodMeta> enabledMethods;
     private final TypeElement repositoryElement;
     private final ClassName queryType;
@@ -51,6 +52,7 @@ public class RepositoryMeta {
         this.idType = builder.idType;
         this.path = builder.path;
         this.pageable = builder.pageable;
+        this.sort = builder.sort;
         this.enabledMethods = Collections.unmodifiableList(new ArrayList<>(builder.enabledMethods));
         this.repositoryElement = builder.repositoryElement;
         this.queryType = builder.queryType;
@@ -97,6 +99,10 @@ public class RepositoryMeta {
 
     public boolean isPageable() {
         return pageable;
+    }
+
+    public boolean isSort() {
+        return sort;
     }
 
     public List<MethodMeta> getEnabledMethods() {
@@ -206,6 +212,7 @@ public class RepositoryMeta {
         private ClassName idType;
         private String path;
         private boolean pageable = true;
+        private boolean sort = false;
         private final List<MethodMeta> enabledMethods = new ArrayList<>();
         private TypeElement repositoryElement;
         private ClassName queryType;
@@ -259,6 +266,11 @@ public class RepositoryMeta {
 
         public Builder pageable(boolean pageable) {
             this.pageable = pageable;
+            return this;
+        }
+
+        public Builder sort(boolean sort) {
+            this.sort = sort;
             return this;
         }
 
