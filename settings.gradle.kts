@@ -33,16 +33,7 @@ include("backend:components:tenant-component:api-tenant-component")
 include("backend:components:security-component:cookie-auth-security-component")
 include("backend:components:sms-component")
 
-dependencyResolutionManagement {
-    repositories {
-//        maven {
-//            url = uri("http://192.168.56.106:8081/repository/maven-public/")
-//            isAllowInsecureProtocol = true
-//        }
 
-        mavenCentral()
-    }
-}
 include("backend:components:doc-component")
 include("backend:components:oss-component")
 include("backend:components:oss-component:api-oss-component")
@@ -59,3 +50,15 @@ include("backend:components:message-component:redis-message-component")
 include("backend:components:message-component:rabbit-message-component")
 include("backend:components:message-component:kafka-message-component")
 include("backend:components:log-component:message-log-component")
+
+
+dependencyResolutionManagement {
+    repositories {
+//        maven {
+//            url = uri("http://192.168.56.106:8081/repository/maven-public/")
+//            isAllowInsecureProtocol = true
+//        }
+
+        mavenCentral()
+    }
+}

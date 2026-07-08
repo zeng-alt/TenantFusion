@@ -153,6 +153,12 @@ public class CrudRestProcessor extends AbstractProcessor {
         if (annotation.patch()) metaBuilder.addEnabledMethod(MethodMeta.PATCH);
         if (annotation.delete()) metaBuilder.addEnabledMethod(MethodMeta.DELETE);
 
+        // jpa-search-helper 搜索接口
+        if (annotation.search()) {
+            metaBuilder.addEnabledMethod(MethodMeta.SEARCH);
+            metaBuilder.addEnabledMethod(MethodMeta.SEARCH_BODY);
+        }
+
         // 查询字段扫描
         fieldScanner.parseQueryType(metaBuilder, annotation, entityMirror);
 
@@ -172,11 +178,13 @@ public class CrudRestProcessor extends AbstractProcessor {
         ClassName patchType = fieldScanner.parseOperationType(annotation::patchType);
         ClassName detailType = fieldScanner.parseOperationType(annotation::detailType);
         ClassName listType = fieldScanner.parseOperationType(annotation::listType);
+        ClassName searchType = fieldScanner.parseOperationType(annotation::searchType);
         if (createType != null) metaBuilder.createType(createType);
         if (updateType != null) metaBuilder.updateType(updateType);
         if (patchType != null) metaBuilder.patchType(patchType);
         if (detailType != null) metaBuilder.detailType(detailType);
         if (listType != null) metaBuilder.listType(listType);
+        if (searchType != null) metaBuilder.searchType(searchType);
 
         // 实体字段扫描（含 @JsonIgnore 的全量字段用于 DTO 转换，过滤后的用于 OpenAPI Schema）
         TypeElement entityElement = (TypeElement) typeUtils.asElement(entityMirror);
@@ -211,6 +219,13 @@ public class CrudRestProcessor extends AbstractProcessor {
             TypeElement detailTypeEl = elementUtils.getTypeElement(detailType.reflectionName());
             if (detailTypeEl != null) {
                 fieldScanner.scanEntityFields(detailTypeEl, metaBuilder::addDetailTypeField);
+            }
+        }
+
+        if (searchType != null && !searchType.equals(entityType)) {
+            TypeElement searchTypeEl = elementUtils.getTypeElement(searchType.reflectionName());
+            if (searchTypeEl != null) {
+                fieldScanner.scanEntityFields(searchTypeEl, metaBuilder::addSearchTypeField);
             }
         }
 

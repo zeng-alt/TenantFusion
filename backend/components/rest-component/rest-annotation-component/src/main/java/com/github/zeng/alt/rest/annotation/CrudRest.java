@@ -57,6 +57,11 @@ public @interface CrudRest {
     boolean list() default true;
 
     /**
+     * 是否生成 jpa-search-helper 接口
+     */
+    boolean search() default false;
+
+    /**
      * 是否生成查询 tree 接口
      */
     boolean tree() default false;
@@ -103,9 +108,13 @@ public @interface CrudRest {
      */
     Class<?> listType() default Void.class;
 
-
     /**
      * 树接口返回体 DTO，如果不填 → 使用 entity
      */
     Class<?> treeType() default Void.class;
+
+    /**
+     * jpa-search-helper接口返回体 DTO，如果不填 → 使用 entity
+     */
+    Class<?> searchType() default Void.class;
 }

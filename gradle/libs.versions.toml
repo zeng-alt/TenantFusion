@@ -14,6 +14,9 @@ guava = "33.5.0-jre"
 jjwt = "0.12.6"
 
 aws-sdk = "2.32.17"
+fesod = "2.0.2-incubating"
+mapstruct = "1.6.3"
+jpa-search-helper = "3.5.5"
 [libraries]
 spring-modulith-bom = { module = "org.springframework.modulith:spring-modulith-bom", version.ref = "spring-modulith" }
 
@@ -61,6 +64,11 @@ jjwt-jackson = { module = "io.jsonwebtoken:jjwt-jackson", version.ref = "jjwt" }
 
 aws-bom = { module = "software.amazon.awssdk:bom", version.ref = "aws-sdk" }
 
+jpa-search-helper = {module = "app.tozzi:jpa-search-helper", version.ref = "jpa-search-helper"}
+fesod-sheet = {module = "org.apache.fesod:fesod-sheet", version.ref = "fesod"}
+mapstruct = {module = "org.mapstruct:mapstruct", version.ref = "mapstruct"}
+mapstruct-processor = {module = "org.mapstruct:mapstruct-processor", version.ref = "mapstruct"}
+lombok-mapstruct-binding = {module =  "org.projectlombok:lombok-mapstruct-binding", version = "0.2.0"}
 [plugins]
 spring-boot = { id = "org.springframework.boot", version.ref = "spring-boot" }
 spring-dependency-management = { id = "io.spring.dependency-management", version.ref = "spring-dependency-management" }

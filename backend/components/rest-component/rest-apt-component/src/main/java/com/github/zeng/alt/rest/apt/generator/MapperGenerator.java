@@ -90,6 +90,15 @@ public final class MapperGenerator {
                     .build());
         }
 
+        // Search DTO -> Entity
+        if (meta.getSearchType() != null && !meta.getSearchType().equals(entity)) {
+            builder.addMethod(MethodSpec.methodBuilder("toSearchDto")
+                    .addModifiers(Modifier.PUBLIC, Modifier.ABSTRACT)
+                    .returns(meta.getSearchType())
+                    .addParameter(entity, "entity")
+                    .build());
+        }
+
         addNestedConversionMethods(builder, meta, elements);
         addOptionalMappingMethod(builder);
 

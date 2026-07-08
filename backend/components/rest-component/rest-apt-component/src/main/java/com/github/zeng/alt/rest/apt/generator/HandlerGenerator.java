@@ -165,7 +165,7 @@ public final class HandlerGenerator {
     // ========================================================================
 
     private static MethodSpec buildMethod(RepositoryMeta meta, MethodMeta method, boolean useMapStruct, Elements elements) {
-        MethodSpec.Builder methodBuilder = MethodSpec.methodBuilder(method.getMethodName())
+        MethodSpec.Builder methodBuilder = MethodSpec.methodBuilder(resolveHandlerMethodName(method))
                 .addModifiers(Modifier.PUBLIC)
                 .returns(SERVER_RESPONSE)
                 .addParameter(ParameterSpec.builder(SERVER_REQUEST, "request").build());
@@ -178,6 +178,8 @@ public final class HandlerGenerator {
             case PATCH -> buildPatchMethod(meta, methodBuilder, useMapStruct, elements);
             case DELETE -> buildDeleteMethod(meta, methodBuilder);
             case SORT -> buildSortBatchMethod(meta, methodBuilder, useMapStruct);
+            case SEARCH -> buildSearchMethod(meta, methodBuilder, useMapStruct, elements);
+            case SEARCH_BODY -> buildSearchBodyMethod(meta, methodBuilder, useMapStruct, elements);
         }
 
         return methodBuilder.build();
@@ -1256,6 +1258,121 @@ public final class HandlerGenerator {
     }
 
     // ========================================================================
+    //  SEARCH（GET — jpa-search-helper，通过查询参数）
+    // ========================================================================
+
+    private static void buildSearchMethod(RepositoryMeta meta, MethodSpec.Builder builder, boolean useMapStruct, Elements elements) {
+        TypeName entityType = meta.getEntityType();
+        ClassName searchType = meta.getSearchType();
+
+        TypeName itemType = searchType != null ? searchType : entityType;
+        TypeName pageType = ParameterizedTypeName.get(ClassName.get(Page.class), entityType);
+        TypeName pageRestType = ParameterizedTypeName.get(PAGE_REST_RESPONSE, itemType);
+        TypeName mapType = ParameterizedTypeName.get(ClassName.get(Map.class), ClassName.get(String.class), ClassName.get(String.class));
+        TypeName listType = ParameterizedTypeName.get(ClassName.get(List.class), ClassName.get(String.class));
+
+        // Map<String, String> filters = new HashMap<>();
+        builder.addStatement("$T filters = new $T<>()", mapType, ClassName.get(HashMap.class));
+
+        // for (Map.Entry<String, List<String>> entry : request.params().entrySet()) {
+        //     String key = entry.getKey();
+        //     List<String> values = entry.getValue();
+        //     if (!values.isEmpty()) {
+        //         filters.put(key, values.get(0));
+        //     }
+        // }
+        builder.beginControlFlow("for ($T.Entry<$T, $T> entry : request.params().entrySet())",
+                        ClassName.get(Map.class), ClassName.get(String.class), listType)
+                .addStatement("$T key = entry.getKey()", ClassName.get(String.class))
+                .addStatement("$T values = entry.getValue()", listType)
+                .beginControlFlow("if (!values.isEmpty())")
+                .addStatement("filters.put(key, values.get(0))")
+                .endControlFlow()
+                .endControlFlow();
+
+        // Page<Entity> pageResult = repository.findAllWithPaginationAndSorting(filters, Entity.class);
+        builder.addStatement("$T pageResult = repository.findAllWithPaginationAndSorting(filters, $T.class)",
+                pageType, entityType);
+
+        // DTO conversion if searchType specified
+        if (searchType != null) {
+            builder.addStatement("$T<$T> dtoList = new $T<>(pageResult.getContent().size())",
+                            ClassName.get(List.class), searchType, ClassName.get(ArrayList.class))
+                    .beginControlFlow("for ($T entity : pageResult.getContent())", entityType);
+
+            if (useMapStruct) {
+                builder.addStatement("$T dto = $L.toSearchDto(entity)", searchType, getMapperFieldName(meta));
+            } else {
+                builder.addStatement("$T dto = new $T()", searchType, searchType)
+                        .addStatement("$T.copyProperties(entity, dto)", BEAN_UTILS);
+                generateNestedDtoConversions(builder, meta, elements,
+                        meta.getEntityAllFields(), meta.getSearchTypeFields(), "entity", "dto");
+            }
+
+            builder.addStatement("dtoList.add(dto)")
+                    .endControlFlow()
+                    .addStatement("$T response = $T.of(dtoList, pageResult.getTotalElements(), pageResult.getSize(), pageResult.getNumber() + 1)",
+                            pageRestType, PAGE_REST_RESPONSE);
+        } else {
+            builder.addStatement("$T response = $T.of(pageResult.getContent(), pageResult.getTotalElements(), pageResult.getSize(), pageResult.getNumber() + 1)",
+                    pageRestType, PAGE_REST_RESPONSE);
+        }
+
+        builder.addStatement("return $T.ok().contentType($T.APPLICATION_JSON).body(response)",
+                SERVER_RESPONSE, MediaType.class);
+    }
+
+    // ========================================================================
+    //  SEARCH_BODY（POST — jpa-search-helper，通过 JPASearchInput 请求体）
+    // ========================================================================
+
+    private static void buildSearchBodyMethod(RepositoryMeta meta, MethodSpec.Builder builder, boolean useMapStruct, Elements elements) {
+        TypeName entityType = meta.getEntityType();
+        ClassName searchType = meta.getSearchType();
+        ClassName jpaSearchInput = ClassName.get("app.tozzi.model.input", "JPASearchInput");
+
+        TypeName itemType = searchType != null ? searchType : entityType;
+        TypeName pageType = ParameterizedTypeName.get(ClassName.get(Page.class), entityType);
+        TypeName pageRestType = ParameterizedTypeName.get(PAGE_REST_RESPONSE, itemType);
+
+        // JPASearchInput input = request.body(JPASearchInput.class);
+        builder.addStatement("$T input = request.body($T.class)", jpaSearchInput, jpaSearchInput);
+
+        // Page<Entity> pageResult = repository.findAllWithPaginationAndSorting(input, Entity.class);
+        builder.addStatement("$T pageResult = repository.findAllWithPaginationAndSorting(input, $T.class)",
+                pageType, entityType);
+
+        // DTO conversion if searchType specified
+        if (searchType != null) {
+            builder.addStatement("$T<$T> dtoList = new $T<>(pageResult.getContent().size())",
+                            ClassName.get(List.class), searchType, ClassName.get(ArrayList.class))
+                    .beginControlFlow("for ($T entity : pageResult.getContent())", entityType);
+
+            if (useMapStruct) {
+                builder.addStatement("$T dto = $L.toSearchDto(entity)", searchType, getMapperFieldName(meta));
+            } else {
+                builder.addStatement("$T dto = new $T()", searchType, searchType)
+                        .addStatement("$T.copyProperties(entity, dto)", BEAN_UTILS);
+                generateNestedDtoConversions(builder, meta, elements,
+                        meta.getEntityAllFields(), meta.getSearchTypeFields(), "entity", "dto");
+            }
+
+            builder.addStatement("dtoList.add(dto)")
+                    .endControlFlow()
+                    .addStatement("$T response = $T.of(dtoList, pageResult.getTotalElements(), pageResult.getSize(), pageResult.getNumber() + 1)",
+                            pageRestType, PAGE_REST_RESPONSE);
+        } else {
+            builder.addStatement("$T response = $T.of(pageResult.getContent(), pageResult.getTotalElements(), pageResult.getSize(), pageResult.getNumber() + 1)",
+                    pageRestType, PAGE_REST_RESPONSE);
+        }
+
+        builder.addStatement("return $T.ok().contentType($T.APPLICATION_JSON).body(response)",
+                        SERVER_RESPONSE, MediaType.class)
+                .addException(ServletException.class)
+                .addException(IOException.class);
+    }
+
+    // ========================================================================
     //  QueryDSL Predicate 构建
     // ========================================================================
 
@@ -1356,6 +1473,18 @@ public final class HandlerGenerator {
     // ========================================================================
     //  工具方法
     // ========================================================================
+
+    /**
+     * 解析 Handler 方法名。
+     * <p>{@link MethodMeta#SEARCH} 和 {@link MethodMeta#SEARCH_BODY} 的 {@code methodName} 均为 "search"，
+     * 但对应不同的 Java 方法实现，需要分别命名为 {@code search} 和 {@code searchBody}。</p>
+     */
+    private static String resolveHandlerMethodName(MethodMeta method) {
+        if (method == MethodMeta.SEARCH_BODY) {
+            return "searchBody";
+        }
+        return method.getMethodName();
+    }
 
     /** 将首字母转为小写，用于变量命名 */
     private static String lowerFirst(String name) {

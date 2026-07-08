@@ -33,6 +33,7 @@ public class RepositoryMeta {
     private final ClassName patchType;
     private final ClassName detailType;
     private final ClassName listType;
+    private final ClassName searchType;
     private final List<QueryFieldMeta> queryFields;
     private final boolean hasQueryFields;
     private final boolean hasSpringDoc;
@@ -43,6 +44,7 @@ public class RepositoryMeta {
     private final List<SchemaFieldMeta> patchTypeFields;
     private final List<SchemaFieldMeta> listTypeFields;
     private final List<SchemaFieldMeta> detailTypeFields;
+    private final List<SchemaFieldMeta> searchTypeFields;
 
     private RepositoryMeta(Builder builder) {
         this.repositorySimpleName = builder.repositorySimpleName;
@@ -61,6 +63,7 @@ public class RepositoryMeta {
         this.patchType = builder.patchType;
         this.detailType = builder.detailType;
         this.listType = builder.listType;
+        this.searchType = builder.searchType;
         this.queryFields = Collections.unmodifiableList(new ArrayList<>(builder.queryFields));
         this.hasQueryFields = !builder.queryFields.isEmpty();
         this.hasSpringDoc = builder.hasSpringDoc;
@@ -71,6 +74,7 @@ public class RepositoryMeta {
         this.patchTypeFields = Collections.unmodifiableList(new ArrayList<>(builder.patchTypeFields));
         this.listTypeFields = Collections.unmodifiableList(new ArrayList<>(builder.listTypeFields));
         this.detailTypeFields = Collections.unmodifiableList(new ArrayList<>(builder.detailTypeFields));
+        this.searchTypeFields = Collections.unmodifiableList(new ArrayList<>(builder.searchTypeFields));
     }
 
     public String getRepositorySimpleName() {
@@ -177,6 +181,14 @@ public class RepositoryMeta {
         return detailTypeFields;
     }
 
+    public ClassName getSearchType() {
+        return searchType;
+    }
+
+    public List<SchemaFieldMeta> getSearchTypeFields() {
+        return searchTypeFields;
+    }
+
     public String getEntitySimpleName() {
         return entityType.simpleName();
     }
@@ -221,6 +233,7 @@ public class RepositoryMeta {
         private ClassName patchType;
         private ClassName detailType;
         private ClassName listType;
+        private ClassName searchType;
         private boolean hasSpringDoc;
         private final List<QueryFieldMeta> queryFields = new ArrayList<>();
         private final List<SchemaFieldMeta> entityFields = new ArrayList<>();
@@ -230,6 +243,7 @@ public class RepositoryMeta {
         private final List<SchemaFieldMeta> patchTypeFields = new ArrayList<>();
         private final List<SchemaFieldMeta> listTypeFields = new ArrayList<>();
         private final List<SchemaFieldMeta> detailTypeFields = new ArrayList<>();
+        private final List<SchemaFieldMeta> searchTypeFields = new ArrayList<>();
 
         private Builder() {
         }
@@ -404,6 +418,16 @@ public class RepositoryMeta {
         public Builder detailTypeFields(List<SchemaFieldMeta> detailTypeFields) {
             this.detailTypeFields.clear();
             this.detailTypeFields.addAll(detailTypeFields);
+            return this;
+        }
+
+        public Builder searchType(ClassName searchType) {
+            this.searchType = searchType;
+            return this;
+        }
+
+        public Builder addSearchTypeField(SchemaFieldMeta field) {
+            this.searchTypeFields.add(field);
             return this;
         }
 

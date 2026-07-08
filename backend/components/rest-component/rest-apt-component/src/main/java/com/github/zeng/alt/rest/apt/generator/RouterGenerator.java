@@ -90,7 +90,7 @@ public final class RouterGenerator {
         for (MethodMeta method : meta.getEnabledMethods()) {
             args[argIndex++] = method.getHttpMethod();
             args[argIndex++] = meta.getPath() + method.getRouteSuffix();
-            args[argIndex++] = handlerParamName + "::" + method.getMethodName();
+            args[argIndex++] = handlerParamName + "::" + resolveHandlerMethodName(method);
         }
 
         MethodSpec routerMethod = MethodSpec.methodBuilder(beanName)
@@ -245,6 +245,83 @@ public final class RouterGenerator {
                             .build());
         }
 
+        // search 开启时注册 JPASearchInput Schema
+        if (meta.getEnabledMethods().contains(MethodMeta.SEARCH_BODY)) {
+            // 注册内部 Schema
+            registerSchemaIfAbsent(body, "JPASearchOptions",
+                    CodeBlock.builder()
+                            .add("new $T<>()\n", SCHEMA)
+                            .add(".type($S)\n", "object")
+                            .add(".addProperty($S, new $T<>().type($S))\n", "pageSize", SCHEMA, "integer")
+                            .add(".addProperty($S, new $T<>().type($S))\n", "pageOffset", SCHEMA, "integer")
+                            .add(".addProperty($S, new $T<>().type($S).items(new $T<>().$$ref($S)))\n",
+                                    "sortOptions", SCHEMA, "array", SCHEMA, "#/components/schemas/JPASortOptions")
+                            .add(".addProperty($S, new $T<>().type($S).items(new $T<>().type($S)))\n",
+                                    "selections", SCHEMA, "array", SCHEMA, "string")
+                            .build());
+
+            registerSchemaIfAbsent(body, "JPASortOptions",
+                    CodeBlock.builder()
+                            .add("new $T<>()\n", SCHEMA)
+                            .add(".type($S)\n", "object")
+                            .add(".addProperty($S, new $T<>().type($S))\n", "key", SCHEMA, "string")
+                            .add(".addProperty($S, new $T<>().type($S)._default(false))\n", "desc", SCHEMA, "boolean")
+                            .build());
+
+            registerSchemaIfAbsent(body, "FilterSingleValue",
+                    CodeBlock.builder()
+                            .add("new $T<>()\n", SCHEMA)
+                            .add(".type($S)\n", "object")
+                            .add(".addProperty($S, new $T<>().type($S))\n", "operator", SCHEMA, "string")
+                            .add(".addProperty($S, new $T<>().type($S))\n", "key", SCHEMA, "string")
+                            .add(".addProperty($S, new $T<>().$$ref($S))\n", "options", SCHEMA, "#/components/schemas/JPASearchFilterOptions")
+                            .add(".addProperty($S, new $T<>())\n", "value", SCHEMA) // object 类型，允许任意值
+                            .build());
+
+            registerSchemaIfAbsent(body, "FilterMultipleValues",
+                    CodeBlock.builder()
+                            .add("new $T<>()\n", SCHEMA)
+                            .add(".type($S)\n", "object")
+                            .add(".addProperty($S, new $T<>().type($S))\n", "operator", SCHEMA, "string")
+                            .add(".addProperty($S, new $T<>().type($S))\n", "key", SCHEMA, "string")
+                            .add(".addProperty($S, new $T<>().$$ref($S))\n", "options", SCHEMA, "#/components/schemas/JPASearchFilterOptions")
+                            .add(".addProperty($S, new $T<>().type($S).items(new $T<>()))\n", "values", SCHEMA, "array", SCHEMA)
+                            .build());
+
+            registerSchemaIfAbsent(body, "RootFilter",
+                    CodeBlock.builder()
+                            .add("new $T<>()\n", SCHEMA)
+                            .add(".type($S)\n", "object")
+                            .add(".addProperty($S, new $T<>().type($S))\n", "operator", SCHEMA, "string")
+                            .add(".addProperty($S, new $T<>().type($S).items(\n", "filters", SCHEMA, "array")
+                            .add("    new $T<>().oneOf(java.util.Arrays.asList(\n", SCHEMA)
+                            .add("        new $T<>().$$ref($S),\n", SCHEMA, "#/components/schemas/FilterSingleValue")
+                            .add("        new $T<>().$$ref($S),\n", SCHEMA, "#/components/schemas/FilterMultipleValues")
+                            .add("        new $T<>().$$ref($S)\n", SCHEMA, "#/components/schemas/RootFilter")
+                            .add("    ))\n")
+                            .add("))\n")
+                            .build());
+
+            registerSchemaIfAbsent(body, "JPASearchFilterOptions",
+                    CodeBlock.builder()
+                            .add("new $T<>()\n", SCHEMA)
+                            .add(".type($S)\n", "object")
+                            .add(".addProperty($S, new $T<>().type($S))\n", "ignoreCase", SCHEMA, "boolean")
+                            .add(".addProperty($S, new $T<>().type($S))\n", "trim", SCHEMA, "boolean")
+                            .add(".addProperty($S, new $T<>().type($S))\n", "negate", SCHEMA, "boolean")
+                            .build());
+
+            // 注册主 Schema，引用已注册的子类型
+            registerSchemaIfAbsent(body, "JPASearchInput",
+                    CodeBlock.builder()
+                            .add("new $T<>()\n", SCHEMA)
+                            .add(".type($S)\n", "object")
+                            .add(".description($S)\n", "jpa-search-helper 搜索输入")
+                            .add(".addProperty($S, new $T<>().$$ref($S))\n", "filter", SCHEMA, "#/components/schemas/RootFilter")
+                            .add(".addProperty($S, new $T<>().$$ref($S))\n", "options", SCHEMA, "#/components/schemas/JPASearchOptions")
+                            .build());
+        }
+
         // =============================
         // 2. 注册 Tag
         // =============================
@@ -272,11 +349,12 @@ public final class RouterGenerator {
             for (MethodMeta method : entry.getValue()) {
                 String httpMethod = method.getHttpMethod();
                 String setter = "set" + httpMethod.charAt(0) + httpMethod.substring(1).toLowerCase();
-                String opVar = "__" + method.getMethodName();
+                String opVar = "__" + resolveHandlerMethodName(method);
                 String summary = chineseSummary(entityName, method);
                 String description = chineseDescription(entityName, method);
                 String responseRef = "#/components/schemas/"
-                        + (method == MethodMeta.LIST ? pageResponseName : responseName);
+                        + (method == MethodMeta.LIST || method == MethodMeta.SEARCH || method == MethodMeta.SEARCH_BODY
+                            ? pageResponseName : responseName);
                 String requestBodyRef = null;
                 if (method == MethodMeta.CREATE || method == MethodMeta.UPDATE || method == MethodMeta.PATCH) {
                     ClassName type;
@@ -291,6 +369,8 @@ public final class RouterGenerator {
                     requestBodyRef = "#/components/schemas/" + type.simpleName();
                 } else if (method == MethodMeta.SORT) {
                     requestBodyRef = "#/components/schemas/BaseSortReq";
+                } else if (method == MethodMeta.SEARCH_BODY) {
+                    requestBodyRef = "#/components/schemas/JPASearchInput";
                 }
 
                 String respVar = opVar + "Resp";
@@ -311,6 +391,13 @@ public final class RouterGenerator {
                         summary, description,
                         LIST, tagName,
                         respVar);
+
+                if (method == MethodMeta.SEARCH) {
+                    // 构建 Operation 时，不调用 addParametersItem
+                    body.addStatement("$L.description($S)", opVar,
+                            "使用 jpa-search-helper 搜索 Person，支持的所有查询参数请参考 JPASearchInput 扁平化规则。"
+                                    + "示例: firstName=Biagio&lastName_startsWith=Toz&birthDate_gte=19910101&country_in=IT,FR,DE");
+                }
 
                 // 查询参数（仅 LIST）
                 if (method == MethodMeta.LIST) {
@@ -396,6 +483,16 @@ public final class RouterGenerator {
         return meta.getQueryFields().stream().anyMatch(QueryFieldMeta::isAutoSort);
     }
 
+    /**
+     * 解析 Handler 方法名，{@link MethodMeta#SEARCH_BODY} 需要特殊处理避免与 {@link MethodMeta#SEARCH} 冲突。
+     */
+    private static String resolveHandlerMethodName(MethodMeta method) {
+        if (method == MethodMeta.SEARCH_BODY) {
+            return "searchBody";
+        }
+        return method.getMethodName();
+    }
+
     private static String chineseSummary(String entityName, MethodMeta method) {
         return switch (method) {
             case LIST -> "分页查询" + entityName + "列表";
@@ -405,6 +502,8 @@ public final class RouterGenerator {
             case PATCH -> "部分更新" + entityName;
             case DELETE -> "删除" + entityName;
             case SORT -> "批量重排序" + entityName;
+            case SEARCH -> "搜索" + entityName + "（GET）";
+            case SEARCH_BODY -> "搜索" + entityName + "（POST）";
         };
     }
 
@@ -417,6 +516,8 @@ public final class RouterGenerator {
             case PATCH -> "部分更新已有" + entityName + "，仅更新非 null 字段";
             case DELETE -> "根据 ID 删除" + entityName + "记录";
             case SORT -> "批量更新" + entityName + "的排序值，请求体为 BaseSortReq 数组";
+            case SEARCH -> "使用 jpa-search-helper 搜索" + entityName + "，查询参数通过 URL query params 传递";
+            case SEARCH_BODY -> "使用 jpa-search-helper 搜索" + entityName + "，查询条件通过请求体传递";
         };
     }
 }

@@ -1,5 +1,6 @@
 package com.github.zeng.alt.domain.base;
 
+import app.tozzi.repository.JPASearchRepository;
 import io.vavr.control.Option;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -16,7 +17,7 @@ import java.util.List;
  * @crateTime 2024年08月26日 20:16
  */
 @NoRepositoryBean
-public interface BaseRepository<T, ID> extends Repository<T, ID>, QuerydslPredicateExecutor<T>, QueryByExampleExecutor<T> {
+public interface BaseRepository<T, ID> extends Repository<T, ID>, QuerydslPredicateExecutor<T>, QueryByExampleExecutor<T>, JPASearchRepository<T> {
 
     <S extends T> S save(S entity);
 
