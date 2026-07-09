@@ -12,6 +12,7 @@ import org.springframework.aop.Pointcut;
 import org.springframework.aop.PointcutAdvisor;
 import org.springframework.aop.framework.AopInfrastructureBean;
 import org.springframework.aop.support.AopUtils;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.core.Ordered;
 
 import java.lang.reflect.Method;
@@ -20,8 +21,8 @@ import java.time.Duration;
 @RequiredArgsConstructor
 public class LogMethodInterceptor implements MethodInterceptor, PointcutAdvisor, Ordered, AopInfrastructureBean {
 
-    private final LogHandler handler;
-    private final LogOperationSource source;
+    private final ObjectProvider<LogHandler> handler;
+    private final ObjectProvider<LogOperationSource> source;
     private final Pointcut pointcut;
     private final Integer order;
 
@@ -38,7 +39,7 @@ public class LogMethodInterceptor implements MethodInterceptor, PointcutAdvisor,
                         invocation.getThis());
 
         LogOperation operation =
-                source.getLogOperation(method, target);
+                source.getObject().getLogOperation(method, target);
 
         if (operation == null) {
             return invocation.proceed();
@@ -64,7 +65,7 @@ public class LogMethodInterceptor implements MethodInterceptor, PointcutAdvisor,
 
         } finally {
 
-            handler.handle(
+            handler.getObject().handle(
                     LogInvocation.builder()
                             .invocation(invocation)
                             .operation(operation)

@@ -3,15 +3,15 @@ package com.github.zeng.alt.security.jwt;
 import com.github.zeng.alt.security.api.SecurityUser;
 import com.github.zeng.alt.security.core.properties.LoginProperties;
 import com.github.zeng.alt.storage.StorageTemplate;
-import io.jsonwebtoken.Claims;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.web.servlet.util.matcher.PathPatternRequestMatcher;
-import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
+
 import org.springframework.security.web.util.matcher.RequestMatcher;
 import org.springframework.web.filter.OncePerRequestFilter;
 
@@ -78,7 +78,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         }
 
         // 3. 重建用户并设置 SecurityContext
-        Claims claims = jwtTokenProvider.getClaims(token);
+        Jwt claims = jwtTokenProvider.getClaims(token);
         if (claims == null) {
             filterChain.doFilter(request, response);
             return;

@@ -3,6 +3,8 @@ package com.github.zeng.alt.admin.infrastructure.entity;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.github.zeng.alt.domain.base.BaseEntity;
 import com.github.zeng.alt.domain.key.SnowflakeId;
+import com.github.zeng.alt.rest.annotation.QueryField;
+import com.github.zeng.alt.rest.annotation.QueryType;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -23,7 +25,9 @@ public abstract class Permission extends BaseEntity<Long> {
     private Long permissionId;
 
     @Column(length = 64)
+    @QueryField
     private String code;
+    @QueryField(type = QueryType.LIKE)
     private String name;
 
     @Column(name = "resource_type", insertable = false, updatable = false)

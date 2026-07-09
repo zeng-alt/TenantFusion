@@ -2,10 +2,12 @@ package com.github.zeng.alt.admin.infrastructure.repository;
 
 import com.github.zeng.alt.admin.infrastructure.entity.User;
 import com.github.zeng.alt.domain.base.BaseRepository;
+import com.github.zeng.alt.rest.annotation.CrudRest;
 
 import java.util.List;
 import java.util.Optional;
 
+@CrudRest(path = "/user", search = true)
 public interface UserRepository extends BaseRepository<User, Long> {
 
     Optional<User> findByUsername(String username);

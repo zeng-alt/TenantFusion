@@ -4,8 +4,8 @@ import com.github.zeng.alt.oss.OssFileInfo;
 import com.github.zeng.alt.oss.OssProperties;
 import com.github.zeng.alt.oss.OssTemplate;
 import com.github.zeng.alt.oss.core.OssException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.apachecommons.CommonsLog;
+import org.springframework.core.log.LogMessage;
 import org.springframework.util.StringUtils;
 
 import java.io.*;
@@ -16,7 +16,6 @@ import java.nio.file.attribute.BasicFileAttributes;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Stream;
 
@@ -42,9 +41,8 @@ import java.util.stream.Stream;
  * @since 2026-07-02
  * @version 1.0
  */
+@CommonsLog
 public class FileSystemOssTemplate implements OssTemplate {
-
-    private static final Logger log = LoggerFactory.getLogger(FileSystemOssTemplate.class);
 
     /** 基础存储路径 */
     private final Path basePath;
@@ -85,7 +83,7 @@ public class FileSystemOssTemplate implements OssTemplate {
         // 确保基础目录存在
         try {
             Files.createDirectories(this.basePath);
-            log.info("FileSystem OSS initialized: basePath={}, bucket={}", this.basePath, this.bucketName);
+            log.info(LogMessage.format("FileSystem OSS initialized: basePath=%s, bucket=%s", this.basePath, this.bucketName));
         } catch (IOException e) {
             throw new OssException("Cannot create base directory: " + this.basePath, e);
         }
@@ -109,7 +107,7 @@ public class FileSystemOssTemplate implements OssTemplate {
         try {
             Files.createDirectories(targetFile.getParent());
             Files.copy(inputStream, targetFile, StandardCopyOption.REPLACE_EXISTING);
-            log.debug("File upload success: bucket={}, path={}", bucketName, fullPath);
+            log.debug(LogMessage.format("File upload success: bucket=%s, path=%s", bucketName, fullPath));
             return buildFileInfo(fullPath, contentType, targetFile);
         } catch (IOException e) {
             throw new OssException("File upload failed: " + fullPath, e);
@@ -128,7 +126,7 @@ public class FileSystemOssTemplate implements OssTemplate {
         try {
             Files.createDirectories(targetFile.getParent());
             Files.write(targetFile, data);
-            log.debug("File upload success: bucket={}, path={}", bucketName, fullPath);
+            log.debug(LogMessage.format("File upload success: bucket=%s, path=%s", bucketName, fullPath));
             return buildFileInfo(fullPath, contentType, targetFile);
         } catch (IOException e) {
             throw new OssException("File upload failed: " + fullPath, e);
@@ -142,7 +140,7 @@ public class FileSystemOssTemplate implements OssTemplate {
         try {
             Files.createDirectories(targetFile.getParent());
             Files.copy(file.toPath(), targetFile, StandardCopyOption.REPLACE_EXISTING);
-            log.debug("File upload success: bucket={}, path={}", bucketName, fullPath);
+            log.debug(LogMessage.format("File upload success: bucket=%s, path=%s", bucketName, fullPath));
             OssFileInfo info = buildFileInfo(fullPath, null, targetFile);
             info.setSize(file.length());
             return info;
@@ -175,7 +173,7 @@ public class FileSystemOssTemplate implements OssTemplate {
         Path targetFile = resolvePath(bucketName, fullPath);
         try {
             Files.deleteIfExists(targetFile);
-            log.debug("File delete success: bucket={}, path={}", bucketName, fullPath);
+            log.debug(LogMessage.format("File delete success: bucket=%s, path=%s", bucketName, fullPath));
             // 清理空目录
             cleanEmptyParent(targetFile.getParent());
         } catch (IOException e) {
@@ -270,7 +268,7 @@ public class FileSystemOssTemplate implements OssTemplate {
         try {
             Files.createDirectories(targetFile.getParent());
             Files.copy(sourceFile, targetFile, StandardCopyOption.REPLACE_EXISTING);
-            log.debug("File copy success: {} -> {}", sourceFullPath, targetFullPath);
+            log.debug(LogMessage.format("File copy success: %s -> %s", sourceFullPath, targetFullPath));
         } catch (IOException e) {
             throw new OssException("File copy failed: " + sourceFullPath + " -> " + targetFullPath, e);
         }
@@ -285,7 +283,7 @@ public class FileSystemOssTemplate implements OssTemplate {
         try {
             Files.createDirectories(targetFile.getParent());
             Files.move(sourceFile, targetFile, StandardCopyOption.REPLACE_EXISTING);
-            log.debug("File move success: {} -> {}", sourceFullPath, targetFullPath);
+            log.debug(LogMessage.format("File move success: %s -> %s", sourceFullPath, targetFullPath));
             cleanEmptyParent(sourceFile.getParent());
         } catch (IOException e) {
             throw new OssException("File move failed: " + sourceFullPath + " -> " + targetFullPath, e);
@@ -313,7 +311,7 @@ public class FileSystemOssTemplate implements OssTemplate {
         try {
             Files.createDirectories(targetFile.getParent());
             Files.copy(inputStream, targetFile, StandardCopyOption.REPLACE_EXISTING);
-            log.debug("File upload (bucket-aware) success: bucket={}, path={}", bucketName, fullPath);
+            log.debug(LogMessage.format("File upload (bucket-aware) success: bucket=%s, path=%s", bucketName, fullPath));
             return buildFileInfo(bucketName, fullPath, contentType, targetFile);
         } catch (IOException e) {
             throw new OssException("File upload failed to bucket " + bucketName + ": " + fullPath, e);
@@ -332,7 +330,7 @@ public class FileSystemOssTemplate implements OssTemplate {
         try {
             Files.createDirectories(targetFile.getParent());
             Files.write(targetFile, data);
-            log.debug("File upload (bucket-aware) success: bucket={}, path={}", bucketName, fullPath);
+            log.debug(LogMessage.format("File upload (bucket-aware) success: bucket=%s, path=%s", bucketName, fullPath));
             return buildFileInfo(bucketName, fullPath, contentType, targetFile);
         } catch (IOException e) {
             throw new OssException("File upload failed to bucket " + bucketName + ": " + fullPath, e);
@@ -361,7 +359,7 @@ public class FileSystemOssTemplate implements OssTemplate {
         Path bucketDir = basePath.resolve(sanitizeBucketName(bucketName));
         try {
             Files.createDirectories(bucketDir);
-            log.debug("Local bucket directory ensured: {}", bucketDir);
+            log.debug(LogMessage.format("Local bucket directory ensured: %s", bucketDir));
         } catch (IOException e) {
             throw new OssException("Cannot create bucket directory: " + bucketDir, e);
         }
@@ -436,7 +434,7 @@ public class FileSystemOssTemplate implements OssTemplate {
         try {
             if (dir != null && Files.isDirectory(dir) && Files.list(dir).findAny().isEmpty()) {
                 Files.delete(dir);
-                log.debug("Removed empty directory: {}", dir);
+                log.debug(LogMessage.format("Removed empty directory: %s", dir));
                 // 递归清理祖父目录
                 cleanEmptyParent(dir.getParent());
             }

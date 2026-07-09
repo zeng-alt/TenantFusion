@@ -6,10 +6,10 @@ import com.github.zeng.alt.oss.jdbc.dao.OssFileDao;
 import com.github.zeng.alt.oss.jdbc.dao.OssFileRecord;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.apachecommons.CommonsLog;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.core.log.LogMessage;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -27,14 +27,13 @@ import java.util.Optional;
  * @since 2026-07-02
  * @version 1.0
  */
+@CommonsLog
 @RestController
 @RequestMapping("/oss-files")
 @Tag(name = "OSS 文件记录管理（JDBC）")
 @ConditionalOnClass(name = "org.springframework.web.bind.annotation.RestController")
 @ConditionalOnProperty(prefix = "oss.s3.crud", name = "enabled", havingValue = "true", matchIfMissing = true)
 public class JdbcOssFileController {
-
-    private static final Logger log = LoggerFactory.getLogger(JdbcOssFileController.class);
 
     protected final OssFileDao ossFileDao;
 
@@ -69,7 +68,7 @@ public class JdbcOssFileController {
     public RestResponse<OssFileRecord> create(@RequestBody OssFileRecord record) {
         long id = ossFileDao.insert(record);
         OssFileRecord saved = ossFileDao.findById(id).orElse(record);
-        log.debug("OSS file record created (JDBC): id={}, fileName={}", id, saved.getFileName());
+        log.debug(LogMessage.format("OSS file record created (JDBC): id=%s, fileName=%s", id, saved.getFileName()));
         return RestResponse.success(saved);
     }
 

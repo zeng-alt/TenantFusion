@@ -6,17 +6,16 @@ import com.github.zeng.alt.message.MessageQueueTemplate;
 import com.github.zeng.alt.message.codec.JacksonMessagePacketCodec;
 import com.github.zeng.alt.message.codec.MessagePacketCodec;
 import com.github.zeng.alt.message.exception.MessageException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.apachecommons.CommonsLog;
 import org.springframework.amqp.AmqpException;
 import org.springframework.amqp.core.AmqpAdmin;
 import org.springframework.amqp.core.Queue;
-import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer;
 import org.springframework.amqp.rabbit.listener.api.ChannelAwareMessageListener;
 import org.springframework.beans.factory.DisposableBean;
 import org.springframework.beans.factory.InitializingBean;
+import org.springframework.core.log.LogMessage;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -40,9 +39,8 @@ import java.util.concurrent.TimeUnit;
  * @since 2026-07-01
  * @version 1.0
  */
+@CommonsLog
 public class RabbitMessageQueueTemplate implements MessageQueueTemplate, InitializingBean, DisposableBean {
-
-    private static final Logger log = LoggerFactory.getLogger(RabbitMessageQueueTemplate.class);
 
     private final RabbitTemplate rabbitTemplate;
     private final AmqpAdmin amqpAdmin;
@@ -69,7 +67,7 @@ public class RabbitMessageQueueTemplate implements MessageQueueTemplate, Initial
             byte[] packetBytes = ((JacksonMessagePacketCodec) codec).encodeMessage(topic, message);
             ensureQueue(topic);
             rabbitTemplate.convertAndSend(topic, packetBytes);
-            log.debug("Sent message to topic '{}': id={}", topic, message.getId());
+            log.debug(LogMessage.format("Sent message to topic '%s': id=%s", topic, message.getId()));
         } catch (AmqpException e) {
             throw new MessageException("Failed to send message to topic '" + topic + "'", e);
         }
@@ -115,14 +113,14 @@ public class RabbitMessageQueueTemplate implements MessageQueueTemplate, Initial
                 listener.onMessage(message);
                 channel.basicAck(amqpMessage.getMessageProperties().getDeliveryTag(), false);
             } catch (Exception e) {
-                log.error("Error processing message from topic '{}'", topic, e);
+                log.error(LogMessage.format("Error processing message from topic '%s'", topic, e));
                 channel.basicNack(amqpMessage.getMessageProperties().getDeliveryTag(), false, true);
             }
         });
         container.start();
 
         containers.put(topic, container);
-        log.info("Subscribed to topic '{}'", topic);
+        log.info(LogMessage.format("Subscribed to topic '%s'", topic));
     }
 
     @Override
@@ -133,9 +131,9 @@ public class RabbitMessageQueueTemplate implements MessageQueueTemplate, Initial
                 container.stop();
                 container.destroy();
             } catch (Exception e) {
-                log.warn("Error stopping container for topic '{}'", topic, e);
+                log.warn(LogMessage.format("Error stopping container for topic '%s'", topic), e);
             }
-            log.info("Unsubscribed from topic '{}'", topic);
+            log.info(LogMessage.format("Unsubscribed from topic '%s'", topic));
         }
     }
 
@@ -165,7 +163,7 @@ public class RabbitMessageQueueTemplate implements MessageQueueTemplate, Initial
                 container.stop();
                 container.destroy();
             } catch (Exception e) {
-                log.warn("Error stopping container for topic '{}'", topic, e);
+                log.warn(LogMessage.format("Error stopping container for topic '%s'", topic), e);
             }
         });
         containers.clear();

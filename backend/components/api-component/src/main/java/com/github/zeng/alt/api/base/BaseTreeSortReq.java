@@ -6,6 +6,7 @@ import lombok.experimental.Accessors;
 
 import java.io.Serial;
 import java.io.Serializable;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -24,8 +25,6 @@ public class BaseTreeSortReq implements Serializable {
     @Schema(name = "主键")
     private Long id;
 
-    @Schema(name = "排序")
-    private Integer sort;
-
-    private List<BaseTreeSortReq> children;
+    @Schema(name = "子节点")
+    private List<BaseTreeSortReq> children = Collections.emptyList();
 }

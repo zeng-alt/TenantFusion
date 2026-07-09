@@ -1,18 +1,21 @@
 package com.github.zeng.alt.admin.infrastructure.entity;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.github.zeng.alt.api.base.BaseTreeEntity;
+import com.github.zeng.alt.rest.annotation.QueryOrder;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
+import org.hibernate.proxy.HibernateProxy;
 
-import java.util.LinkedHashSet;
-import java.util.Set;
+import java.util.*;
 
 @Entity
 @DiscriminatorValue("MENU")
 @Getter @Setter
-public class MenuResource extends Permission {
+public class MenuResource extends Permission implements BaseTreeEntity<MenuResource> {
 
+    @QueryOrder
     private String path;
     private String component;
     private String redirect;
@@ -21,6 +24,8 @@ public class MenuResource extends Permission {
     private String keepAlive;
     private String menuName;
     private String menuStyle;
+
+    @QueryOrder(autoSort = true)
     @Column(name = "resource_order")
     private Integer order;
 
@@ -35,6 +40,22 @@ public class MenuResource extends Permission {
     @JsonIgnore
     @OneToMany(mappedBy = "parent", fetch = FetchType.LAZY)
     @OrderBy("order ASC")
-    private Set<MenuResource> children = new LinkedHashSet<>();
+    private List<MenuResource> children = new LinkedList<>();
+
+    @Override
+    public final boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null) return false;
+        Class<?> oEffectiveClass = o instanceof HibernateProxy ? ((HibernateProxy) o).getHibernateLazyInitializer().getPersistentClass() : o.getClass();
+        Class<?> thisEffectiveClass = this instanceof HibernateProxy ? ((HibernateProxy) this).getHibernateLazyInitializer().getPersistentClass() : this.getClass();
+        if (thisEffectiveClass != oEffectiveClass) return false;
+        MenuResource that = (MenuResource) o;
+        return getPermissionId() != null && Objects.equals(getPermissionId(), that.getPermissionId());
+    }
+
+    @Override
+    public final int hashCode() {
+        return this instanceof HibernateProxy ? ((HibernateProxy) this).getHibernateLazyInitializer().getPersistentClass().hashCode() : getClass().hashCode();
+    }
 }
 

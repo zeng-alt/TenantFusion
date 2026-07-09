@@ -4,8 +4,8 @@ import com.github.zeng.alt.oss.OssConnectionManager;
 import com.github.zeng.alt.oss.OssProperties;
 import com.github.zeng.alt.oss.OssTemplate;
 import com.github.zeng.alt.oss.core.s3.S3OssTemplate;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.apachecommons.CommonsLog;
+import org.springframework.core.log.LogMessage;
 import org.springframework.util.StringUtils;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
@@ -37,9 +37,8 @@ import java.util.function.Supplier;
  * @since 2026-07-02
  * @version 2.0
  */
+@CommonsLog
 public class DefaultOssConnectionManager implements OssConnectionManager {
-
-    private static final Logger log = LoggerFactory.getLogger(DefaultOssConnectionManager.class);
 
     private final Supplier<OssProperties> propertiesSupplier;
     private final RefreshableOssTemplate refreshableTemplate;
@@ -54,8 +53,8 @@ public class DefaultOssConnectionManager implements OssConnectionManager {
         this.propertiesSupplier = propertiesSupplier;
         S3OssTemplate initial = createS3Template(initialProperties);
         this.refreshableTemplate = new RefreshableOssTemplate(initial);
-        log.info("OSS connection initialized: endpoint={}, bucket={}",
-                initialProperties.getEndpoint(), initialProperties.getBucketName());
+        log.info(LogMessage.format("OSS connection initialized: endpoint=%s, bucket=%s",
+                initialProperties.getEndpoint(), initialProperties.getBucketName()));
     }
 
     @Override
@@ -71,8 +70,8 @@ public class DefaultOssConnectionManager implements OssConnectionManager {
             return;
         }
 
-        log.info("Refreshing OSS connection... new endpoint={}, bucket={}",
-                currentProps.getEndpoint(), currentProps.getBucketName());
+        log.info(LogMessage.format("Refreshing OSS connection... new endpoint=%s, bucket=%s",
+                currentProps.getEndpoint(), currentProps.getBucketName()));
 
         // 1. 根据当前最新配置创建新连接
         S3OssTemplate newTemplate = createS3Template(currentProps);

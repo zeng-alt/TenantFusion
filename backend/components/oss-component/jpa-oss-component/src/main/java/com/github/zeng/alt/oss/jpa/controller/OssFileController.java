@@ -8,12 +8,11 @@ import com.github.zeng.alt.oss.jpa.repository.OssFileRepository;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import io.vavr.control.Option;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.apachecommons.CommonsLog;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.core.log.LogMessage;
 import org.springframework.data.domain.Page;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -29,14 +28,13 @@ import org.springframework.web.bind.annotation.*;
  * @since 2026-07-02
  * @version 1.0
  */
+@CommonsLog
 @RestController
 @RequestMapping("/oss-files")
 @Tag(name = "OSS 文件记录管理")
 @ConditionalOnClass(name = "org.springframework.web.bind.annotation.RestController")
 @ConditionalOnProperty(prefix = "oss.s3.crud", name = "enabled", havingValue = "true", matchIfMissing = true)
 public class OssFileController {
-
-    private static final Logger log = LoggerFactory.getLogger(OssFileController.class);
 
     protected final OssFileRepository repository;
 
@@ -68,7 +66,7 @@ public class OssFileController {
     @Operation(summary = "创建文件记录")
     public RestResponse<OssFileEntity> create(@RequestBody OssFileEntity entity) {
         OssFileEntity saved = repository.save(entity);
-        log.debug("OSS file record created: id={}, fileName={}", saved.getFileId(), saved.getFileName());
+        log.debug(LogMessage.format("OSS file record created: id={}, fileName={}", saved.getFileId(), saved.getFileName()));
         return RestResponse.success(saved);
     }
 

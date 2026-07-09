@@ -5,8 +5,8 @@ import com.github.zeng.alt.oss.OssFileRecordService;
 import com.github.zeng.alt.oss.jpa.entity.OssFileEntity;
 import com.github.zeng.alt.oss.jpa.repository.OssFileRepository;
 import io.vavr.control.Option;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.apachecommons.CommonsLog;
+import org.springframework.core.log.LogMessage;
 import org.springframework.util.StringUtils;
 
 import java.time.LocalDateTime;
@@ -23,9 +23,8 @@ import java.util.Objects;
  * @since 2026-07-02
  * @version 2.0
  */
+@CommonsLog
 public class JpaOssFileRecordService implements OssFileRecordService {
-
-    private static final Logger log = LoggerFactory.getLogger(JpaOssFileRecordService.class);
 
     private final OssFileRepository repository;
 
@@ -40,7 +39,7 @@ public class JpaOssFileRecordService implements OssFileRecordService {
         OssFileEntity entity = convert(info, originalFileName, "s3");
         entity.setStatus(0);
         repository.save(entity);
-        log.debug("OSS file record saved: fileName={}, size={}", info.getFileName(), info.getSize());
+        log.debug(LogMessage.format("OSS file record saved: fileName=%s, size=%s", info.getFileName(), info.getSize()));
     }
 
     @Override
@@ -51,7 +50,7 @@ public class JpaOssFileRecordService implements OssFileRecordService {
             repository.save(record);
         }
         if (!records.isEmpty()) {
-            log.debug("OSS file records marked as deleted: fileName={}, count={}", fileName, records.size());
+            log.debug(LogMessage.format("OSS file records marked as deleted: fileName=%s, count=%s", fileName, records.size()));
         }
     }
 
@@ -59,7 +58,7 @@ public class JpaOssFileRecordService implements OssFileRecordService {
     public void cleanUp(LocalDateTime before) {
         List<OssFileEntity> records = repository.findByCreatedDateBefore(before);
         records.forEach(entity -> repository.deleteById(Objects.requireNonNull(entity.getId())));
-        log.debug("Cleaned up {} OSS file records before {}", records.size(), before);
+        log.debug(LogMessage.format("Cleaned up %s OSS file records before %s", records.size(), before));
     }
 
     @Override

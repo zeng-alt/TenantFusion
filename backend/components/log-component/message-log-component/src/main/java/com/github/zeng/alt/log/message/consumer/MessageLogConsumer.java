@@ -4,9 +4,9 @@ import com.github.zeng.alt.log.OperLogEvent;
 import com.github.zeng.alt.log.message.producer.MessageLogProducer;
 import com.github.zeng.alt.message.Message;
 import lombok.RequiredArgsConstructor;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.apachecommons.CommonsLog;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.core.log.LogMessage;
 
 /**
  * 消息日志消费者。
@@ -21,10 +21,9 @@ import org.springframework.context.ApplicationEventPublisher;
  * @since 2026-07-01
  * @version 1.0
  */
+@CommonsLog
 @RequiredArgsConstructor
 public class MessageLogConsumer {
-
-    private static final Logger log = LoggerFactory.getLogger(MessageLogConsumer.class);
 
     private final ApplicationEventPublisher eventPublisher;
 
@@ -46,7 +45,7 @@ public class MessageLogConsumer {
         MessageLogProducer.setFromMessage(true);
         try {
             eventPublisher.publishEvent(event);
-            log.debug("Re-published OperLogEvent from message queue: title={}", event.getTitle());
+            log.debug(LogMessage.format("Re-published OperLogEvent from message queue: title=%s", event.getTitle()));
         } catch (Exception e) {
             log.error("Failed to re-publish OperLogEvent from message queue", e);
         } finally {

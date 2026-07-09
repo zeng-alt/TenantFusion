@@ -3,8 +3,8 @@ package com.github.zeng.alt.log.message.producer;
 import com.github.zeng.alt.log.OperLogEvent;
 import com.github.zeng.alt.message.MessageQueueTemplate;
 import lombok.RequiredArgsConstructor;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.apachecommons.CommonsLog;
+import org.springframework.core.log.LogMessage;
 import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
 
@@ -20,10 +20,9 @@ import org.springframework.transaction.event.TransactionalEventListener;
  * @since 2026-07-01
  * @version 1.0
  */
+@CommonsLog
 @RequiredArgsConstructor
 public class MessageLogProducer {
-
-    private static final Logger log = LoggerFactory.getLogger(MessageLogProducer.class);
 
     /** 标记事件是否来自消息队列回流，防止循环转发 */
     private static final ThreadLocal<Boolean> FROM_MESSAGE = ThreadLocal.withInitial(() -> false);
@@ -58,7 +57,7 @@ public class MessageLogProducer {
 
         try {
             messageQueue.send("log.oper", event);
-            log.debug("Sent OperLogEvent to message queue: title={}", event.getTitle());
+            log.debug(LogMessage.format("Sent OperLogEvent to message queue: title=%s", event.getTitle()));
         } catch (Exception e) {
             log.error("Failed to send OperLogEvent to message queue", e);
         }

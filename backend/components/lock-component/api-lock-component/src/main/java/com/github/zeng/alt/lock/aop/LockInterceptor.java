@@ -8,20 +8,23 @@ import com.github.zeng.alt.lock.model.LockInfo;
 import com.github.zeng.alt.lock.model.LockKeyBuilder;
 import com.github.zeng.alt.lock.config.LockProperties;
 import com.github.zeng.alt.lock.executor.LockExecutor;
+import lombok.extern.apachecommons.CommonsLog;
 import org.aopalliance.intercept.MethodInterceptor;
 import org.aopalliance.intercept.MethodInvocation;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+
 import org.springframework.aop.framework.AopProxyUtils;
 import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.BeanFactoryAware;
 import org.springframework.beans.factory.InitializingBean;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.core.annotation.AnnotatedElementUtils;
 import org.springframework.core.annotation.AnnotationAwareOrderComparator;
+import org.springframework.core.log.LogMessage;
 import org.springframework.util.StringUtils;
 
 import java.lang.reflect.Method;
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
@@ -32,126 +35,177 @@ import java.util.concurrent.ConcurrentHashMap;
  * @since 2026年06月09日
  * @version 1.0
  */
-public class LockInterceptor implements MethodInterceptor, InitializingBean, BeanFactoryAware {
+@CommonsLog
+public class LockInterceptor implements MethodInterceptor, BeanFactoryAware {
 
-    private static final Logger log = LoggerFactory.getLogger(LockInterceptor.class);
+    private final Map<Class<? extends LockKeyBuilder>, LockKeyBuilder> keyBuilderMap =
+            new ConcurrentHashMap<>();
 
-    private final Map<Class<? extends LockKeyBuilder>, LockKeyBuilder> keyBuilderMap = new ConcurrentHashMap<>();
-    private final Map<Class<? extends LockFailureStrategy>, LockFailureStrategy> failureStrategyMap = new ConcurrentHashMap<>();
+    private final Map<Class<? extends LockFailureStrategy>, LockFailureStrategy> failureStrategyMap =
+            new ConcurrentHashMap<>();
 
-    private final LockTemplate lockTemplate;
-    private final Collection<LockKeyBuilder> keyBuilders;
-    private final Collection<LockFailureStrategy> failureStrategies;
-    private final LockProperties lockProperties;
-    private final MethodBasedExpressionEvaluator expressionEvaluator;
+    private final ObjectProvider<LockTemplate> lockTemplateProvider;
+
+    private final ObjectProvider<List<LockKeyBuilder>> keyBuildersProvider;
+
+    private final ObjectProvider<List<LockFailureStrategy>> failureStrategiesProvider;
+
+    private final ObjectProvider<LockProperties> lockPropertiesProvider;
+
+    private final ObjectProvider<MethodBasedExpressionEvaluator> expressionEvaluatorProvider;
+
 
     private LockOperation defaultLockOperation;
+
     private BeanFactory beanFactory;
 
+
     public LockInterceptor(
-            LockTemplate lockTemplate,
-            Collection<LockKeyBuilder> keyBuilders,
-            Collection<LockFailureStrategy> failureStrategies,
-            LockProperties lockProperties,
-            MethodBasedExpressionEvaluator expressionEvaluator) {
-        this.lockTemplate = lockTemplate;
-        this.keyBuilders = keyBuilders;
-        this.failureStrategies = failureStrategies;
-        this.lockProperties = lockProperties;
-        this.expressionEvaluator = expressionEvaluator;
+            ObjectProvider<LockTemplate> lockTemplateProvider,
+            ObjectProvider<List<LockKeyBuilder>> keyBuildersProvider,
+            ObjectProvider<List<LockFailureStrategy>> failureStrategiesProvider,
+            ObjectProvider<LockProperties> lockPropertiesProvider,
+            ObjectProvider<MethodBasedExpressionEvaluator> expressionEvaluatorProvider) {
+
+        this.lockTemplateProvider = lockTemplateProvider;
+        this.keyBuildersProvider = keyBuildersProvider;
+        this.failureStrategiesProvider = failureStrategiesProvider;
+        this.lockPropertiesProvider = lockPropertiesProvider;
+        this.expressionEvaluatorProvider = expressionEvaluatorProvider;
     }
+
 
     @Override
     public void setBeanFactory(BeanFactory beanFactory) {
         this.beanFactory = beanFactory;
     }
 
-    @Override
-    public void afterPropertiesSet() {
-        for (LockKeyBuilder builder : keyBuilders) {
-            keyBuilderMap.put(builder.getClass(), builder);
-        }
-        for (LockFailureStrategy strategy : failureStrategies) {
-            failureStrategyMap.put(strategy.getClass(), strategy);
-        }
-
-        LockKeyBuilder defaultKeyBuilder = resolvePrimaryComponent(
-                lockProperties.getPrimaryKeyBuilder(), keyBuilderMap, keyBuilders, LockKeyBuilder.class);
-        LockFailureStrategy defaultFailureStrategy = resolvePrimaryComponent(
-                lockProperties.getPrimaryFailStrategy(), failureStrategyMap, failureStrategies, LockFailureStrategy.class);
-
-        this.defaultLockOperation = new LockOperation(defaultKeyBuilder, defaultFailureStrategy);
-    }
 
     @Override
     public Object invoke(MethodInvocation invocation) throws Throwable {
-        Class<?> cls = AopProxyUtils.ultimateTargetClass(Objects.requireNonNull(invocation.getThis()));
+
+        LockTemplate lockTemplate = lockTemplateProvider.getObject();
+        LockProperties lockProperties = lockPropertiesProvider.getObject();
+        MethodBasedExpressionEvaluator expressionEvaluator =
+                expressionEvaluatorProvider.getObject();
+
+
+        Class<?> cls = AopProxyUtils.ultimateTargetClass(
+                Objects.requireNonNull(invocation.getThis()));
+
+
         if (!cls.equals(invocation.getThis().getClass())) {
             return invocation.proceed();
         }
 
+
         Lock lock = AnnotatedElementUtils.findMergedAnnotation(
-                invocation.getMethod(), Lock.class);
+                invocation.getMethod(),
+                Lock.class);
+
+
         if (lock == null) {
             return invocation.proceed();
         }
 
+
         if (StringUtils.hasText(lock.condition())) {
+
             String conditionResult = expressionEvaluator.getValue(
-                    invocation.getMethod(), invocation.getArguments(),
-                    lock.condition(), String.class);
+                    invocation.getMethod(),
+                    invocation.getArguments(),
+                    lock.condition(),
+                    String.class);
+
+
             if (!"true".equalsIgnoreCase(conditionResult)) {
-                log.debug("Lock condition not met for key [{}], skip locking", lock.name());
                 return invocation.proceed();
             }
         }
 
+
         LockOperation lockOp = buildLockOperation(lock);
 
-        String prefix = lockProperties.getLockKeyPrefix() + ":";
+
+        String prefix =
+                lockProperties.getLockKeyPrefix() + ":";
+
+
         Method method = invocation.getMethod();
+
+
         prefix += StringUtils.hasText(lock.name())
                 ? lock.name()
-                : method.getDeclaringClass().getName() + "." + method.getName();
+                : method.getDeclaringClass().getName()
+                  + "."
+                  + method.getName();
 
-        String keySuffix = lockOp.lockKeyBuilder.buildKey(invocation, lock.keys());
-        String key = prefix + (StringUtils.hasText(keySuffix) ? "#" + keySuffix : "");
 
-        if (log.isDebugEnabled()) {
-            log.debug("Generated lock key [{}] for method [{}#{}]",
-                    key, method.getDeclaringClass().getSimpleName(), method.getName());
-        }
+        String keySuffix =
+                lockOp.lockKeyBuilder.buildKey(
+                        invocation,
+                        lock.keys());
 
-        long expire = lock.expire() > 0 ? lock.expire() : lockProperties.getExpire();
 
-        // LockExecutor.class 为 sentinel 值，表示使用默认执行器
-        Class<? extends LockExecutor> executorClass = lock.executor();
+        String key =
+                prefix +
+                        (StringUtils.hasText(keySuffix)
+                                ? "#" + keySuffix
+                                : "");
+
+
+        long expire =
+                lock.expire() > 0
+                        ? lock.expire()
+                        : lockProperties.getExpire();
+
+
+        Class<? extends LockExecutor> executorClass =
+                lock.executor();
+
+
         if (executorClass == LockExecutor.class) {
             executorClass = null;
         }
 
-        long acquireTimeout = lock.acquireTimeout() > 0
-                ? lock.acquireTimeout() : lockProperties.getAcquireTimeout();
 
-        LockInfo lockInfo = lockTemplate.lock(key, expire, acquireTimeout, executorClass);
+        long acquireTimeout =
+                lock.acquireTimeout() > 0
+                        ? lock.acquireTimeout()
+                        : lockProperties.getAcquireTimeout();
+
+
+        LockInfo lockInfo =
+                lockTemplate.lock(
+                        key,
+                        expire,
+                        acquireTimeout,
+                        executorClass);
+
 
         try {
+
             if (lockInfo != null) {
-                log.debug("Lock acquired successfully, key={}, expire={}ms", key, expire);
                 return invocation.proceed();
             }
 
-            log.warn("Lock acquisition failed for key [{}]", key);
-            lockOp.lockFailureStrategy.onLockFailure(key, method, invocation.getArguments());
+
+            lockOp.lockFailureStrategy
+                    .onLockFailure(
+                            key,
+                            method,
+                            invocation.getArguments());
+
+
             return null;
+
+
         } finally {
+
             if (lockInfo != null && lock.autoRelease()) {
-                boolean released = lockTemplate.releaseLock(lockInfo);
-                if (released) {
-                    log.debug("Lock released successfully, key={}", key);
-                } else {
-                    log.error("Lock release failed, key={}, value={}", key, lockInfo.getLockValue());
-                }
+
+                lockTemplate.releaseLock(lockInfo);
+
             }
         }
     }

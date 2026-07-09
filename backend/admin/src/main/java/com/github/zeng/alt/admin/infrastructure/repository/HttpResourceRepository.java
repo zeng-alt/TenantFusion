@@ -1,5 +1,7 @@
 package com.github.zeng.alt.admin.infrastructure.repository;
 
+import com.github.zeng.alt.admin.infrastructure.HttpResourceDetila;
+import com.github.zeng.alt.admin.infrastructure.HttpResourceQuery;
 import com.github.zeng.alt.admin.infrastructure.entity.HttpResource;
 import com.github.zeng.alt.domain.base.BaseRepository;
 import com.github.zeng.alt.rest.annotation.CrudRest;
@@ -8,7 +10,18 @@ import org.springframework.stereotype.Repository;
 import java.util.List;
 import java.util.Optional;
 
-//@CrudRest(path = "/http")
+@CrudRest(
+        path = "/http",
+        create = false,
+        queryType = HttpResourceQuery.class,
+        listType = HttpResourceDetila.class,
+        detailType = HttpResourceDetila.class,
+        createType = HttpResourceDetila.class,
+        updateType = HttpResourceDetila.class,
+        patchType = HttpResourceDetila.class,
+        search = true,
+        searchType = HttpResourceDetila.class
+)
 @Repository
 public interface HttpResourceRepository extends BaseRepository<HttpResource, Long> {
 

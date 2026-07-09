@@ -1,7 +1,6 @@
 package com.github.zeng.alt.oss.jdbc.dao;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.apachecommons.CommonsLog;
 import org.springframework.jdbc.core.BeanPropertyRowMapper;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.namedparam.BeanPropertySqlParameterSource;
@@ -24,9 +23,8 @@ import java.util.Optional;
  * @since 2026-07-02
  * @version 1.0
  */
+@CommonsLog
 public class OssFileDao {
-
-    private static final Logger log = LoggerFactory.getLogger(OssFileDao.class);
 
     private static final String TABLE = "sys_oss_file";
 

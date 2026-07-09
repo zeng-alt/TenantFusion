@@ -2,7 +2,9 @@ package com.github.zeng.alt.log.core.support;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.zeng.alt.log.core.operation.LogInvocation;
+import lombok.extern.apachecommons.CommonsLog;
 import org.aopalliance.intercept.MethodInvocation;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 
@@ -17,12 +19,17 @@ import java.util.*;
  * @since 2026-07-01
  * @version 1.0
  */
+@CommonsLog
 public class DefaultRequestParameterResolver implements RequestParameterResolver {
 
-    private final ObjectMapper objectMapper;
+    private final ObjectProvider<ObjectMapper> provider;
 
-    public DefaultRequestParameterResolver(ObjectMapper objectMapper) {
-        this.objectMapper = objectMapper;
+    public DefaultRequestParameterResolver(ObjectProvider<ObjectMapper> provider) {
+        this.provider = provider;
+    }
+
+    public ObjectMapper getMapper() {
+        return provider.getObject();
     }
 
     @Override
@@ -40,7 +47,7 @@ public class DefaultRequestParameterResolver implements RequestParameterResolver
                 Method method = methodInvocation.getMethod();
                 Object[] args = methodInvocation.getArguments();
                 if (args != null && args.length > 0) {
-                    return objectMapper.writeValueAsString(args);
+                    return getMapper().writeValueAsString(args);
                 }
                 return null;
             }
@@ -59,8 +66,9 @@ public class DefaultRequestParameterResolver implements RequestParameterResolver
                         values != null ? String.join(",", values) : null);
             }
 
-            return objectMapper.writeValueAsString(filtered);
+            return getMapper().writeValueAsString(filtered);
         } catch (Exception e) {
+            log.warn("Resolve request parameter failed", e);
             return null;
         }
     }

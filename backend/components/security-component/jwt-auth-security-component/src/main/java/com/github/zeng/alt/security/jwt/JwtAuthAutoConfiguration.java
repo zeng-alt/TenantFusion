@@ -12,6 +12,7 @@ import io.swagger.v3.oas.models.media.*;
 import io.swagger.v3.oas.models.parameters.RequestBody;
 import io.swagger.v3.oas.models.responses.ApiResponse;
 import io.swagger.v3.oas.models.responses.ApiResponses;
+import io.swagger.v3.oas.models.tags.Tag;
 import org.springdoc.core.customizers.OpenApiCustomizer;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
@@ -23,11 +24,14 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean;
 
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.ImportRuntimeHints;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.web.authentication.logout.LogoutFilter;
 import org.springframework.security.web.servlet.util.matcher.PathPatternRequestMatcher;
+
+import java.util.List;
 
 /**
  * JWT 认证自动配置.
@@ -51,6 +55,7 @@ import org.springframework.security.web.servlet.util.matcher.PathPatternRequestM
  * @since 2024年10月07日
  */
 @AutoConfiguration
+@ImportRuntimeHints(JjwtHints.class)
 @ConditionalOnWebApplication(type = ConditionalOnWebApplication.Type.SERVLET)
 @EnableConfigurationProperties({JwtProperties.class})
 public class JwtAuthAutoConfiguration {
@@ -67,8 +72,10 @@ public class JwtAuthAutoConfiguration {
     public JwtAuthenticationSuccessHandler jwtAuthenticationSuccessHandler(
             JwtTokenProvider jwtTokenProvider,
             StorageTemplate storageTemplate,
-            ObjectMapper objectMapper,
+            ObjectProvider<ObjectMapper> objectMapperProvider,
             JwtProperties jwtProperties) {
+
+        ObjectMapper objectMapper = objectMapperProvider.getIfAvailable(ObjectMapper::new);
         return new JwtAuthenticationSuccessHandler(
                 jwtTokenProvider, storageTemplate, objectMapper, jwtProperties.getExpiration());
     }
@@ -76,7 +83,8 @@ public class JwtAuthAutoConfiguration {
     @Bean
     @ConditionalOnMissingBean
     @ConditionalOnProperty(prefix = "security.jwt-auth", name = "authentication", havingValue = "true")
-    public JwtAuthenticationFailureHandler jwtAuthenticationFailureHandler(ObjectMapper objectMapper) {
+    public JwtAuthenticationFailureHandler jwtAuthenticationFailureHandler(ObjectProvider<ObjectMapper> objectMapperProvider) {
+        ObjectMapper objectMapper = objectMapperProvider.getIfAvailable(ObjectMapper::new);
         return new JwtAuthenticationFailureHandler(objectMapper);
     }
 
@@ -90,7 +98,8 @@ public class JwtAuthAutoConfiguration {
     @Bean
     @ConditionalOnMissingBean
     @ConditionalOnProperty(prefix = "security.jwt-auth", name = "authentication", havingValue = "true")
-    public JwtLogoutSuccessHandler jwtLogoutSuccessHandler(ObjectMapper objectMapper) {
+    public JwtLogoutSuccessHandler jwtLogoutSuccessHandler(ObjectProvider<ObjectMapper> objectMapperProvider) {
+        ObjectMapper objectMapper = objectMapperProvider.getIfAvailable(ObjectMapper::new);
         return new JwtLogoutSuccessHandler(objectMapper);
     }
 
@@ -184,6 +193,13 @@ public class JwtAuthAutoConfiguration {
         public OpenApiCustomizer loginApiCustomizer(UsernameLoginProperties usernameLoginProperties, JwtProperties jwtProperties) {
             return openApi -> {
 
+                List<Tag> tags = openApi.getTags();
+                if (tags == null || tags.stream().noneMatch(t -> "Login".equals(t.getName()))) {
+                    openApi.addTagsItem(new Tag()
+                            .name("login")
+                            .description("认证接口"));
+                }
+
                 Schema<?> loginRequest = new ObjectSchema()
                         .addProperty(usernameLoginProperties.getUsernameParameter(), new StringSchema())
                         .addProperty(usernameLoginProperties.getPasswordParameter(), new StringSchema());
@@ -191,6 +207,7 @@ public class JwtAuthAutoConfiguration {
                 Operation operation = new Operation()
                         .summary("jwt用户登录")
                         .description("通过用户名密码登录，返回 JWT")
+                        .tags(java.util.List.of("login"))
                         .requestBody(new RequestBody()
                                 .required(true)
                                 .content(new Content()

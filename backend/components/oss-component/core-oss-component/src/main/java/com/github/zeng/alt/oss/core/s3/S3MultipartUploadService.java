@@ -2,8 +2,8 @@ package com.github.zeng.alt.oss.core.s3;
 
 import com.github.zeng.alt.oss.*;
 import com.github.zeng.alt.oss.core.OssException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.apachecommons.CommonsLog;
+import org.springframework.core.log.LogMessage;
 import org.springframework.util.StringUtils;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
@@ -29,9 +29,8 @@ import java.util.stream.Collectors;
  * @since 2026-07-02
  * @version 1.0
  */
+@CommonsLog
 public class S3MultipartUploadService implements MultipartUploadService {
-
-    private static final Logger log = LoggerFactory.getLogger(S3MultipartUploadService.class);
 
     private final S3Client s3Client;
     private final OssProperties properties;
@@ -66,8 +65,8 @@ public class S3MultipartUploadService implements MultipartUploadService {
         CreateMultipartUploadResponse response = s3Client.createMultipartUpload(builder.build());
         String uploadId = response.uploadId();
 
-        log.info("Multipart upload initiated: bucket={}, key={}, uploadId={}, totalSize={}",
-                bucketName, fileName, uploadId, totalSize);
+        log.info(LogMessage.format("Multipart upload initiated: bucket=%s, key=%s, uploadId=%s, totalSize=%s",
+                bucketName, fileName, uploadId, totalSize));
         return uploadId;
     }
 
@@ -95,7 +94,7 @@ public class S3MultipartUploadService implements MultipartUploadService {
                     request, RequestBody.fromInputStream(data, partSize));
 
             UploadPartInfo info = new UploadPartInfo(uploadId, partNumber, response.eTag(), partSize);
-            log.debug("Part uploaded: uploadId={}, partNumber={}, etag={}", uploadId, partNumber, response.eTag());
+            log.debug(LogMessage.format("Part uploaded: uploadId=%s, partNumber=%s, etag=%s", uploadId, partNumber, response.eTag()));
             return info;
         } catch (S3Exception e) {
             throw new OssException("Failed to upload part " + partNumber + " for upload " + uploadId, e);
@@ -132,8 +131,8 @@ public class S3MultipartUploadService implements MultipartUploadService {
 
         CompleteMultipartUploadResponse response = s3Client.completeMultipartUpload(request);
 
-        log.info("Multipart upload completed: bucket={}, key={}, uploadId={}, etag={}",
-                bucketName, fullPath, uploadId, response.eTag());
+        log.info(LogMessage.format("Multipart upload completed: bucket=%s, key=%s, uploadId=%s, etag=%s",
+                bucketName, fullPath, uploadId, response.eTag()));
 
         OssFileInfo info = new OssFileInfo();
         info.setFileName(stripBasePath(fullPath));
@@ -148,7 +147,7 @@ public class S3MultipartUploadService implements MultipartUploadService {
     public void abortUpload(String uploadId) {
         String key = resolveKeyByUploadId(uploadId);
         if (key == null) {
-            log.warn("Cannot abort upload {}: upload not found or already completed", uploadId);
+            log.warn(LogMessage.format("Cannot abort upload %s: upload not found or already completed", uploadId));
             return;
         }
         String bucketName = properties.getBucketName();
@@ -159,7 +158,7 @@ public class S3MultipartUploadService implements MultipartUploadService {
                     .key(key)
                     .uploadId(uploadId)
                     .build());
-            log.info("Multipart upload aborted: bucket={}, key={}, uploadId={}", bucketName, key, uploadId);
+            log.info(LogMessage.format("Multipart upload aborted: bucket=%s, key=%s, uploadId=%s", bucketName, key, uploadId));
         } catch (S3Exception e) {
             throw new OssException("Failed to abort multipart upload: " + uploadId, e);
         }
@@ -204,7 +203,7 @@ public class S3MultipartUploadService implements MultipartUploadService {
                     partNumberMarker = null;
                 }
             } while (isTruncated);
-            log.debug("Listed parts for uploadId={}: count={}", uploadId, result.size());
+            log.debug(LogMessage.format("Listed parts for uploadId=%s: count=%s", uploadId, result.size()));
             return result;
         } catch (S3Exception e) {
             throw new OssException("Failed to list parts for upload: " + uploadId, e);
@@ -228,7 +227,7 @@ public class S3MultipartUploadService implements MultipartUploadService {
             info.setUploadedSize(parts.stream().mapToLong(UploadPartInfo::getSize).sum());
             return info;
         } catch (Exception e) {
-            log.warn("Failed to get upload status for uploadId={}: {}", uploadId, e.getMessage());
+            log.warn(LogMessage.format("Failed to get upload status for uploadId=%s: %s", uploadId, e.getMessage()));
             return null;
         }
     }
@@ -260,7 +259,7 @@ public class S3MultipartUploadService implements MultipartUploadService {
             } while (keyMarker != null);
             return null;
         } catch (S3Exception e) {
-            log.warn("Error resolving key for uploadId={}: {}", uploadId, e.getMessage());
+            log.warn(LogMessage.format("Error resolving key for uploadId=%s: %s", uploadId, e.getMessage()));
             return null;
         }
     }

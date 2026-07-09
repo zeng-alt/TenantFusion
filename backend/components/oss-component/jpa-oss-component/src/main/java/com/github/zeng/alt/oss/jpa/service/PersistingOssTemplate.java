@@ -1,8 +1,8 @@
 package com.github.zeng.alt.oss.jpa.service;
 
 import com.github.zeng.alt.oss.*;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.apachecommons.CommonsLog;
+import org.springframework.core.log.LogMessage;
 import org.springframework.util.StringUtils;
 
 import java.io.*;
@@ -31,9 +31,8 @@ import java.util.function.Supplier;
  * @since 2026-07-02
  * @version 3.0
  */
+@CommonsLog
 public class PersistingOssTemplate implements OssTemplate {
-
-    private static final Logger log = LoggerFactory.getLogger(PersistingOssTemplate.class);
 
     private final OssTemplate delegate;
     private final OssFileRecordService recordService;
@@ -117,7 +116,7 @@ public class PersistingOssTemplate implements OssTemplate {
         if (userId != null) {
             OssFileInfo existing = recordService.findExistingByMd5(md5, userId);
             if (existing != null) {
-                log.info("Duplicate file detected (md5={}), returning existing record: {}", md5, existing.getFileName());
+                log.info(LogMessage.format("Duplicate file detected (md5=%s), returning existing record: %s", md5, existing.getFileName()));
                 return existing;
             }
         }
@@ -150,7 +149,7 @@ public class PersistingOssTemplate implements OssTemplate {
             try {
                 delegate.ensureBucketExists(targetBucket);
             } catch (Exception e) {
-                log.debug("Bucket check/setup for '{}': {}", targetBucket, e.getMessage());
+                log.debug(LogMessage.format("Bucket check/setup for '%s': %s", targetBucket, e.getMessage()));
             }
         } else {
             if (detectedContentType != null) {
@@ -171,7 +170,7 @@ public class PersistingOssTemplate implements OssTemplate {
                 thumbInfo = thumbnailService.generateThumbnail(data, storageFileName,
                         detectedContentType, delegate, bucketStrategy);
             } catch (Exception e) {
-                log.warn("Failed to generate thumbnail for {}: {}", storageFileName, e.getMessage());
+                log.warn(LogMessage.format("Failed to generate thumbnail for %s: %s", storageFileName, e.getMessage()));
             }
         }
 

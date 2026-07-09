@@ -1,9 +1,10 @@
 package com.github.zeng.alt.lock.model;
 
 import com.github.zeng.alt.lock.MethodBasedExpressionEvaluator;
+import lombok.extern.apachecommons.CommonsLog;
 import org.aopalliance.intercept.MethodInvocation;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+
+import org.springframework.core.log.LogMessage;
 import org.springframework.util.ObjectUtils;
 import org.springframework.util.StringUtils;
 
@@ -18,9 +19,9 @@ import java.util.stream.Stream;
  * @since 2026年06月09日
  * @version 1.0
  */
+@CommonsLog
 public class DefaultLockKeyBuilder implements LockKeyBuilder {
 
-    private static final Logger log = LoggerFactory.getLogger(DefaultLockKeyBuilder.class);
     private static final String EMPTY_KEY = "";
 
     private final MethodBasedExpressionEvaluator expressionEvaluator;
@@ -36,9 +37,9 @@ public class DefaultLockKeyBuilder implements LockKeyBuilder {
         }
         String key = getSpelDefinitionKey(definitionKeys, invocation);
         if (log.isDebugEnabled()) {
-            log.debug("Built lock key suffix [{}] for method [{}#{}]",
+            log.debug(LogMessage.format("Built lock key suffix [%s] for method [%s#%s]",
                     key, invocation.getMethod().getDeclaringClass().getSimpleName(),
-                    invocation.getMethod().getName());
+                    invocation.getMethod().getName()));
         }
         return key;
     }

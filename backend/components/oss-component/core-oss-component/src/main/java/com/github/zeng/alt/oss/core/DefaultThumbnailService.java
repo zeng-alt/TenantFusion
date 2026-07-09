@@ -1,11 +1,10 @@
 package com.github.zeng.alt.oss.core;
 
 import com.github.zeng.alt.oss.*;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.apachecommons.CommonsLog;
+import org.springframework.core.log.LogMessage;
 
 import javax.imageio.ImageIO;
-import javax.imageio.ImageReader;
 import javax.imageio.stream.ImageInputStream;
 import java.awt.*;
 import java.awt.image.BufferedImage;
@@ -13,7 +12,6 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.Iterator;
 
 /**
  * 基于 Java 2D / ImageIO 的默认缩略图生成服务。
@@ -30,9 +28,8 @@ import java.util.Iterator;
  * @since 2026-07-02
  * @version 1.0
  */
+@CommonsLog
 public class DefaultThumbnailService implements ThumbnailService {
-
-    private static final Logger log = LoggerFactory.getLogger(DefaultThumbnailService.class);
 
     private final ThumbnailProperties thumbnailProperties;
 
@@ -60,7 +57,7 @@ public class DefaultThumbnailService implements ThumbnailService {
 
         FileType fileType = FileType.detect(originalFileName, contentType);
         if (!fileType.isThumbnailSupported()) {
-            log.debug("Thumbnail not supported for file: {}, type: {}", originalFileName, fileType);
+            log.debug(LogMessage.format("Thumbnail not supported for file: %s, type: %s", originalFileName, fileType));
             return null;
         }
 
@@ -73,14 +70,14 @@ public class DefaultThumbnailService implements ThumbnailService {
             }
 
             if (originalImage == null) {
-                log.warn("Cannot read image for thumbnail: {}", originalFileName);
+                log.warn(LogMessage.format("Cannot read image for thumbnail: %s", originalFileName));
                 return null;
             }
 
             // 2. 检查是否需要生成缩略图（根据最大原始尺寸限制）
             if (shouldSkipThumbnail(originalImage)) {
-                log.debug("Original image size within threshold, skipping thumbnail: {} ({}x{})",
-                        originalFileName, originalImage.getWidth(), originalImage.getHeight());
+                log.debug(LogMessage.format("Original image size within threshold, skipping thumbnail: %s (%sx%s)",
+                        originalFileName, originalImage.getWidth(), originalImage.getHeight()));
                 return null;
             }
 
@@ -126,11 +123,11 @@ public class DefaultThumbnailService implements ThumbnailService {
             String thumbContentType = "image/" + format;
             OssFileInfo thumbInfo = ossTemplate.upload(thumbData, thumbFileName, thumbContentType);
 
-            log.info("Thumbnail generated and uploaded: original={}, thumbnail={}, size={}x{}",
-                    originalFileName, thumbFileName, thumbWidth, thumbHeight);
+            log.info(LogMessage.format("Thumbnail generated and uploaded: original=%s, thumbnail=%s, size=%sx%s",
+                    originalFileName, thumbFileName, thumbWidth, thumbHeight));
             return thumbInfo;
         } catch (IOException e) {
-            log.warn("Failed to generate thumbnail for {}: {}", originalFileName, e.getMessage());
+            log.warn(LogMessage.format("Failed to generate thumbnail for %s: %s", originalFileName, e.getMessage()));
             return null;
         } catch (Exception e) {
             log.error("Unexpected error generating thumbnail for " + originalFileName, e);

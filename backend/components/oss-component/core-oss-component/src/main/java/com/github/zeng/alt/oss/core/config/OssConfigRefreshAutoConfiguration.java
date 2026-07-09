@@ -1,14 +1,14 @@
 package com.github.zeng.alt.oss.core.config;
 
 import com.github.zeng.alt.oss.OssConnectionManager;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.apachecommons.CommonsLog;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.context.ApplicationListener;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ImportRuntimeHints;
+import org.springframework.core.log.LogMessage;
 
 /**
  * OSS 配置刷新自动配置（Spring Cloud Config / Nacos / Apollo 集成）。
@@ -24,13 +24,12 @@ import org.springframework.context.annotation.ImportRuntimeHints;
  * @since 2026-07-02
  * @version 1.0
  */
+@CommonsLog
 @AutoConfiguration
 @ConditionalOnClass(name = "org.springframework.cloud.context.environment.EnvironmentChangeEvent")
 @ConditionalOnBean(OssConnectionManager.class)
 @ImportRuntimeHints(OssConfigRefreshRuntimeHints.class)
 public class OssConfigRefreshAutoConfiguration {
-
-    private static final Logger log = LoggerFactory.getLogger(OssConfigRefreshAutoConfiguration.class);
 
     private static final String ENV_CHANGE_EVENT_CLASS =
             "org.springframework.cloud.context.environment.EnvironmentChangeEvent";
@@ -54,7 +53,7 @@ public class OssConfigRefreshAutoConfiguration {
                         .toList();
 
                 if (!ossKeys.isEmpty()) {
-                    log.info("OSS configuration changed (keys: {}), triggering connection refresh...", ossKeys);
+                    log.info(LogMessage.format("OSS configuration changed (keys: %s), triggering connection refresh...", ossKeys));
                     connectionManager.refresh();
                 }
             } catch (Exception e) {

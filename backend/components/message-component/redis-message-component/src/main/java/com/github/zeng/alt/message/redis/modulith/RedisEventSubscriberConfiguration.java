@@ -2,13 +2,13 @@ package com.github.zeng.alt.message.redis.modulith;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.apachecommons.CommonsLog;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.annotation.Bean;
+import org.springframework.core.log.LogMessage;
 import org.springframework.data.redis.connection.Message;
 import org.springframework.data.redis.connection.MessageListener;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
@@ -30,11 +30,11 @@ import org.springframework.data.redis.serializer.RedisSerializer;
  * @since 2026-07-01
  * @version 1.0
  */
+@CommonsLog
 @AutoConfiguration
 @ConditionalOnClass({RedisConnectionFactory.class, ApplicationEventPublisher.class})
 public class RedisEventSubscriberConfiguration {
 
-    private static final Logger log = LoggerFactory.getLogger(RedisEventSubscriberConfiguration.class);
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
     @Bean
@@ -94,7 +94,7 @@ public class RedisEventSubscriberConfiguration {
                 // 重新发布到 ApplicationContext
                 eventPublisher.publishEvent(event);
 
-                log.debug("Redis Modulith event re-published: type={}", eventTypeName);
+                log.debug(LogMessage.format("Redis Modulith event re-published: type=%s", eventTypeName));
             } catch (Exception e) {
                 log.error("Failed to process incoming Redis Modulith event", e);
             }

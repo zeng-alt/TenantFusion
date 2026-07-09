@@ -6,8 +6,7 @@ import com.github.zeng.alt.oss.jpa.repository.OssFileRepository;
 import com.github.zeng.alt.oss.jpa.service.JpaOssFileRecordService;
 import com.github.zeng.alt.oss.jpa.service.PersistingOssTemplate;
 import jakarta.persistence.EntityManagerFactory;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.apachecommons.CommonsLog;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.AutoConfigurationPackage;
@@ -15,11 +14,9 @@ import org.springframework.boot.autoconfigure.AutoConfigureAfter;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
-import org.springframework.boot.autoconfigure.domain.EntityScan;
 import org.springframework.boot.autoconfigure.orm.jpa.HibernateJpaAutoConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Primary;
-import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 
 import java.util.function.Supplier;
 
@@ -39,13 +36,12 @@ import java.util.function.Supplier;
  * @since 2026-07-02
  * @version 3.1
  */
+@CommonsLog
 @AutoConfiguration
 @AutoConfigureAfter(HibernateJpaAutoConfiguration.class)
 @ConditionalOnClass(EntityManagerFactory.class)
 @AutoConfigurationPackage(basePackageClasses = {OssFileEntity.class, OssFileRepository.class})
 public class JpaOssAutoConfiguration {
-
-    private static final Logger log = LoggerFactory.getLogger(JpaOssAutoConfiguration.class);
 
     /**
      * JPA 文件记录服务。

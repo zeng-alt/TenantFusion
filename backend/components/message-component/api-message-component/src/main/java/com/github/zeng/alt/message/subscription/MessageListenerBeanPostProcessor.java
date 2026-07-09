@@ -4,13 +4,13 @@ import com.github.zeng.alt.message.Message;
 import com.github.zeng.alt.message.MessageHandler;
 import com.github.zeng.alt.message.MessageQueueTemplate;
 import com.github.zeng.alt.message.annotation.MessageListener;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.apachecommons.CommonsLog;
 import org.springframework.beans.factory.ListableBeanFactory;
 import org.springframework.beans.factory.SmartInitializingSingleton;
 import org.springframework.context.EmbeddedValueResolverAware;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.AnnotatedElementUtils;
+import org.springframework.core.log.LogMessage;
 import org.springframework.util.ReflectionUtils;
 import org.springframework.util.StringValueResolver;
 
@@ -46,10 +46,9 @@ import java.util.concurrent.atomic.AtomicInteger;
  * @since 2026-07-01
  * @version 1.0
  */
+@CommonsLog
 @SuppressWarnings("unchecked")
 public class MessageListenerBeanPostProcessor implements SmartInitializingSingleton, EmbeddedValueResolverAware, Ordered {
-
-    private static final Logger log = LoggerFactory.getLogger(MessageListenerBeanPostProcessor.class);
 
     private final ListableBeanFactory beanFactory;
     private final MessageQueueTemplate messageQueueTemplate;
@@ -92,7 +91,7 @@ public class MessageListenerBeanPostProcessor implements SmartInitializingSingle
             processAnnotationMethods(bean);
         }
 
-        log.info("Message subscription registration complete, total: {} subscribers", subscriberCount.get());
+        log.info(LogMessage.format("Message subscription registration complete, total: %s subscribers", subscriberCount.get()));
     }
 
     // ========================================================================
@@ -105,15 +104,15 @@ public class MessageListenerBeanPostProcessor implements SmartInitializingSingle
     private <T> void registerMessageHandler(String beanName, MessageHandler<T> handler) {
         String topic = handler.getTopic();
         if (topic == null || topic.isEmpty()) {
-            log.warn("MessageHandler [{}] returns empty topic, skipping", beanName);
+            log.warn(LogMessage.format("MessageHandler [%s] returns empty topic, skipping", beanName));
             return;
         }
 
         messageQueueTemplate.subscribe(topic, handler::onMessage);
 
         int count = subscriberCount.incrementAndGet();
-        log.info("Registered MessageHandler [{}] -> topic '{}' (total subscribers: {})",
-                handler.getClass().getSimpleName(), topic, count);
+        log.info(LogMessage.format("Registered MessageHandler [%s] -> topic '%s' (total subscribers: %s)",
+                handler.getClass().getSimpleName(), topic, count));
     }
 
     // ========================================================================
@@ -135,8 +134,8 @@ public class MessageListenerBeanPostProcessor implements SmartInitializingSingle
 
             String topic = resolveTopic(annotation.topic());
             if (topic == null || topic.isEmpty()) {
-                log.warn("@MessageListener on {}.{} has empty topic, skipping",
-                        clazz.getSimpleName(), method.getName());
+                log.warn(LogMessage.format("@MessageListener on %s.%s has empty topic, skipping",
+                        clazz.getSimpleName(), method.getName()));
                 return;
             }
 
@@ -160,14 +159,14 @@ public class MessageListenerBeanPostProcessor implements SmartInitializingSingle
                 Object[] args = buildMethodArguments(message, paramTypes, payloadType);
                 ReflectionUtils.invokeMethod(method, bean, args);
             } catch (Exception e) {
-                log.error("Error invoking @MessageListener {}.{} for topic '{}'",
-                        bean.getClass().getSimpleName(), method.getName(), topic, e);
+                log.error(LogMessage.format("Error invoking @MessageListener %s.%s for topic '%s'",
+                        bean.getClass().getSimpleName(), method.getName(), topic), e);
             }
         });
 
         int count = subscriberCount.incrementAndGet();
-        log.info("Registered @MessageListener [{}.{}] -> topic '{}' (total subscribers: {})",
-                bean.getClass().getSimpleName(), method.getName(), topic, count);
+        log.info(LogMessage.format("Registered @MessageListener [%s.%s] -> topic '%s' (total subscribers: %s)",
+                bean.getClass().getSimpleName(), method.getName(), topic, count));
     }
 
     /**
@@ -188,7 +187,7 @@ public class MessageListenerBeanPostProcessor implements SmartInitializingSingle
                 // 参数类型匹配负载类型 -> 传入负载
                 args[i] = message.getPayload();
             } else {
-                log.warn("Cannot resolve parameter type {} for @MessageListener, passing null", paramType);
+                log.warn(LogMessage.format("Cannot resolve parameter type %s for @MessageListener, passing null", paramType));
                 args[i] = null;
             }
         }

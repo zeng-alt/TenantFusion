@@ -9,9 +9,10 @@ dependencies {
     implementation(project(":backend:components:storage-component:api-storage-component"))
     implementation("org.springdoc:springdoc-openapi-starter-common")
 
-    api(libs.jjwt.api)
-    runtimeOnly(libs.jjwt.impl)
-    runtimeOnly(libs.jjwt.jackson)
+    api("org.springframework.security:spring-security-oauth2-jose")
+//    api(libs.jjwt.api)
+//    api(libs.jjwt.impl)
+//    api(libs.jjwt.jackson)
 
     compileOnly(libs.lombok)
     annotationProcessor(libs.lombok)

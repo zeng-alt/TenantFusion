@@ -4,8 +4,8 @@ import com.github.zeng.alt.log.OperLogEvent;
 import com.github.zeng.alt.log.jpa.entity.LogEntity;
 import com.github.zeng.alt.log.jpa.repository.LogRepository;
 import lombok.RequiredArgsConstructor;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.apachecommons.CommonsLog;
+import org.springframework.core.log.LogMessage;
 import org.springframework.transaction.event.TransactionalEventListener;
 
 /**
@@ -18,10 +18,9 @@ import org.springframework.transaction.event.TransactionalEventListener;
  * @since 2026-07-01
  * @version 1.0
  */
+@CommonsLog
 @RequiredArgsConstructor
 public class LogEventPersistenceListener {
-
-    private static final Logger log = LoggerFactory.getLogger(LogEventPersistenceListener.class);
 
     private final LogRepository repository;
 
@@ -33,9 +32,9 @@ public class LogEventPersistenceListener {
         try {
             LogEntity entity = convert(event);
             repository.save(entity);
-            log.debug("Persisted oper log: title={}, costTime={}ms", event.getTitle(), event.getCostTime());
+            log.debug(LogMessage.format("Persisted oper log: title=%s, costTime=%sms", event.getTitle(), event.getCostTime()));
         } catch (Exception e) {
-            log.error("Failed to persist oper log: title={}", event.getTitle(), e);
+            log.error(LogMessage.format("Failed to persist oper log: title=%s", event.getTitle()), e);
         }
     }
 

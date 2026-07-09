@@ -6,13 +6,13 @@ import com.github.zeng.alt.message.MessageQueueTemplate;
 import com.github.zeng.alt.message.codec.JacksonMessagePacketCodec;
 import com.github.zeng.alt.message.codec.MessagePacketCodec;
 import com.github.zeng.alt.message.exception.MessageException;
+import lombok.extern.apachecommons.CommonsLog;
 import org.apache.kafka.clients.consumer.Consumer;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.DisposableBean;
 import org.springframework.beans.factory.InitializingBean;
+import org.springframework.core.log.LogMessage;
 import org.springframework.kafka.core.ConsumerFactory;
 import org.springframework.kafka.core.KafkaAdmin;
 import org.springframework.kafka.core.KafkaTemplate;
@@ -44,9 +44,8 @@ import java.util.concurrent.TimeUnit;
  * @since 2026-07-01
  * @version 1.0
  */
+@CommonsLog
 public class KafkaMessageQueueTemplate implements MessageQueueTemplate, InitializingBean, DisposableBean {
-
-    private static final Logger log = LoggerFactory.getLogger(KafkaMessageQueueTemplate.class);
 
     private final KafkaTemplate<String, byte[]> kafkaTemplate;
     private final ConsumerFactory<String, byte[]> consumerFactory;
@@ -81,8 +80,8 @@ public class KafkaMessageQueueTemplate implements MessageQueueTemplate, Initiali
         try {
             byte[] packetBytes = ((JacksonMessagePacketCodec) codec).encodeMessage(topic, message);
             kafkaTemplate.send(topic, message.getId(), packetBytes).get(10, TimeUnit.SECONDS);
-            log.debug("Sent message to topic '{}': id={}, partition={}",
-                    topic, message.getId());
+            log.debug(LogMessage.format("Sent message to topic '%s': id=%s, partition=%s",
+                    topic, message.getId()));
         } catch (Exception e) {
             throw new MessageException("Failed to send message to topic '" + topic + "'", e);
         }
@@ -130,7 +129,7 @@ public class KafkaMessageQueueTemplate implements MessageQueueTemplate, Initiali
                 Message<T> message = ((JacksonMessagePacketCodec) codec).decodeMessage(record.value(), topic);
                 listener.onMessage(message);
             } catch (Exception e) {
-                log.error("Error processing message from topic '{}'", topic, e);
+                log.error(LogMessage.format("Error processing message from topic '%s'", topic), e);
             }
         });
 
@@ -139,7 +138,7 @@ public class KafkaMessageQueueTemplate implements MessageQueueTemplate, Initiali
         container.start();
 
         containers.put(topic, container);
-        log.info("Subscribed to topic '{}'", topic);
+        log.info(LogMessage.format("Subscribed to topic '%s'", topic));
     }
 
     @Override
@@ -150,9 +149,9 @@ public class KafkaMessageQueueTemplate implements MessageQueueTemplate, Initiali
                 container.stop();
                 container.destroy();
             } catch (Exception e) {
-                log.warn("Error stopping container for topic '{}'", topic, e);
+                log.warn(LogMessage.format("Error stopping container for topic '%s'", topic), e);
             }
-            log.info("Unsubscribed from topic '{}'", topic);
+            log.info(LogMessage.format("Unsubscribed from topic '{}'", topic));
         }
     }
 
@@ -168,7 +167,7 @@ public class KafkaMessageQueueTemplate implements MessageQueueTemplate, Initiali
                 container.stop();
                 container.destroy();
             } catch (Exception e) {
-                log.warn("Error stopping container for topic '{}'", topic, e);
+                log.warn(LogMessage.format("Error stopping container for topic '%s'", topic, e));
             }
         });
         containers.clear();

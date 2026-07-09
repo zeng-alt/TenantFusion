@@ -12,6 +12,7 @@ import io.swagger.v3.oas.models.media.*;
 import io.swagger.v3.oas.models.parameters.RequestBody;
 import io.swagger.v3.oas.models.responses.ApiResponse;
 import io.swagger.v3.oas.models.responses.ApiResponses;
+import io.swagger.v3.oas.models.tags.Tag;
 import org.springdoc.core.customizers.OpenApiCustomizer;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
@@ -26,6 +27,8 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.web.authentication.logout.LogoutFilter;
 import org.springframework.security.web.servlet.util.matcher.PathPatternRequestMatcher;
+
+import java.util.List;
 
 /**
  * Cookie 认证自动配置.
@@ -170,18 +173,26 @@ public class CookieAuthAutoConfiguration {
         public OpenApiCustomizer loginApiCustomizer(UsernameLoginProperties usernameLoginProperties, CookieAuthProperties cookieAuthProperties) {
             return openApi -> {
 
+                List<Tag> tags = openApi.getTags();
+                if (tags == null || tags.stream().noneMatch(t -> "Login".equals(t.getName()))) {
+                    openApi.addTagsItem(new Tag()
+                            .name("login")
+                            .description("认证接口"));
+                }
+
                 Schema<?> loginRequest = new ObjectSchema()
                         .addProperty(usernameLoginProperties.getUsernameParameter(), new StringSchema())
                         .addProperty(usernameLoginProperties.getPasswordParameter(), new StringSchema());
 
                 Operation operation = new Operation()
-                        .summary("jwt用户登录")
-                        .description("通过用户名密码登录，返回 JWT")
+                        .summary("cookie用户登录")
+                        .description("通过用户名密码登录，创建 Session 并写入 Cookie")
+                        .tags(java.util.List.of("login"))
                         .requestBody(new RequestBody()
                                 .required(true)
                                 .content(new Content()
                                         .addMediaType(
-                                                "loginBody",
+                                                org.springframework.http.MediaType.APPLICATION_JSON_VALUE,
                                                 new MediaType().schema(loginRequest)
                                         )
                                 ))

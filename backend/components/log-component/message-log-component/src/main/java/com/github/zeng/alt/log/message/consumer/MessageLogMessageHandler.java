@@ -4,8 +4,7 @@ import com.github.zeng.alt.log.OperLogEvent;
 import com.github.zeng.alt.message.Message;
 import com.github.zeng.alt.message.MessageHandler;
 import lombok.RequiredArgsConstructor;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.apachecommons.CommonsLog;
 
 /**
  * 将 {@link MessageHandler} 接口桥接到 {@link MessageLogConsumer}。
@@ -19,10 +18,9 @@ import org.slf4j.LoggerFactory;
  * @since 2026-07-01
  * @version 1.0
  */
+@CommonsLog
 @RequiredArgsConstructor
 public class MessageLogMessageHandler implements MessageHandler<OperLogEvent> {
-
-    private static final Logger log = LoggerFactory.getLogger(MessageLogMessageHandler.class);
 
     /** 日志消息主题 */
     static final String TOPIC = "log.oper";

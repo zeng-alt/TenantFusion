@@ -21,6 +21,9 @@ graalvmNative {
                 "-Duser.country=CN",
                 "-Duser.language=zh",
                 "-H:+AddAllCharsets",
+                "--trace-class-initialization=org.slf4j.LoggerFactory",
+                "--trace-class-initialization=org.apache.commons.logging.LogFactory",
+                "--trace-class-initialization=ch.qos.logback.classic.Logger",
                 "-H:ClassInitialization=org.apache.commons.logging.LogFactory:run_time",
             )
         }
@@ -66,13 +69,14 @@ dependencies {
     implementation(libs.spring.modulith.starter.jpa)
 //    implementation(libs.spring.boot.starter.cache)
 //    implementation(libs.spring.boot.starter.data.redis)
+
+//    implementation(libs.mapstruct)
+
     compileOnly(libs.lombok)
     developmentOnly(libs.spring.boot.docker.compose)
     testImplementation(libs.spring.boot.starter.test)
     testImplementation(libs.spring.modulith.starter.test)
     testImplementation(libs.spring.security.test)
-
-
 
     annotationProcessor(libs.lombok)
     annotationProcessor(libs.spring.boot.configuration.processor)
@@ -82,4 +86,7 @@ dependencies {
             classifier = "jakarta"
         }
     }
+//    annotationProcessor(libs.mapstruct.processor)
+    // 解决 Lombok 与 MapStruct 注解处理顺序问题
+//    annotationProcessor(libs.lombok.mapstruct.binding)
 }

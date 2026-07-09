@@ -17,7 +17,7 @@ public class OssProperties {
     /** 是否启用 */
     private boolean enabled = false;
 
-    /** 对象存储服务的 URL */
+    /** 对象存储服务的 URL 或者 file:///d:/data/oss */
     private String endpoint;
 
     /** 存储类型，可选：file / minio / aws / aliyun / tencent / huawei，默认 minio */

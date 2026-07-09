@@ -6,13 +6,13 @@ import com.github.zeng.alt.message.MessageQueueTemplate;
 import com.github.zeng.alt.message.codec.JacksonMessagePacketCodec;
 import com.github.zeng.alt.message.codec.MessagePacketCodec;
 import com.github.zeng.alt.message.exception.MessageException;
+import lombok.extern.apachecommons.CommonsLog;
 import org.redisson.api.RBlockingDeque;
 import org.redisson.api.RTopic;
 import org.redisson.api.RedissonClient;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.DisposableBean;
 import org.springframework.beans.factory.InitializingBean;
+import org.springframework.core.log.LogMessage;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -34,9 +34,8 @@ import java.util.concurrent.TimeUnit;
  * @since 2026-07-01
  * @version 1.0
  */
+@CommonsLog
 public class RedisMessageQueueTemplate implements MessageQueueTemplate, InitializingBean, DisposableBean {
-
-    private static final Logger log = LoggerFactory.getLogger(RedisMessageQueueTemplate.class);
 
     /**
      * 消息队列的 Redis key 前缀。
@@ -74,7 +73,7 @@ public class RedisMessageQueueTemplate implements MessageQueueTemplate, Initiali
             RBlockingDeque<byte[]> queue = redissonClient.getBlockingDeque(QUEUE_PREFIX + topic);
             queue.offer(packetBytes);
 
-            log.debug("Sent message to topic '{}': id={}", topic, message.getId());
+            log.debug(LogMessage.format("Sent message to topic '%s': id=%s", topic, message.getId()));
         } catch (Exception e) {
             throw new MessageException("Failed to send message to topic '" + topic + "'", e);
         }
@@ -127,12 +126,12 @@ public class RedisMessageQueueTemplate implements MessageQueueTemplate, Initiali
                 Message<T> message = ((JacksonMessagePacketCodec) codec).decodeMessage(msg, topic);
                 listener.onMessage(message);
             } catch (Exception e) {
-                log.error("Error processing message from topic '{}'", topic, e);
+                log.error(LogMessage.format("Error processing message from topic '%s'", topic), e);
             }
         });
 
         subscriptions.put(topic, listenerId);
-        log.info("Subscribed to topic '{}'", topic);
+        log.info(LogMessage.format("Subscribed to topic '%s'", topic));
     }
 
     @Override
@@ -141,7 +140,7 @@ public class RedisMessageQueueTemplate implements MessageQueueTemplate, Initiali
         if (listenerId != null) {
             RTopic rTopic = redissonClient.getTopic(topic);
             rTopic.removeListener(listenerId);
-            log.info("Unsubscribed from topic '{}'", topic);
+            log.info(LogMessage.format("Unsubscribed from topic '%s'", topic));
         }
     }
 
@@ -157,7 +156,7 @@ public class RedisMessageQueueTemplate implements MessageQueueTemplate, Initiali
                 RTopic rTopic = redissonClient.getTopic(topic);
                 rTopic.removeListener(listenerId);
             } catch (Exception e) {
-                log.warn("Error removing listener for topic '{}'", topic, e);
+                log.warn(LogMessage.format("Error removing listener for topic '%s'", topic), e);
             }
         });
         subscriptions.clear();

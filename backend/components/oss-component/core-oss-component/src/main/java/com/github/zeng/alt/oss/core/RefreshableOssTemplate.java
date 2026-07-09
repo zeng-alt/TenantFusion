@@ -2,8 +2,8 @@ package com.github.zeng.alt.oss.core;
 
 import com.github.zeng.alt.oss.OssFileInfo;
 import com.github.zeng.alt.oss.OssTemplate;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.apachecommons.CommonsLog;
+import org.springframework.core.log.LogMessage;
 
 import java.io.File;
 import java.io.InputStream;
@@ -23,9 +23,8 @@ import java.util.concurrent.atomic.AtomicReference;
  * @since 2026-07-02
  * @version 1.0
  */
+@CommonsLog
 public class RefreshableOssTemplate implements OssTemplate {
-
-    private static final Logger log = LoggerFactory.getLogger(RefreshableOssTemplate.class);
 
     private final AtomicReference<OssTemplate> delegateRef;
 
@@ -53,8 +52,8 @@ public class RefreshableOssTemplate implements OssTemplate {
      */
     public OssTemplate swapDelegate(OssTemplate newDelegate) {
         OssTemplate old = delegateRef.getAndSet(newDelegate);
-        log.debug("OSS template delegate swapped: {} -> {}",
-                old.getClass().getSimpleName(), newDelegate.getClass().getSimpleName());
+        log.debug(LogMessage.format("OSS template delegate swapped: %s -> %s",
+                old.getClass().getSimpleName(), newDelegate.getClass().getSimpleName()));
         return old;
     }
 

@@ -3,9 +3,9 @@ package com.github.zeng.alt.i18n.core;
 import com.github.zeng.alt.i18n.entity.SystemI18nMessageDO;
 import com.github.zeng.alt.i18n.repository.I18nMessageRepository;
 import io.vavr.control.Option;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.apachecommons.CommonsLog;
 import org.springframework.context.support.AbstractMessageSource;
+import org.springframework.core.log.LogMessage;
 
 import java.text.MessageFormat;
 import java.util.Locale;
@@ -24,9 +24,8 @@ import java.util.concurrent.ConcurrentMap;
  * @since 2026年05月29日
  * @version 1.0
  */
+@CommonsLog
 public class DatabaseMessageSource extends AbstractMessageSource {
-
-    private static final Logger log = LoggerFactory.getLogger(DatabaseMessageSource.class);
 
     private final I18nMessageRepository i18nMessageRepository;
 
@@ -50,7 +49,7 @@ public class DatabaseMessageSource extends AbstractMessageSource {
             }
         }
         if (message == null) {
-            log.debug("i18n message not found: code={}, locale={}", code, locale);
+            log.debug(LogMessage.format("i18n message not found: code=%s, locale=%s", code, locale));
             return null;
         }
         return createMessageFormat(message, locale);

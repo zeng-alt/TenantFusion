@@ -4,11 +4,11 @@ import com.github.zeng.alt.api.rest.RestResponse;
 import com.github.zeng.alt.oss.*;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.apachecommons.CommonsLog;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.core.log.LogMessage;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -37,6 +37,7 @@ import java.util.Map;
  * @since 2026-07-02
  * @version 1.0
  */
+@CommonsLog
 @RestController
 @RequestMapping("/api/oss/upload")
 @Tag(name = "OSS 分片上传（断点续传）")
@@ -44,8 +45,6 @@ import java.util.Map;
 @ConditionalOnProperty(prefix = "oss.s3.upload", name = "enabled", havingValue = "true", matchIfMissing = true)
 @ConditionalOnBean(MultipartUploadService.class)
 public class UploadController {
-
-    private static final Logger log = LoggerFactory.getLogger(UploadController.class);
 
     private final MultipartUploadService multipartUploadService;
     private final BucketStrategy bucketStrategy;
@@ -78,7 +77,7 @@ public class UploadController {
                 request.getContentType(),
                 request.getTotalSize()
         );
-        log.info("Upload initiated: fileName={}, uploadId={}", request.getFileName(), uploadId);
+        log.info(LogMessage.format("Upload initiated: fileName=%s, uploadId=%s", request.getFileName(), uploadId));
         return RestResponse.success(Map.of(
                 "uploadId", uploadId,
                 "fileName", request.getFileName(),
@@ -107,7 +106,7 @@ public class UploadController {
         long partSize = file.getSize();
         try (InputStream data = file.getInputStream()) {
             UploadPartInfo result = multipartUploadService.uploadPart(uploadId, partNumber, partSize, data);
-            log.debug("Part uploaded: uploadId={}, partNumber={}, size={}", uploadId, partNumber, partSize);
+            log.debug(LogMessage.format("Part uploaded: uploadId=%s, partNumber=%s, size=%s", uploadId, partNumber, partSize));
             return RestResponse.success(result);
         }
     }
@@ -162,7 +161,7 @@ public class UploadController {
         }
 
         OssFileInfo result = multipartUploadService.completeUpload(uploadId, bucketName, fileName, null);
-        log.info("Upload completed: fileName={}, uploadId={}", fileName, uploadId);
+        log.info(LogMessage.format("Upload completed: fileName=%s, uploadId=%s", fileName, uploadId));
         return RestResponse.success(result);
     }
 
@@ -173,7 +172,7 @@ public class UploadController {
     @Operation(summary = "取消分片上传")
     public RestResponse<Void> abortUpload(@PathVariable String uploadId) {
         multipartUploadService.abortUpload(uploadId);
-        log.info("Upload aborted: uploadId={}", uploadId);
+        log.info(LogMessage.format("Upload aborted: uploadId=%s", uploadId));
         return RestResponse.success();
     }
 

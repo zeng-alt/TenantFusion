@@ -8,6 +8,8 @@ dependencies {
     api(project(":backend:components:core-component"))
     api("jakarta.persistence:jakarta.persistence-api")
     api("org.hibernate.orm:hibernate-core")
+    api(rootProject.libs.jpa.search.helper)
+    api(project(":backend:components:rest-component:rest-annotation-component"))
     implementation("org.springframework.data:spring-data-commons")
     implementation("org.springframework.data:spring-data-jpa")
     implementation("org.springframework.boot:spring-boot-autoconfigure")

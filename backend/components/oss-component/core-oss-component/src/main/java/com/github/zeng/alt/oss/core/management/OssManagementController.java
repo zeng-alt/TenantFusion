@@ -1,8 +1,7 @@
 package com.github.zeng.alt.oss.core.management;
 
 import com.github.zeng.alt.oss.OssConnectionManager;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.apachecommons.CommonsLog;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -21,13 +20,12 @@ import java.util.Map;
  * @since 2026-07-02
  * @version 1.0
  */
+@CommonsLog
 @RestController
 @ConditionalOnClass(name = "org.springframework.web.bind.annotation.RestController")
 @ConditionalOnProperty(prefix = "oss.s3.management", name = "enabled", havingValue = "true")
 @RequestMapping("/api/oss")
 public class OssManagementController {
-
-    private static final Logger log = LoggerFactory.getLogger(OssManagementController.class);
 
     private final OssConnectionManager connectionManager;
 

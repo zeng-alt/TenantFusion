@@ -11,6 +11,7 @@ import com.github.zeng.alt.log.core.support.RequestParameterResolver;
 import com.github.zeng.alt.log.core.support.RequestResolver;
 import com.github.zeng.alt.log.core.support.UserResolver;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.ObjectProvider;
 
 @RequiredArgsConstructor
 public class DefaultLogRecordFactory
@@ -20,7 +21,11 @@ public class DefaultLogRecordFactory
     private final IpResolver ipResolver;
     private final RequestResolver requestResolver;
     private final RequestParameterResolver parameterResolver;
-    private final ObjectMapper objectMapper;
+    private final ObjectProvider<ObjectMapper> provider;
+
+    public ObjectMapper getMapper() {
+        return provider.getObject();
+    }
 
     @Override
     public OperLogEvent create(LogInvocation invocation) throws JsonProcessingException {
@@ -64,7 +69,7 @@ public class DefaultLogRecordFactory
                 && invocation.getResult() != null) {
 
             log.setJsonResult(
-                    objectMapper.writeValueAsString(
+                    getMapper().writeValueAsString(
                             invocation.getResult()));
         }
 

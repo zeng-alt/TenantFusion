@@ -13,6 +13,7 @@ import com.github.zeng.alt.log.core.operation.LogOperationSource;
 import com.github.zeng.alt.log.core.support.*;
 import org.springframework.aop.Advisor;
 import org.springframework.aop.support.annotation.AnnotationMatchingPointcut;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
@@ -44,7 +45,10 @@ public class LogAutoConfiguration {
 
     @Bean
     @Role(BeanDefinition.ROLE_INFRASTRUCTURE)
-    public Advisor logAdvisor(LogHandler handler, LogOperationSource source) {
+    public Advisor logAdvisor(
+            ObjectProvider<LogHandler> handler,
+            ObjectProvider<LogOperationSource> source) {
+
         return new LogMethodInterceptor(
                 handler,
                 source,
@@ -72,14 +76,13 @@ public class LogAutoConfiguration {
     }
 
     @Bean
-    @Role(BeanDefinition.ROLE_INFRASTRUCTURE)
     @ConditionalOnMissingBean(LogRecordFactory.class)
     public LogRecordFactory defaultLogRecordFactory(
             UserResolver userResolver,
             IpResolver ipResolver,
             RequestResolver requestResolver,
             RequestParameterResolver parameterResolver,
-            @Lazy ObjectMapper objectMapper) {
+            ObjectProvider<ObjectMapper> objectMapper) {
         return new DefaultLogRecordFactory(
                 userResolver, ipResolver,
                 requestResolver, parameterResolver,
@@ -89,7 +92,6 @@ public class LogAutoConfiguration {
     // ========== 支持组件（Web 环境） ==========
 
     @Bean
-    @Role(BeanDefinition.ROLE_INFRASTRUCTURE)
     @ConditionalOnWebApplication(type = ConditionalOnWebApplication.Type.SERVLET)
     @ConditionalOnMissingBean(IpResolver.class)
     public IpResolver servletIpResolver() {
@@ -97,7 +99,6 @@ public class LogAutoConfiguration {
     }
 
     @Bean
-    @Role(BeanDefinition.ROLE_INFRASTRUCTURE)
     @ConditionalOnWebApplication(type = ConditionalOnWebApplication.Type.SERVLET)
     @ConditionalOnMissingBean(RequestResolver.class)
     public RequestResolver servletRequestResolver() {
@@ -105,17 +106,15 @@ public class LogAutoConfiguration {
     }
 
     @Bean
-    @Role(BeanDefinition.ROLE_INFRASTRUCTURE)
     @ConditionalOnWebApplication(type = ConditionalOnWebApplication.Type.SERVLET)
     @ConditionalOnMissingBean(RequestParameterResolver.class)
-    public RequestParameterResolver defaultRequestParameterResolver(@Lazy ObjectMapper objectMapper) {
+    public RequestParameterResolver defaultRequestParameterResolver(ObjectProvider<ObjectMapper> objectMapper) {
         return new DefaultRequestParameterResolver(objectMapper);
     }
 
     // ========== 用户解析器（需要 security-api） ==========
 
     @Bean
-    @Role(BeanDefinition.ROLE_INFRASTRUCTURE)
     @ConditionalOnClass(name = "com.github.zeng.alt.security.api.UserContextHolder")
     @ConditionalOnMissingBean(UserResolver.class)
     public UserResolver defaultUserResolver() {

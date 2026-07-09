@@ -1,8 +1,8 @@
 package com.github.zeng.alt.lock.database;
 
 import com.github.zeng.alt.lock.executor.AbstractLockExecutor;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.apachecommons.CommonsLog;
+import org.springframework.core.log.LogMessage;
 import org.springframework.jdbc.core.simple.JdbcClient;
 
 import java.time.LocalDateTime;
@@ -16,9 +16,8 @@ import java.util.UUID;
  * @since 2026年06月09日
  * @version 1.0
  */
+@CommonsLog
 public class DatabaseLockExecutor extends AbstractLockExecutor<String> {
-
-    private static final Logger log = LoggerFactory.getLogger(DatabaseLockExecutor.class);
 
     private final JdbcClient jdbcClient;
     private final String instanceId;
@@ -44,7 +43,7 @@ public class DatabaseLockExecutor extends AbstractLockExecutor<String> {
                 .update();
 
         if (inserted > 0) {
-            log.debug("Lock acquired: key={}, instance={}", lockKey, instanceId);
+            log.debug(LogMessage.format("Lock acquired: key=%s, instance=%s", lockKey, instanceId));
             return instanceId;
         }
 
@@ -58,7 +57,7 @@ public class DatabaseLockExecutor extends AbstractLockExecutor<String> {
                 .update();
 
         if (updated > 0) {
-            log.debug("Lock acquired (preempted): key={}, instance={}", lockKey, instanceId);
+            log.debug(LogMessage.format("Lock acquired (preempted): key=%s, instance=%s", lockKey, instanceId));
             return instanceId;
         }
 
@@ -72,7 +71,7 @@ public class DatabaseLockExecutor extends AbstractLockExecutor<String> {
                 .params(key, lockInstance)
                 .update();
         if (deleted > 0) {
-            log.debug("Lock released: key={}, instance={}", key, lockInstance);
+            log.debug(LogMessage.format("Lock released: key=%s, instance=%s", key, lockInstance));
             return true;
         }
         return false;

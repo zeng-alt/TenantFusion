@@ -4,8 +4,8 @@ import com.github.zeng.alt.oss.OssFileInfo;
 import com.github.zeng.alt.oss.OssProperties;
 import com.github.zeng.alt.oss.OssTemplate;
 import com.github.zeng.alt.oss.core.OssException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.apachecommons.CommonsLog;
+import org.springframework.core.log.LogMessage;
 import org.springframework.util.StringUtils;
 import software.amazon.awssdk.core.ResponseInputStream;
 import software.amazon.awssdk.core.sync.RequestBody;
@@ -35,9 +35,8 @@ import java.util.stream.Collectors;
  * @since 2026-07-02
  * @version 1.0
  */
+@CommonsLog
 public class S3OssTemplate implements OssTemplate {
-
-    private static final Logger log = LoggerFactory.getLogger(S3OssTemplate.class);
 
     private final S3Client s3Client;
     private final S3Presigner s3Presigner;
@@ -69,7 +68,7 @@ public class S3OssTemplate implements OssTemplate {
                     builder.build(),
                     RequestBody.fromInputStream(inputStream, -1)
             );
-            log.debug("OSS upload success: bucket={}, key={}, etag={}", bucketName, fullPath, response.eTag());
+            log.debug(LogMessage.format("OSS upload success: bucket=%s, key=%s, etag=%s", bucketName, fullPath, response.eTag()));
             return buildFileInfo(fullPath, contentType, response);
         } catch (S3Exception e) {
             throw new OssException("OSS upload failed: " + fullPath, e);
@@ -96,7 +95,7 @@ public class S3OssTemplate implements OssTemplate {
                     builder.build(),
                     RequestBody.fromBytes(data)
             );
-            log.debug("OSS upload success: bucket={}, key={}, etag={}", bucketName, fullPath, response.eTag());
+            log.debug(LogMessage.format("OSS upload success: bucket=%s, key=%s, etag=%s", bucketName, fullPath, response.eTag()));
             return buildFileInfo(fullPath, contentType, response);
         } catch (S3Exception e) {
             throw new OssException("OSS upload failed: " + fullPath, e);
@@ -115,7 +114,7 @@ public class S3OssTemplate implements OssTemplate {
                             .build(),
                     RequestBody.fromFile(file.toPath())
             );
-            log.debug("OSS upload success: bucket={}, key={}, etag={}", bucketName, fullPath, response.eTag());
+            log.debug(LogMessage.format("OSS upload success: bucket=%s, key=%s, etag=%s", bucketName, fullPath, response.eTag()));
             OssFileInfo info = buildFileInfo(fullPath, null, response);
             info.setSize(file.length());
             return info;
@@ -152,7 +151,7 @@ public class S3OssTemplate implements OssTemplate {
                             .key(fullPath)
                             .build()
             );
-            log.debug("OSS delete success: bucket={}, key={}", properties.getBucketName(), fullPath);
+            log.debug(LogMessage.format("OSS delete success: bucket=%s, key=%s", properties.getBucketName(), fullPath));
         } catch (S3Exception e) {
             throw new OssException("OSS delete failed: " + fullPath, e);
         }
@@ -170,7 +169,7 @@ public class S3OssTemplate implements OssTemplate {
                             .delete(Delete.builder().objects(keys).build())
                             .build()
             );
-            log.debug("OSS batch delete success: bucket={}, count={}", properties.getBucketName(), keys.size());
+            log.debug(LogMessage.format("OSS batch delete success: bucket=%s, count=%s", properties.getBucketName(), keys.size()));
         } catch (S3Exception e) {
             throw new OssException("OSS batch delete failed", e);
         }
@@ -270,7 +269,7 @@ public class S3OssTemplate implements OssTemplate {
                             .destinationKey(targetFullPath)
                             .build()
             );
-            log.debug("OSS copy success: {}/{} -> {}/{}", bucketName, sourceFullPath, bucketName, targetFullPath);
+            log.debug(LogMessage.format("OSS copy success: %s/%s -> %s/%s", bucketName, sourceFullPath, bucketName, targetFullPath));
         } catch (S3Exception e) {
             throw new OssException("OSS copy failed: " + sourceFullPath + " -> " + targetFullPath, e);
         }
@@ -407,7 +406,7 @@ public class S3OssTemplate implements OssTemplate {
                     builder.build(),
                     RequestBody.fromInputStream(inputStream, -1)
             );
-            log.debug("OSS upload (bucket-aware) success: bucket={}, key={}, etag={}", bucketName, fullPath, response.eTag());
+            log.debug(LogMessage.format("OSS upload (bucket-aware) success: bucket=%s, key=%s, etag=%s", bucketName, fullPath, response.eTag()));
             return buildFileInfo(bucketName, fullPath, contentType, response);
         } catch (S3Exception e) {
             throw new OssException("OSS upload failed to bucket " + bucketName + ": " + fullPath, e);
@@ -433,7 +432,7 @@ public class S3OssTemplate implements OssTemplate {
                     builder.build(),
                     RequestBody.fromBytes(data)
             );
-            log.debug("OSS upload (bucket-aware) success: bucket={}, key={}, etag={}", bucketName, fullPath, response.eTag());
+            log.debug(LogMessage.format("OSS upload (bucket-aware) success: bucket=%s, key=%s, etag=%s", bucketName, fullPath, response.eTag()));
             return buildFileInfo(bucketName, fullPath, contentType, response);
         } catch (S3Exception e) {
             throw new OssException("OSS upload failed to bucket " + bucketName + ": " + fullPath, e);
@@ -468,7 +467,7 @@ public class S3OssTemplate implements OssTemplate {
                             .key(fullPath)
                             .build()
             );
-            log.debug("OSS delete (bucket-aware) success: bucket={}, key={}", bucketName, fullPath);
+            log.debug(LogMessage.format("OSS delete (bucket-aware) success: bucket=%s, key=%s", bucketName, fullPath));
         } catch (S3Exception e) {
             throw new OssException("OSS delete failed from bucket " + bucketName + ": " + fullPath, e);
         }
@@ -478,12 +477,12 @@ public class S3OssTemplate implements OssTemplate {
     public void ensureBucketExists(String bucketName) {
         try {
             s3Client.headBucket(b -> b.bucket(bucketName));
-            log.debug("OSS bucket already exists: {}", bucketName);
+            log.debug(LogMessage.format("OSS bucket already exists: %s", bucketName));
         } catch (software.amazon.awssdk.services.s3.model.NoSuchBucketException e) {
             s3Client.createBucket(b -> b.bucket(bucketName));
-            log.info("OSS bucket created: {}", bucketName);
+            log.info(LogMessage.format("OSS bucket created: %s", bucketName));
         } catch (S3Exception e) {
-            log.warn("Failed to ensure bucket exists '{}': {}", bucketName, e.getMessage());
+            log.warn(LogMessage.format("Failed to ensure bucket exists '%s': %s", bucketName, e.getMessage()));
         }
     }
 
@@ -514,8 +513,8 @@ public class S3OssTemplate implements OssTemplate {
      * 优雅关闭底层客户端连接。
      */
     public void destroy() {
-        log.info("Shutting down OSS connection: bucket={}, endpoint={}",
-                properties.getBucketName(), properties.getEndpoint());
+        log.info(LogMessage.format("Shutting down OSS connection: bucket=%s, endpoint=%s",
+                properties.getBucketName(), properties.getEndpoint()));
         try {
             s3Presigner.close();
         } catch (Exception e) {

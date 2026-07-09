@@ -1,10 +1,10 @@
 package com.github.zeng.alt.lock.redisson;
 
 import com.github.zeng.alt.lock.executor.AbstractLockExecutor;
+import lombok.extern.apachecommons.CommonsLog;
 import org.redisson.api.RLock;
 import org.redisson.api.RedissonClient;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.springframework.core.log.LogMessage;
 
 import java.util.concurrent.TimeUnit;
 
@@ -15,9 +15,8 @@ import java.util.concurrent.TimeUnit;
  * @since 2026年06月09日
  * @version 1.0
  */
+@CommonsLog
 public class RedissonLockExecutor extends AbstractLockExecutor<RLock> {
-
-    private static final Logger log = LoggerFactory.getLogger(RedissonLockExecutor.class);
 
     private final RedissonClient redissonClient;
 
@@ -45,17 +44,17 @@ public class RedissonLockExecutor extends AbstractLockExecutor<RLock> {
                     locked = lock.tryLock(waitTime, TimeUnit.MILLISECONDS);
                 }
                 if (locked) {
-                    log.debug("Lock acquired: key={}, expire={}ms", lockKey, expire);
+                    log.debug(LogMessage.format("Lock acquired: key=%s, expire=%sms", lockKey, expire));
                     return lock;
                 }
             } else {
                 lock.lock();
-                log.debug("Lock acquired (blocking): key={}", lockKey);
+                log.debug(LogMessage.format("Lock acquired (blocking): key=%s", lockKey));
                 return lock;
             }
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
-            log.error("Lock acquisition interrupted: key={}", lockKey, e);
+            log.error(LogMessage.format("Lock acquisition interrupted: key=%s", lockKey, e));
         }
         return null;
     }
@@ -64,7 +63,7 @@ public class RedissonLockExecutor extends AbstractLockExecutor<RLock> {
     public boolean releaseLock(String key, String value, RLock lockInstance) {
         if (lockInstance.isHeldByCurrentThread()) {
             lockInstance.unlock();
-            log.debug("Lock released: key={}", key);
+            log.debug(LogMessage.format("Lock released: key=%s", key));
             return true;
         }
         return false;

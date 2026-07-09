@@ -61,10 +61,10 @@ security:
       - "/swagger-ui.html"
       - "/webjars/**"
   context:
-    enabled-access: true
+    enabled-access: false
+
 
 springdoc:
-
   info:
     title: zengAlt
     description: app--native接口文档
@@ -111,3 +111,12 @@ springdoc:
         in: cookie
         name: JSESSIONID
         description: Session Cookie
+
+oss:
+  s3:
+    enabled: true
+    endpoint: file:///d:/data/oss
+    storageType: file
+
+  thumbnail:
+    enabled: true

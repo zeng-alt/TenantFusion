@@ -58,7 +58,6 @@ public abstract class BaseEntity<PK extends Serializable> implements Auditable<S
      *
      * @return the createdBy
      */
-    @JsonIgnore
     @QueryTransient
     @Override
     public Optional<String> getCreatedBy() {
@@ -71,7 +70,6 @@ public abstract class BaseEntity<PK extends Serializable> implements Auditable<S
      * @return the createdDate
      */
     @Override
-    @JsonIgnore
     @QueryTransient
     public Optional<LocalDateTime> getCreatedDate() {
         return this.createdDate == null ? Optional.empty() : Optional.of(this.createdDate);
@@ -84,7 +82,6 @@ public abstract class BaseEntity<PK extends Serializable> implements Auditable<S
      * @return the lastModifiedBy
      */
     @Override
-    @JsonIgnore
     @QueryTransient
     public Optional<String> getLastModifiedBy() {
         return Optional.ofNullable(this.lastModifiedBy);
@@ -97,7 +94,6 @@ public abstract class BaseEntity<PK extends Serializable> implements Auditable<S
      * @return the lastModifiedDate
      */
     @Override
-    @JsonIgnore
     @QueryTransient
     public Optional<LocalDateTime> getLastModifiedDate() {
         return this.lastModifiedDate == null ? Optional.empty() : Optional.of(this.lastModifiedDate);

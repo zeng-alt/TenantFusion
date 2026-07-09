@@ -3,8 +3,8 @@ package com.github.zeng.alt.oss.core;
 import com.github.zeng.alt.oss.BucketStrategy;
 import com.github.zeng.alt.oss.FileType;
 import com.github.zeng.alt.oss.OssProperties;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.apachecommons.CommonsLog;
+import org.springframework.core.log.LogMessage;
 
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
@@ -22,9 +22,8 @@ import java.time.format.DateTimeFormatter;
  * @since 2026-07-02
  * @version 1.0
  */
+@CommonsLog
 public class DefaultBucketStrategy implements BucketStrategy {
-
-    private static final Logger log = LoggerFactory.getLogger(DefaultBucketStrategy.class);
 
     private static final DateTimeFormatter YEAR_MONTH = DateTimeFormatter.ofPattern("yyyy/MM");
 
@@ -49,7 +48,7 @@ public class DefaultBucketStrategy implements BucketStrategy {
         // 优先使用自定义后缀映射
         String suffix = suffixOverrides.getOrDefault(fileType.name(), defaultSuffix);
         String bucketName = bucketPrefix + "-" + suffix;
-        log.debug("Bucket determined: fileType={}, bucket={}", fileType, bucketName);
+        log.debug(LogMessage.format("Bucket determined: fileType=%s, bucket=%s", fileType, bucketName));
         return bucketName;
     }
 

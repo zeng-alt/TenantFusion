@@ -3,8 +3,7 @@ package com.github.zeng.alt.api.rest;
 import lombok.Getter;
 import lombok.Setter;
 
-import java.io.Serializable;
-import java.util.ArrayList;
+
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -16,7 +15,7 @@ import java.util.List;
  */
 @Getter
 @Setter
-public class PageRestResponse<T extends Serializable> extends RestResponse<Collection<T>> {
+public class PageRestResponse<T> extends RestResponse<Collection<T>> {
 
 	private Integer pageNum;
 
@@ -47,7 +46,7 @@ public class PageRestResponse<T extends Serializable> extends RestResponse<Colle
 		return data;
 	}
 
-	public static <T extends Serializable> PageRestResponse<T> of(int pageSize, int pageNum) {
+	public static <T> PageRestResponse<T> of(int pageSize, int pageNum) {
 		PageRestResponse<T> response = new PageRestResponse<>();
 		response.setData(Collections.emptyList());
 		response.setTotal(0L);
@@ -57,9 +56,14 @@ public class PageRestResponse<T extends Serializable> extends RestResponse<Colle
 		return response;
 	}
 
-	public static <T extends Serializable> PageRestResponse<T> of(Collection<T> data, long totalCount, int pageSize,
+	public static <E> PageRestResponse<E> of(Collection<E> data, long totalCount, int pageSize,
 																  int pageNum) {
-		PageRestResponse<T> response = new PageRestResponse<>();
+		return of(data, totalCount, pageSize, pageNum);
+	}
+
+	public static <E> PageRestResponse<E> of(List<E> data, long totalCount, int pageSize,
+                                                                  int pageNum) {
+		PageRestResponse<E> response = new PageRestResponse<>();
 		response.setData(data);
 		response.setTotal(totalCount);
 		response.setPageSize(pageSize);

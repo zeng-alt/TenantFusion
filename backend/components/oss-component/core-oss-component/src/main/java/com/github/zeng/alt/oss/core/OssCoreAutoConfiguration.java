@@ -5,8 +5,7 @@ import com.github.zeng.alt.oss.core.aot.OssRuntimeHints;
 import com.github.zeng.alt.oss.core.local.FileSystemOssTemplate;
 import com.github.zeng.alt.oss.core.s3.S3MultipartUploadService;
 import com.github.zeng.alt.oss.core.s3.S3OssTemplate;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.apachecommons.CommonsLog;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
@@ -15,6 +14,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ImportRuntimeHints;
+import org.springframework.core.log.LogMessage;
 import software.amazon.awssdk.services.s3.S3Client;
 
 /**
@@ -39,13 +39,12 @@ import software.amazon.awssdk.services.s3.S3Client;
  * @since 2026-07-02
  * @version 3.0
  */
+@CommonsLog
 @AutoConfiguration
 @ConditionalOnProperty(prefix = "oss.s3", name = "enabled", havingValue = "true", matchIfMissing = false)
 @EnableConfigurationProperties({OssProperties.class, ThumbnailProperties.class})
 @ImportRuntimeHints(OssRuntimeHints.class)
 public class OssCoreAutoConfiguration {
-
-    private static final Logger log = LoggerFactory.getLogger(OssCoreAutoConfiguration.class);
 
     // ==================== OssTemplate ====================
 
@@ -64,7 +63,7 @@ public class OssCoreAutoConfiguration {
         }
 
         StorageType storageType = props.getStorageType();
-        log.info("Initializing OSS with storage type: {}, endpoint: {}", storageType, props.getEndpoint());
+        log.info(LogMessage.format("Initializing OSS with storage type: %s, endpoint: %s", storageType, props.getEndpoint()));
 
         if (storageType == StorageType.FILE) {
             // ===== 本地文件系统 =====
@@ -87,8 +86,8 @@ public class OssCoreAutoConfiguration {
     @ConditionalOnMissingBean
     @ConditionalOnProperty(prefix = "oss.s3", name = "bucket-strategy-enabled", havingValue = "true")
     public BucketStrategy bucketStrategy(OssProperties properties) {
-        log.info("OSS bucket strategy enabled: prefix={}, datePath={}",
-                properties.getBucketPrefix(), properties.isDatePathEnabled());
+        log.info(LogMessage.format("OSS bucket strategy enabled: prefix=%s, datePath=%s",
+                properties.getBucketPrefix(), properties.isDatePathEnabled()));
         return new DefaultBucketStrategy(properties);
     }
 
@@ -151,7 +150,7 @@ public class OssCoreAutoConfiguration {
                     ensureS3BucketExists(s3Template, initialProps.getBucketName());
                 }
             } catch (Exception e) {
-                log.warn("Failed to auto-create OSS bucket '{}': {}", initialProps.getBucketName(), e.getMessage());
+                log.warn(LogMessage.format("Failed to auto-create OSS bucket '%s': %s", initialProps.getBucketName(), e.getMessage()));
             }
         }
 
