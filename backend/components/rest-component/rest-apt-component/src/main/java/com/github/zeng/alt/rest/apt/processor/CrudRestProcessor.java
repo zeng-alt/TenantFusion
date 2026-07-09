@@ -146,18 +146,18 @@ public class CrudRestProcessor extends AbstractProcessor {
                 .repositoryElement(typeElement)
                 .hasSpringDoc(checkSpringDoc());
 
+        // jpa-search-helper 搜索接口
+        if (annotation.search()) {
+            metaBuilder.addEnabledMethod(MethodMeta.SEARCH);
+            metaBuilder.addEnabledMethod(MethodMeta.SEARCH_BODY);
+        }
+
         if (annotation.list()) metaBuilder.addEnabledMethod(MethodMeta.LIST);
         if (annotation.detail()) metaBuilder.addEnabledMethod(MethodMeta.DETAIL);
         if (annotation.create()) metaBuilder.addEnabledMethod(MethodMeta.CREATE);
         if (annotation.update()) metaBuilder.addEnabledMethod(MethodMeta.UPDATE);
         if (annotation.patch()) metaBuilder.addEnabledMethod(MethodMeta.PATCH);
         if (annotation.delete()) metaBuilder.addEnabledMethod(MethodMeta.DELETE);
-
-        // jpa-search-helper 搜索接口
-        if (annotation.search()) {
-            metaBuilder.addEnabledMethod(MethodMeta.SEARCH);
-            metaBuilder.addEnabledMethod(MethodMeta.SEARCH_BODY);
-        }
 
         // 查询字段扫描
         fieldScanner.parseQueryType(metaBuilder, annotation, entityMirror);

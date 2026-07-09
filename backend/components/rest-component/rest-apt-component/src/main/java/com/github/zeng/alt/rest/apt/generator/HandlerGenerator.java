@@ -266,31 +266,47 @@ public final class HandlerGenerator {
         if (detailType != null) {
             if (useMapStruct) {
                 // 使用 MapStruct Mapper 转换
-                builder.beginControlFlow("if (result.isDefined())")
+                builder.addStatement("$T dto = null", detailType)
+                        .beginControlFlow("if (result.isDefined())")
                         .addStatement("$T value = result.get()", entityType)
-                        .addStatement("$T dto = $L.toDetailDto(value)", detailType, getMapperFieldName(meta))
-                        .addStatement("return $T.ok().contentType($T.APPLICATION_JSON).body($T.success(dto))",
-                                SERVER_RESPONSE, MediaType.class, REST_RESPONSE)
-                        .nextControlFlow("else")
-                        .addStatement("return $T.notFound().build()", SERVER_RESPONSE)
-                        .endControlFlow();
+                        .addStatement("dto = $L.toDetailDto(value)", getMapperFieldName(meta))
+                        .endControlFlow()
+                        .addStatement(
+                                "return $T.ok().contentType($T.APPLICATION_JSON).body($T.success(dto))",
+                                SERVER_RESPONSE,
+                                MediaType.class,
+                                REST_RESPONSE
+                        );
+
             } else {
-                // entity → DTO 转换后返回
-                builder.beginControlFlow("if (result.isDefined())")
+                // entity → DTO 转换
+                builder.addStatement("$T dto = null", detailType)
+                        .beginControlFlow("if (result.isDefined())")
                         .addStatement("$T value = result.get()", entityType)
-                        .addStatement("$T dto = new $T()", detailType, detailType)
+                        .addStatement("dto = new $T()", detailType)
                         .addStatement("$T.copyProperties(value, dto)", BEAN_UTILS);
-                generateNestedDtoConversions(builder, meta, elements, meta.getEntityAllFields(), meta.getDetailTypeFields(), "value", "dto");
-                builder.addStatement("return $T.ok().contentType($T.APPLICATION_JSON).body($T.success(dto))",
-                                SERVER_RESPONSE, MediaType.class, REST_RESPONSE)
-                        .nextControlFlow("else")
-                        .addStatement("return $T.notFound().build()", SERVER_RESPONSE)
-                        .endControlFlow();
+
+                generateNestedDtoConversions(
+                        builder,
+                        meta,
+                        elements,
+                        meta.getEntityAllFields(),
+                        meta.getDetailTypeFields(),
+                        "value",
+                        "dto"
+                );
+
+                builder.endControlFlow()
+                        .addStatement(
+                                "return $T.ok().contentType($T.APPLICATION_JSON).body($T.success(dto))",
+                                SERVER_RESPONSE,
+                                MediaType.class,
+                                REST_RESPONSE
+                        );
             }
         } else {
-            builder.addStatement("return result.map(value -> $T.ok().contentType($T.APPLICATION_JSON).body($T.success(value)))" +
-                            ".getOrElse($T.notFound().build())",
-                    SERVER_RESPONSE, MediaType.class, REST_RESPONSE, SERVER_RESPONSE);
+            builder.addStatement("return $T.ok().contentType($T.APPLICATION_JSON).body($T.success(result.getOrNull()))",
+                    SERVER_RESPONSE, MediaType.class, REST_RESPONSE);
         }
     }
 

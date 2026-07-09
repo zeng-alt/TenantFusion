@@ -9,15 +9,17 @@ package com.github.zeng.alt.rest.apt.meta;
  */
 public enum MethodMeta {
 
-    LIST("list", "GET", "", false),
-    DETAIL("detail", "GET", "/{id}", false),
-    CREATE("create", "POST", "", true),
-    UPDATE("update", "PUT", "/{id}", true),
-    PATCH("patch", "PATCH", "/{id}", true),
-    DELETE("delete", "DELETE", "/{id}", false),
-    SORT("sort", "PUT", "/sort", true),
     SEARCH("search", "GET", "/search", false),
-    SEARCH_BODY("search", "POST", "/search", true);
+    SEARCH_BODY("search", "POST", "/search", true),
+    LIST("list", "GET", "", false),
+    DETAIL("detail", "GET", "/{id:\\d+}", false),
+    CREATE("create", "POST", "", true),
+    UPDATE("update", "PUT", "/{id:\\d+}", true),
+    PATCH("patch", "PATCH", "/{id:\\d+}", true),
+    DELETE("delete", "DELETE", "/{id:\\d+}", false),
+    SORT("sort", "PUT", "/sort", true),
+    ;
+
 
     private final String methodName;
     private final String httpMethod;
