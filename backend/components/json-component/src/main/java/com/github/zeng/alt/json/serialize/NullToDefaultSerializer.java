@@ -12,6 +12,11 @@ import com.github.zeng.alt.json.annotation.NullToDefault;
 
 import java.io.IOException;
 
+/**
+ * @author zengJiaJun
+ * @since 2026年07月11日
+ * @version 1.0
+ */
 @JacksonStdImpl
 public class NullToDefaultSerializer extends StdSerializer<String> implements ContextualSerializer {
 

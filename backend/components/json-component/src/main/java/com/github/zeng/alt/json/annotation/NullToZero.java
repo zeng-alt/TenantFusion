@@ -9,6 +9,11 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
+/**
+ * @author zengJiaJun
+ * @since 2026年07月11日
+ * @version 1.0
+ */
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.FIELD, ElementType.METHOD})
 @JacksonAnnotationsInside

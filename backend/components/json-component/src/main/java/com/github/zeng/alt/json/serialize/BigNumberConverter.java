@@ -7,6 +7,11 @@ import com.fasterxml.jackson.databind.ser.std.NumberSerializer;
 
 import java.io.IOException;
 
+/**
+ * @author zengJiaJun
+ * @since 2026年07月11日
+ * @version 1.0
+ */
 @JacksonStdImpl
 public class BigNumberConverter extends NumberSerializer {
 

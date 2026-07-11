@@ -10,6 +10,11 @@ import com.github.zeng.alt.json.spi.IEncryptService;
 
 import java.io.IOException;
 
+/**
+ * @author zengJiaJun
+ * @since 2026年07月11日
+ * @version 1.0
+ */
 @JacksonStdImpl
 public class EncryptSerializer extends StdSerializer<String> {
 

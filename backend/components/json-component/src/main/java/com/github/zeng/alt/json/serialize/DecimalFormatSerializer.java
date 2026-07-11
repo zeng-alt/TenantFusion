@@ -14,6 +14,11 @@ import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 
+/**
+ * @author zengJiaJun
+ * @since 2026年07月11日
+ * @version 1.0
+ */
 @JacksonStdImpl
 public class DecimalFormatSerializer extends StdSerializer<BigDecimal> implements ContextualSerializer {
 
