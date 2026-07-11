@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.zeng.alt.api.exception.UtilException;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.util.ObjectUtils;
 import org.springframework.util.StringUtils;
 
@@ -18,7 +19,7 @@ import java.util.Map;
  * @version 1.0
  * @crateTime 2024年07月05日 20:40
  */
-public record JacksonHelper(ObjectMapper objectMapper) {
+public record JacksonHelper(ObjectProvider<ObjectMapper> provider) {
 
 	
 	public String toJsonString(Object object) {
@@ -26,7 +27,7 @@ public record JacksonHelper(ObjectMapper objectMapper) {
 			return null;
 		}
 		try {
-			return objectMapper.writeValueAsString(object);
+			return provider.getObject().writeValueAsString(object);
 		}
 		catch (JsonProcessingException e) {
 			throw new UtilException(e);
@@ -38,7 +39,7 @@ public record JacksonHelper(ObjectMapper objectMapper) {
 		if (ObjectUtils.isEmpty(object)) {
 			return new HashMap<>();
 		}
-		return objectMapper.convertValue(object, new TypeReference<>() {});
+		return provider.getObject().convertValue(object, new TypeReference<>() {});
 	}
 
 	
@@ -47,7 +48,7 @@ public record JacksonHelper(ObjectMapper objectMapper) {
 			return null;
 		}
 		try {
-			return objectMapper.readValue(text, clazz);
+			return provider.getObject().readValue(text, clazz);
 		}
 		catch (Exception e) {
 			throw new UtilException(e);
@@ -60,7 +61,7 @@ public record JacksonHelper(ObjectMapper objectMapper) {
 			return null;
 		}
 		try {
-			return objectMapper.readValue(bytes, clazz);
+			return provider.getObject().readValue(bytes, clazz);
 		}
 		catch (Exception e) {
 			throw new UtilException(e);
@@ -73,8 +74,8 @@ public record JacksonHelper(ObjectMapper objectMapper) {
 			return new ArrayList<>();
 		}
 		try {
-			return objectMapper.readValue(text,
-					objectMapper.getTypeFactory().constructCollectionType(List.class, clazz));
+			return provider.getObject().readValue(text,
+					provider.getObject().getTypeFactory().constructCollectionType(List.class, clazz));
 		}
 		catch (IOException e) {
 			throw new UtilException(e);
@@ -82,7 +83,7 @@ public record JacksonHelper(ObjectMapper objectMapper) {
 	}
 
 	public ObjectMapper getObjectMapper() {
-		return objectMapper;
+		return provider.getObject();
 	}
 
 }

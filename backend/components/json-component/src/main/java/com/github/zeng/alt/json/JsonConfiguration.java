@@ -10,6 +10,11 @@ import com.fasterxml.jackson.datatype.jsr310.deser.LocalTimeDeserializer;
 import com.fasterxml.jackson.datatype.jsr310.ser.LocalDateSerializer;
 import com.fasterxml.jackson.datatype.jsr310.ser.LocalDateTimeSerializer;
 import com.fasterxml.jackson.datatype.jsr310.ser.LocalTimeSerializer;
+import com.github.zeng.alt.json.serialize.BigNumberConverter;
+import com.github.zeng.alt.json.spi.DictServiceHolder;
+import com.github.zeng.alt.json.spi.EncryptServiceHolder;
+import com.github.zeng.alt.json.spi.IDictTranslateService;
+import com.github.zeng.alt.json.spi.IEncryptService;
 import io.vavr.jackson.datatype.VavrModule;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.config.BeanDefinition;
@@ -17,7 +22,6 @@ import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.jackson.JacksonAutoConfiguration;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.DependsOn;
 import org.springframework.context.annotation.Role;
 
@@ -69,8 +73,22 @@ public class JsonConfiguration {
 	@Bean
 	@ConditionalOnMissingBean
 	@DependsOn({ "vavrModule", "javaTimeModule" })
-	public JacksonHelper jsonHelper(ObjectProvider<Module> moduleList) {
-		return new JacksonHelper(new ObjectMapper().registerModules(moduleList));
+	public JacksonHelper jsonHelper(ObjectProvider<ObjectMapper> provider) {
+		return new JacksonHelper(provider);
+	}
+
+	@Bean
+	@Role(BeanDefinition.ROLE_INFRASTRUCTURE)
+	public static DictServiceHolder dictServiceHolder(ObjectProvider<IDictTranslateService> provider) {
+		provider.ifAvailable(DictServiceHolder::setService);
+		return new DictServiceHolder();
+	}
+
+	@Bean
+	@Role(BeanDefinition.ROLE_INFRASTRUCTURE)
+	public static EncryptServiceHolder encryptServiceHolder(ObjectProvider<IEncryptService> provider) {
+		provider.ifAvailable(EncryptServiceHolder::setService);
+		return new EncryptServiceHolder();
 	}
 
 }

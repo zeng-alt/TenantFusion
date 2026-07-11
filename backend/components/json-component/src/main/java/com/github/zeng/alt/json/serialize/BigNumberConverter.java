@@ -1,4 +1,4 @@
-package com.github.zeng.alt.json;
+package com.github.zeng.alt.json.serialize;
 
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.SerializerProvider;
@@ -7,11 +7,6 @@ import com.fasterxml.jackson.databind.ser.std.NumberSerializer;
 
 import java.io.IOException;
 
-/**
- * @author zengJiaJun
- * @version 1.0
- * @crateTime 2024年07月05日 20:46
- */
 @JacksonStdImpl
 public class BigNumberConverter extends NumberSerializer {
 
