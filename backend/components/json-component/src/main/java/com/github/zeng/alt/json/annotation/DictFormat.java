@@ -15,6 +15,9 @@ import java.lang.annotation.Target;
 @JsonSerialize(using = DictFormatSerializer.class)
 public @interface DictFormat {
 
-    String dictType();
+    String dictType() default "";
 
+    Class<? extends Enum<?>> enumClass() default NoDictEnum.class;
+
+    enum NoDictEnum {}
 }
