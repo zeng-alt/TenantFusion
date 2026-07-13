@@ -1,0 +1,11 @@
+server:
+  port: 8081
+
+spring:
+  application:
+    name: workflow-application
+  profiles:
+    active: dev
+
+logging:
+  register-shutdown-hook: false
