@@ -448,6 +448,12 @@ public final class RouterGenerator {
                             opVar, PARAMETER, "id", "path", "主键 ID", SCHEMA);
                 }
 
+                // 批量删除 Query 参数
+                if (method == MethodMeta.DELETE) {
+                    body.addStatement("$L.addParametersItem(new $T().name($S).in($S).description($S).required(true).schema(new $T<>()))",
+                            opVar, PARAMETER, "ids", "query", "要删除的 ID 列表，逗号分隔，最多 100 个", SCHEMA);
+                }
+
                 body.addStatement("$L.$L($L)", pathItemVar, setter, opVar);
             }
 
@@ -500,7 +506,7 @@ public final class RouterGenerator {
             case CREATE -> "新增" + entityName;
             case UPDATE -> "全量更新" + entityName;
             case PATCH -> "部分更新" + entityName;
-            case DELETE -> "删除" + entityName;
+            case DELETE -> "批量删除" + entityName;
             case SORT -> "批量重排序" + entityName;
             case SEARCH -> "搜索" + entityName + "（GET）";
             case SEARCH_BODY -> "搜索" + entityName + "（POST）";
@@ -514,7 +520,7 @@ public final class RouterGenerator {
             case CREATE -> "创建新的" + entityName + "记录";
             case UPDATE -> "全量更新已有" + entityName + "，未传字段会被置为 null";
             case PATCH -> "部分更新已有" + entityName + "，仅更新非 null 字段";
-            case DELETE -> "根据 ID 删除" + entityName + "记录";
+            case DELETE -> "批量删除" + entityName + "，逗号分隔 ID，最多 100 个";
             case SORT -> "批量更新" + entityName + "的排序值，请求体为 BaseSortReq 数组";
             case SEARCH -> "使用 jpa-search-helper 搜索" + entityName + "，查询参数通过 URL query params 传递";
             case SEARCH_BODY -> "使用 jpa-search-helper 搜索" + entityName + "，查询条件通过请求体传递";

@@ -1118,17 +1118,32 @@ public final class HandlerGenerator {
 
     private static void buildDeleteMethod(RepositoryMeta meta, MethodSpec.Builder builder) {
         TypeName idType = meta.getIdType();
+        ClassName stringType = ClassName.get(String.class);
+        ClassName arraysType = ClassName.get(Arrays.class);
+        ClassName longType = ClassName.get(Long.class);
 
         builder.addAnnotation(
-                AnnotationSpec.builder(TRANSACTIONAL)
-                        .addMember(
-                                "rollbackFor",
-                                "$T.class",
-                                Exception.class)
-                        .build())
-                .addStatement("$T id = $T.valueOf(request.pathVariable($S))",
-                        idType, ClassName.get(Long.class), "id")
-                .addStatement("repository.deleteById(id)")
+                        AnnotationSpec.builder(TRANSACTIONAL)
+                                .addMember(
+                                        "rollbackFor",
+                                        "$T.class",
+                                        Exception.class)
+                                .build())
+                .addStatement("$T idsParam = request.param($S).orElse($S)", stringType, "ids", "")
+                .addStatement("$T<$T> idList = $T.stream(idsParam.split($S))\n.map($T::trim)\n.filter(s -> !s.isEmpty())\n.map($T::valueOf)\n.toList()",
+                        ClassName.get(List.class), idType,
+                        arraysType, ",",
+                        stringType,
+                        longType)
+                .beginControlFlow("if (idList.isEmpty())")
+                .addStatement("return $T.badRequest().body($T.fail($S))",
+                        SERVER_RESPONSE, REST_RESPONSE, "ids parameter is required")
+                .endControlFlow()
+                .beginControlFlow("if (idList.size() > 100)")
+                .addStatement("return $T.badRequest().body($T.fail($S))",
+                        SERVER_RESPONSE, REST_RESPONSE, "Maximum 100 IDs allowed")
+                .endControlFlow()
+                .addStatement("repository.deleteAllById(idList)")
                 .addStatement("return $T.ok().contentType($T.APPLICATION_JSON).body($T.success())",
                         SERVER_RESPONSE, MediaType.class, REST_RESPONSE);
     }
