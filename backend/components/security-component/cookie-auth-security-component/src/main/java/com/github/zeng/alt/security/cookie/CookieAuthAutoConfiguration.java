@@ -208,6 +208,23 @@ public class CookieAuthAutoConfiguration {
                         .post(operation);
 
                 openApi.path(cookieAuthProperties.getLogin().getLoginPath(), pathItem);
+
+                operation = new Operation()
+                        .summary("cookie用户登出")
+                        .description("登出当前用户，清除 Session 和 Cookie")
+                        .tags(java.util.List.of("logout"))
+                        .responses(new ApiResponses()
+                                .addApiResponse("200",
+                                        new ApiResponse()
+                                                .description("登出成功"))
+                                .addApiResponse("401",
+                                        new ApiResponse()
+                                                .description("未登录或 Session 已过期")));
+
+                pathItem = new PathItem()
+                        .post(operation);
+
+                openApi.path(cookieAuthProperties.getLogout().getLogoutPath(), pathItem);
             };
         }
 
