@@ -23,6 +23,9 @@ import java.util.Map;
  * <p>
  * 登录成功后生成 JWT token，将其存入缓存（供后续请求验证），
  * 并以 JSON 格式返回 {@code accessToken}、{@code tokenType}、{@code expiresIn}。
+ * <p>
+ * 当请求参数中 {@code rememberMe=true} 时，额外生成一个长效 refreshToken 返回，
+ * 供后续 accessToken 过期时无感续期使用。
  *
  * @author zengJiaJun
  * @version 1.0
@@ -35,6 +38,7 @@ public class JwtAuthenticationSuccessHandler implements AuthenticationSuccessHan
     private final StorageTemplate storageTemplate;
     private final ObjectMapper objectMapper;
     private final long expiration;
+    private final long rememberMeExpiration;
 
     @Override
     public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response,
@@ -57,11 +61,41 @@ public class JwtAuthenticationSuccessHandler implements AuthenticationSuccessHan
         tokenData.put("tokenType", "Bearer");
         tokenData.put("expiresIn", expiration);
 
+        // 记住我：额外生成 refreshToken
+        if (isRememberMe(request)) {
+            String refreshToken = jwtTokenProvider.createRefreshToken(securityUser, rememberMeExpiration);
+            String refreshCacheKey = jwtTokenProvider.getRefreshCacheKey(refreshToken);
+            if (refreshCacheKey != null) {
+                storageTemplate.opsForString().set(
+                        refreshCacheKey,
+                        securityUser.getUsername(),
+                        Duration.ofSeconds(rememberMeExpiration)
+                );
+            }
+            tokenData.put("refreshToken", refreshToken);
+            tokenData.put("refreshExpiresIn", rememberMeExpiration);
+        }
+
         RestResponse<Map<String, Object>> restResponse = RestResponse.success(tokenData);
 
         response.setStatus(HttpStatus.OK.value());
         response.setCharacterEncoding(StandardCharsets.UTF_8.name());
         response.setContentType(MediaType.APPLICATION_JSON_VALUE);
         objectMapper.writeValue(response.getWriter(), restResponse);
+    }
+
+    private static boolean isRememberMe(HttpServletRequest request) {
+        String rememberMe = request.getParameter("rememberMe");
+        if (rememberMe == null) {
+            Object attr = request.getAttribute("rememberMe");
+            if (attr instanceof Boolean) {
+                return (Boolean) attr;
+            }
+            if (attr instanceof String) {
+                return "true".equals(attr);
+            }
+            return false;
+        }
+        return "true".equals(rememberMe) || "on".equals(rememberMe);
     }
 }

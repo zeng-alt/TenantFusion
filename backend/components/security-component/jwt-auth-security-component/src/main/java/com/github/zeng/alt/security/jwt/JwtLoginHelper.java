@@ -27,6 +27,7 @@ public class JwtLoginHelper implements LoginHelper {
     private final JwtTokenProvider jwtTokenProvider;
     private final StorageTemplate storageTemplate;
     private final long expiration;
+    private final long rememberMeExpiration;
 
     @Override
     public String name() {
@@ -35,6 +36,10 @@ public class JwtLoginHelper implements LoginHelper {
 
     @Override
     public LoginResponse login(String username, String password) {
+        return login(username, password, false);
+    }
+
+    public LoginResponse login(String username, String password, boolean rememberMe) {
         UsernamePasswordAuthenticationToken authRequest =
                 UsernamePasswordAuthenticationToken.unauthenticated(username, password);
         Authentication authenticated = authenticationManager.authenticate(authRequest);
@@ -46,10 +51,26 @@ public class JwtLoginHelper implements LoginHelper {
             storageTemplate.opsForString().set(cacheKey, user.getUsername(), Duration.ofSeconds(expiration));
         }
 
-        return LoginResponse.success(user)
+        LoginResponse response = LoginResponse.success(user)
                 .attribute("accessToken", jwt)
                 .attribute("tokenType", "Bearer")
                 .attribute("expiresIn", expiration);
+
+        if (rememberMe) {
+            String refreshToken = jwtTokenProvider.createRefreshToken(user, rememberMeExpiration);
+            String refreshCacheKey = jwtTokenProvider.getRefreshCacheKey(refreshToken);
+            if (refreshCacheKey != null) {
+                storageTemplate.opsForString().set(
+                        refreshCacheKey,
+                        user.getUsername(),
+                        Duration.ofSeconds(rememberMeExpiration)
+                );
+            }
+            response.attribute("refreshToken", refreshToken);
+            response.attribute("refreshExpiresIn", rememberMeExpiration);
+        }
+
+        return response;
     }
 
     @Override
@@ -62,6 +83,20 @@ public class JwtLoginHelper implements LoginHelper {
         String cacheKey = jwtTokenProvider.getCacheKey(token);
         if (cacheKey != null) {
             storageTemplate.delete(cacheKey);
+        }
+        // 同时清理该用户的 refreshToken 缓存
+        cleanRefreshTokens(token);
+    }
+
+    private void cleanRefreshTokens(String accessToken) {
+        try {
+            String tokenId = jwtTokenProvider.getTokenId(accessToken);
+            if (tokenId != null) {
+                String userId = tokenId.contains(":") ? tokenId.substring(0, tokenId.indexOf(':')) : tokenId;
+                storageTemplate.opsForString().deleteByPattern(JwtTokenProvider.REFRESH_CACHE_KEY_PREFIX + userId + ":*");
+            }
+        } catch (Exception ignored) {
+            // 若 token 已过期无法解析，直接跳过
         }
     }
 

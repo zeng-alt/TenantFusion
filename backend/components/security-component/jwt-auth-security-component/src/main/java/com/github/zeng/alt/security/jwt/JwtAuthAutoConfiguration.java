@@ -77,7 +77,8 @@ public class JwtAuthAutoConfiguration {
 
         ObjectMapper objectMapper = objectMapperProvider.getIfAvailable(ObjectMapper::new);
         return new JwtAuthenticationSuccessHandler(
-                jwtTokenProvider, storageTemplate, objectMapper, jwtProperties.getExpiration());
+                jwtTokenProvider, storageTemplate, objectMapper,
+                jwtProperties.getExpiration(), jwtProperties.getRememberMeExpiration());
     }
 
     @Bean
@@ -112,7 +113,8 @@ public class JwtAuthAutoConfiguration {
             JwtProperties jwtProperties) {
 
         return new JwtLoginHelper(
-                authenticationManager, jwtTokenProvider, storageTemplate, jwtProperties.getExpiration());
+                authenticationManager, jwtTokenProvider, storageTemplate,
+                jwtProperties.getExpiration(), jwtProperties.getRememberMeExpiration());
     }
 
     @Bean
@@ -120,12 +122,15 @@ public class JwtAuthAutoConfiguration {
     public SecurityBuilderCustomizer authCookieSecurityCustomizer(JwtTokenProvider jwtTokenProvider, ObjectProvider<StorageTemplate> storageTemplateProvider, JwtProperties jwtProperties) {
         return http -> {
             StorageTemplate storageTemplate = storageTemplateProvider.getIfAvailable();
-            // ===== JWT 认证过滤器（校验 Bearer token）=====
+            // ===== JWT 认证过滤器（校验 Bearer token + 记住我无感续期）=====
             JwtAuthenticationFilter authFilter = new JwtAuthenticationFilter(
                     jwtTokenProvider,
                     storageTemplate,
                     "Authorization",
-                    jwtProperties.getLogin()
+                    jwtProperties.getLogin(),
+                    jwtProperties.getRefreshTokenHeader(),
+                    jwtProperties.getNewAccessTokenHeader(),
+                    jwtProperties.getRememberMeExpiration()
             );
 
             http.addFilterBefore(authFilter, UsernamePasswordAuthenticationFilter.class);
@@ -227,9 +232,30 @@ public class JwtAuthAutoConfiguration {
                 PathItem pathItem = new PathItem()
                         .post(operation);
 
+
+
                 openApi.path(jwtProperties.getLogin().getLoginPath(), pathItem);
+
+                operation = new Operation()
+                        .summary("jwt用户登出")
+                        .description("登出当前用户，清除 JWT 缓存")
+                        .tags(java.util.List.of("login"))
+                        .responses(new ApiResponses()
+                                .addApiResponse("200",
+                                        new ApiResponse()
+                                                .description("登出成功"))
+                                .addApiResponse("401",
+                                        new ApiResponse()
+                                                .description("未登录或 Token 已过期")));
+
+                pathItem = new PathItem()
+                        .post(operation);
+
+                openApi.path(jwtProperties.getLogout().getLogoutPath(), pathItem);
             };
         }
+
+
 
     }
 

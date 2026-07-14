@@ -43,4 +43,13 @@ public class JwtProperties {
     /** Token 类型 */
     private String tokenType = "Bearer";
 
+    /** 记住我功能：Refresh Token 过期时间（秒），默认 7 天 */
+    private Long rememberMeExpiration = 60 * 60 * 24 * 7L;
+
+    /** 前端携带 refresh token 的请求头名称 */
+    private String refreshTokenHeader = "X-Refresh-Token";
+
+    /** 下发新 access token 的响应头名称 */
+    private String newAccessTokenHeader = "X-New-Access-Token";
+
 }

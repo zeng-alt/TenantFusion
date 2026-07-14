@@ -17,6 +17,9 @@ import java.util.Map;
  * <p>
  * 认证成功后的处理委托给 {@link org.springframework.security.web.authentication.AuthenticationSuccessHandler}，
  * 由 {@link JwtAuthenticationSuccessHandler} 生成并返回 JWT token。
+ * <p>
+ * 支持从请求中提取 {@code rememberMe} 参数并存入 request attribute，
+ * 供 {@link JwtAuthenticationSuccessHandler} 判断是否发放 refreshToken。
  *
  * @author zengJiaJun
  * @version 1.0
@@ -37,10 +40,15 @@ public class JwtLoginFilter extends UsernamePasswordAuthenticationFilter {
                 && request.getContentType().toLowerCase().contains(MediaType.APPLICATION_JSON_VALUE)) {
             try {
                 @SuppressWarnings("unchecked")
-                Map<String, String> credentials = objectMapper.readValue(
+                Map<String, Object> credentials = objectMapper.readValue(
                         request.getInputStream(), Map.class);
-                String username = credentials.getOrDefault(getUsernameParameter(), "");
-                String password = credentials.getOrDefault(getPasswordParameter(), "");
+                String username = String.valueOf(credentials.getOrDefault(getUsernameParameter(), ""));
+                String password = String.valueOf(credentials.getOrDefault(getPasswordParameter(), ""));
+                // 提取 rememberMe 参数
+                Object rememberMe = credentials.get("rememberMe");
+                if (rememberMe != null) {
+                    request.setAttribute("rememberMe", "true".equals(String.valueOf(rememberMe)) || Boolean.TRUE.equals(rememberMe));
+                }
                 UsernamePasswordAuthenticationToken authRequest =
                         UsernamePasswordAuthenticationToken.unauthenticated(username, password);
                 setDetails(request, authRequest);
@@ -49,7 +57,11 @@ public class JwtLoginFilter extends UsernamePasswordAuthenticationFilter {
                 throw new AuthenticationServiceException("Failed to parse login request body", e);
             }
         }
-        // 兼容表单参数方式
+        // 兼容表单参数方式：提取 rememberMe
+        String rememberMe = request.getParameter("rememberMe");
+        if (rememberMe != null) {
+            request.setAttribute("rememberMe", "true".equals(rememberMe) || "on".equals(rememberMe));
+        }
         return super.attemptAuthentication(request, response);
     }
 }
