@@ -14,4 +14,6 @@ dependencies {
     api("org.springframework.boot:spring-boot-starter-security")
     api(project(":backend:components:security-component:api-security-component"))
     api(project(":backend:components:json-component"))
+
+    annotationProcessor("org.springframework.boot:spring-boot-configuration-processor")
 }

@@ -8,6 +8,7 @@ import com.github.zeng.alt.domain.key.SnowflakeId;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
+import org.hibernate.annotations.SQLRestriction;
 import org.jspecify.annotations.Nullable;
 
 import java.util.HashSet;
@@ -17,6 +18,7 @@ import java.util.Set;
 @Table(name = "main_user")
 @Getter
 @Setter
+@SQLRestriction("is_deleted=false")
 public class User extends BaseEntity<Long> {
 
     @Id @SnowflakeId

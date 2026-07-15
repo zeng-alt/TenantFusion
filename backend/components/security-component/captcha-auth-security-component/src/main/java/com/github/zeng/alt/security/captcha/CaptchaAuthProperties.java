@@ -16,5 +16,7 @@ public class CaptchaAuthProperties {
 
     private String codeParameter = "captchaCode";
 
+    private String cookieName = "captcha_key";
+
     private Boolean validation = false;
 }

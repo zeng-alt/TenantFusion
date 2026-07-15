@@ -9,7 +9,7 @@
 import { request } from '@/utils'
 
 export default {
-  toggleRole: data => request.post('/auth/role/toggle', data),
-  login: data => request.post('/auth/login', data, { needToken: false }),
+  captcha: () => request.get('/auth/captcha', { needToken: false }),
+  login: (data, config) => request.post('/login/jwt', data, { needToken: false, ...config }),
   getUser: () => request.get('/user/detail'),
 }

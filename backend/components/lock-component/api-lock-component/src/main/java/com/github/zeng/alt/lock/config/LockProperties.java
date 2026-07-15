@@ -15,7 +15,7 @@ import org.springframework.context.annotation.Role;
  * @version 1.0
  */
 @Role(BeanDefinition.ROLE_INFRASTRUCTURE)
-@ConfigurationProperties(prefix = "alt.lock")
+@ConfigurationProperties(prefix = "sys.lock")
 public class LockProperties {
 
     /**

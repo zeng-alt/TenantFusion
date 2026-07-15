@@ -9,5 +9,5 @@ public interface BaseEnum {
 
     public Integer getCode();
 
-    public String getMessage();
+    public String getLabel();
 }

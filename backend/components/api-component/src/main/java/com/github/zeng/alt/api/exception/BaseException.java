@@ -11,7 +11,7 @@ import lombok.Getter;
 public class BaseException extends RuntimeException {
 
     private String title;
-    private Integer code = 500;
+    private Integer code = 600;
 
     public BaseException() {}
 

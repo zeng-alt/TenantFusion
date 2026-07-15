@@ -31,7 +31,7 @@ function handleAuthExpired(content, needTip) {
   return false
 }
 
-export function resolveResError(code, message, needTip = true) {
+export function resolveResError(code, message, needTip = true, detail = '') {
   switch (code) {
     case 401:
       return handleAuthExpired('登录已过期，是否重新登录？', needTip)
@@ -51,6 +51,22 @@ export function resolveResError(code, message, needTip = true) {
       message = message ?? `【${code}】: 未知异常!`
       break
   }
-  needTip && window.$message?.error(message)
+
+  if (needTip) {
+    if (code !== 500) {
+      window.$notification?.error(
+        {
+          title: message,
+          content: detail,
+          meta: message,
+          duration: 2500,
+          keepAliveOnHover: true,
+        },
+      )
+    }
+    else {
+      window.$message?.error(message)
+    }
+  }
   return message
 }

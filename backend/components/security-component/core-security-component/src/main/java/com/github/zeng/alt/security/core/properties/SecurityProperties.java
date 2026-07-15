@@ -15,4 +15,14 @@ import org.springframework.stereotype.Component;
 public class SecurityProperties {
     private Boolean enabledAccess = true;
     private String abacPrefix = "/";
+
+    private AdminRole admin = new AdminRole();
+
+    @Data
+    public static class AdminRole {
+        private String id = "1001";
+        private String code = "superAdmin";
+        private String name = "超级管理员";
+        private Boolean enabled = true;
+    }
 }

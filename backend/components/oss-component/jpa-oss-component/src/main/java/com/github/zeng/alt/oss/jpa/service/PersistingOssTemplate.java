@@ -10,7 +10,7 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.HexFormat;
 import java.util.List;
-import java.util.function.Supplier;
+
 
 /**
  * 持久化增强的 {@link OssTemplate} 装饰器。
@@ -36,7 +36,7 @@ public class PersistingOssTemplate implements OssTemplate {
 
     private final OssTemplate delegate;
     private final OssFileRecordService recordService;
-    private final Supplier<String> userIdProvider;
+    private final UserIdProvider userIdProvider;
     private final BucketStrategy bucketStrategy;
     private final ThumbnailService thumbnailService;
     private final ThumbnailProperties thumbnailProperties;
@@ -52,7 +52,7 @@ public class PersistingOssTemplate implements OssTemplate {
      * @param thumbnailProperties 缩略图配置
      */
     public PersistingOssTemplate(OssTemplate delegate, OssFileRecordService recordService,
-                                  Supplier<String> userIdProvider,
+                                  UserIdProvider userIdProvider,
                                   BucketStrategy bucketStrategy,
                                   ThumbnailService thumbnailService,
                                   ThumbnailProperties thumbnailProperties) {
@@ -110,7 +110,7 @@ public class PersistingOssTemplate implements OssTemplate {
      */
     private OssFileInfo uploadWithEnhancements(byte[] data, String fileName, String contentType) {
         String md5 = computeMd5(data);
-        String userId = userIdProvider.get();
+        String userId = userIdProvider.getUserId();
 
         // 去重检查
         if (userId != null) {

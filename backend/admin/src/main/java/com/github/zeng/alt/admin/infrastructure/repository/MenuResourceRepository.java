@@ -9,8 +9,9 @@ import java.util.List;
 @CrudRest(path = "/menu", sort = true)
 public interface MenuResourceRepository extends BaseRepository<MenuResource, Long> {
 
-    // 根节点菜单（过滤已由全局处理：tenant, enabled, show 可能需要在应用层判断）
-    List<MenuResource> findByParentIsNullOrderByOrderAsc();
+    List<MenuResource> findByParentIsNull();
 
-    List<MenuResource> findByParentIdOrderByOrderAsc(Long parentId);
+    Boolean existsByPath(String path);
+
+
 }

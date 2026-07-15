@@ -64,6 +64,7 @@ public class UserDetailsServiceImpl implements UserDetailsService {
                     Tenant tenant = provider != null ? provider.findById(user.getTenantBy()).orElse(new Tenant()) : new Tenant();
                     return SecurityUser
                             .withUsername(user.getUsername())
+                            .id(user.getId())
                             .password(user.getPassword())
                             .tenant(user.getTenantBy())
                             .database(tenant.getDb())

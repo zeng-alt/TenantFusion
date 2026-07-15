@@ -48,7 +48,7 @@ dependencies {
 
     implementation("org.springframework.boot:spring-boot-starter-actuator")
     //    if (activeProfile != "prod") {
-//        implementation("org.liquibase:liquibase-core")
+        implementation("org.liquibase:liquibase-core")
 //    }
     runtimeOnly(libs.postgresql)
     runtimeOnly(libs.h2)
@@ -59,9 +59,12 @@ dependencies {
     implementation(project(":backend:components:storage-component:spring-cache-storage-component"))
     implementation(project(":backend:components:lock-component:database-lock-component"))
     implementation(project(":backend:components:security-component:jwt-auth-security-component"))
+    implementation(project(":backend:components:security-component:captcha-auth-security-component"))
     implementation(project(":backend:components:doc-component"))
     implementation(project(":backend:components:log-component:jpa-log-component"))
     implementation(project(":backend:components:oss-component:jpa-oss-component"))
+    implementation(project(":backend:components:config-component:server-config-component"))
+    implementation(project(":backend:components:config-component:client-config-component"))
     implementation("org.springframework.boot:spring-boot-starter-web")
     implementation("org.springframework.boot:spring-boot-starter-data-jpa")
     implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui")
@@ -70,7 +73,7 @@ dependencies {
 //    implementation(libs.spring.boot.starter.cache)
 //    implementation(libs.spring.boot.starter.data.redis)
 
-//    implementation(libs.mapstruct)
+    implementation(libs.mapstruct)
 
     compileOnly(libs.lombok)
     developmentOnly(libs.spring.boot.docker.compose)
@@ -86,7 +89,7 @@ dependencies {
             classifier = "jakarta"
         }
     }
-//    annotationProcessor(libs.mapstruct.processor)
+    annotationProcessor(libs.mapstruct.processor)
     // 解决 Lombok 与 MapStruct 注解处理顺序问题
-//    annotationProcessor(libs.lombok.mapstruct.binding)
+    annotationProcessor(libs.lombok.mapstruct.binding)
 }

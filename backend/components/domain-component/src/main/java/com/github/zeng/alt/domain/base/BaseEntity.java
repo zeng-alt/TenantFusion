@@ -26,7 +26,7 @@ import java.util.Optional;
 /**
  * @author zengJiaJun
  * @version 1.0
- * @crateTime 2024年10月30日 20:05
+ * @since 2024年10月30日 20:05
  */
 @Getter
 @MappedSuperclass

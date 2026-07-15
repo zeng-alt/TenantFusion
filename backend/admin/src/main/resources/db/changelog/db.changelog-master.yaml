@@ -1,29 +1,11 @@
 databaseChangeLog:
-  - include:
-      file: i18n/2026-05-29-init-i18n-message.sql
-      relativeToChangelogFile: true
 
 
-  - include:
-      file: lock/2026-06-04-init-distributed-lock.sql
-      relativeToChangelogFile: true
-
-
-  - include:
-      file: oss/2026-07-02-init-oss-file.sql
-      relativeToChangelogFile: true
-
-
-  - include:
-      file: oss/2026-07-02-add-thumbnail-strategy.sql
-      relativeToChangelogFile: true
-
-
-  - includeAll:
-      path: pg/
-      relativeToChangelogFile: true
+#  - includeAll:
+#      path: pg/
+#      relativeToChangelogFile: true
 
   # 后面更改为读取 /h2 目录下的 sql 时，可以注释上面的 pg 配置，并放开下面的 h2 配置
-  # - includeAll:
-  #     path: h2/
-  #     relativeToChangelogFile: true
+   - includeAll:
+       path: h2/
+       relativeToChangelogFile: true

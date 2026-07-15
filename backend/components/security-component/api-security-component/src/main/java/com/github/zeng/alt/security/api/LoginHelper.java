@@ -28,6 +28,21 @@ public interface LoginHelper {
     LoginResponse login(String username, String password);
 
     /**
+     * 用户登录（支持记住我）.
+     * <p>
+     * 默认实现直接委托给 {@link #login(String, String)}，
+     * 实现类可覆盖此方法以支持 rememberMe 逻辑。
+     *
+     * @param username   用户名
+     * @param password   密码
+     * @param rememberMe 是否启用记住我（发放 refreshToken）
+     * @return 登录结果
+     */
+    default LoginResponse login(String username, String password, boolean rememberMe) {
+        return login(username, password);
+    }
+
+    /**
      * 登出当前请求对应的用户.
      *
      * @param request HttpServletRequest，用于提取凭证

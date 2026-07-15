@@ -53,12 +53,12 @@ public class NoOpStorageTemplate implements StorageTemplate {
 
     @Override
     public Boolean delete(String key) {
-        return false;
+        return STRING_OPS.delete(key);
     }
 
     @Override
     public Boolean hasKey(String key) {
-        return false;
+        return STRING_OPS.hasKey(key);
     }
 
     @Override

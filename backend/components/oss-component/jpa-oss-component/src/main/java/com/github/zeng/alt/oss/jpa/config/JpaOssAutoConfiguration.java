@@ -18,7 +18,7 @@ import org.springframework.boot.autoconfigure.orm.jpa.HibernateJpaAutoConfigurat
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Primary;
 
-import java.util.function.Supplier;
+
 
 /**
  * OSS JPA 模块自动配置。
@@ -60,7 +60,7 @@ public class JpaOssAutoConfiguration {
      */
     @Bean
     @ConditionalOnMissingBean
-    public Supplier<String> ossUserIdProvider() {
+    public UserIdProvider ossUserIdProvider() {
         try {
             Class<?> holderClass = Class.forName("com.github.zeng.alt.security.api.UserContextHolder");
             var method = holderClass.getMethod("getUsername");
@@ -93,7 +93,7 @@ public class JpaOssAutoConfiguration {
     public OssTemplate persistingOssTemplate(
             OssTemplate delegate,
             OssFileRecordService recordService,
-            Supplier<String> userIdProvider,
+            UserIdProvider userIdProvider,
             ObjectProvider<BucketStrategy> bucketStrategyProvider,
             ObjectProvider<ThumbnailService> thumbnailServiceProvider,
             ThumbnailProperties thumbnailProperties) {

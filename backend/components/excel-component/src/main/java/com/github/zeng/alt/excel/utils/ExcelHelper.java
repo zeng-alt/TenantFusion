@@ -1,20 +1,18 @@
 package com.github.zeng.alt.excel.utils;
 
 
-import cn.idev.excel.ExcelWriter;
-import cn.idev.excel.FastExcelFactory;
-import cn.idev.excel.write.metadata.WriteSheet;
-import cn.idev.excel.write.style.column.LongestMatchColumnWidthStyleStrategy;
-import com.zjj.excel.component.builder.ExcelTemplate;
-import com.zjj.excel.component.domain.DefaultExcelListenerSuccess;
-import com.zjj.excel.component.domain.ExcelSuccessListener;
-import com.zjj.excel.component.dynamic.DynamicEntity;
-import com.zjj.excel.component.dynamic.InterfaceDynamicColumn;
-import com.zjj.excel.component.handler.I18nHeadWriteHandler;
-import com.zjj.excel.component.listener.DefaultDynamicReadListener;
+
+import com.github.zeng.alt.excel.builder.ExcelTemplate;
+import com.github.zeng.alt.excel.domain.DefaultExcelListenerSuccess;
+import com.github.zeng.alt.excel.dynamic.DynamicEntity;
+import com.github.zeng.alt.excel.dynamic.InterfaceDynamicColumn;
+import com.github.zeng.alt.excel.handler.I18nHeadWriteHandler;
+import com.github.zeng.alt.excel.listener.DefaultDynamicReadListener;
 import jakarta.servlet.ServletOutputStream;
 import jakarta.servlet.http.HttpServletResponse;
 import org.apache.commons.lang3.RandomStringUtils;
+import org.apache.fesod.sheet.ExcelWriter;
+import org.apache.fesod.sheet.write.style.column.LongestMatchColumnWidthStyleStrategy;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.config.BeanFactoryPostProcessor;
 import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;

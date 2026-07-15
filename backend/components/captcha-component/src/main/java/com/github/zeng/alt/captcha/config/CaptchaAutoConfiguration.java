@@ -22,19 +22,16 @@ import java.util.List;
 public class CaptchaAutoConfiguration {
 
     @Bean
-    @ConditionalOnMissingBean
     public CaptchaProducer randomCodeProducer(CaptchaProperties properties) {
         return new RandomCodeProducer(properties.getCode().getLength());
     }
 
     @Bean
-    @ConditionalOnMissingBean
     public CaptchaProducer arithmeticCaptchaProducer() {
         return new ArithmeticCaptchaProducer();
     }
 
     @Bean
-    @ConditionalOnMissingBean
     public CaptchaProducer imageCaptchaProducer(CaptchaProperties properties) {
         return new ImageCaptchaProducer(
                 properties.getImage().getWidth(),

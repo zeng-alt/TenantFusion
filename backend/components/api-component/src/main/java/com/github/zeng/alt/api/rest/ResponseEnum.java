@@ -16,11 +16,11 @@ public enum ResponseEnum implements BaseEnum {
     WARN(601, "warn");
 
     private final Integer code;
-    private final String message;
+    private final String label;
 
-    ResponseEnum(Integer code, String message) {
+    ResponseEnum(Integer code, String label) {
         this.code = code;
-        this.message = message;
+        this.label = label;
     }
 
 }

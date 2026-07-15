@@ -23,7 +23,7 @@ spring:
 
   jpa:
     hibernate:
-      ddl-auto: update # 因为使用了 Liquibase，所以将其设为 validate（或 none）以防止 Hibernate 自动修改表结构
+      ddl-auto: none # 因为使用了 Liquibase，所以将其设为 validate（或 none）以防止 Hibernate 自动修改表结构
     show-sql: true
     properties:
       hibernate:
@@ -42,6 +42,9 @@ spring:
       enabled: true
       path: /h2-console
 
+  liquibase:
+    enabled: true
+
 # 国际化-数据库模式配置（取消注释以启用数据库模式）
 # alt:
 #   i18n:
@@ -52,16 +55,25 @@ security:
   jwt-auth:
     base64-secret: "aGRzaGRnYWhkampydXV1dWtkZGRkamZzc2ZqamlrZHNzZGdkZ2RzamdrLGIvY24yNTQ0Ly4tPT1bXTIzOTQ0NzUwLWpmZHNzZ2htdGtqanR0dGV0NGJhZGFocG9laW9uYmlqcGRpYW9oamo0MzA4MDUzMGhnanl5aW9wc29vcGRvZmZqbm1rbW1tbWdoMFtbWzQ4M3FodTMyMm9yNjY0NDY0OHd3YWhzandiYWRoYWhkYWFhYWZlcmhhd2VlYzNmZGpzZGRzaA=="
     authentication: true
+    validation: true
+    login:
+      loginPath: "/v1/login/jwt"
+    logout:
+      logoutPath: "/v1/logout/jwt"
   username-login:
     enabled: true
+  captcha-auth:
+    validation: true
+
   filter:
     ignore-url:
+      - "/v1/auth/**"
       - "/v3/api-docs/**"
       - "/swagger-ui/**"
       - "/swagger-ui.html"
       - "/webjars/**"
   context:
-    enabled-access: false
+    enabled-access: true
 
 
 springdoc:
@@ -106,11 +118,11 @@ springdoc:
         scheme: bearer
         bearer-format: JWT
         description: JWT Bearer Token
-      session:
-        type: apiKey
-        in: cookie
-        name: JSESSIONID
-        description: Session Cookie
+#      session:
+#        type: apiKey
+#        in: cookie
+#        name: JSESSIONID
+#        description: Session Cookie
 
 oss:
   s3:

@@ -1,7 +1,7 @@
 -- liquibase formatted sql
 
 -- changeset zengJiaJun:1
-CREATE TABLE alt_i18n_message (
+CREATE TABLE sys_i18n_message (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     code VARCHAR(255) NOT NULL,
     locale VARCHAR(20) NOT NULL,
@@ -14,10 +14,10 @@ CREATE TABLE alt_i18n_message (
 );
 
 -- changeset zengJiaJun:2
-CREATE UNIQUE INDEX uk_i18n_message_code_locale ON alt_i18n_message(code, locale);
+CREATE UNIQUE INDEX uk_i18n_message_code_locale ON sys_i18n_message(code, locale);
 
 -- changeset zengJiaJun:3
-CREATE INDEX idx_i18n_message_code ON alt_i18n_message(code);
+CREATE INDEX idx_i18n_message_code ON sys_i18n_message(code);
 
 -- changeset zengJiaJun:4
-CREATE INDEX idx_i18n_message_locale ON alt_i18n_message(locale);
+CREATE INDEX idx_i18n_message_locale ON sys_i18n_message(locale);

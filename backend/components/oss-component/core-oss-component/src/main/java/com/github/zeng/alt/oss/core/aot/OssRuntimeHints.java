@@ -6,7 +6,6 @@ import com.github.zeng.alt.oss.core.local.FileSystemOssTemplate;
 import com.github.zeng.alt.oss.core.s3.S3MultipartUploadService;
 import com.github.zeng.alt.oss.core.s3.S3OssTemplate;
 import com.github.zeng.alt.oss.core.upload.UploadController;
-import org.springframework.aot.hint.ExecutableMode;
 import org.springframework.aot.hint.MemberCategory;
 import org.springframework.aot.hint.RuntimeHints;
 import org.springframework.aot.hint.RuntimeHintsRegistrar;

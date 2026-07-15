@@ -2,16 +2,12 @@ package com.github.zeng.alt.security.captcha;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.zeng.alt.captcha.core.CaptchaTemplate;
-import com.github.zeng.alt.log.BusinessStatus;
-import com.github.zeng.alt.log.BusinessType;
-import com.github.zeng.alt.log.Log;
-import com.github.zeng.alt.log.OperLogEvent;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
+import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ProblemDetail;
@@ -21,10 +17,6 @@ import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
 import java.net.URI;
-import java.nio.charset.StandardCharsets;
-import java.time.LocalDateTime;
-import java.util.LinkedHashMap;
-import java.util.Map;
 
 @RequiredArgsConstructor
 public class CaptchaAuthenticationFilter extends OncePerRequestFilter {
@@ -53,7 +45,7 @@ public class CaptchaAuthenticationFilter extends OncePerRequestFilter {
             return;
         }
 
-        String captchaKey = request.getParameter(properties.getKeyParameter());
+        String captchaKey = readCaptchaKeyFromCookie(request);
         String captchaCode = request.getParameter(properties.getCodeParameter());
 
         boolean verified = captchaTemplate.verify(captchaKey, captchaCode);
@@ -63,12 +55,25 @@ public class CaptchaAuthenticationFilter extends OncePerRequestFilter {
             response.setCharacterEncoding("UTF-8");
             response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
             ProblemDetail problemDetail = ProblemDetail.forStatus(HttpStatus.BAD_REQUEST);
-            problemDetail.setTitle("用户未登录或者jwt无效/过期");
+            problemDetail.setTitle("验证码错误");
             problemDetail.setInstance(URI.create(request.getRequestURI()));
             objectMapper.writeValue(response.getWriter(), problemDetail);
             return;
         }
 
         filterChain.doFilter(request, response);
+    }
+
+    private String readCaptchaKeyFromCookie(HttpServletRequest request) {
+        Cookie[] cookies = request.getCookies();
+        if (cookies != null) {
+            String cookieName = properties.getCookieName();
+            for (Cookie cookie : cookies) {
+                if (cookieName.equals(cookie.getName())) {
+                    return cookie.getValue();
+                }
+            }
+        }
+        return null;
     }
 }

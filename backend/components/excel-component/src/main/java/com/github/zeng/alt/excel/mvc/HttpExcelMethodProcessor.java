@@ -1,8 +1,8 @@
 package com.github.zeng.alt.excel.mvc;
 
-import com.zjj.excel.component.annotation.ExcelImport;
-import com.zjj.excel.component.utils.ExcelHelper;
-import com.zjj.excel.component.utils.RxjavaExcelHelper;
+import com.github.zeng.alt.excel.annotation.ExcelImport;
+import com.github.zeng.alt.excel.utils.ExcelHelper;
+import com.github.zeng.alt.excel.utils.RxjavaExcelHelper;
 import io.reactivex.rxjava3.core.Flowable;
 import jakarta.servlet.http.HttpServletRequest;
 import org.apache.commons.lang3.stream.Streams;

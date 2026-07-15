@@ -14,7 +14,7 @@ import java.util.function.Consumer;
  * @author zengJiaJun
  * @version 2.0
  */
-public class BeanHelper {
+public class BeanHelper extends BeanUtils {
 
     private BeanHelper() {}
 
@@ -73,13 +73,13 @@ public class BeanHelper {
 
     // ========== copyToList ==========
 
-    public static <S, T> List<T> copyToList(List<S> source, Class<T> targetClz) {
+    public static <S, T> List<T> copyToList(Iterable<S> source, Class<T> targetClz) {
         return copyToList(source, targetClz, (Class<?>) null);
     }
 
-    public static <S, T> List<T> copyToList(List<S> source, Class<T> targetClz, Class<?> editable) {
+    public static <S, T> List<T> copyToList(Iterable<S> source, Class<T> targetClz, Class<?> editable) {
         if (source == null) return List.of();
-        List<T> result = new ArrayList<>(source.size());
+        List<T> result = new ArrayList<>();
         for (S s : source) {
             T t = BeanUtils.instantiateClass(targetClz);
             BeanUtils.copyProperties(s, t, editable);
@@ -89,9 +89,9 @@ public class BeanHelper {
     }
 
 
-    public static <S, T> List<T> copyToList(List<S> source, Class<T> targetClz, String... ignoreProperties) {
+    public static <S, T> List<T> copyToList(Iterable<S> source, Class<T> targetClz, String... ignoreProperties) {
         if (source == null) return List.of();
-        List<T> result = new ArrayList<>(source.size());
+        List<T> result = new ArrayList<>();
         for (S s : source) {
             T t = BeanUtils.instantiateClass(targetClz);
             BeanUtils.copyProperties(s, t, ignoreProperties);

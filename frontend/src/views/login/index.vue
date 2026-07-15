@@ -49,7 +49,7 @@
           <n-input
             v-model:value="loginInfo.captcha"
             class="h-40 items-center"
-            palceholder="请输入验证码"
+            placeholder="请输入验证码"
             :maxlength="4"
             @keydown.enter="handleLogin()"
           >
@@ -58,8 +58,8 @@
             </template>
           </n-input>
           <img
-            v-if="captchaUrl"
-            :src="captchaUrl"
+            v-if="captchaData"
+            :src="captchaData.imageBase64"
             alt="验证码"
             height="40"
             class="ml-12 w-80 cursor-pointer"
@@ -69,23 +69,13 @@
 
         <n-checkbox
           class="mt-20"
-          :checked="isRemember"
+          v-model:checked="isRemember"
           label="记住我"
-          :on-update:checked="(val) => (isRemember = val)"
         />
 
-        <div class="mt-20 flex items-center">
+        <div class="mt-20">
           <n-button
-            class="h-40 flex-1 rounded-5 text-16"
-            type="primary"
-            ghost
-            @click="quickLogin()"
-          >
-            一键体验
-          </n-button>
-
-          <n-button
-            class="ml-32 h-40 flex-1 rounded-5 text-16"
+            class="h-40 w-full rounded-5 text-16"
             type="primary"
             :loading="loading"
             @click="handleLogin()"
@@ -114,11 +104,18 @@ const title = import.meta.env.VITE_TITLE
 const loginInfo = ref({
   username: '',
   password: '',
+  captcha: '',
 })
 
-const captchaUrl = ref('')
-const initCaptcha = throttle(() => {
-  captchaUrl.value = `${import.meta.env.VITE_AXIOS_BASE_URL}/auth/captcha?${Date.now()}`
+const captchaData = ref(null)
+const initCaptcha = throttle(async () => {
+  try {
+    const res = await api.captcha()
+    captchaData.value = res.data
+  }
+  catch {
+    captchaData.value = null
+  }
 }, 500)
 
 const localLoginInfo = lStorage.get('loginInfo')
@@ -128,24 +125,22 @@ if (localLoginInfo) {
 }
 initCaptcha()
 
-function quickLogin() {
-  loginInfo.value.username = 'admin'
-  loginInfo.value.password = '123456'
-  handleLogin(true)
-}
-
 const isRemember = useStorage('isRemember', true)
 const loading = ref(false)
-async function handleLogin(isQuick) {
+async function handleLogin() {
   const { username, password, captcha } = loginInfo.value
   if (!username || !password)
     return $message.warning('请输入用户名和密码')
-  if (!isQuick && !captcha)
+  if (!captcha)
     return $message.warning('请输入验证码')
   try {
     loading.value = true
     $message.loading('正在验证，请稍后...', { key: 'login' })
-    const { data } = await api.login({ username, password: password.toString(), captcha, isQuick })
+    const { data } = await api.login({
+      username,
+      password: password.toString(),
+      rememberMe: isRemember.value,
+    }, { params: { captchaCode: captcha } })
     if (isRemember.value) {
       lStorage.set('loginInfo', { username, password })
     }
@@ -155,11 +150,13 @@ async function handleLogin(isQuick) {
     onLoginSuccess(data)
   }
   catch (error) {
-    // 10003为验证码错误专属业务码
-    if (error?.code === 10003) {
-      // 为防止爆破，验证码错误则刷新验证码
-      initCaptcha()
-    }
+    initCaptcha()
+    // if (error?.code === 400 && error?.message) {
+    //   $message.error(error.message)
+    // }
+    // else if (error?.message) {
+    //   $message.error(error.message)
+    // }
     $message.destroy('login')
     console.error(error)
   }

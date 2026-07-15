@@ -31,7 +31,9 @@ include("backend:components:security-component:core-security-component")
 include("backend:components:security-component:jwt-auth-security-component")
 include("backend:components:tenant-component:api-tenant-component")
 include("backend:components:security-component:cookie-auth-security-component")
+include("backend:components:security-component:captcha-auth-security-component")
 include("backend:components:sms-component")
+include("backend:components:captcha-component")
 
 
 include("backend:components:doc-component")
@@ -62,3 +64,11 @@ dependencyResolutionManagement {
         mavenCentral()
     }
 }
+include("backend:components:camunda-component")
+include("backend:components:config-component")
+include("backend:components:config-component:api-config-component")
+include("backend:components:config-component:client-config-component")
+include("backend:components:config-component:server-config-component")
+include("backend:workflow")
+include("backend:module")
+include("backend:module:workflow-module")

@@ -24,7 +24,7 @@ public class RestResponse<T> implements Serializable {
 
 	public static final Integer SUCCESS_CODE = 200;
 	public static final Integer WARN_CODE = 601;
-	public static final Integer FAIL_CODE = 500;
+	public static final Integer FAIL_CODE = 600;
 
 	private Integer status;
 	private String title;

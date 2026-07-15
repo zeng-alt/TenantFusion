@@ -31,8 +31,8 @@ public class JwtAuthenticationFailureHandler implements AuthenticationFailureHan
     @Override
     public void onAuthenticationFailure(HttpServletRequest request, HttpServletResponse response,
                                         AuthenticationException exception) throws IOException {
-        ProblemDetail problemDetail = ProblemDetail.forStatus(HttpStatus.UNAUTHORIZED);
-        problemDetail.setTitle("用户未登录或者jwt无效/过期");
+        ProblemDetail problemDetail = ProblemDetail.forStatus(600);
+        problemDetail.setTitle("用户账号或者密码错误!!");
         problemDetail.setDetail(exception.getMessage());
         problemDetail.setInstance(URI.create(request.getRequestURI()));
 

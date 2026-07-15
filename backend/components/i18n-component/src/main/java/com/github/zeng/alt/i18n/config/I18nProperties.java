@@ -14,7 +14,7 @@ import org.springframework.validation.annotation.Validated;
  */
 @Data
 @Validated
-@ConfigurationProperties(prefix = "alt.i18n")
+@ConfigurationProperties(prefix = "sys.i18n")
 public class I18nProperties {
 
     @NotBlank

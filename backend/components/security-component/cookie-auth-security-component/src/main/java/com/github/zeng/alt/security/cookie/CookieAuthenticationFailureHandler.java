@@ -31,7 +31,7 @@ public class CookieAuthenticationFailureHandler implements AuthenticationFailure
     @Override
     public void onAuthenticationFailure(HttpServletRequest request, HttpServletResponse response,
                                         AuthenticationException exception) throws IOException {
-        ProblemDetail problemDetail = ProblemDetail.forStatus(HttpStatus.UNAUTHORIZED);
+        ProblemDetail problemDetail = ProblemDetail.forStatus(600);
         problemDetail.setTitle("用户未登录或者cookie无效/过期");
         problemDetail.setDetail(exception.getMessage());
         problemDetail.setInstance(URI.create(request.getRequestURI()));

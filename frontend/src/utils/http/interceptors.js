@@ -15,17 +15,16 @@ export function setupInterceptors(axiosInstance) {
   function resResolve(response) {
     const { data, status, config, statusText, headers } = response
     if (headers['content-type']?.includes('json')) {
-      if (SUCCESS_CODES.includes(data?.code)) {
+      const code = data?.code ?? data?.status ?? status
+      if (SUCCESS_CODES.includes(code)) {
         return Promise.resolve(data)
       }
-      const code = data?.code ?? status
-
       const needTip = config?.needTip !== false
 
       // 根据code处理对应的操作，并返回处理后的message
-      const message = resolveResError(code, data?.message ?? statusText, needTip)
+      const message = resolveResError(code, data?.title ?? statusText, needTip, data?.detail)
 
-      return Promise.reject({ code, message, error: data ?? response })
+      return Promise.reject({ code, message, error: data ?? response, detail: data?.detail })
     }
     return Promise.resolve(data ?? response)
   }
@@ -62,9 +61,9 @@ async function resReject(error) {
   }
 
   const { data, status, config } = error.response
-  const code = data?.code ?? status
+  const code = data?.code ?? data?.status ?? status
 
   const needTip = config?.needTip !== false
-  const message = resolveResError(code, data?.message ?? error.message, needTip)
-  return Promise.reject({ code, message, error: error.response?.data || error.response })
+  const message = resolveResError(code, data?.title ?? error.message, needTip, data?.detail)
+  return Promise.reject({ code, message, error: error.response?.data || error.response, detail: data?.detail })
 }

@@ -69,7 +69,7 @@ public class CaptchaTemplateImpl implements CaptchaTemplate {
         String cacheKey = KEY_PREFIX + key;
         String stored = storageTemplate.opsForString().get(cacheKey, String.class);
         storageTemplate.delete(cacheKey);
-        return code.equals(stored);
+        return code.equalsIgnoreCase(stored);
     }
 
     private CaptchaProducer resolveProducer(String type) {
