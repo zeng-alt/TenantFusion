@@ -399,13 +399,15 @@ public final class RouterGenerator {
                                     + "示例: firstName=Biagio&lastName_startsWith=Toz&birthDate_gte=19910101&country_in=IT,FR,DE");
                 }
 
-                // 查询参数（仅 LIST）
+                // 查询参数（仅 LIST 和 LIST_ALL）
                 if (method == MethodMeta.LIST) {
                     body.addStatement("$L.addParametersItem(new $T().name($S).in($S).description($S).schema(new $T().$L(1).minimum(new java.math.BigDecimal(1))))",
                             opVar, PARAMETER, "page", "query", "页码，从1开始", INTEGER_SCHEMA, "_default");
                     body.addStatement("$L.addParametersItem(new $T().name($S).in($S).description($S).schema(new $T().$L(10).minimum(new java.math.BigDecimal(1))))",
                             opVar, PARAMETER, "size", "query", "每页条数", INTEGER_SCHEMA, "_default");
+                }
 
+                if (method == MethodMeta.LIST || method == MethodMeta.LIST_ALL) {
                     for (QueryFieldMeta field : meta.getQueryFields()) {
                         String col = field.getColumn();
                         CodeBlock fieldSchema = OpenApiSchemaGenerator.buildQueryFieldSchema(field);
@@ -502,6 +504,7 @@ public final class RouterGenerator {
     private static String chineseSummary(String entityName, MethodMeta method) {
         return switch (method) {
             case LIST -> "分页查询" + entityName + "列表";
+            case LIST_ALL -> "条件查询所有" + entityName + "（不分页）";
             case DETAIL -> "获取" + entityName + "详情";
             case CREATE -> "新增" + entityName;
             case UPDATE -> "全量更新" + entityName;
@@ -516,6 +519,7 @@ public final class RouterGenerator {
     private static String chineseDescription(String entityName, MethodMeta method) {
         return switch (method) {
             case LIST -> "分页条件查询" + entityName + "，支持多字段过滤和排序";
+            case LIST_ALL -> "条件查询所有" + entityName + "，支持多字段过滤和排序，不分页";
             case DETAIL -> "根据 ID 获取" + entityName + "的详细信息";
             case CREATE -> "创建新的" + entityName + "记录";
             case UPDATE -> "全量更新已有" + entityName + "，未传字段会被置为 null";

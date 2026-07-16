@@ -153,6 +153,7 @@ public class CrudRestProcessor extends AbstractProcessor {
         }
 
         if (annotation.list()) metaBuilder.addEnabledMethod(MethodMeta.LIST);
+        if (annotation.listAll()) metaBuilder.addEnabledMethod(MethodMeta.LIST_ALL);
         if (annotation.detail()) metaBuilder.addEnabledMethod(MethodMeta.DETAIL);
         if (annotation.create()) metaBuilder.addEnabledMethod(MethodMeta.CREATE);
         if (annotation.update()) metaBuilder.addEnabledMethod(MethodMeta.UPDATE);

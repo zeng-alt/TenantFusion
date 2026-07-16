@@ -172,6 +172,7 @@ public final class HandlerGenerator {
 
         switch (method) {
             case LIST -> buildListMethod(meta, methodBuilder, useMapStruct, elements);
+            case LIST_ALL -> buildListAllMethod(meta, methodBuilder, useMapStruct, elements);
             case DETAIL -> buildDetailMethod(meta, methodBuilder, useMapStruct, elements);
             case CREATE -> buildCreateMethod(meta, methodBuilder, useMapStruct, elements);
             case UPDATE -> buildUpdateMethod(meta, methodBuilder, useMapStruct, elements);
@@ -243,6 +244,61 @@ public final class HandlerGenerator {
         } else {
             builder.addStatement("$T response = $T.of(pageResult.getContent(), pageResult.getTotalElements(), size, page)",
                     pageRestType, PAGE_REST_RESPONSE);
+        }
+
+        builder.addStatement("return $T.ok().contentType($T.APPLICATION_JSON).body(response)",
+                SERVER_RESPONSE, MediaType.class);
+    }
+
+    // ========================================================================
+    //  LIST_ALL（不分页条件查询，POST /all）
+    // ========================================================================
+
+    private static void buildListAllMethod(RepositoryMeta meta, MethodSpec.Builder builder, boolean useMapStruct, Elements elements) {
+        TypeName entityType = meta.getEntityType();
+        ClassName listType = meta.getListType();
+
+        TypeName itemType = listType != null ? listType : entityType;
+        TypeName listResultType = ParameterizedTypeName.get(ClassName.get(List.class), entityType);
+
+        boolean hasQueryFields = meta.isHasQueryFields();
+        boolean hasSort = hasOrderFields(meta);
+
+        if (hasQueryFields && hasSort) {
+            builder.addStatement("$T listResult = repository.findAll(buildPredicate(request), buildSort())",
+                    listResultType);
+        } else if (hasQueryFields) {
+            builder.addStatement("$T listResult = repository.findAll(buildPredicate(request))",
+                    listResultType);
+        } else if (hasSort) {
+            builder.addStatement("$T listResult = repository.findAll(buildSort())",
+                    listResultType);
+        } else {
+            builder.addStatement("$T listResult = repository.findAll()",
+                    listResultType);
+        }
+
+        if (listType != null) {
+            builder.addStatement("$T<$T> dtoList = new $T<>(listResult.size())",
+                            ClassName.get(List.class), listType, ClassName.get(ArrayList.class))
+                    .beginControlFlow("for ($T entity : listResult)", entityType);
+
+            if (useMapStruct) {
+                builder.addStatement("$T dto = $L.toListDto(entity)", listType, getMapperFieldName(meta));
+            } else {
+                builder.addStatement("$T dto = new $T()", listType, listType)
+                        .addStatement("$T.copyProperties(entity, dto)", BEAN_UTILS);
+                generateNestedDtoConversions(builder, meta, elements,
+                        meta.getEntityAllFields(), meta.getListTypeFields(), "entity", "dto");
+            }
+
+            builder.addStatement("dtoList.add(dto)")
+                    .endControlFlow()
+                    .addStatement("$T response = $T.success(dtoList)",
+                            REST_RESPONSE, REST_RESPONSE);
+        } else {
+            builder.addStatement("$T response = $T.success(listResult)",
+                            REST_RESPONSE, REST_RESPONSE);
         }
 
         builder.addStatement("return $T.ok().contentType($T.APPLICATION_JSON).body(response)",

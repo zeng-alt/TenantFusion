@@ -57,6 +57,11 @@ public @interface CrudRest {
     boolean list() default true;
 
     /**
+     * 是否生成 listAll 接口（条件查询所有，不分页，POST）
+     */
+    boolean listAll() default false;
+
+    /**
      * 是否生成 jpa-search-helper 接口
      */
     boolean search() default false;
