@@ -259,7 +259,7 @@ public final class HandlerGenerator {
         ClassName listType = meta.getListType();
 
         TypeName itemType = listType != null ? listType : entityType;
-        TypeName listResultType = ParameterizedTypeName.get(ClassName.get(List.class), entityType);
+        TypeName listResultType = ParameterizedTypeName.get(ClassName.get(Iterable.class), entityType);
 
         boolean hasQueryFields = meta.isHasQueryFields();
         boolean hasSort = hasOrderFields(meta);

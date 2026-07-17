@@ -44,6 +44,8 @@ spring:
 
   liquibase:
     enabled: true
+    parameters:
+      tenantName: master
 
 # 国际化-数据库模式配置（取消注释以启用数据库模式）
 # alt:

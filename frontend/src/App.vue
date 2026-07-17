@@ -35,11 +35,20 @@ import { useAppStore, useTabStore } from '@/store'
 import { layoutSettingVisible } from './settings'
 
 const layouts = new Map()
+const layoutModules = import.meta.glob('@/layouts/**/index.vue')
+
 function getLayout(name) {
-  // 利用map将加载过的layout缓存起来，防止重新加载layout导致页面闪烁
   if (layouts.get(name))
     return layouts.get(name)
-  const layout = markRaw(defineAsyncComponent(() => import(`@/layouts/${name}/index.vue`)))
+  const key = `/src/layouts/${name}/index.vue`
+  const loader = layoutModules[key]
+  if (!loader) {
+    console.error(`Layout not found: ${key}`)
+    return null
+  }
+  const layout = markRaw(
+    defineAsyncComponent(loader),
+  )
   layouts.set(name, layout)
   return layout
 }
@@ -51,7 +60,8 @@ if (appStore.layout === 'default')
 const Layout = computed(() => {
   if (!route.matched?.length)
     return null
-  return getLayout(route.meta?.layout || appStore.layout)
+  const temp = route.meta?.layout || appStore.layout
+  return getLayout(temp === 'default' ? appStore.layout : temp)
 })
 
 const tabStore = useTabStore()

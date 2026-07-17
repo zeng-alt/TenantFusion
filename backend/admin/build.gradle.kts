@@ -63,8 +63,6 @@ dependencies {
     implementation(project(":backend:components:doc-component"))
     implementation(project(":backend:components:log-component:jpa-log-component"))
     implementation(project(":backend:components:oss-component:jpa-oss-component"))
-    implementation(project(":backend:components:config-component:server-config-component"))
-    implementation(project(":backend:components:config-component:client-config-component"))
     implementation("org.springframework.boot:spring-boot-starter-web")
     implementation("org.springframework.boot:spring-boot-starter-data-jpa")
     implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui")

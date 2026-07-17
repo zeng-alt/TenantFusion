@@ -6,7 +6,7 @@ import com.github.zeng.alt.rest.annotation.CrudRest;
 
 import java.util.List;
 
-@CrudRest(path = "/menu", sort = true)
+@CrudRest(path = "/v1/menu", sort = true)
 public interface MenuResourceRepository extends BaseRepository<MenuResource, Long> {
 
     List<MenuResource> findByParentIsNull();

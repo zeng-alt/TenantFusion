@@ -4,6 +4,7 @@ import com.github.zeng.alt.config.client.aot.ConfigClientRuntimeHints;
 import lombok.extern.apachecommons.CommonsLog;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.AutoConfigureAfter;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -22,11 +23,11 @@ import org.springframework.web.client.RestTemplate;
 @ImportRuntimeHints(ConfigClientRuntimeHints.class)
 public class ConfigClientAutoConfiguration {
 
-    @Bean
-    @ConditionalOnMissingBean
-    public RestTemplate configClientRestTemplate() {
-        return new RestTemplate();
-    }
+//    @Bean
+//    @ConditionalOnMissingBean
+//    public RestTemplate configClientRestTemplate() {
+//        return new RestTemplate();
+//    }
 
     @Bean
     @ConditionalOnMissingBean
@@ -47,12 +48,13 @@ public class ConfigClientAutoConfiguration {
 
     @Bean
     @ConditionalOnMissingBean
-    @ConditionalOnClass(ContextRefresher.class)
+    @ConditionalOnClass(name = "org.springframework.cloud.context.refresh.ContextRefresher")
     public ConfigRefreshBridge configRefreshBridge(ContextRefresher contextRefresher) {
         return new ConfigRefreshBridge(contextRefresher);
     }
 
     @Bean
+    @ConditionalOnBean(RestTemplate.class)
     @ConditionalOnMissingBean
     @ConditionalOnProperty(prefix = "config.client", name = "app-code")
     public ConfigStartupInitializer configStartupInitializer(ConfigCacheManager cacheManager,

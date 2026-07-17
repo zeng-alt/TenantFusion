@@ -5,6 +5,7 @@ import com.github.zeng.alt.excel.utils.ExcelHelper;
 import com.github.zeng.alt.excel.utils.RxjavaExcelHelper;
 import io.reactivex.rxjava3.core.Flowable;
 import jakarta.servlet.http.HttpServletRequest;
+import lombok.extern.apachecommons.CommonsLog;
 import org.apache.commons.lang3.stream.Streams;
 import org.springframework.core.MethodParameter;
 import org.springframework.http.converter.HttpMessageConverter;
@@ -31,6 +32,7 @@ import java.util.List;
  * @version 1.0
  * @crateTime 2025年03月17日 21:13
  */
+@CommonsLog
 public class HttpExcelMethodProcessor extends AbstractMessageConverterMethodArgumentResolver {
 
     public HttpExcelMethodProcessor(List<HttpMessageConverter<?>> converters) {
@@ -116,7 +118,7 @@ public class HttpExcelMethodProcessor extends AbstractMessageConverterMethodArgu
 
         return RxjavaExcelHelper
                 .importRxjavaExcel(files.iterator().next().getInputStream(), (Class<?>) paramType)
-                .doOnError(e -> logger.error("HttpExcelMethodProcessor" + e));
+                .doOnError(e -> log.error("HttpExcelMethodProcessor" + e));
 
     }
 

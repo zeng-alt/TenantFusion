@@ -109,15 +109,15 @@ CREATE TABLE main_user_resource (
 );
 
 -- Foreign keys
-ALTER TABLE main_permission ADD CONSTRAINT fk_perm_parent FOREIGN KEY (parent_id) REFERENCES main_permission(permission_id);
-ALTER TABLE main_permission ADD CONSTRAINT fk_perm_menu    FOREIGN KEY (menu_id)    REFERENCES main_permission(permission_id);
-ALTER TABLE main_policy_rule  ADD CONSTRAINT fk_policy_perm   FOREIGN KEY (permission_id) REFERENCES main_permission(permission_id);
-ALTER TABLE main_user_role    ADD CONSTRAINT fk_ur_user       FOREIGN KEY (user_id)       REFERENCES main_user(user_id);
-ALTER TABLE main_user_role    ADD CONSTRAINT fk_ur_role       FOREIGN KEY (role_id)       REFERENCES main_role(role_id);
-ALTER TABLE main_role_permission ADD CONSTRAINT fk_rp_role    FOREIGN KEY (role_id)       REFERENCES main_role(role_id);
-ALTER TABLE main_role_permission ADD CONSTRAINT fk_rp_perm    FOREIGN KEY (permission_id) REFERENCES main_permission(permission_id);
-ALTER TABLE main_user_resource   ADD CONSTRAINT fk_ures_user  FOREIGN KEY (user_id)       REFERENCES main_user(user_id);
-ALTER TABLE main_user_resource   ADD CONSTRAINT fk_ures_res   FOREIGN KEY (resource_id)   REFERENCES main_permission(permission_id);
+-- ALTER TABLE main_permission ADD CONSTRAINT fk_perm_parent FOREIGN KEY (parent_id) REFERENCES main_permission(permission_id);
+-- ALTER TABLE main_permission ADD CONSTRAINT fk_perm_menu    FOREIGN KEY (menu_id)    REFERENCES main_permission(permission_id);
+-- ALTER TABLE main_policy_rule  ADD CONSTRAINT fk_policy_perm   FOREIGN KEY (permission_id) REFERENCES main_permission(permission_id);
+-- ALTER TABLE main_user_role    ADD CONSTRAINT fk_ur_user       FOREIGN KEY (user_id)       REFERENCES main_user(user_id);
+-- ALTER TABLE main_user_role    ADD CONSTRAINT fk_ur_role       FOREIGN KEY (role_id)       REFERENCES main_role(role_id);
+-- ALTER TABLE main_role_permission ADD CONSTRAINT fk_rp_role    FOREIGN KEY (role_id)       REFERENCES main_role(role_id);
+-- ALTER TABLE main_role_permission ADD CONSTRAINT fk_rp_perm    FOREIGN KEY (permission_id) REFERENCES main_permission(permission_id);
+-- ALTER TABLE main_user_resource   ADD CONSTRAINT fk_ures_user  FOREIGN KEY (user_id)       REFERENCES main_user(user_id);
+-- ALTER TABLE main_user_resource   ADD CONSTRAINT fk_ures_res   FOREIGN KEY (resource_id)   REFERENCES main_permission(permission_id);
 
 -- Indexes for main_user
 CREATE INDEX idx_main_user_username      ON main_user(username);
@@ -256,3 +256,142 @@ COMMENT ON COLUMN main_user_resource.created_by         IS '创建人';
 COMMENT ON COLUMN main_user_resource.created_date       IS '创建时间';
 COMMENT ON COLUMN main_user_resource.last_modified_by   IS '最后修改人';
 COMMENT ON COLUMN main_user_resource.last_modified_date IS '最后修改时间';
+
+-- =============================================
+-- 字典类型表
+-- =============================================
+
+CREATE TABLE main_dict_type
+(
+    dict_type_id BIGINT NOT NULL COMMENT '字典类型ID',
+
+    dict_name VARCHAR(100) NOT NULL COMMENT '字典名称',
+
+    dict_code VARCHAR(100) NOT NULL COMMENT '字典类型编码',
+
+    remark VARCHAR(500) COMMENT '备注',
+
+    tenant_by VARCHAR(64) COMMENT '租户标识',
+
+    create_time TIMESTAMP COMMENT '创建时间',
+
+    update_time TIMESTAMP COMMENT '更新时间',
+
+    create_by VARCHAR(64) COMMENT '创建人',
+
+    update_by VARCHAR(64) COMMENT '更新人',
+
+    deleted BOOLEAN DEFAULT FALSE COMMENT '逻辑删除标识',
+
+    created_by         VARCHAR(255),
+    created_date       TIMESTAMP,
+    last_modified_by   VARCHAR(255),
+    last_modified_date TIMESTAMP,
+
+    PRIMARY KEY (dict_type_id)
+);
+
+
+-- 字典编码唯一
+CREATE UNIQUE INDEX uk_dict_type_code_tenant
+    ON main_dict_type(dict_code, tenant_by);
+
+
+-- 租户查询优化
+CREATE INDEX idx_dict_type_tenant
+    ON main_dict_type(tenant_by);
+
+
+
+-- =============================================
+-- 字典数据表
+-- =============================================
+
+CREATE TABLE main_dict_data
+(
+    dict_data_id BIGINT NOT NULL COMMENT '字典数据ID',
+
+    dict_sort INT DEFAULT 0 COMMENT '字典排序',
+
+    dict_label VARCHAR(100) NOT NULL COMMENT '字典标签',
+
+    dict_value VARCHAR(100) NOT NULL COMMENT '字典键值',
+
+    css_class VARCHAR(100) COMMENT '样式属性',
+
+    list_class VARCHAR(100) COMMENT '表格字典样式',
+
+    is_default BOOLEAN DEFAULT FALSE COMMENT '是否默认(Y是 N否)',
+
+    remark VARCHAR(500) COMMENT '备注',
+
+    is_enabled BOOLEAN DEFAULT TRUE COMMENT '状态(true正常 false停用)',
+
+    tenant_by VARCHAR(64) COMMENT '租户标识',
+
+    dict_code VARCHAR(100) NOT NULL COMMENT '字典类型编码',
+
+    create_time TIMESTAMP COMMENT '创建时间',
+
+    update_time TIMESTAMP COMMENT '更新时间',
+
+    create_by VARCHAR(64) COMMENT '创建人',
+
+    update_by VARCHAR(64) COMMENT '更新人',
+
+    deleted BOOLEAN DEFAULT FALSE COMMENT '逻辑删除标识',
+
+    created_by         VARCHAR(255),
+    created_date       TIMESTAMP,
+    last_modified_by   VARCHAR(255),
+    last_modified_date TIMESTAMP,
+
+    PRIMARY KEY (dict_data_id)
+);
+
+
+
+-- =============================================
+-- 索引设计
+-- =============================================
+
+
+-- 核心查询:
+CREATE INDEX idx_dict_data_query
+    ON main_dict_data(
+                      dict_code,
+                      tenant_by,
+                      is_enabled,
+                      deleted,
+                      dict_sort DESC
+        );
+
+CREATE UNIQUE INDEX uk_dict_data_code_value_tenant
+    ON main_dict_data(dict_code, dict_value, tenant_by);
+
+
+
+-- 根据字典编码 + 值查询
+-- 常用于:
+-- dictCode + dictValue -> label
+CREATE INDEX idx_dict_data_code_value_tenant
+    ON main_dict_data(dict_code, dict_value, tenant_by);
+
+
+
+-- 查询启用状态字典
+CREATE INDEX idx_dict_data_code_enabled_tenant
+    ON main_dict_data(dict_code, is_enabled, tenant_by);
+
+
+
+-- 租户隔离查询
+CREATE INDEX idx_dict_data_tenant
+    ON main_dict_data(tenant_by);
+
+
+
+-- 逻辑删除过滤
+CREATE INDEX idx_dict_data_deleted
+    ON main_dict_data(deleted);
+

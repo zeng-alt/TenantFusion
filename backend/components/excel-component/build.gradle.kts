@@ -10,5 +10,6 @@ dependencies {
     api(rootProject.libs.fesod.sheet)
     implementation("io.reactivex.rxjava3:rxjava:3.1.10")
     implementation("org.springframework.boot:spring-boot-autoconfigure")
-    implementation("org.springframework:spring-web")
+    api("jakarta.servlet:jakarta.servlet-api")
+    implementation("org.springframework:spring-webmvc")
 }

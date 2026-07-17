@@ -11,7 +11,7 @@ import java.util.List;
 import java.util.Optional;
 
 @CrudRest(
-        path = "/http",
+        path = "/v1/http",
         create = false,
         queryType = HttpResourceQuery.class,
         listType = HttpResourceDetila.class,
