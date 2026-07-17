@@ -113,7 +113,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         }
 
         // ===== accessToken 过期，尝试用 refreshToken 无感续期 =====
-        if (result == JwtTokenProvider.TokenValidationResult.EXPIRED
+        if (
+                result == JwtTokenProvider.TokenValidationResult.EXPIRED
                 && StringUtils.hasText(refreshToken)
                 && jwtTokenProvider.validateToken(refreshToken)) {
 

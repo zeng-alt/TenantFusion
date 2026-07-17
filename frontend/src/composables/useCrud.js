@@ -15,10 +15,28 @@ const ACTIONS = {
   add: '新增',
 }
 
-export function useCrud({ name, initForm = {}, doCreate, doDelete, doUpdate, refresh }) {
+export function useCrud({ name, initForm = {}, doCreate, doDelete, doUpdate, doSort, refresh }) {
   const modalAction = ref('')
   const [modalRef, okLoading] = useModal()
   const [modalFormRef, modalForm, validation] = useForm(initForm)
+
+  /** 排序 */
+  async function handleSort({ data, oldIndex, newIndex, rowKey }) {
+    if (!doSort || oldIndex === newIndex)
+      return
+    const start = Math.min(oldIndex, newIndex)
+    const end = Math.max(oldIndex, newIndex)
+    const changedItems = data.slice(start, end + 1).map((item, i) => ({
+      id: item[rowKey],
+      sort: start + i + 1,
+    }))
+    try {
+      await doSort(changedItems)
+    }
+    finally {
+      refresh && refresh()
+    }
+  }
 
   /** 新增 */
   function handleAdd(row = {}, title) {
@@ -87,6 +105,21 @@ export function useCrud({ name, initForm = {}, doCreate, doDelete, doUpdate, ref
     }
   }
 
+  /** 启用/停用切换 */
+  async function handleEnable(row, fieldName = 'enabled', idField = 'id') {
+    row[`${fieldName}Loading`] = true
+    try {
+      await doUpdate({ [idField]: row[idField], [fieldName]: !row[fieldName] })
+      $message.success('操作成功')
+      row[`${fieldName}Loading`] = false
+      refresh && refresh(true)
+    }
+    catch (error) {
+      console.error(error)
+      row[`${fieldName}Loading`] = false
+    }
+  }
+
   /** 删除 */
   function handleDelete(id, confirmOptions) {
     if (!id && id !== 0)
@@ -123,8 +156,10 @@ export function useCrud({ name, initForm = {}, doCreate, doDelete, doUpdate, ref
     handleAdd,
     handleDelete,
     handleEdit,
+    handleEnable,
     handleView,
     handleOpen,
     handleSave,
+    handleSort,
   }
 }

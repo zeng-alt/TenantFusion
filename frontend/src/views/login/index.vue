@@ -68,8 +68,8 @@
         </div>
 
         <n-checkbox
-          class="mt-20"
           v-model:checked="isRemember"
+          class="mt-20"
           label="记住我"
         />
 
@@ -165,6 +165,7 @@ async function handleLogin() {
 
 async function onLoginSuccess(data = {}) {
   authStore.setToken(data)
+
   $message.loading('登录中...', { key: 'login' })
   try {
     $message.success('登录成功', { key: 'login' })

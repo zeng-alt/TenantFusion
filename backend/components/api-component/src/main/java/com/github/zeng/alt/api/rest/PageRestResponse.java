@@ -5,7 +5,6 @@ import lombok.Setter;
 
 
 import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
 
 /**
@@ -15,43 +14,18 @@ import java.util.List;
  */
 @Getter
 @Setter
-public class PageRestResponse<T> extends RestResponse<Collection<T>> {
+public class PageRestResponse<T> extends RestResponse<PageEntity<T>> {
 
-	private Integer pageNum;
 
-	private Integer pageSize;
 
-	private Long total;
-
-	/**
-	 * @return 当前页第一条数据的偏移量（offset）
-	 */
-	public Integer getFirstNum() {
-		return (pageNum - 1) * pageSize;
-	}
-
-	/**
-	 * @return 总页数
-	 */
-	public long getTotalPages() {
-		return this.total % this.pageSize == 0 ? this.total / this.pageSize : (this.total / this.pageSize) + 1;
-	}
-
-	@Override
-	public Collection<T> getData() {
-		Collection<T> data = super.getData();
-		if (null == data) {
-			return Collections.emptyList();
-		}
-		return data;
-	}
 
 	public static <T> PageRestResponse<T> of(int pageSize, int pageNum) {
 		PageRestResponse<T> response = new PageRestResponse<>();
-		response.setData(Collections.emptyList());
-		response.setTotal(0L);
-		response.setPageSize(pageSize);
-		response.setPageNum(pageNum);
+		PageEntity<T> entity = new PageEntity<>();
+		entity.setTotal(0L);
+		entity.setPageSize(pageSize);
+		entity.setPageNum(pageNum);
+		response.setData(entity);
 		response.code(SUCCESS_CODE);
 		return response;
 	}
@@ -64,10 +38,12 @@ public class PageRestResponse<T> extends RestResponse<Collection<T>> {
 	public static <E> PageRestResponse<E> of(List<E> data, long totalCount, int pageSize,
                                                                   int pageNum) {
 		PageRestResponse<E> response = new PageRestResponse<>();
-		response.setData(data);
-		response.setTotal(totalCount);
-		response.setPageSize(pageSize);
-		response.setPageNum(pageNum);
+		PageEntity<E> entity = new PageEntity<>();
+		entity.setTotal(totalCount);
+		entity.setPageSize(pageSize);
+		entity.setPageNum(pageNum);
+		entity.setPageData(data);
+		response.setData(entity);
 		response.code(SUCCESS_CODE);
 		return response;
 	}

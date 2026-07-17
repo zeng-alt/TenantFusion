@@ -9,7 +9,7 @@ import com.github.zeng.alt.rest.annotation.CrudRest;
  * @since 2026年07月16日
  * @version 1.0
  */
-@CrudRest(path = "/v1/dict/data", listAll = true)
+@CrudRest(path = "/v1/dict/data", listAll = true, sort = true)
 public interface DictDataRepository extends BaseRepository<DictData, Long> {
 }
 

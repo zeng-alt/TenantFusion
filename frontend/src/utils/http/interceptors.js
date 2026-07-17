@@ -14,6 +14,10 @@ export function setupInterceptors(axiosInstance) {
   const SUCCESS_CODES = [0, 200]
   function resResolve(response) {
     const { data, status, config, statusText, headers } = response
+    const newToken = headers['x-new-access-token']
+    if (newToken) {
+      useAuthStore().setAccessToken(newToken)
+    }
     if (headers['content-type']?.includes('json')) {
       const code = data?.code ?? data?.status ?? status
       if (SUCCESS_CODES.includes(code)) {
@@ -39,10 +43,13 @@ function reqResolve(config) {
     return config
   }
 
-  const { accessToken } = useAuthStore()
+  const { accessToken, refreshToken } = useAuthStore()
   if (accessToken) {
     // token: Bearer + xxx
     config.headers.Authorization = `Bearer ${accessToken}`
+  }
+  if (refreshToken) {
+    config.headers['X-Refresh-Token'] = refreshToken
   }
 
   return config

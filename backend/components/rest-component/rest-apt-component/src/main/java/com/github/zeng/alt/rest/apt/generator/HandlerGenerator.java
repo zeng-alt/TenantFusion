@@ -117,19 +117,13 @@ public final class HandlerGenerator {
             handlerBuilder.addMethod(buildPredicateMethod(meta));
         }
 
-        // 如果存在 @QueryOrder，生成 sort 构建方法
-        if (hasOrderFields(meta)) {
-            handlerBuilder.addMethod(buildSortMethod(meta));
-        }
+        // 生成 sort 构建方法（始终生成，支持前端动态排序）
+        handlerBuilder.addMethod(buildSortMethod(meta));
 
         return JavaFile.builder(meta.getGeneratedPackageName(), handlerBuilder.build())
                 .indent("    ")
                 .skipJavaLangImports(true)
                 .build();
-    }
-
-    private static boolean hasOrderFields(RepositoryMeta meta) {
-        return meta.getQueryFields().stream().anyMatch(QueryFieldMeta::isHasOrder);
     }
 
     // ========================================================================
@@ -203,19 +197,12 @@ public final class HandlerGenerator {
                 .addStatement("int size = Integer.parseInt(request.param($S).orElse($S))", "size", "10");
 
         boolean hasQueryFields = meta.isHasQueryFields();
-        boolean hasSort = hasOrderFields(meta);
 
-        if (hasQueryFields && hasSort) {
-            builder.addStatement("$T pageResult = repository.findAll(buildPredicate(request), $T.of(page - 1, size, buildSort()))",
-                    pageType, PageRequest.class);
-        } else if (hasQueryFields) {
-            builder.addStatement("$T pageResult = repository.findAll(buildPredicate(request), $T.of(page - 1, size))",
-                    pageType, PageRequest.class);
-        } else if (hasSort) {
-            builder.addStatement("$T pageResult = repository.findAll($T.of(page - 1, size, buildSort()))",
+        if (hasQueryFields) {
+            builder.addStatement("$T pageResult = repository.findAll(buildPredicate(request), $T.of(page - 1, size, buildSort(request)))",
                     pageType, PageRequest.class);
         } else {
-            builder.addStatement("$T pageResult = repository.findAll($T.of(page - 1, size))",
+            builder.addStatement("$T pageResult = repository.findAll($T.of(page - 1, size, buildSort(request)))",
                     pageType, PageRequest.class);
         }
 
@@ -262,19 +249,12 @@ public final class HandlerGenerator {
         TypeName listResultType = ParameterizedTypeName.get(ClassName.get(Iterable.class), entityType);
 
         boolean hasQueryFields = meta.isHasQueryFields();
-        boolean hasSort = hasOrderFields(meta);
 
-        if (hasQueryFields && hasSort) {
-            builder.addStatement("$T listResult = repository.findAll(buildPredicate(request), buildSort())",
-                    listResultType);
-        } else if (hasQueryFields) {
-            builder.addStatement("$T listResult = repository.findAll(buildPredicate(request))",
-                    listResultType);
-        } else if (hasSort) {
-            builder.addStatement("$T listResult = repository.findAll(buildSort())",
+        if (hasQueryFields) {
+            builder.addStatement("$T listResult = repository.findAll(buildPredicate(request), buildSort(request))",
                     listResultType);
         } else {
-            builder.addStatement("$T listResult = repository.findAll()",
+            builder.addStatement("$T listResult = repository.findAll(buildSort(request))",
                     listResultType);
         }
 
@@ -1529,30 +1509,23 @@ public final class HandlerGenerator {
                 .sorted(Comparator.comparingInt(QueryFieldMeta::getOrderPriority))
                 .toList();
 
+        String defaultSort = "id";
+        String defaultOrder = "desc";
+        if (!orderFields.isEmpty()) {
+            QueryFieldMeta field = orderFields.get(0);
+            defaultSort = field.getFieldName();
+            defaultOrder = field.isOrderAsc() ? "asc" : "desc";
+        }
+
         MethodSpec.Builder methodBuilder = MethodSpec.methodBuilder("buildSort")
                 .addModifiers(Modifier.PRIVATE)
+                .addParameter(SERVER_REQUEST, "request")
                 .returns(SORT);
 
-        if (orderFields.size() == 1) {
-            QueryFieldMeta field = orderFields.get(0);
-            methodBuilder.addStatement("return $T.by($T.$L, $S)",
-                    SORT, SORT_DIRECTION,
-                    field.isOrderAsc() ? "ASC" : "DESC",
-                    field.getFieldName());
-        } else {
-            for (int i = 0; i < orderFields.size(); i++) {
-                QueryFieldMeta field = orderFields.get(i);
-                String direction = field.isOrderAsc() ? "ASC" : "DESC";
-                if (i == 0) {
-                    methodBuilder.addStatement("$T sort = $T.by($T.$L, $S)",
-                            SORT, SORT, SORT_DIRECTION, direction, field.getFieldName());
-                } else {
-                    methodBuilder.addStatement("sort = sort.and($T.by($T.$L, $S))",
-                            SORT, SORT_DIRECTION, direction, field.getFieldName());
-                }
-            }
-            methodBuilder.addStatement("return sort");
-        }
+        methodBuilder.addStatement("String sort = request.param($S).orElse($S)", "sort", defaultSort);
+        methodBuilder.addStatement("String order = request.param($S).orElse($S)", "order", defaultOrder);
+        methodBuilder.addStatement("return $T.by($T.fromOptionalString(order).orElse($T.ASC), sort)",
+                SORT, SORT_DIRECTION, SORT_DIRECTION);
 
         return methodBuilder.build();
     }

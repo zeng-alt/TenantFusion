@@ -39,7 +39,7 @@
       </form>
     </AppCard>
 
-    <NDataTable
+    <ProDataTable
       :remote="remote"
       :loading="loading"
       :scroll-x="scrollX"
@@ -47,6 +47,7 @@
       :data="tableData"
       :row-key="(row) => row[rowKey]"
       :pagination="isPagination ? pagination : false"
+      :drag-sort-options="dragSortOptionsComputed"
       flex-height
       class="flex-1"
       @update:checked-row-keys="onChecked"
@@ -56,7 +57,6 @@
 </template>
 
 <script setup>
-import { NDataTable } from 'naive-ui'
 import { utils, writeFile } from 'xlsx'
 
 const props = defineProps({
@@ -108,6 +108,21 @@ const props = defineProps({
   },
   /** 是否支持展开 */
   expand: Boolean,
+  /**
+   * 拖拽排序配置，传入 { columnPath: 'dragHandle' } 启用
+   */
+  dragSort: {
+    type: Object,
+    default: null,
+  },
+  /**
+   * 排序处理函数，通常传入 useCrud 返回的 handleSort
+   * 拖拽结束后调用，接收 { data, oldIndex, newIndex, rowKey }
+   */
+  batchSort: {
+    type: Function,
+    default: null,
+  },
 })
 
 const emit = defineEmits(['update:queryItems', 'onChecked', 'onDataChange'])
@@ -122,6 +137,15 @@ const pagination = reactive({
   },
 })
 
+const dragSortOptionsComputed = computed(() => {
+  if (!props.dragSort || !props.batchSort)
+    return undefined
+  return {
+    ...props.dragSort,
+    onEnd: onDragEnd,
+  }
+})
+
 // 是否展开
 const isExpanded = ref(false)
 
@@ -133,7 +157,6 @@ async function handleQuery() {
   try {
     loading.value = true
     let paginationParams = {}
-    // 如果非分页模式或者使用前端分页,则无需传分页参数
     if (props.isPagination && props.remote) {
       paginationParams = { pageNo: pagination.page, pageSize: pagination.pageSize }
     }
@@ -167,6 +190,17 @@ function handleSearch(keepCurrentPage = false) {
     onPageChange(1)
   }
 }
+
+async function onDragEnd({ newIndex, oldIndex }) {
+  if (newIndex === oldIndex || !props.batchSort)
+    return
+  const data = [...tableData.value]
+  const [moved] = data.splice(oldIndex, 1)
+  data.splice(newIndex, 0, moved)
+  tableData.value = data
+  await props.batchSort({ data, oldIndex, newIndex, rowKey: props.rowKey })
+}
+
 async function handleReset() {
   const queryItems = { ...props.queryItems }
   for (const key in queryItems) {

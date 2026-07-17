@@ -18,6 +18,14 @@ import removeNoMatch from 'vite-plugin-router-warn'
 import VueDevTools from 'vite-plugin-vue-devtools'
 import { pluginIcons, pluginPagePathes } from './build/plugin-isme'
 
+function ProNaiveUiResolver() {
+  return (componentName) => {
+    if (componentName.startsWith('Pro')) {
+      return { name: componentName, from: 'pro-naive-ui' }
+    }
+  }
+}
+
 export default defineConfig(({ mode }) => {
   const viteEnv = loadEnv(mode, process.cwd())
   const { VITE_PUBLIC_PATH, VITE_PROXY_TARGET } = viteEnv
@@ -30,11 +38,23 @@ export default defineConfig(({ mode }) => {
       VueDevTools(),
       Unocss(),
       AutoImport({
-        imports: ['vue', 'vue-router'],
+        imports: [
+          'vue',
+          'vue-router',
+          {
+            'pro-naive-ui': [
+              'useRequest',
+              'useNDataTable',
+            ],
+          },
+        ],
         dts: false,
       }),
       Components({
-        resolvers: [NaiveUiResolver()],
+        resolvers: [
+          NaiveUiResolver(),
+          ProNaiveUiResolver(),
+        ],
         dts: false,
       }),
       // 自定义插件，用于生成页面文件的path，并添加到虚拟模块

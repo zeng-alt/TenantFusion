@@ -21,6 +21,7 @@
     "naive-ui": "^2.43.2",
     "pinia": "^3.0.4",
     "pinia-plugin-persistedstate": "^4.7.1",
+    "pro-naive-ui": "^3.2.3",
     "vue": "^3.5.29",
     "vue-echarts": "^8.0.1",
     "vue-router": "^5.0.3",

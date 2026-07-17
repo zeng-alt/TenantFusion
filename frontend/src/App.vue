@@ -7,7 +7,7 @@
  --------------------------------->
 
 <template>
-  <n-config-provider
+  <ProConfigProvider
     class="wh-full"
     :locale="zhCN"
     :date-locale="dateZhCN"
@@ -25,11 +25,12 @@
 
       <LayoutSetting v-if="layoutSettingVisible" class="fixed right-12 top-1/2 z-999" />
     </router-view>
-  </n-config-provider>
+  </ProConfigProvider>
 </template>
 
 <script setup>
 import { darkTheme, dateZhCN, zhCN } from 'naive-ui'
+import { ProConfigProvider } from 'pro-naive-ui'
 import { LayoutSetting } from '@/components'
 import { useAppStore, useTabStore } from '@/store'
 import { layoutSettingVisible } from './settings'
