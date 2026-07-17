@@ -30,4 +30,18 @@ public class HttpResource extends Permission {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "menu_id")
     private MenuResource menu;          // 所属菜单，可为空
+
+    @Transient
+    public Long getMenuId() {
+        return menu != null ? menu.getId() : null;
+    }
+
+    public void setMenuId(Long menuId) {
+        if (menuId != null) {
+            this.menu = new MenuResource();
+            this.menu.setPermissionId(menuId);
+        } else {
+            this.menu = null;
+        }
+    }
 }

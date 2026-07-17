@@ -450,10 +450,10 @@ public final class RouterGenerator {
                             opVar, PARAMETER, "id", "path", "主键 ID", SCHEMA);
                 }
 
-                // 批量删除 Query 参数
+                // 批量删除 Path 参数
                 if (method == MethodMeta.DELETE) {
                     body.addStatement("$L.addParametersItem(new $T().name($S).in($S).description($S).required(true).schema(new $T<>()))",
-                            opVar, PARAMETER, "ids", "query", "要删除的 ID 列表，逗号分隔，最多 100 个", SCHEMA);
+                            opVar, PARAMETER, "ids", "path", "要删除的 ID 列表，逗号分隔，最多 100 个", SCHEMA);
                 }
 
                 body.addStatement("$L.$L($L)", pathItemVar, setter, opVar);

@@ -16,9 +16,9 @@
       :model="modalForm"
     >
       <n-grid :cols="24" :x-gap="24">
-        <n-form-item-gi :span="12" label="所属菜单" path="parentId">
+        <n-form-item-gi :span="12" label="所属菜单" path="menuId">
           <n-tree-select
-            v-model:value="modalForm.parentId"
+            v-model:value="modalForm.menuId"
             :options="menuOptions"
             :disabled="parentIdDisabled"
             label-field="name"
@@ -37,7 +37,7 @@
           <template #label>
             <QuestionLabel label="编码" content="如果是菜单则对应前端路由的name，使用大驼峰" />
           </template>
-          <n-input v-model:value="modalForm.code" />
+          <n-input v-model:value="modalForm.code" :disabled="modalAction === 'edit'" />
         </n-form-item-gi>
         <n-form-item-gi
           v-if="modalForm.type === 'MENU'"
@@ -107,6 +107,7 @@
             </template>
           </n-switch>
         </n-form-item-gi>
+
         <n-form-item-gi :span="12" path="enable">
           <template #label>
             <QuestionLabel
@@ -153,6 +154,45 @@
         >
           <n-input-number v-model:value="modalForm.order" />
         </n-form-item-gi>
+        <n-form-item-gi
+          v-if="modalForm.type === 'MENU'"
+          :span="12"
+          label="菜单风格"
+          path="menuStyle"
+        >
+          <n-select v-model:value="modalForm.menuStyle" :options="options" />
+        </n-form-item-gi>
+
+        <n-form-item-gi v-if="modalType === 'BUTTON'" :span="12" path="method" :rule="required">
+          <template #label>
+            <QuestionLabel label="协议" content="如果是菜单则对应前端路由的name，使用大驼峰" />
+          </template>
+          <n-select
+            v-model:value="modalForm.method"
+            size="small"
+            clearable
+            :options="[
+              { label: 'GET', value: 'GET' },
+              { label: 'POST', value: 'POST' },
+              { label: 'PUT', value: 'PUT' },
+              { label: 'DELETE', value: 'DELETE' },
+              { label: 'PATCH', value: 'PATCH' },
+              { label: 'HEAD', value: 'HEAD' },
+              { label: 'OPTIONS', value: 'OPTIONS' },
+              { label: 'TRACE', value: 'TRACE' },
+            ]"
+          />
+        </n-form-item-gi>
+
+        <n-form-item-gi v-if="modalType === 'BUTTON'" :span="24" path="path">
+          <template #label>
+            <QuestionLabel
+              label="接口路径"
+              content="前端组件的路径，以 /src 开头，父级菜单可不填"
+            />
+          </template>
+          <n-input v-model:value="modalForm.path" />
+        </n-form-item-gi>
       </n-grid>
     </n-form>
   </MeModal>
@@ -173,6 +213,11 @@ const props = defineProps({
   },
 })
 const emit = defineEmits(['refresh'])
+
+const options = [
+  { label: '默认', value: 'default' },
+  { label: '卡片', value: 'list' },
+]
 
 const menuOptions = computed(() => {
   return [{ name: '根菜单', id: '', children: props.menus || [] }]
@@ -196,17 +241,26 @@ const required = {
   trigger: ['blur', 'change'],
 }
 
-const defaultForm = { enable: true, show: true, layout: '' }
+// const defaultForm = { enable: true, show: true, layout: '',  menuStyle: 'default'}
 const [modalFormRef, modalForm, validation] = useForm()
 const [modalRef, okLoading] = useModal()
 
+const modalType = ref('')
 const modalAction = ref('')
 const parentIdDisabled = ref(false)
 function handleOpen(options = {}) {
-  const { action, row = {}, ...rest } = options
+  const { action, type, row = {}, ...rest } = options
   modalAction.value = action
+  modalType.value = type
+  let defaultForm = null
+  if (type === 'MENU') {
+    defaultForm = { enable: true, show: true, layout: '', menuStyle: 'default' }
+  }
+  else {
+    defaultForm = { enable: true }
+  }
   modalForm.value = { ...defaultForm, ...row }
-  parentIdDisabled.value = !!row.parentId && row.type === 'BUTTON'
+  parentIdDisabled.value = !!row.menuId && row.type === 'BUTTON'
   modalRef.value.open({ ...rest, onOk: onSave })
 }
 
@@ -215,18 +269,49 @@ async function onSave() {
   okLoading.value = true
   try {
     let newFormData
-    if (!modalForm.value.parentId)
+    let data = null
+    if (modalType.value === 'MENU') {
+      data = { ...modalForm.value, parentMenu: { id: modalForm.value.menuId } }
+      delete data.menuId
+      delete data.method
+    }
+    else {
+      data = { ...modalForm.value, menuId: modalForm.value.menuId }
+      delete data.type
+    }
+    // 删除parentId字段
+    delete data.parentId
+    delete data.children
+    if (modalType.value === 'MENU' && !modalForm.value.parentId) {
       modalForm.value.parentId = null
-    if (modalAction.value === 'add') {
-      const res = await api.addPermission(modalForm.value)
-      newFormData = res.data
     }
-    else if (modalAction.value === 'edit') {
-      await api.savePermission(modalForm.value.id, modalForm.value)
+    if (modalType.value === 'MENU' && data.parentMenu.id === undefined) {
+      delete data.parentMenu
     }
+
+    let res
+    if (modalType.value === 'MENU') {
+      if (modalAction.value === 'add') {
+        res = await api.createMenu(data)
+      }
+      else {
+        res = await api.updateMenu(data.id, data)
+      }
+      newFormData = res?.data
+    }
+    else {
+      if (modalAction.value === 'add') {
+        res = await api.createHttp(data)
+      }
+      else {
+        res = await api.updateHttp(data.id, data)
+      }
+      newFormData = res?.data
+    }
+
     okLoading.value = false
     $message.success('保存成功')
-    emit('refresh', modalAction.value === 'add' ? newFormData : modalForm.value)
+    emit('refresh', 'http', modalAction.value === 'add' ? newFormData : modalForm.value)
   }
   catch (error) {
     console.error(error)

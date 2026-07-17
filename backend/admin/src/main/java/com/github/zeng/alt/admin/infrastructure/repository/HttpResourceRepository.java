@@ -1,7 +1,5 @@
 package com.github.zeng.alt.admin.infrastructure.repository;
 
-import com.github.zeng.alt.admin.infrastructure.HttpResourceDetila;
-import com.github.zeng.alt.admin.infrastructure.HttpResourceQuery;
 import com.github.zeng.alt.admin.infrastructure.entity.HttpResource;
 import com.github.zeng.alt.domain.base.BaseRepository;
 import com.github.zeng.alt.rest.annotation.CrudRest;
@@ -11,24 +9,14 @@ import java.util.List;
 import java.util.Optional;
 
 @CrudRest(
-        path = "/v1/http",
-        create = false,
-        queryType = HttpResourceQuery.class,
-        listType = HttpResourceDetila.class,
-        detailType = HttpResourceDetila.class,
-        createType = HttpResourceDetila.class,
-        updateType = HttpResourceDetila.class,
-        patchType = HttpResourceDetila.class,
-        search = true,
-        searchType = HttpResourceDetila.class
+        path = "/v1/http"
 )
 @Repository
 public interface HttpResourceRepository extends BaseRepository<HttpResource, Long> {
 
     Optional<HttpResource> findByPathAndMethod(String path, String method);
 
-//    List<HttpResource> findByMenuId(Long menuId);
+    org.springframework.data.domain.Page<HttpResource> findByMenu_Id(Long menuId, org.springframework.data.domain.Pageable pageable);
 
-    // 根据路径前缀查找（用于通配符匹配时可自定义）
     List<HttpResource> findByPathStartingWith(String pathPrefix);
 }

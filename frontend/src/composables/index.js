@@ -1,4 +1,5 @@
 export * from './useAliveData'
 export * from './useCrud'
+export * from './useDict'
 export * from './useForm'
 export * from './useModal'

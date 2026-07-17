@@ -55,7 +55,7 @@ public final class HandlerGenerator {
     private static final ClassName SORT_DIRECTION = ClassName.get("org.springframework.data.domain.Sort", "Direction");
     private static final ClassName BEAN_UTILS = ClassName.get("org.springframework.beans", "BeanUtils");
     private static final ClassName TRANSACTIONAL = ClassName.get("org.springframework.transaction.annotation", "Transactional");
-
+    private static final ClassName STRING_UTILS = ClassName.get("org.springframework.util", "StringUtils");
 
     private HandlerGenerator() {}
 
@@ -1165,7 +1165,7 @@ public final class HandlerGenerator {
                                         "$T.class",
                                         Exception.class)
                                 .build())
-                .addStatement("$T idsParam = request.param($S).orElse($S)", stringType, "ids", "")
+                .addStatement("$T idsParam = request.pathVariable($S)", stringType, "ids")
                 .addStatement("$T<$T> idList = $T.stream(idsParam.split($S))\n.map($T::trim)\n.filter(s -> !s.isEmpty())\n.map($T::valueOf)\n.toList()",
                         ClassName.get(List.class), idType,
                         arraysType, ",",
@@ -1471,9 +1471,8 @@ public final class HandlerGenerator {
     private static void generateSimpleCondition(MethodSpec.Builder builder, QueryFieldMeta field, String instanceName) {
         String valueExpr = field.getLikeWrappedExpr("__v");
         String finalExpr = field.getConversionExpr(valueExpr);
-
-        builder.addStatement("request.param($S).ifPresent(__v -> builder.and($L.$L.$L($L)))",
-                field.getColumn(), instanceName, field.getFieldName(),
+        builder.addStatement("request.param($S).filter(v -> $T.hasText(v)).ifPresent(__v -> builder.and($L.$L.$L($L)))",
+                field.getColumn(), STRING_UTILS, instanceName, field.getFieldName(),
                 field.getQueryMethod(), finalExpr);
     }
 

@@ -7,7 +7,7 @@
  **********************************/
 
 import api from '@/api'
-import { useAuthStore, usePermissionStore, useUserStore } from '@/store'
+import { useAuthStore, useDictStore, usePermissionStore, useUserStore } from '@/store'
 import { getPermissions, getUserInfo } from '@/store/helper'
 
 const WHITE_LIST = ['/login', '/404']
@@ -32,6 +32,7 @@ export function createPermissionGuard(router) {
     const userStore = useUserStore()
     const permissionStore = usePermissionStore()
     if (!userStore.userInfo) {
+      useDictStore().clearDicts()
       const [user, permissions] = await Promise.all([getUserInfo(), getPermissions()])
       userStore.setUser(user)
       permissionStore.setPermissions(permissions)

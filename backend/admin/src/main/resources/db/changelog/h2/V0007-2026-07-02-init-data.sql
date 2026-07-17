@@ -30,9 +30,6 @@ INSERT INTO MAIN_PERMISSION (permission_id, resource_type, code, name, descripti
     (280, 'MENU', 'MenuResourceMgt', '菜单资源管理', NULL, TRUE, '/pms/resource/menu', '/src/views/pms/resource/menu/index.vue', NULL, 'i-fe:menu', 'default', 't', NULL, '', 1, TRUE, 279, 'superAdmin', '2025-05-22 20:57:26.822246', 'superAdmin', '2025-06-12 15:45:49.601032');
 
 INSERT INTO MAIN_PERMISSION (permission_id, resource_type, code, name, description, is_enabled, path, component, redirect, icon, layout, keep_alive, menu_name, menu_style, resource_order, is_show, parent_id, created_by, created_date, last_modified_by, last_modified_date) VALUES
-    (281, 'MENU', 'GraphqlMgt', 'GRAPHQL管理', '用于管理graphql资源', TRUE, '/pms/resource/graphql', '/src/views/pms/resource/graphql/index.vue', NULL, 'i-carbon:graphql', 'default', 't', NULL, NULL, 3, TRUE, 279, NULL, '2025-05-22 20:57:26.822246', 'superAdmin', '2025-05-27 22:36:22.299436');
-
-INSERT INTO MAIN_PERMISSION (permission_id, resource_type, code, name, description, is_enabled, path, component, redirect, icon, layout, keep_alive, menu_name, menu_style, resource_order, is_show, parent_id, created_by, created_date, last_modified_by, last_modified_date) VALUES
     (282, 'MENU', 'UserMgt', '用户管理', NULL, TRUE, '/pms/user', '/src/views/pms/user/index.vue', NULL, 'i-fe:user', 'default', 't', NULL, NULL, 4, TRUE, 279, NULL, '2025-05-22 20:57:26.822246', 'superAdmin', '2025-05-27 22:36:35.047659');
 
 INSERT INTO MAIN_PERMISSION (permission_id, resource_type, code, name, description, is_enabled, path, component, redirect, icon, layout, keep_alive, menu_name, menu_style, resource_order, is_show, parent_id, created_by, created_date, last_modified_by, last_modified_date) VALUES

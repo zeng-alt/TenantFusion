@@ -12,7 +12,7 @@ export default {
   // 获取用户信息
   getUser: () => request.get('/user/detail'),
   // 刷新token
-  refreshToken: () => request.get('/auth/refresh/token'),
+  // refreshToken: () => request.get('/auth/refresh/token'),
   // 登出
   logout: () => request.post('/logout/jwt', {}, { needTip: false }),
   // 切换当前角色

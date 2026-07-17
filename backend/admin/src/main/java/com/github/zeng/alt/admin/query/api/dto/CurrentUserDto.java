@@ -1,6 +1,5 @@
 package com.github.zeng.alt.admin.query.api.dto;
 
-import com.github.zeng.alt.admin.infrastructure.HttpResourceDetila;
 import lombok.Data;
 
 import java.time.LocalDateTime;

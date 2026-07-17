@@ -13,5 +13,4 @@ public interface MenuResourceRepository extends BaseRepository<MenuResource, Lon
 
     Boolean existsByPath(String path);
 
-
 }
