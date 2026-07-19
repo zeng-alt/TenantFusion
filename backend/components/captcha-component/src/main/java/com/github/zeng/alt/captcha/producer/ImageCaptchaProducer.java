@@ -14,11 +14,7 @@ public class ImageCaptchaProducer implements CaptchaProducer {
 
     private static final String CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
     private static final SecureRandom RANDOM = new SecureRandom();
-    private static final Font[] FONTS = {
-            new Font("SansSerif", Font.BOLD, 36),
-            new Font("Serif", Font.BOLD, 36),
-            new Font("Monospaced", Font.BOLD, 36)
-    };
+    private static final String[] FONT_NAMES = {"SansSerif", "Serif", "Monospaced"};
 
     private final int width;
     private final int height;
@@ -53,8 +49,10 @@ public class ImageCaptchaProducer implements CaptchaProducer {
         drawNoise(g2d);
 
         int charWidth = width / length;
+        int fontSize = Math.min(height - 12, charWidth + 2);
+        Font font = new Font(FONT_NAMES[RANDOM.nextInt(FONT_NAMES.length)], Font.BOLD, fontSize);
+        g2d.setFont(font);
         for (int i = 0; i < code.length(); i++) {
-            g2d.setFont(FONTS[RANDOM.nextInt(FONTS.length)]);
 
             Color color = new Color(
                     RANDOM.nextInt(120),

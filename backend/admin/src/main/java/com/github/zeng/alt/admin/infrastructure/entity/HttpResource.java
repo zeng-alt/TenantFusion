@@ -26,22 +26,32 @@ public class HttpResource extends Permission {
     private String redirect;
     private String buttonName;
 
-    @JsonIgnore
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "menu_id")
-    private MenuResource menu;          // 所属菜单，可为空
+    /**
+     * 数据库字段 menu_id
+     * 用于查询
+     */
+    @Column(name = "menu_id")
+    @QueryField
+    private Long menuId;
+
+//    @JsonIgnore
+//    @ManyToOne(fetch = FetchType.LAZY)
+//    @JoinColumn(name = "menu_id")
+//    private MenuResource menu;          // 所属菜单，可为空
 
     @Transient
     public Long getMenuId() {
-        return menu != null ? menu.getId() : null;
+        return menuId;
     }
 
     public void setMenuId(Long menuId) {
         if (menuId != null) {
-            this.menu = new MenuResource();
-            this.menu.setPermissionId(menuId);
+            this.menuId = menuId;
+//            this.menu = new MenuResource();
+//            this.menu.setPermissionId(menuId);
         } else {
-            this.menu = null;
+//            this.menu = null;
+            this.menuId = null;
         }
     }
 }

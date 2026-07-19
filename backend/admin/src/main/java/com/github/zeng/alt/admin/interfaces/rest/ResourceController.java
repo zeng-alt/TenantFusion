@@ -29,7 +29,7 @@ public class ResourceController {
             @RequestParam(required = false) Long menuId) {
         var pageable = org.springframework.data.domain.PageRequest.of(page - 1, size);
         var pageResult = menuId != null
-            ? httpResourceRepository.findByMenu_Id(menuId, pageable)
+            ? httpResourceRepository.findByMenuId(menuId, pageable)
             : httpResourceRepository.findAll(pageable);
         return PageRestResponse.of(pageResult.getContent(), pageResult.getTotalElements(), size, page);
     }

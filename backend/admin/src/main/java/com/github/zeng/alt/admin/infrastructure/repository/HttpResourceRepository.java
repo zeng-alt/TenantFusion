@@ -16,7 +16,7 @@ public interface HttpResourceRepository extends BaseRepository<HttpResource, Lon
 
     Optional<HttpResource> findByPathAndMethod(String path, String method);
 
-    org.springframework.data.domain.Page<HttpResource> findByMenu_Id(Long menuId, org.springframework.data.domain.Pageable pageable);
+    org.springframework.data.domain.Page<HttpResource> findByMenuId(Long menuId, org.springframework.data.domain.Pageable pageable);
 
     List<HttpResource> findByPathStartingWith(String pathPrefix);
 }

@@ -75,6 +75,7 @@
             :scroll-x="-1"
             :get-data="handlePageHttp"
             class="mt-12"
+            :query-items="{ menuId: currentMenu.id }"
           />
         </template>
         <n-empty v-else class="h-450 f-c-c" size="large" description="请选择菜单查看详情" />
@@ -92,6 +93,7 @@ import { NButton, NSwitch } from 'naive-ui'
 import { MeCrud, MeModal } from '@/components'
 import { useModal } from '@/composables'
 import HttpResource from '@/views/pms/resource/http/index.vue'
+import httpApi from '../http/api'
 import api from './api'
 import MenuTree from './components/MenuTree.vue'
 import ResAddOrEdit from './components/ResAddOrEdit.vue'
@@ -106,19 +108,24 @@ const $table = ref(null)
 const currentMenu = ref(null)
 
 function handlePageHttp(params) {
-  return api.pageHttp({ ...params, menuId: currentMenu.value?.id })
+  return httpApi.page({ ...params, menuId: currentMenu.value?.id })
 }
 
-async function initData(data) {
-  treeLoading.value = true
-  const res = await api.getMenuTree()
-  treeData.value = res?.data || []
-  treeLoading.value = false
-  if (data)
-    currentMenu.value = data
+async function initData(type = 'MENU', data) {
+  if (type === 'MENU') {
+    treeLoading.value = true
+    const res = await api.getMenuTree()
+    treeData.value = res?.data || []
+    treeLoading.value = false
+    if (data)
+      currentMenu.value = data
+  }
+  else {
+    $table.value.handleSearch()
+  }
 }
 
-initData()
+initData('MENU')
 
 const modalRef = ref(null)
 function handleEdit(item = {}) {
@@ -166,7 +173,7 @@ const btnsColumns = [
           default: () => '断联',
           icon: () => h('i', { class: 'i-material-symbols:powerOff text-14' }),
         }),
-        h(NButton, { size: 'small', type: 'error', style: 'margin-left: 12px;', onClick: () => handleDeleteBtn(row.id) }, {
+        h(NButton, { size: 'small', type: 'error', style: 'margin-left: 12px;', onClick: () => handleDeleteBtn(row.permissionId) }, {
           default: () => '删除',
           icon: () => h('i', { class: 'i-material-symbols:delete-outline text-14' }),
         }),
@@ -174,6 +181,15 @@ const btnsColumns = [
     },
   },
 ]
+
+watch(
+  () => currentMenu.value,
+  async (v) => {
+    await nextTick()
+    if (v)
+      $table.value.handleSearch()
+  },
+)
 
 function handleAddBtn() {
   modalRef.value?.handleOpen({
@@ -204,7 +220,7 @@ function handleDisconnect(row) {
     async onPositiveClick() {
       try {
         d.loading = true
-        await api.disconnectHttp(row.id)
+        await api.disconnectHttp(row.permissionId)
         $table.value?.handleSearch()
         $message.success('断联成功')
       }
@@ -225,7 +241,7 @@ function handleDeleteBtn(id) {
     async onPositiveClick() {
       try {
         d.loading = true
-        await api.deleteHttp(id)
+        await httpApi.delete(id)
         $message.success('删除成功')
         $table.value?.handleSearch()
       }
@@ -240,7 +256,7 @@ function handleDeleteBtn(id) {
 async function handleEnable(item) {
   try {
     item.enableLoading = true
-    await api.updateHttp(item.id, { enabled: !item.enabled })
+    await httpApi.update({ permissionId: item.permissionId, enabled: !item.enabled })
     $message.success('操作成功')
     $table.value?.handleSearch()
     item.enableLoading = false

@@ -4,7 +4,7 @@ export default {
   // Menu
   getMenuTree: () => request.get('/menu/resource/tree/menu'),
   createMenu: data => request.post('/menu', data),
-  updateMenu: (id, data) => request.patch(`/menu/${id}`, data),
+  updateMenu: data => request.patch(`/menu/${data.id}`, data),
   deleteMenu: ids => request.delete(`/menu/${ids}`),
 
   // HTTP Resource

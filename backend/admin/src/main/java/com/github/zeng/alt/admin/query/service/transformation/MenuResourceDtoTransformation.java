@@ -21,7 +21,8 @@ public interface MenuResourceDtoTransformation {
 
     @Mapping(target = "parentId", source = "parent.id")
     @Mapping(target = "children", expression = "java(this.to(menuResource.getChildren()))")
-    public MenuResourceDto to(MenuResource menuResource);
+    public MenuResourceDto
+    to(MenuResource menuResource);
 
 
     default List<MenuResourceDto> to(List<MenuResource> menuResources) {

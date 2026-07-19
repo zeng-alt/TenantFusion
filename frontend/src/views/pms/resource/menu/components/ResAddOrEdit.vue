@@ -1,11 +1,3 @@
-<!--------------------------------
- - @Author: Ronnie Zhang
- - @LastEditor: Ronnie Zhang
- - @LastEditTime: 2024/04/01 15:52:31
- - @Email: zclzone@outlook.com
- - Copyright © 2023 Ronnie Zhang(大脸怪) | https://isme.top
- --------------------------------->
-
 <template>
   <MeModal ref="modalRef">
     <n-form
@@ -16,9 +8,9 @@
       :model="modalForm"
     >
       <n-grid :cols="24" :x-gap="24">
-        <n-form-item-gi :span="12" label="所属菜单" path="menuId">
+        <n-form-item-gi :span="12" label="所属菜单" path="parentMenuId">
           <n-tree-select
-            v-model:value="modalForm.menuId"
+            v-model:value="modalForm.parentMenuId"
             :options="menuOptions"
             :disabled="parentIdDisabled"
             label-field="name"
@@ -39,159 +31,136 @@
           </template>
           <n-input v-model:value="modalForm.code" :disabled="modalAction === 'edit'" />
         </n-form-item-gi>
-        <n-form-item-gi
-          v-if="modalForm.type === 'MENU'"
-          :span="12"
-          path="path"
-          :rule="{
-            trigger: ['blur', 'change'],
-            type: 'string',
-            message: '必须是/、http、https开头',
-            validator(rule, value) {
-              if (value) {
-                return /\/|http|https/.test(value)
-              }
-              return true
-            },
-          }"
-        >
-          <template #label>
-            <QuestionLabel label="路由地址" content="父级菜单可不填" />
-          </template>
-          <n-input v-model:value="modalForm.path" />
-        </n-form-item-gi>
-        <n-form-item-gi v-if="modalForm.type === 'MENU'" :span="12" path="icon">
-          <template #label>
-            <QuestionLabel
-              label="菜单图标"
-              content="如material-symbols:help，图标库地址: https://icones.js.org/collection/all"
-            />
-          </template>
-          <n-select v-model:value="modalForm.icon" :options="iconOptions" clearable filterable />
-        </n-form-item-gi>
-        <n-form-item-gi v-if="modalForm.type === 'MENU'" :span="12" path="layout">
-          <template #label>
-            <QuestionLabel
-              label="layout"
-              content="对应layouts文件夹下的目录名, 为空则默认为 default"
-            />
-          </template>
-          <n-select v-model:value="modalForm.layout" :options="layoutOptions" clearable />
-        </n-form-item-gi>
-        <n-form-item-gi v-if="modalForm.type === 'MENU'" :span="24" path="component">
-          <template #label>
-            <QuestionLabel
-              label="组件路径"
-              content="前端组件的路径，以 /src 开头，父级菜单可不填"
-            />
-          </template>
-          <n-select
-            v-model:value="modalForm.component"
-            :options="componentOptions"
-            clearable
-            filterable
-            tag
-          />
-        </n-form-item-gi>
 
-        <n-form-item-gi v-if="modalForm.type === 'MENU'" :span="12" path="show">
-          <template #label>
-            <QuestionLabel label="显示状态" content="控制是否在菜单栏显示，不影响路由注册" />
-          </template>
-          <n-switch v-model:value="modalForm.show">
-            <template #checked>
-              显示
+        <template v-if="modalType === 'MENU'">
+          <n-form-item-gi
+            :span="12"
+            path="path"
+            :rule="{
+              trigger: ['blur', 'change'],
+              type: 'string',
+              message: '必须以 /、http 或 https 开头',
+              validator(rule, value) {
+                if (value) return /^(\/|https?:\/\/)/.test(value)
+                return true
+              },
+            }"
+          >
+            <template #label>
+              <QuestionLabel label="路由地址" content="父级菜单可不填" />
             </template>
-            <template #unchecked>
-              隐藏
+            <n-input v-model:value="modalForm.path" />
+          </n-form-item-gi>
+          <n-form-item-gi :span="12" path="icon">
+            <template #label>
+              <QuestionLabel
+                label="菜单图标"
+                content="如material-symbols:help，图标库地址: https://icones.js.org/collection/all"
+              />
             </template>
-          </n-switch>
-        </n-form-item-gi>
+            <n-select v-model:value="modalForm.icon" :options="iconOptions" clearable filterable />
+          </n-form-item-gi>
+          <n-form-item-gi :span="12" path="layout">
+            <template #label>
+              <QuestionLabel
+                label="layout"
+                content="对应layouts文件夹下的目录名, 为空则默认为 default"
+              />
+            </template>
+            <n-select v-model:value="modalForm.layout" :options="layoutOptions" clearable />
+          </n-form-item-gi>
+          <n-form-item-gi :span="24" path="component">
+            <template #label>
+              <QuestionLabel
+                label="组件路径"
+                content="前端组件的路径，以 /src 开头，父级菜单可不填"
+              />
+            </template>
+            <n-select
+              v-model:value="modalForm.component"
+              :options="componentOptions"
+              clearable
+              filterable
+              tag
+            />
+          </n-form-item-gi>
+          <n-form-item-gi :span="12" path="redirect">
+            <template #label>
+              <QuestionLabel label="重定向" content="路由重定向地址" />
+            </template>
+            <n-input v-model:value="modalForm.redirect" placeholder="可选" />
+          </n-form-item-gi>
+          <n-form-item-gi :span="12" path="show">
+            <template #label>
+              <QuestionLabel label="显示状态" content="控制是否在菜单栏显示，不影响路由注册" />
+            </template>
+            <n-switch v-model:value="modalForm.show">
+              <template #checked>显示</template>
+              <template #unchecked>隐藏</template>
+            </n-switch>
+          </n-form-item-gi>
+          <n-form-item-gi :span="12" path="keepAlive">
+            <template #label>
+              <QuestionLabel
+                label="KeepAlive"
+                content="设置keepAlive需将组件的name设置成当前菜单的code"
+              />
+            </template>
+            <n-switch v-model:value="modalForm.keepAlive">
+              <template #checked>是</template>
+              <template #unchecked>否</template>
+            </n-switch>
+          </n-form-item-gi>
+          <n-form-item-gi
+            :span="12"
+            label="排序"
+            path="order"
+            :rule="{
+              type: 'number',
+              required: true,
+              message: '此为必填项',
+              trigger: ['blur', 'change'],
+            }"
+          >
+            <n-input-number v-model:value="modalForm.order" />
+          </n-form-item-gi>
+          <n-form-item-gi :span="12" label="菜单风格" path="menuStyle">
+            <n-select v-model:value="modalForm.menuStyle" :options="menuStyleOptions" />
+          </n-form-item-gi>
+        </template>
 
-        <n-form-item-gi :span="12" path="enable">
+        <template v-if="modalType === 'BUTTON'">
+          <n-form-item-gi :span="12" path="method" :rule="required">
+            <template #label>
+              <QuestionLabel label="请求方法" content="HTTP 请求方法" />
+            </template>
+            <n-select v-model:value="modalForm.method" clearable :options="httpMethodOptions" />
+          </n-form-item-gi>
+          <n-form-item-gi :span="24" path="path">
+            <template #label>
+              <QuestionLabel label="接口路径" content="HTTP 接口路径" />
+            </template>
+            <n-input v-model:value="modalForm.path" placeholder="/api/v1/..." />
+          </n-form-item-gi>
+        </template>
+
+        <n-form-item-gi :span="12" path="enabled">
           <template #label>
             <QuestionLabel
               label="状态"
               content="如果是菜单，禁用后将不添加到路由表，无法进入此页面"
             />
           </template>
-          <n-switch v-model:value="modalForm.enable">
-            <template #checked>
-              启用
-            </template>
-            <template #unchecked>
-              禁用
-            </template>
+          <n-switch v-model:value="modalForm.enabled">
+            <template #checked>启用</template>
+            <template #unchecked>禁用</template>
           </n-switch>
         </n-form-item-gi>
-        <n-form-item-gi v-if="modalForm.type === 'MENU'" :span="12" path="keepAlive">
+        <n-form-item-gi :span="24" path="description">
           <template #label>
-            <QuestionLabel
-              label="KeepAlive"
-              content="设置keepAlive需将组件的name设置成当前菜单的code"
-            />
+            <QuestionLabel label="描述" content="资源的描述信息" />
           </template>
-          <n-switch v-model:value="modalForm.keepAlive">
-            <template #checked>
-              是
-            </template>
-            <template #unchecked>
-              否
-            </template>
-          </n-switch>
-        </n-form-item-gi>
-        <n-form-item-gi
-          v-if="modalForm.type === 'MENU'"
-          :span="12"
-          label="排序"
-          path="order"
-          :rule="{
-            type: 'number',
-            required: true,
-            message: '此为必填项',
-            trigger: ['blur', 'change'],
-          }"
-        >
-          <n-input-number v-model:value="modalForm.order" />
-        </n-form-item-gi>
-        <n-form-item-gi
-          v-if="modalForm.type === 'MENU'"
-          :span="12"
-          label="菜单风格"
-          path="menuStyle"
-        >
-          <n-select v-model:value="modalForm.menuStyle" :options="options" />
-        </n-form-item-gi>
-
-        <n-form-item-gi v-if="modalType === 'BUTTON'" :span="12" path="method" :rule="required">
-          <template #label>
-            <QuestionLabel label="协议" content="如果是菜单则对应前端路由的name，使用大驼峰" />
-          </template>
-          <n-select
-            v-model:value="modalForm.method"
-            size="small"
-            clearable
-            :options="[
-              { label: 'GET', value: 'GET' },
-              { label: 'POST', value: 'POST' },
-              { label: 'PUT', value: 'PUT' },
-              { label: 'DELETE', value: 'DELETE' },
-              { label: 'PATCH', value: 'PATCH' },
-              { label: 'HEAD', value: 'HEAD' },
-              { label: 'OPTIONS', value: 'OPTIONS' },
-              { label: 'TRACE', value: 'TRACE' },
-            ]"
-          />
-        </n-form-item-gi>
-
-        <n-form-item-gi v-if="modalType === 'BUTTON'" :span="24" path="path">
-          <template #label>
-            <QuestionLabel
-              label="接口路径"
-              content="前端组件的路径，以 /src 开头，父级菜单可不填"
-            />
-          </template>
-          <n-input v-model:value="modalForm.path" />
+          <n-input v-model:value="modalForm.description" type="textarea" :rows="2" />
         </n-form-item-gi>
       </n-grid>
     </n-form>
@@ -203,6 +172,7 @@ import icons from 'isme:icons'
 import pagePathes from 'isme:page-pathes'
 import { MeModal } from '@/components'
 import { useForm, useModal } from '@/composables'
+import httpApi from '../../http/api'
 import api from '../api'
 import QuestionLabel from './QuestionLabel.vue'
 
@@ -214,9 +184,19 @@ const props = defineProps({
 })
 const emit = defineEmits(['refresh'])
 
-const options = [
+const menuStyleOptions = [
   { label: '默认', value: 'default' },
   { label: '卡片', value: 'list' },
+]
+const httpMethodOptions = [
+  { label: 'GET', value: 'GET' },
+  { label: 'POST', value: 'POST' },
+  { label: 'PUT', value: 'PUT' },
+  { label: 'DELETE', value: 'DELETE' },
+  { label: 'PATCH', value: 'PATCH' },
+  { label: 'HEAD', value: 'HEAD' },
+  { label: 'OPTIONS', value: 'OPTIONS' },
+  { label: 'TRACE', value: 'TRACE' },
 ]
 
 const menuOptions = computed(() => {
@@ -241,26 +221,38 @@ const required = {
   trigger: ['blur', 'change'],
 }
 
-// const defaultForm = { enable: true, show: true, layout: '',  menuStyle: 'default'}
 const [modalFormRef, modalForm, validation] = useForm()
 const [modalRef, okLoading] = useModal()
 
 const modalType = ref('')
 const modalAction = ref('')
 const parentIdDisabled = ref(false)
+
 function handleOpen(options = {}) {
   const { action, type, row = {}, ...rest } = options
   modalAction.value = action
   modalType.value = type
-  let defaultForm = null
+
+  const defaults = {
+    enabled: true,
+    ...(type === 'MENU' && { show: true, layout: '', menuStyle: 'default', keepAlive: false }),
+  }
+
+  const formRow = { ...row }
   if (type === 'MENU') {
-    defaultForm = { enable: true, show: true, layout: '', menuStyle: 'default' }
+    if (formRow.parentId != null) formRow.parentMenuId = formRow.parentId
+    else if (formRow.menuId != null) formRow.parentMenuId = formRow.menuId
   }
-  else {
-    defaultForm = { enable: true }
+  else if (type === 'BUTTON' && formRow.menuId != null) {
+    formRow.parentMenuId = formRow.menuId
   }
-  modalForm.value = { ...defaultForm, ...row }
-  parentIdDisabled.value = !!row.menuId && row.type === 'BUTTON'
+
+  if (formRow.keepAlive !== undefined && typeof formRow.keepAlive === 'string') {
+    formRow.keepAlive = formRow.keepAlive === 'true' || formRow.keepAlive === 't'
+  }
+
+  modalForm.value = { ...defaults, ...formRow }
+  parentIdDisabled.value = type === 'BUTTON' && !!formRow.menuId
   modalRef.value.open({ ...rest, onOk: onSave })
 }
 
@@ -268,50 +260,37 @@ async function onSave() {
   await validation()
   okLoading.value = true
   try {
-    let newFormData
-    let data = null
+    const payload = { ...modalForm.value }
+
     if (modalType.value === 'MENU') {
-      data = { ...modalForm.value, parentMenu: { id: modalForm.value.menuId } }
-      delete data.menuId
-      delete data.method
+      if (payload.parentMenuId) {
+        payload.parentId = payload.parentMenuId
+        delete payload.parent
+      }
+      payload.keepAlive = payload.keepAlive ? 'true' : 'false'
     }
     else {
-      data = { ...modalForm.value, menuId: modalForm.value.menuId }
-      delete data.type
+      payload.menuId = payload.parentMenuId
     }
-    // 删除parentId字段
-    delete data.parentId
-    delete data.children
-    if (modalType.value === 'MENU' && !modalForm.value.parentId) {
-      modalForm.value.parentId = null
-    }
-    if (modalType.value === 'MENU' && data.parentMenu.id === undefined) {
-      delete data.parentMenu
-    }
+
+    delete payload.parentMenuId
+    delete payload.children
 
     let res
     if (modalType.value === 'MENU') {
-      if (modalAction.value === 'add') {
-        res = await api.createMenu(data)
-      }
-      else {
-        res = await api.updateMenu(data.id, data)
-      }
-      newFormData = res?.data
+      res = modalAction.value === 'add'
+        ? await api.createMenu(payload)
+        : await api.updateMenu(payload)
     }
     else {
-      if (modalAction.value === 'add') {
-        res = await api.createHttp(data)
-      }
-      else {
-        res = await api.updateHttp(data.id, data)
-      }
-      newFormData = res?.data
+      res = modalAction.value === 'add'
+        ? await httpApi.create(payload)
+        : await httpApi.update(payload)
     }
 
     okLoading.value = false
     $message.success('保存成功')
-    emit('refresh', 'http', modalAction.value === 'add' ? newFormData : modalForm.value)
+    emit('refresh', modalType.value, modalAction.value === 'add' ? res?.data : modalForm.value)
   }
   catch (error) {
     console.error(error)

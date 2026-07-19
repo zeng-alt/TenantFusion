@@ -15,7 +15,7 @@
       :columns="columns"
       :get-data="httpApi.page"
       expand
-      @update:checked-row-keys="onChecked"
+      @on-checked="onChecked"
     >
       <MeQueryItem label="所属菜单">
         <n-tree-select
@@ -126,6 +126,7 @@ import { useCrud } from '@/composables'
 import api from '@/views/pms/resource/menu/api'
 import QuestionLabel from '@/views/pms/resource/menu/components/QuestionLabel.vue'
 import httpApi from './api.js'
+import {h} from "vue";
 
 defineOptions({ name: 'HttpResourceMgt' })
 
@@ -194,7 +195,7 @@ initData()
 
 async function handleEnable(item) {
   try {
-    await api.updateHttp(item.permissionId, { enabled: !item.enabled })
+    await httpApi.update({ permissionId: item.permissionId, enabled: !item.enabled })
     $message.success('操作成功')
     $table.value?.handleSearch()
   }

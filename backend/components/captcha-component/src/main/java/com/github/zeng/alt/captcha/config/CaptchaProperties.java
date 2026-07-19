@@ -62,12 +62,12 @@ public class CaptchaProperties {
         /**
          * 图片宽度
          */
-        private int width = 200;
+        private int width = 80;
 
         /**
          * 图片高度
          */
-        private int height = 60;
+        private int height = 40;
 
         /**
          * 字符个数

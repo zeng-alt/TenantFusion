@@ -92,8 +92,8 @@ function onChecked(rowKeys) {
 async function loadPermissionTree() {
   loading.value = true
   try {
-    const res = await api.getAllPermissionEnableTree()
-    permissionTree.value = res ?? []
+    const res = await api.getAllPermissionTree()
+    permissionTree.value = res?.data ?? []
   }
   catch (error) {
     console.error('加载权限树失败:', error)

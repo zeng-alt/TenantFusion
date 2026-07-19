@@ -57,7 +57,7 @@ import api from '../api'
 import AssignMenu from './AssignMenu.vue'
 import ResAddOrEdit from './ResAddOrEdit.vue'
 
-defineProps({
+const props = defineProps({
   treeData: {
     type: Array,
     default: () => [],
@@ -127,7 +127,8 @@ function handleDelete(item) {
         await api.deleteMenu(item.id)
         $message.success('删除成功', { key: 'deleteMenu' })
         emit('refresh')
-        emit('update:currentMenu', null)
+        if (item.id === props.currentMenu?.id)
+          emit('update:currentMenu', null)
       }
       catch (error) {
         console.error(error)

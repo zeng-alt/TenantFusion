@@ -32,10 +32,33 @@ public class MenuResource extends Permission implements BaseTreeEntity<MenuResou
     @Column(name = "is_show")
     private Boolean show = true;
 
+    @Transient
+    private Long parentId;
+
     @JsonIgnore
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "parent_id")
     private MenuResource parent;
+
+    public void addChild(MenuResource child){
+        children.add(child);
+        child.setParent(this);
+    }
+
+    public void removeChild(MenuResource child){
+        children.remove(child);
+        child.setParent(null);
+    }
+
+    public void setParentId(Long parentId) {
+        this.parentId = parentId;
+        if (parentId != null) {
+            this.parent = new MenuResource();
+            this.parent.setPermissionId(parentId);
+        } else {
+            this.parent = null;
+        }
+    }
 
     @JsonIgnore
     @OneToMany(mappedBy = "parent", fetch = FetchType.LAZY)

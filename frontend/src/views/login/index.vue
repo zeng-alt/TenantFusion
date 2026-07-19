@@ -58,8 +58,8 @@
             </template>
           </n-input>
           <img
-            v-if="captchaData"
-            :src="captchaData.imageBase64"
+            v-if="captchaUrl"
+            :src="captchaUrl"
             alt="验证码"
             height="40"
             class="ml-12 w-80 cursor-pointer"
@@ -107,15 +107,9 @@ const loginInfo = ref({
   captcha: '',
 })
 
-const captchaData = ref(null)
-const initCaptcha = throttle(async () => {
-  try {
-    const res = await api.captcha()
-    captchaData.value = res.data
-  }
-  catch {
-    captchaData.value = null
-  }
+const captchaUrl = ref('')
+const initCaptcha = throttle(() => {
+  captchaUrl.value = `/api/auth/captcha?t=${Date.now()}`
 }, 500)
 
 const localLoginInfo = lStorage.get('loginInfo')
