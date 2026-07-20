@@ -37,8 +37,8 @@ public class JwtProperties {
     @Length(min = 256, message = "HMAC 签名密钥长度最小为【256】位")
     private String base64Secret;
 
-    /** Token 过期时间（秒），默认 24 小时 */
-    private Long expiration = 60 * 60 * 24L;
+    /** Token 过期时间（秒），默认 4 小时 */
+    private Long expiration = 60 * 60 * 4L;
 
     /** Token 类型 */
     private String tokenType = "Bearer";

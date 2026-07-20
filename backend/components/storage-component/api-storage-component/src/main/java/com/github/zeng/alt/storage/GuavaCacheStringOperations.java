@@ -12,7 +12,8 @@ import java.util.concurrent.atomic.AtomicLong;
 public class GuavaCacheStringOperations implements CacheStringOperations {
 
     private final Cache<String, Object> cache = CacheBuilder.newBuilder()
-            .expireAfterWrite(30, TimeUnit.MINUTES)
+            .expireAfterWrite(1, TimeUnit.DAYS)
+            .expireAfterAccess(2, TimeUnit.HOURS)
             .build();
 
     // 用于 pattern 删除索引

@@ -41,22 +41,19 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private final RequestMatcher loginRequestMatcher;
     private final String refreshTokenHeader;
     private final String newAccessTokenHeader;
-    private final long rememberMeExpiration;
 
     public JwtAuthenticationFilter(JwtTokenProvider jwtTokenProvider,
                                    StorageTemplate storageTemplate,
                                    String headerName,
                                    LoginProperties loginProperties,
                                    String refreshTokenHeader,
-                                   String newAccessTokenHeader,
-                                   long rememberMeExpiration) {
+                                   String newAccessTokenHeader) {
         this.jwtTokenProvider = jwtTokenProvider;
         this.storageTemplate = storageTemplate;
         this.headerName = headerName;
         this.loginRequestMatcher = PathPatternRequestMatcher.withDefaults().matcher(loginProperties.getMethod(), loginProperties.getLoginPath());
         this.refreshTokenHeader = refreshTokenHeader;
         this.newAccessTokenHeader = newAccessTokenHeader;
-        this.rememberMeExpiration = rememberMeExpiration;
     }
 
     @Override
@@ -87,29 +84,29 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             // 2. 校验缓存中是否存在该 token（未被登出）
             String cacheKey = jwtTokenProvider.getCacheKey(token);
             if (cacheKey == null || Boolean.FALSE.equals(storageTemplate.hasKey(cacheKey))) {
-                filterChain.doFilter(request, response);
+                result = JwtTokenProvider.TokenValidationResult.EXPIRED;
+            } else {
+
+                // 3. 重建用户并设置 SecurityContext
+                Jwt claims = jwtTokenProvider.getClaims(token);
+                if (claims == null) {
+                    filterChain.doFilter(request, response);
+                    return;
+                }
+
+                SecurityUser securityUser = jwtTokenProvider.getUserFromClaims(claims);
+                UsernamePasswordAuthenticationToken authentication =
+                        new UsernamePasswordAuthenticationToken(securityUser, null, securityUser.getAuthorities());
+
+                SecurityContextHolder.getContext().setAuthentication(authentication);
+
+                try {
+                    filterChain.doFilter(request, response);
+                } finally {
+                    SecurityContextHolder.clearContext();
+                }
                 return;
             }
-
-            // 3. 重建用户并设置 SecurityContext
-            Jwt claims = jwtTokenProvider.getClaims(token);
-            if (claims == null) {
-                filterChain.doFilter(request, response);
-                return;
-            }
-
-            SecurityUser securityUser = jwtTokenProvider.getUserFromClaims(claims);
-            UsernamePasswordAuthenticationToken authentication =
-                    new UsernamePasswordAuthenticationToken(securityUser, null, securityUser.getAuthorities());
-
-            SecurityContextHolder.getContext().setAuthentication(authentication);
-
-            try {
-                filterChain.doFilter(request, response);
-            } finally {
-                SecurityContextHolder.clearContext();
-            }
-            return;
         }
 
         // ===== accessToken 过期，尝试用 refreshToken 无感续期 =====

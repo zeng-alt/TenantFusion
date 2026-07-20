@@ -37,8 +37,7 @@ public class JwtAuthenticationSuccessHandler implements AuthenticationSuccessHan
     private final JwtTokenProvider jwtTokenProvider;
     private final StorageTemplate storageTemplate;
     private final ObjectMapper objectMapper;
-    private final long expiration;
-    private final long rememberMeExpiration;
+    private final JwtProperties jwtProperties;
 
     @Override
     public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response,
@@ -52,28 +51,28 @@ public class JwtAuthenticationSuccessHandler implements AuthenticationSuccessHan
             storageTemplate.opsForString().set(
                     cacheKey,
                     securityUser.getUsername(),
-                    Duration.ofSeconds(expiration)
+                    Duration.ofSeconds(jwtProperties.getExpiration())
             );
         }
 
         Map<String, Object> tokenData = new LinkedHashMap<>();
         tokenData.put("accessToken", token);
         tokenData.put("tokenType", "Bearer");
-        tokenData.put("expiresIn", expiration);
+        tokenData.put("expiresIn", jwtProperties.getExpiration());
 
         // 记住我：额外生成 refreshToken
         if (isRememberMe(request)) {
-            String refreshToken = jwtTokenProvider.createRefreshToken(securityUser, rememberMeExpiration);
+            String refreshToken = jwtTokenProvider.createRefreshToken(securityUser, jwtProperties.getRememberMeExpiration());
             String refreshCacheKey = jwtTokenProvider.getRefreshCacheKey(refreshToken);
             if (refreshCacheKey != null) {
                 storageTemplate.opsForString().set(
                         refreshCacheKey,
                         securityUser.getUsername(),
-                        Duration.ofSeconds(rememberMeExpiration)
+                        Duration.ofSeconds(jwtProperties.getRememberMeExpiration())
                 );
             }
             tokenData.put("refreshToken", refreshToken);
-            tokenData.put("refreshExpiresIn", rememberMeExpiration);
+            tokenData.put("refreshExpiresIn", jwtProperties.getRememberMeExpiration());
         }
 
         RestResponse<Map<String, Object>> restResponse = RestResponse.success(tokenData);

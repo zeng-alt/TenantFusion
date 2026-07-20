@@ -35,7 +35,7 @@ import java.util.List;
 @ConditionalOnMissingBean(StorageTemplate.class)
 public class SpringCacheStorageAutoConfiguration {
 
-    private static final String SPEC = "initialCapacity=100,maximumSize=500,expireAfterAccess=5m,recordStats";
+    private static final String SPEC = "initialCapacity=100,maximumSize=500,expireAfterWrite=24h,expireAfterAccess=2h,recordStats";
 
     @Bean
     @Primary

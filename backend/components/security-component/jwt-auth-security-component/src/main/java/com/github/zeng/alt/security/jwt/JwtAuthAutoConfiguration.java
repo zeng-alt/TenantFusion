@@ -73,12 +73,11 @@ public class JwtAuthAutoConfiguration {
             JwtTokenProvider jwtTokenProvider,
             StorageTemplate storageTemplate,
             ObjectProvider<ObjectMapper> objectMapperProvider,
-            JwtProperties jwtProperties) {
+            JwtProperties jwtProperties)
+    {
 
         ObjectMapper objectMapper = objectMapperProvider.getIfAvailable(ObjectMapper::new);
-        return new JwtAuthenticationSuccessHandler(
-                jwtTokenProvider, storageTemplate, objectMapper,
-                jwtProperties.getExpiration(), jwtProperties.getRememberMeExpiration());
+        return new JwtAuthenticationSuccessHandler(jwtTokenProvider, storageTemplate, objectMapper, jwtProperties);
     }
 
     @Bean
@@ -129,8 +128,7 @@ public class JwtAuthAutoConfiguration {
                     "Authorization",
                     jwtProperties.getLogin(),
                     jwtProperties.getRefreshTokenHeader(),
-                    jwtProperties.getNewAccessTokenHeader(),
-                    jwtProperties.getRememberMeExpiration()
+                    jwtProperties.getNewAccessTokenHeader()
             );
 
             http.addFilterBefore(authFilter, UsernamePasswordAuthenticationFilter.class);
