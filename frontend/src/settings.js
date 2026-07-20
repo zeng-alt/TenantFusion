@@ -29,7 +29,7 @@ export const basePermissions = [
     type: 'MENU',
     icon: 'i-fe:external-link',
     order: 98,
-    enable: true,
+    enabled: true,
     show: true,
     children: [
       {
@@ -39,7 +39,7 @@ export const basePermissions = [
         path: 'https://isme.top',
         icon: 'i-me:docs',
         order: 1,
-        enable: true,
+        enabled: true,
         show: true,
       },
       {
@@ -49,7 +49,7 @@ export const basePermissions = [
         path: 'https://apifox.com/apidoc/shared-ff4a4d32-c0d1-4caf-b0ee-6abc130f734a',
         icon: 'i-me:apifox',
         order: 2,
-        enable: true,
+        enabled: true,
         show: true,
       },
       {
@@ -59,7 +59,7 @@ export const basePermissions = [
         path: 'https://www.naiveui.com/zh-CN/os-theme',
         icon: 'i-me:naiveui',
         order: 3,
-        enable: true,
+        enabled: true,
         show: true,
       },
       {
@@ -69,7 +69,7 @@ export const basePermissions = [
         path: 'https://juejin.cn/user/1961184475483255/posts',
         icon: 'i-simple-icons:juejin',
         order: 4,
-        enable: true,
+        enabled: true,
         show: true,
       },
     ],

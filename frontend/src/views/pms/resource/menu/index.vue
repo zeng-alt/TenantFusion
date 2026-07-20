@@ -82,7 +82,7 @@
       </div>
     </div>
     <ResAddOrEdit ref="modalRef" :menus="treeData" @refresh="initData" />
-    <MeModal ref="httpModalRef" width="1000px" :content-style="{ height: 'calc(100vh - 200px)' }">
+    <MeModal ref="httpModalRef" width="1000px" :content-style="{ height: '100vh' }">
       <HttpResource :show-header="false" @checked="onChecked" />
     </MeModal>
   </CommonPage>
@@ -90,7 +90,8 @@
 
 <script setup>
 import { NButton, NSwitch } from 'naive-ui'
-import { MeCrud, MeModal } from '@/components'
+import { h, nextTick, ref, watch } from 'vue'
+import { CommonPage, MeCrud, MeModal } from '@/components'
 import { useModal } from '@/composables'
 import HttpResource from '@/views/pms/resource/http/index.vue'
 import httpApi from '../http/api'

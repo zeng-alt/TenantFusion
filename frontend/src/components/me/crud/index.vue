@@ -58,6 +58,7 @@
 
 <script setup>
 import { utils, writeFile } from 'xlsx'
+import { ProDataTable } from "pro-naive-ui"
 
 const props = defineProps({
   /**
