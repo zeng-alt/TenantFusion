@@ -30,6 +30,20 @@ public final class UserContextHolder {
         return null;
     }
 
+    public static String getId() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !authentication.isAuthenticated()) {
+            return null;
+        }
+
+        Object principal = authentication.getPrincipal();
+        if (principal instanceof SecurityUser securityUser) {
+            return securityUser.getId();
+        }
+
+        return null;
+    }
+
     public static UserDetails getUserDetails() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication == null || !authentication.isAuthenticated()) {

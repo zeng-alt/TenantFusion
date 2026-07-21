@@ -14,7 +14,12 @@ import org.springframework.boot.autoconfigure.orm.jpa.HibernatePropertiesCustomi
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ImportRuntimeHints;
+import org.springframework.context.annotation.Primary;
 import org.springframework.core.annotation.Order;
+import org.springframework.data.domain.AuditorAware;
+import org.springframework.data.jpa.repository.config.EnableJpaAuditing;
+
+import java.util.Optional;
 
 /**
  * @author zengJiaJun
@@ -22,6 +27,7 @@ import org.springframework.core.annotation.Order;
  * @version 1.0
  */
 @AutoConfiguration
+@EnableJpaAuditing
 @EnableConfigurationProperties(IdGeneratorProperties.class)
 @ImportRuntimeHints(AutoSortRuntimeHints.class)
 @RegisterReflectionForBinding({

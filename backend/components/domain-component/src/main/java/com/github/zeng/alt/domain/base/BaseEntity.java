@@ -46,11 +46,11 @@ public abstract class BaseEntity<PK extends Serializable> implements Auditable<S
     private LocalDateTime createdDate;
     @Nullable
     @LastModifiedBy
-    @Column(name = "last_modified_by", updatable = false)
+    @Column(name = "last_modified_by")
     private String lastModifiedBy;
     @LastModifiedDate
     @Nullable
-    @Column(name = "last_modified_date", updatable = false)
+    @Column(name = "last_modified_date")
     private LocalDateTime lastModifiedDate;
 
     /**

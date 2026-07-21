@@ -10,7 +10,6 @@ CREATE TABLE main_user (
     email              VARCHAR(255),
     phone_number       VARCHAR(255),
     gender             VARCHAR(255),
-    status             VARCHAR(255),
     is_enabled         BOOLEAN      DEFAULT TRUE,
     is_deleted         BOOLEAN      DEFAULT FALSE,
     created_by         VARCHAR(255),
@@ -39,6 +38,7 @@ CREATE TABLE main_permission (
     name               VARCHAR(255),
     description        VARCHAR(500),
     is_enabled         BOOLEAN      DEFAULT TRUE,
+    is_deleted         BOOLEAN      DEFAULT FALSE,
 
     -- MenuResource fields
     path               VARCHAR(255),
@@ -72,6 +72,7 @@ CREATE TABLE main_policy_rule (
     resource_id        BIGINT,
     condition          TEXT,
     is_pre_auth        BOOLEAN      DEFAULT TRUE,
+    is_deleted         BOOLEAN      DEFAULT FALSE,
     created_by         VARCHAR(255),
     created_date       TIMESTAMP,
     last_modified_by   VARCHAR(255),
@@ -82,6 +83,7 @@ CREATE TABLE main_user_role (
     user_role_id       BIGINT       NOT NULL PRIMARY KEY,
     user_id            BIGINT,
     role_id            BIGINT,
+    is_deleted         BOOLEAN      DEFAULT FALSE,
     created_by         VARCHAR(255),
     created_date       TIMESTAMP,
     last_modified_by   VARCHAR(255),
@@ -92,6 +94,7 @@ CREATE TABLE main_role_permission (
     role_permission_id BIGINT       NOT NULL PRIMARY KEY,
     role_id            BIGINT,
     permission_id      BIGINT,
+    is_deleted         BOOLEAN      DEFAULT FALSE,
     created_by         VARCHAR(255),
     created_date       TIMESTAMP,
     last_modified_by   VARCHAR(255),
@@ -102,6 +105,7 @@ CREATE TABLE main_user_resource (
     user_resource_id   BIGINT       NOT NULL PRIMARY KEY,
     user_id            BIGINT,
     resource_id        BIGINT,
+    is_deleted         BOOLEAN      DEFAULT FALSE,
     created_by         VARCHAR(255),
     created_date       TIMESTAMP,
     last_modified_by   VARCHAR(255),
@@ -123,22 +127,16 @@ CREATE TABLE main_user_resource (
 CREATE INDEX idx_main_user_username      ON main_user(username);
 CREATE INDEX idx_main_user_email         ON main_user(email);
 CREATE INDEX idx_main_user_phone_number  ON main_user(phone_number);
-CREATE INDEX idx_main_user_status        ON main_user(status);
-CREATE INDEX idx_main_user_is_deleted    ON main_user(is_deleted);
-CREATE INDEX idx_main_user_is_enabled    ON main_user(is_enabled);
 CREATE INDEX idx_main_user_created_date  ON main_user(created_date);
 
 -- Indexes for main_role
 CREATE UNIQUE INDEX idx_main_role_code   ON main_role(code);
-CREATE INDEX idx_main_role_is_deleted    ON main_role(is_deleted);
-CREATE INDEX idx_main_role_is_enabled    ON main_role(is_enabled);
 
 -- Indexes for main_permission
 CREATE INDEX idx_main_perm_resource_type  ON main_permission(resource_type);
 CREATE UNIQUE INDEX idx_main_perm_code    ON main_permission(code);
 CREATE INDEX idx_main_perm_parent_id      ON main_permission(parent_id);
 CREATE INDEX idx_main_perm_menu_id        ON main_permission(menu_id);
-CREATE INDEX idx_main_perm_is_enabled     ON main_permission(is_enabled);
 CREATE INDEX idx_main_perm_resource_order ON main_permission(resource_order);
 
 -- Indexes for main_policy_rule
@@ -171,7 +169,6 @@ COMMENT ON COLUMN main_user.avatar             IS '头像';
 COMMENT ON COLUMN main_user.email              IS '邮箱';
 COMMENT ON COLUMN main_user.phone_number        IS '手机号';
 COMMENT ON COLUMN main_user.gender             IS '性别';
-COMMENT ON COLUMN main_user.status             IS '状态：ACTIVE-正常 LOCKED-锁定';
 COMMENT ON COLUMN main_user.is_enabled          IS '是否启用';
 COMMENT ON COLUMN main_user.is_deleted          IS '是否删除';
 COMMENT ON COLUMN main_user.created_by          IS '创建人';
