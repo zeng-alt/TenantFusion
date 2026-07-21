@@ -2,6 +2,7 @@ package com.github.zeng.alt.admin.query.service.transformation;
 
 import com.github.zeng.alt.admin.infrastructure.entity.MenuResource;
 import com.github.zeng.alt.admin.query.api.dto.MenuResourceDto;
+import java.util.Collections;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.springframework.util.CollectionUtils;
@@ -21,8 +22,7 @@ public interface MenuResourceDtoTransformation {
 
     @Mapping(target = "parentId", source = "parent.id")
     @Mapping(target = "children", expression = "java(this.to(menuResource.getChildren()))")
-    public MenuResourceDto
-    to(MenuResource menuResource);
+    public MenuResourceDto to(MenuResource menuResource);
 
 
     default List<MenuResourceDto> to(List<MenuResource> menuResources) {
@@ -43,7 +43,7 @@ public interface MenuResourceDtoTransformation {
 
     default List<MenuResourceDto> toFilterButton(List<MenuResource> menuResources) {
         if (CollectionUtils.isEmpty(menuResources)) {
-            return null;
+            return Collections.emptyList();
         }
         LinkedList<MenuResourceDto> result = new LinkedList<>();
         for (MenuResource menuResource : menuResources) {

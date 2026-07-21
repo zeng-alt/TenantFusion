@@ -68,8 +68,8 @@ public class UserServiceImpl implements UserService {
 
         dto.setProfile(profile);
 
-        Set<UserRole> userRoles = Optional.ofNullable(user.getUserRoles())
-                .orElse(Collections.emptySet());
+        List<UserRole> userRoles = Optional.ofNullable(user.getUserRoles())
+                .orElse(Collections.emptyList());
 
 
         List<RoleDto> roles = userRoles.stream()
@@ -97,7 +97,7 @@ public class UserServiceImpl implements UserService {
     }
 
     private RoleDto getCurrentRole(
-            Set<UserRole> userRoles,
+            List<UserRole> userRoles,
             SecurityUser securityUser
     ) {
 

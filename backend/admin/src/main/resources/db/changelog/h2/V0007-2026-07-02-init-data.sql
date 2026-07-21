@@ -11,65 +11,65 @@ INSERT INTO main_dict_data (dict_data_id,dict_sort,dict_label,dict_value,css_cla
 INSERT INTO main_dict_data (dict_data_id,dict_sort,dict_label,dict_value,css_class,list_class,is_default,remark,is_enabled,dict_code,tenant_by,created_by,created_date,last_modified_by,last_modified_date) VALUES (10,4,'男2','4',NULL,'tertiary',FALSE,NULL,TRUE,'sys_gender','${tenantName}','superAdmin','2025-05-19 20:53:53.192724','superAdmin','2025-06-09 20:15:42.08913');
 INSERT INTO main_dict_data (dict_data_id,dict_sort,dict_label,dict_value,css_class,list_class,is_default,remark,is_enabled,dict_code,tenant_by,created_by,created_date,last_modified_by,last_modified_date) VALUES (16,0,'菜单资源','MENU',NULL,'tertiary',TRUE,NULL,FALSE,'resource_type','${tenantName}','superAdmin','2025-06-09 20:24:38.855148','superAdmin','2025-06-09 20:24:38.855148');
 INSERT INTO main_dict_data (dict_data_id,dict_sort,dict_label,dict_value,css_class,list_class,is_default,remark,is_enabled,dict_code,tenant_by,created_by,created_date,last_modified_by,last_modified_date) VALUES (17,0,'graphql资源','GRAPHQL',NULL,'tertiary',TRUE,NULL,FALSE,'resource_type','${tenantName}','superAdmin','2025-06-09 20:24:55.671454','superAdmin','2025-06-09 20:24:55.671454');
-INSERT INTO main_dict_data (dict_data_id,dict_sort,dict_label,dict_value,css_class,list_class,is_default,remark,is_enabled,dict_code,tenant_by,created_by,created_date,last_modified_by,last_modified_date) VALUES (15,0,'http资源','HTTP',NULL,'default',TRUE,NULL,TRUE,'resource_type','${tenantName}','superAdmin','2025-06-09 20:22:31.935867','superAdmin','2025-06-09 20:29:57.772071');
+INSERT INTO main_dict_data (dict_data_id,dict_sort,dict_label,dict_value,css_class,list_class,is_default,remark,is_enabled,dict_code,tenant_by,created_by,created_date,last_modified_by,last_modified_date) VALUES (15,0,'http资源','HTTP',NULL,'',TRUE,NULL,TRUE,'resource_type','${tenantName}','superAdmin','2025-06-09 20:22:31.935867','superAdmin','2025-06-09 20:29:57.772071');
 INSERT INTO main_dict_data (dict_data_id,dict_sort,dict_label,dict_value,css_class,list_class,is_default,remark,is_enabled,dict_code,tenant_by,created_by,created_date,last_modified_by,last_modified_date) VALUES (18,0,'主服务','main',NULL,'primary',TRUE,NULL,FALSE,'sys_serve','${tenantName}','superAdmin','2025-06-11 17:42:51.871342','superAdmin','2025-06-11 17:42:51.871342');
 INSERT INTO main_dict_data (dict_data_id,dict_sort,dict_label,dict_value,css_class,list_class,is_default,remark,is_enabled,dict_code,tenant_by,created_by,created_date,last_modified_by,last_modified_date) VALUES (19,0,'开启','true',NULL,'success',TRUE,NULL,FALSE,'enable_status','${tenantName}','superAdmin','2025-06-12 10:45:16.236487','superAdmin','2025-06-12 10:45:16.236487');
 INSERT INTO main_dict_data (dict_data_id,dict_sort,dict_label,dict_value,css_class,list_class,is_default,remark,is_enabled,dict_code,tenant_by,created_by,created_date,last_modified_by,last_modified_date) VALUES (20,0,'关闭','false',NULL,'warning',TRUE,NULL,FALSE,'enable_status','${tenantName}','superAdmin','2025-06-12 10:45:36.932463','superAdmin','2025-06-12 10:45:36.932463');
 
 
 INSERT INTO MAIN_PERMISSION (permission_id, resource_type, code, name, description, is_enabled, path, component, redirect, icon, layout, keep_alive, menu_name, menu_style, resource_order, is_show, parent_id, created_by, created_date, last_modified_by, last_modified_date) VALUES
-    (277, 'MENU', 'AssginRoleMgt', '分配用户', NULL, TRUE, '/pms/role/user/:roleId', '/src/views/pms/role/role-user.vue', NULL, 'i-fe:user-plus', 'default', 't', NULL, NULL, 2, TRUE, 283, NULL, '2025-05-22 20:57:26.822246', NULL, '2025-05-22 20:57:26.822246');
+    (277, 'MENU', 'AssginRoleMgt', '分配用户', NULL, TRUE, '/pms/role/user/:roleId', '/src/views/pms/role/role-user.vue', NULL, 'i-fe:user-plus', '', 't', NULL, NULL, 2, FALSE, 283, NULL, '2025-05-22 20:57:26.822246', NULL, '2025-05-22 20:57:26.822246');
 
 INSERT INTO MAIN_PERMISSION (permission_id, resource_type, code, name, description, is_enabled, path, component, redirect, icon, layout, keep_alive, menu_name, menu_style, resource_order, is_show, parent_id, created_by, created_date, last_modified_by, last_modified_date) VALUES
-    (278, 'MENU', 'HttpMgt', 'HTTP资源管理', NULL, TRUE, '/pms/resource/http', '/src/views/pms/resource/http/index.vue', NULL, 'i-carbon:Http', 'default', 't', NULL, NULL, 2, TRUE, 279, NULL, '2025-05-22 20:57:26.822246', NULL, '2025-05-22 20:57:26.822246');
+    (278, 'MENU', 'HttpMgt', 'HTTP资源管理', NULL, TRUE, '/pms/resource/http', '/src/views/pms/resource/http/index.vue', NULL, 'i-carbon:Http', '', 't', NULL, NULL, 2, TRUE, 279, NULL, '2025-05-22 20:57:26.822246', NULL, '2025-05-22 20:57:26.822246');
 
 INSERT INTO MAIN_PERMISSION (permission_id, resource_type, code, name, description, is_enabled, path, component, redirect, icon, layout, keep_alive, menu_name, menu_style, resource_order, is_show, parent_id, created_by, created_date, last_modified_by, last_modified_date) VALUES
-    (279, 'MENU', 'SysMgt', '系统管理', NULL, TRUE, '/pms', NULL, NULL, 'i-fe:grid', 'list', 't', NULL, NULL, 1, TRUE, NULL, NULL, '2025-05-22 20:57:26.822246', NULL, '2025-05-22 20:57:26.822246');
+    (279, 'MENU', 'SysMgt', '系统管理', NULL, TRUE, '/pms', NULL, NULL, 'i-fe:grid', '', 't', NULL, NULL, 1, TRUE, NULL, NULL, '2025-05-22 20:57:26.822246', NULL, '2025-05-22 20:57:26.822246');
 
 INSERT INTO MAIN_PERMISSION (permission_id, resource_type, code, name, description, is_enabled, path, component, redirect, icon, layout, keep_alive, menu_name, menu_style, resource_order, is_show, parent_id, created_by, created_date, last_modified_by, last_modified_date) VALUES
-    (280, 'MENU', 'MenuResourceMgt', '菜单资源管理', NULL, TRUE, '/pms/resource/menu', '/src/views/pms/resource/menu/index.vue', NULL, 'i-fe:menu', 'default', 't', NULL, '', 1, TRUE, 279, 'superAdmin', '2025-05-22 20:57:26.822246', 'superAdmin', '2025-06-12 15:45:49.601032');
+    (280, 'MENU', 'MenuResourceMgt', '菜单资源管理', NULL, TRUE, '/pms/resource/menu', '/src/views/pms/resource/menu/index.vue', NULL, 'i-fe:menu', '', 't', NULL, '', 1, TRUE, 279, 'superAdmin', '2025-05-22 20:57:26.822246', 'superAdmin', '2025-06-12 15:45:49.601032');
 
 INSERT INTO MAIN_PERMISSION (permission_id, resource_type, code, name, description, is_enabled, path, component, redirect, icon, layout, keep_alive, menu_name, menu_style, resource_order, is_show, parent_id, created_by, created_date, last_modified_by, last_modified_date) VALUES
-    (282, 'MENU', 'UserMgt', '用户管理', NULL, TRUE, '/pms/user', '/src/views/pms/user/index.vue', NULL, 'i-fe:user', 'default', 't', NULL, NULL, 4, TRUE, 279, NULL, '2025-05-22 20:57:26.822246', 'superAdmin', '2025-05-27 22:36:35.047659');
+    (282, 'MENU', 'UserMgt', '用户管理', NULL, TRUE, '/pms/user', '/src/views/pms/user/index.vue', NULL, 'i-fe:user', '', 't', NULL, NULL, 4, TRUE, 279, NULL, '2025-05-22 20:57:26.822246', 'superAdmin', '2025-05-27 22:36:35.047659');
 
 INSERT INTO MAIN_PERMISSION (permission_id, resource_type, code, name, description, is_enabled, path, component, redirect, icon, layout, keep_alive, menu_name, menu_style, resource_order, is_show, parent_id, created_by, created_date, last_modified_by, last_modified_date) VALUES
-    (283, 'MENU', 'RoleMgt', '角色管理', '用于管理角色', TRUE, '/pms/role', '/src/views/pms/role/index.vue', NULL, 'i-ali:role', 'default', 't', NULL, NULL, 5, TRUE, 279, NULL, '2025-05-22 20:57:26.822246', 'superAdmin', '2025-05-27 22:36:41.126443');
+    (283, 'MENU', 'RoleMgt', '角色管理', '用于管理角色', TRUE, '/pms/role', '/src/views/pms/role/index.vue', NULL, 'i-ali:role', '', 't', NULL, NULL, 5, TRUE, 279, NULL, '2025-05-22 20:57:26.822246', 'superAdmin', '2025-05-27 22:36:41.126443');
 
 INSERT INTO MAIN_PERMISSION (permission_id, resource_type, code, name, description, is_enabled, path, component, redirect, icon, layout, keep_alive, menu_name, menu_style, resource_order, is_show, parent_id, created_by, created_date, last_modified_by, last_modified_date) VALUES
-    (284, 'MENU', 'DictMgt', '字典管理', '用于管理系统字典', TRUE, '/pms/dict', '/src/views/pms/dict/index.vue', NULL, 'i-ali:dictionary', 'default', 't', NULL, NULL, 6, TRUE, 279, NULL, '2025-05-22 20:57:26.822246', 'superAdmin', '2025-05-27 22:36:51.993415');
+    (284, 'MENU', 'DictMgt', '字典管理', '用于管理系统字典', TRUE, '/pms/dict', '/src/views/pms/dict/index.vue', NULL, 'i-ali:dictionary', '', 't', NULL, NULL, 6, TRUE, 279, NULL, '2025-05-22 20:57:26.822246', 'superAdmin', '2025-05-27 22:36:51.993415');
 
 INSERT INTO MAIN_PERMISSION (permission_id, resource_type, code, name, description, is_enabled, path, component, redirect, icon, layout, keep_alive, menu_name, menu_style, resource_order, is_show, parent_id, created_by, created_date, last_modified_by, last_modified_date) VALUES
-    (285, 'MENU', 'SystemPerMgt', '系统参数管理', '用于管理系统参数', TRUE, '/pms/parameter', '/src/views/pms/parameter/index.vue', NULL, 'i-ali:SystemParameter', 'default', 't', NULL, NULL, 7, TRUE, 279, NULL, '2025-05-22 20:57:26.822246', 'superAdmin', '2025-05-27 22:41:56.283981');
+    (285, 'MENU', 'SystemPerMgt', '系统参数管理', '用于管理系统参数', TRUE, '/pms/parameter', '/src/views/pms/parameter/index.vue', NULL, 'i-ali:SystemParameter', '', 't', NULL, NULL, 7, TRUE, 279, NULL, '2025-05-22 20:57:26.822246', 'superAdmin', '2025-05-27 22:41:56.283981');
 
 INSERT INTO MAIN_PERMISSION (permission_id, resource_type, code, name, description, is_enabled, path, component, redirect, icon, layout, keep_alive, menu_name, menu_style, resource_order, is_show, parent_id, created_by, created_date, last_modified_by, last_modified_date) VALUES
-    (286, 'MENU', 'FormMgt', '动态表单', NULL, TRUE, '/base/form', '/src/views/base/form.vue', NULL, NULL, 'default', 't', NULL, '', 3, TRUE, 291, 'superAdmin', '2025-06-03 10:31:44.951313', 'superAdmin', '2025-06-03 10:31:44.951313');
+    (286, 'MENU', 'FormMgt', '动态表单', NULL, TRUE, '/base/form', '/src/views/base/form.vue', NULL, NULL, '', 't', NULL, '', 3, TRUE, 291, 'superAdmin', '2025-06-03 10:31:44.951313', 'superAdmin', '2025-06-03 10:31:44.951313');
 
 INSERT INTO MAIN_PERMISSION (permission_id, resource_type, code, name, description, is_enabled, path, component, redirect, icon, layout, keep_alive, menu_name, menu_style, resource_order, is_show, parent_id, created_by, created_date, last_modified_by, last_modified_date) VALUES
-    (287, 'MENU', 'TenantMgt', '租户管理', '用于管理系统租户', TRUE, '/pms/tenant', '/src/views/pms/tenant/index.vue', NULL, 'i-fa:building-regular', 'default', 't', NULL, NULL, 0, TRUE, 279, NULL, '2025-05-22 20:57:26.822246', 'superAdmin', '2025-05-29 11:04:44.439517');
+    (287, 'MENU', 'TenantMgt', '租户管理', '用于管理系统租户', TRUE, '/pms/tenant', '/src/views/pms/tenant/index.vue', NULL, 'i-fa:building-regular', '', 't', NULL, NULL, 0, TRUE, 279, NULL, '2025-05-22 20:57:26.822246', 'superAdmin', '2025-05-29 11:04:44.439517');
 
 INSERT INTO MAIN_PERMISSION (permission_id, resource_type, code, name, description, is_enabled, path, component, redirect, icon, layout, keep_alive, menu_name, menu_style, resource_order, is_show, parent_id, created_by, created_date, last_modified_by, last_modified_date) VALUES
-    (288, 'MENU', 'AbacMgt', 'ABAC权限管理', NULL, TRUE, '/pms/abac', '/src/views/pms/abac/index.vue', NULL, 'i-ma:RuleFilled', 'default', 't', NULL, '', 10, TRUE, 279, 'superAdmin', '2025-06-02 21:29:01.53098', 'superAdmin', '2025-06-02 22:11:45.164261');
+    (288, 'MENU', 'AbacMgt', 'ABAC权限管理', NULL, TRUE, '/pms/abac', '/src/views/pms/abac/index.vue', NULL, 'i-ma:RuleFilled', '', 't', NULL, '', 10, TRUE, 279, 'superAdmin', '2025-06-02 21:29:01.53098', 'superAdmin', '2025-06-02 22:11:45.164261');
 
 INSERT INTO MAIN_PERMISSION (permission_id, resource_type, code, name, description, is_enabled, path, component, redirect, icon, layout, keep_alive, menu_name, menu_style, resource_order, is_show, parent_id, created_by, created_date, last_modified_by, last_modified_date) VALUES
-    (289, 'MENU', 'IconMgt', '图标管理', NULL, TRUE, '/base/uncon', '/src/views/base/unocss-icon.vue', NULL, 'i-fe:feather', 'default', 't', NULL, '', 12, TRUE, 291, 'superAdmin', '2025-06-02 21:39:31.020834', 'superAdmin', '2025-06-02 21:46:40.490375');
+    (289, 'MENU', 'IconMgt', '图标管理', NULL, TRUE, '/base/uncon', '/src/views/base/unocss-icon.vue', NULL, 'i-fe:feather', '', 't', NULL, '', 12, TRUE, 291, 'superAdmin', '2025-06-02 21:39:31.020834', 'superAdmin', '2025-06-02 21:46:40.490375');
 
 INSERT INTO MAIN_PERMISSION (permission_id, resource_type, code, name, description, is_enabled, path, component, redirect, icon, layout, keep_alive, menu_name, menu_style, resource_order, is_show, parent_id, created_by, created_date, last_modified_by, last_modified_date) VALUES
-    (290, 'MENU', 'BaseComponents', '基础组件', NULL, TRUE, '/base/components', '/src/views/base/index.vue', NULL, 'i-me:awesome', 'default', 't', NULL, '', 1, TRUE, 291, 'superAdmin', '2025-06-02 21:51:36.006087', 'superAdmin', '2025-06-02 21:51:50.051997');
+    (290, 'MENU', 'BaseComponents', '基础组件', NULL, TRUE, '/base/components', '/src/views/base/index.vue', NULL, 'i-me:awesome', '', 't', NULL, '', 1, TRUE, 291, 'superAdmin', '2025-06-02 21:51:36.006087', 'superAdmin', '2025-06-02 21:51:50.051997');
 
 INSERT INTO MAIN_PERMISSION (permission_id, resource_type, code, name, description, is_enabled, path, component, redirect, icon, layout, keep_alive, menu_name, menu_style, resource_order, is_show, parent_id, created_by, created_date, last_modified_by, last_modified_date) VALUES
-    (291, 'MENU', 'BaseMgt', '基础管理', NULL, TRUE, '/base', NULL, NULL, 'i-fe:grid', 'default', 't', NULL, '', 0, TRUE, NULL, 'superAdmin', '2025-06-02 21:44:13.358837', 'superAdmin', '2025-06-02 21:52:52.979418');
+    (291, 'MENU', 'BaseMgt', '基础管理', NULL, TRUE, '/base', NULL, NULL, 'i-fe:grid', '', 't', NULL, '', 0, TRUE, NULL, 'superAdmin', '2025-06-02 21:44:13.358837', 'superAdmin', '2025-06-02 21:52:52.979418');
 
 INSERT INTO MAIN_PERMISSION (permission_id, resource_type, code, name, description, is_enabled, path, component, redirect, icon, layout, keep_alive, menu_name, menu_style, resource_order, is_show, parent_id, created_by, created_date, last_modified_by, last_modified_date) VALUES
-    (292, 'MENU', 'UserProfile', '个人资料', NULL, TRUE, '/profile', '/src/views/profile/index.vue', NULL, 'i-fe:user', 'default', 't', NULL, '', 99, FALSE, NULL, 'superAdmin', '2025-06-06 13:41:01.652181', 'superAdmin', '2025-06-06 14:06:03.455539');
+    (292, 'MENU', 'UserProfile', '个人资料', NULL, TRUE, '/profile', '/src/views/profile/index.vue', NULL, 'i-fe:user', '', 't', NULL, '', 99, FALSE, NULL, 'superAdmin', '2025-06-06 13:41:01.652181', 'superAdmin', '2025-06-06 14:06:03.455539');
 
 INSERT INTO MAIN_PERMISSION (permission_id, resource_type, code, name, description, is_enabled, path, component, redirect, icon, layout, keep_alive, menu_name, menu_style, resource_order, is_show, parent_id, created_by, created_date, last_modified_by, last_modified_date) VALUES
-    (293, 'MENU', 'SpelMgt', 'spel管理', NULL, TRUE, '/base/spel', '/src/views/base/spel.vue', NULL, NULL, 'default', 't', NULL, '', 10, TRUE, 291, 'superAdmin', '2025-06-06 22:26:44.468541', 'superAdmin', '2025-06-06 22:26:44.468541');
+    (293, 'MENU', 'SpelMgt', 'spel管理', NULL, TRUE, '/base/spel', '/src/views/base/spel.vue', NULL, NULL, '', 't', NULL, '', 10, TRUE, 291, 'superAdmin', '2025-06-06 22:26:44.468541', 'superAdmin', '2025-06-06 22:26:44.468541');
 
 INSERT INTO MAIN_PERMISSION (permission_id, resource_type, code, name, description, is_enabled, path, component, redirect, icon, layout, keep_alive, menu_name, menu_style, resource_order, is_show, parent_id, created_by, created_date, last_modified_by, last_modified_date) VALUES
-    (294, 'MENU', 'SpelInfo', 'Spel文档', NULL, TRUE, '/pms/abac/info', '/src/views/pms/abac/spel-info.vue', NULL, NULL, 'default', 't', NULL, '', 2, TRUE, 288, 'superAdmin', '2025-06-08 22:29:47.252435', 'superAdmin', '2025-06-08 22:29:47.252435');
+    (294, 'MENU', 'SpelInfo', 'Spel文档', NULL, TRUE, '/pms/abac/info', '/src/views/pms/abac/spel-info.vue', NULL, NULL, '', 't', NULL, '', 2, TRUE, 288, 'superAdmin', '2025-06-08 22:29:47.252435', 'superAdmin', '2025-06-08 22:29:47.252435');
 
 INSERT INTO MAIN_PERMISSION (permission_id, resource_type, code, name, description, is_enabled, path, component, redirect, icon, layout, keep_alive, menu_name, menu_style, resource_order, is_show, parent_id, created_by, created_date, last_modified_by, last_modified_date) VALUES
-    (295, 'MENU', 'EventMgt', '事件管理', NULL, TRUE, '/pms/event', '/src/views/pms/event/index.vue', NULL, 'i-ma:EventRepeatOutlined', 'default', 't', NULL, '', 14, TRUE, 279, 'superAdmin', '2025-06-03 14:17:34.806673', 'superAdmin', '2025-06-11 15:23:11.691221');
+    (295, 'MENU', 'EventMgt', '事件管理', NULL, TRUE, '/pms/event', '/src/views/pms/event/index.vue', NULL, 'i-ma:EventRepeatOutlined', '', 't', NULL, '', 14, TRUE, 279, 'superAdmin', '2025-06-03 14:17:34.806673', 'superAdmin', '2025-06-11 15:23:11.691221');
 
 INSERT INTO MAIN_PERMISSION (permission_id, resource_type, code, name, description, is_enabled, method, button_name, menu_id, path, created_by, created_date, last_modified_by, last_modified_date) VALUES
     (253, 'HTTP', 'functionCancelAuthorize', '取消所选角色graphql功能权限', NULL, TRUE, 'POST', NULL, NULL, '/main/v1/role/function/cancel/authorize', NULL, '2025-06-23 11:09:18.127688', NULL, '2025-06-23 11:09:18.127688');
@@ -163,3 +163,11 @@ INSERT INTO MAIN_USER
 (user_id, username, password, nick_name, avatar, email, phone_number, gender, status, is_enabled, is_deleted)
 VALUES
     (1004, 'locked', '{noop}123456', 'LockedUser', NULL, 'locked@test.com', '13800000004', 'M', 'LOCKED', false, false);
+
+
+INSERT INTO main_role (role_id, code, name, role_sort, is_enabled, is_deleted, created_by, created_date, last_modified_by, last_modified_date) VALUES
+(1, 'ADMIN', '超级管理员', 1, TRUE, FALSE, 'system', CURRENT_TIMESTAMP, 'system', CURRENT_TIMESTAMP),
+(2, 'USER', '普通用户', 2, TRUE, FALSE, 'system', CURRENT_TIMESTAMP, 'system', CURRENT_TIMESTAMP),
+(3, 'MANAGER', '管理员', 3, TRUE, FALSE, 'system', CURRENT_TIMESTAMP, 'system', CURRENT_TIMESTAMP),
+(4, 'AUDITOR', '审计员', 4, TRUE, FALSE, 'system', CURRENT_TIMESTAMP, 'system', CURRENT_TIMESTAMP),
+(5, 'GUEST', '访客', 5, TRUE, FALSE, 'system', CURRENT_TIMESTAMP, 'system', CURRENT_TIMESTAMP);

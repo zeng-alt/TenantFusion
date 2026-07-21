@@ -8,6 +8,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 
 import lombok.extern.apachecommons.CommonsLog;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.context.support.MessageSourceAccessor;
 import org.springframework.core.log.LogMessage;
 import org.springframework.http.HttpStatus;
@@ -22,12 +23,12 @@ import java.net.URI;
 @RequiredArgsConstructor
 public class GlobalExceptionAdvice {
 
-    private final MessageSourceAccessor messageSourceAccessor;
+    private final ObjectProvider<MessageSourceAccessor> provider;
 
     @ExceptionHandler(BaseException.class)
     public ErrorResponse exception(BaseException e, HttpServletRequest request) {
         String requestURI = request.getRequestURI();
-        log.error(LogMessage.format("%s 请求异常: %s", requestURI, e.getMessage()));
+        log.error(LogMessage.format("%s 请求业务异常: %s", requestURI, e.getMessage()));
         ErrorResponseEntity errorResponseEntity = ErrorResponseEntity.of(HttpStatus.INTERNAL_SERVER_ERROR, e.getCode(), e.getMessage());
         errorResponseEntity.setInstance(URI.create(request.getRequestURI()));
         errorResponseEntity.setTitle(e.getTitle());
@@ -38,7 +39,7 @@ public class GlobalExceptionAdvice {
     @ExceptionHandler(BaseI18nException.class)
     public ErrorResponse exception(BaseI18nException e, HttpServletRequest request) {
         String requestURI = request.getRequestURI();
-        log.error(LogMessage.format("%s 请求异常: %s", requestURI, e.getMessage()));
+        log.error(LogMessage.format("%s 请求业务异常: %s", requestURI, e.getMessage()));
         ErrorResponseEntity errorResponseEntity = ErrorResponseEntity.of(e.getCode(), e.getMessage());
         errorResponseEntity.setInstance(URI.create(request.getRequestURI()));
         errorResponseEntity.setTitle(e.getMessage());
@@ -48,18 +49,18 @@ public class GlobalExceptionAdvice {
     @ExceptionHandler(Exception.class)
     public ErrorResponse exception(Exception e, HttpServletRequest request) {
         String requestURI = request.getRequestURI();
-        log.error(LogMessage.format("%s: %s 请求未知异常:", request.getMethod(), requestURI, e));
-        String message = messageSourceAccessor.getMessage("GlobalExceptionAdvice.exception.error", e.getMessage());
+        log.error(LogMessage.format("%s: %s 请求未知异常:", request.getMethod(), requestURI), e);
+//        String message = messageSourceAccessor.getMessage("GlobalExceptionAdvice.exception.error", e.getMessage());
         ErrorResponseEntity errorResponseEntity = ErrorResponseEntity.of(HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage());
         errorResponseEntity.setInstance(URI.create(request.getRequestURI()));
-        errorResponseEntity.setTitle(message);
+        errorResponseEntity.setTitle(e.getMessage());
         return errorResponseEntity;
     }
 
     @ExceptionHandler(IllegalArgumentException.class)
     public ErrorResponse exception(IllegalArgumentException e, HttpServletRequest request) {
         String requestURI = request.getRequestURI();
-        log.error(LogMessage.format("%s: %s 请求参数异常:", request.getMethod(), requestURI, e));
+        log.error(LogMessage.format("%s: %s 请求参数异常: %s", request.getMethod(), requestURI, e.getMessage()));
         ErrorResponseEntity errorResponse = ErrorResponseEntity.of(HttpStatus.BAD_REQUEST, e.getMessage());
         errorResponse.setInstance(URI.create(request.getRequestURI()));
         errorResponse.setTitle(e.getMessage());
@@ -69,7 +70,7 @@ public class GlobalExceptionAdvice {
     @ExceptionHandler(RuntimeException.class)
     public ErrorResponse exception(RuntimeException e, HttpServletRequest request) {
         String requestURI = request.getRequestURI();
-        log.error(LogMessage.format("%s: %s 请求未知运行异常:", request.getMethod(), requestURI, e));
+        log.error(LogMessage.format("%s: %s 请求未知运行异常:", request.getMethod(), requestURI), e);
         ErrorResponseEntity errorResponse = ErrorResponseEntity.of(HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage());
         errorResponse.setInstance(URI.create(request.getRequestURI()));
         errorResponse.setTitle("请求未知运行异常");

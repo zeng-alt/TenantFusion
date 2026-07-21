@@ -37,6 +37,7 @@
       :scroll-x="1200"
       :columns="columns"
       :get-data="api.getAllUsers"
+      row-key="userId"
       @on-checked="onChecked"
     >
       <MeQueryItem label="用户名" :label-width="50">
@@ -54,7 +55,7 @@
 
       <MeQueryItem label="状态" :label-width="50">
         <n-select
-          v-model:value="queryItems.enable"
+          v-model:value="queryItems.enabled"
           clearable
           :options="[
             { label: '启用', value: 1 },
@@ -69,7 +70,7 @@
 <script setup>
 import { NAvatar, NButton, NSwitch, NTag } from 'naive-ui'
 import { h } from 'vue'
-import { MeCrud, MeQueryItem } from '@/components'
+import { CommonPage, MeCrud, MeQueryItem } from '@/components'
 import { formatDateTime } from '@/utils'
 import api from './api'
 
@@ -107,13 +108,13 @@ const columns = [
     key: 'roles',
     width: 200,
     ellipsis: { tooltip: true },
-    render: ({ roles }) => {
-      if (roles?.length) {
-        return roles.map((item, index) =>
+    render: ({ userRoles }) => {
+      if (userRoles?.length) {
+        return userRoles.map((item, index) =>
           h(
             NTag,
             { type: 'success', style: index > 0 ? 'margin-left: 8px;' : '' },
-            { default: () => item.name },
+            { default: () => item.role?.name },
           ),
         )
       }
@@ -136,7 +137,7 @@ const columns = [
   },
   {
     title: '状态',
-    key: 'enable',
+    key: 'enabled',
     width: 100,
 
     render: row =>
@@ -145,7 +146,7 @@ const columns = [
         {
           size: 'small',
           rubberBand: false,
-          value: row.enable,
+          value: row.enabled,
         },
         {
           checked: () => '启用',
@@ -161,14 +162,14 @@ const columns = [
     fixed: 'right',
     hideInExcel: true,
     render(row) {
-      return row.roles?.some(item => item.id === +route.params.roleId)
+      return row.userRoles?.some(item => item.role?.roleId === +route.params.roleId)
         ? h(
             NButton,
             {
               size: 'small',
               type: 'error',
               secondary: true,
-              onClick: () => handleBatchRemove([row.id]),
+              onClick: () => handleBatchRemove([row.userId]),
             },
             {
               default: () => '取消授权',
@@ -181,7 +182,7 @@ const columns = [
               size: 'small',
               type: 'primary',
               secondary: true,
-              onClick: () => handleBatchAdd([row.id]),
+              onClick: () => handleBatchAdd([row.userId]),
             },
             {
               default: () => '授权',

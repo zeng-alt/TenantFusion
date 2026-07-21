@@ -109,7 +109,7 @@ public @interface CrudRest {
     Class<?> detailType() default Void.class;
 
     /**
-     * 列表接口返回体 DTO，如果不填 → 使用 entity
+     * 列表和分页接口返回体 DTO，如果不填 → 使用 entity
      */
     Class<?> listType() default Void.class;
 

@@ -106,7 +106,7 @@ export function useCrud({ name, initForm = {}, doCreate, doDelete, doUpdate, doS
   }
 
   /** 启用/停用切换 */
-  async function handleEnable(row, fieldName = 'enabled', idField = 'id') {
+  async function handleEnable(row, idField = 'id', fieldName = 'enabled') {
     row[`${fieldName}Loading`] = true
     try {
       await doUpdate({ [idField]: row[idField], [fieldName]: !row[fieldName] })

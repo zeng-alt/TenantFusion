@@ -9,7 +9,7 @@
 <template>
   <CommonPage>
     <template #action>
-      <NButton v-permission="'AddUser'" type="primary" @click="handleAdd()">
+      <NButton type="primary" @click="handleAdd()">
         <i class="i-material-symbols:add mr-4 text-18" />
         创建新用户
       </NButton>
@@ -85,14 +85,14 @@
             v-model:value="modalForm.roleIds"
             :options="roles"
             label-field="name"
-            value-field="id"
+            value-field="roleId"
             clearable
             filterable
             multiple
           />
         </n-form-item>
-        <n-form-item v-if="modalAction === 'add'" label="状态" path="enable">
-          <NSwitch v-model:value="modalForm.enable">
+        <n-form-item v-if="modalAction === 'add'" label="状态" path="enabled">
+          <NSwitch v-model:value="modalForm.enabled">
             <template #checked>
               启用
             </template>
@@ -111,9 +111,9 @@
 
 <script setup>
 import { NAvatar, NButton, NSwitch, NTag } from 'naive-ui'
-import { MeCrud, MeModal, MeQueryItem } from '@/components'
+import { h, onMounted, ref } from 'vue'
+import { EnableSwitch, MeCrud, MeModal, MeQueryItem } from '@/components'
 import { useCrud } from '@/composables'
-import { withPermission } from '@/directives'
 import { formatDateTime } from '@/utils'
 import api from './api'
 
@@ -143,9 +143,10 @@ const {
   handleDelete,
   handleOpen,
   handleSave,
+  handleEnable,
 } = useCrud({
   name: '用户',
-  initForm: { enable: true },
+  initForm: { enabled: true },
   doCreate: api.create,
   doDelete: api.delete,
   doUpdate: api.update,
@@ -169,13 +170,13 @@ const columns = [
     key: 'roles',
     width: 200,
     ellipsis: { tooltip: true },
-    render: ({ roles }) => {
-      if (roles?.length) {
-        return roles.map((item, index) =>
+    render: ({ userRoles }) => {
+      if (userRoles?.length) {
+        return userRoles.map((item, index) =>
           h(
             NTag,
             { type: 'success', style: index > 0 ? 'margin-left: 8px;' : '' },
-            { default: () => item.name },
+            { default: () => item.role?.name },
           ),
         )
       }
@@ -201,21 +202,11 @@ const columns = [
     title: '状态',
     key: 'enable',
     width: 120,
-    render: row =>
-      h(
-        NSwitch,
-        {
-          size: 'small',
-          rubberBand: false,
-          value: row.enable,
-          loading: !!row.enableLoading,
-          onUpdateValue: () => handleEnable(row),
-        },
-        {
-          checked: () => '启用',
-          unchecked: () => '停用',
-        },
-      ),
+    render: row => h(EnableSwitch, {
+      value: row.enabled,
+      loading: !!row.enabledLoading,
+      onUpdateValue: () => handleEnable(row, 'userId'),
+    }),
   },
   {
     title: '操作',
@@ -226,17 +217,6 @@ const columns = [
     hideInExcel: true,
     render(row) {
       return [
-        withPermission(
-          h(NButton, {
-            size: 'small',
-            type: 'primary',
-            secondary: true,
-          }, {
-            default: () => '超管专属',
-            icon: () => h('i', { class: 'i-carbon:user-role text-14' }),
-          }),
-          'SuperAdmin',
-        ),
         h(
           NButton,
           {
@@ -271,7 +251,7 @@ const columns = [
             size: 'small',
             type: 'error',
             style: 'margin-left: 12px;',
-            onClick: () => handleDelete(row.id),
+            onClick: () => handleDelete(row.userId),
           },
           {
             default: () => '删除',
@@ -283,26 +263,12 @@ const columns = [
   },
 ]
 
-async function handleEnable(row) {
-  row.enableLoading = true
-  try {
-    await api.update({ id: row.id, enable: !row.enable })
-    row.enableLoading = false
-    $message.success('操作成功')
-    $table.value?.handleSearch()
-  }
-  catch (error) {
-    console.error(error)
-    row.enableLoading = false
-  }
-}
-
 function handleOpenRolesSet(row) {
-  const roleIds = row.roles.map(item => item.id)
+  const roleIds = row.userRoles.map(item => item.role?.roleId)
   handleOpen({
     action: 'setRole',
     title: '分配角色',
-    row: { id: row.id, username: row.username, roleIds },
+    row: { id: row.userId, username: row.username, roleIds },
     onOk: onSave,
   })
 }

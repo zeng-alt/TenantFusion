@@ -3,6 +3,7 @@ package com.github.zeng.alt.admin.infrastructure.entity;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.github.zeng.alt.domain.base.BaseEntity;
 import com.github.zeng.alt.domain.key.SnowflakeId;
+import com.github.zeng.alt.rest.annotation.QueryField;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -24,6 +25,7 @@ public class Role extends BaseEntity<Long> {
     private String name;
     private Integer roleSort = 0;
 
+    @QueryField
     @Column(name = "is_enabled")
     private Boolean enabled = true;
 

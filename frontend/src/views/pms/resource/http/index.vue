@@ -121,12 +121,12 @@
 
 <script setup>
 import { NButton, NInput, NSwitch, NTag, NTooltip } from 'naive-ui'
+import { h } from 'vue'
 import { MeCrud, MeModal, MeQueryItem } from '@/components'
 import { useCrud } from '@/composables'
 import api from '@/views/pms/resource/menu/api'
 import QuestionLabel from '@/views/pms/resource/menu/components/QuestionLabel.vue'
 import httpApi from './api.js'
-import {h} from "vue";
 
 defineOptions({ name: 'HttpResourceMgt' })
 

@@ -1,5 +1,6 @@
 package com.github.zeng.alt.core.advice;
 
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication;
@@ -34,8 +35,8 @@ public class CoreConfig {
     }
 
     @Bean
-    @ConditionalOnBean(MessageSourceAccessor.class)
-    public GlobalExceptionAdvice globalExceptionAdvice(MessageSourceAccessor messageSourceAccessor) {
-        return new GlobalExceptionAdvice(messageSourceAccessor);
+//    @ConditionalOnBean(MessageSourceAccessor.class)
+    public GlobalExceptionAdvice globalExceptionAdvice(ObjectProvider<MessageSourceAccessor> provider) {
+        return new GlobalExceptionAdvice(provider);
     }
 }

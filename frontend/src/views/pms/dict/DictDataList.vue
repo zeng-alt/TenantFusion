@@ -212,7 +212,7 @@ const columns = [
     render: row => h(EnableSwitch, {
       value: row.enabled,
       loading: !!row.enabledLoading,
-      onUpdateValue: () => handleEnable(row, 'enabled', 'dictDataId'),
+      onUpdateValue: () => handleEnable(row, 'dictDataId', 'enabled'),
     }),
   },
   { title: '备注', key: 'remark' },

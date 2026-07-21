@@ -245,7 +245,6 @@ public final class HandlerGenerator {
         TypeName entityType = meta.getEntityType();
         ClassName listType = meta.getListType();
 
-        TypeName itemType = listType != null ? listType : entityType;
         TypeName listResultType = ParameterizedTypeName.get(ClassName.get(Iterable.class), entityType);
 
         boolean hasQueryFields = meta.isHasQueryFields();
@@ -254,12 +253,12 @@ public final class HandlerGenerator {
             builder.addStatement("$T listResult = repository.findAll(buildPredicate(request), buildSort(request))",
                     listResultType);
         } else {
-            builder.addStatement("$T listResult = repository.findAll(buildSort(request))",
-                    listResultType);
+            builder.addStatement("$T listResult = repository.findAll(new $T(), buildSort(request))",
+                    listResultType, BOOLEAN_BUILDER);
         }
 
         if (listType != null) {
-            builder.addStatement("$T<$T> dtoList = new $T<>(listResult.size())",
+            builder.addStatement("$T<$T> dtoList = new $T<>()",
                             ClassName.get(List.class), listType, ClassName.get(ArrayList.class))
                     .beginControlFlow("for ($T entity : listResult)", entityType);
 

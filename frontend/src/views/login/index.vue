@@ -11,7 +11,7 @@
     <div
       class="m-auto max-w-700 min-w-345 f-c-c rounded-8 auto-bg bg-opacity-20 bg-cover p-12 card-shadow"
     >
-      <div class="hidden w-380 px-20 py-35 md:block">
+      <div class="md:block hidden w-380 px-20 py-35">
         <img src="@/assets/images/login_banner.webp" class="w-full" alt="login_banner">
       </div>
 

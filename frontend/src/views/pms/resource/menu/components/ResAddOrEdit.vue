@@ -95,8 +95,12 @@
               <QuestionLabel label="显示状态" content="控制是否在菜单栏显示，不影响路由注册" />
             </template>
             <n-switch v-model:value="modalForm.show">
-              <template #checked>显示</template>
-              <template #unchecked>隐藏</template>
+              <template #checked>
+                显示
+              </template>
+              <template #unchecked>
+                隐藏
+              </template>
             </n-switch>
           </n-form-item-gi>
           <n-form-item-gi :span="12" path="keepAlive">
@@ -107,8 +111,12 @@
               />
             </template>
             <n-switch v-model:value="modalForm.keepAlive">
-              <template #checked>是</template>
-              <template #unchecked>否</template>
+              <template #checked>
+                是
+              </template>
+              <template #unchecked>
+                否
+              </template>
             </n-switch>
           </n-form-item-gi>
           <n-form-item-gi
@@ -152,8 +160,12 @@
             />
           </template>
           <n-switch v-model:value="modalForm.enabled">
-            <template #checked>启用</template>
-            <template #unchecked>禁用</template>
+            <template #checked>
+              启用
+            </template>
+            <template #unchecked>
+              禁用
+            </template>
           </n-switch>
         </n-form-item-gi>
         <n-form-item-gi :span="24" path="description">
@@ -240,8 +252,10 @@ function handleOpen(options = {}) {
 
   const formRow = { ...row }
   if (type === 'MENU') {
-    if (formRow.parentId != null) formRow.parentMenuId = formRow.parentId
-    else if (formRow.menuId != null) formRow.parentMenuId = formRow.menuId
+    if (formRow.parentId != null)
+      formRow.parentMenuId = formRow.parentId
+    else if (formRow.menuId != null)
+      formRow.parentMenuId = formRow.menuId
   }
   else if (type === 'BUTTON' && formRow.menuId != null) {
     formRow.parentMenuId = formRow.menuId

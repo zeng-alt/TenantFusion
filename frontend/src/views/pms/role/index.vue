@@ -21,13 +21,14 @@
       :scroll-x="1200"
       :columns="columns"
       :get-data="api.read"
+      row-key="roleId"
     >
       <MeQueryItem label="角色名" :label-width="50">
         <n-input v-model:value="queryItems.name" type="text" placeholder="请输入角色名" clearable />
       </MeQueryItem>
       <MeQueryItem label="状态" :label-width="50">
         <n-select
-          v-model:value="queryItems.enable"
+          v-model:value="queryItems.enabled"
           clearable
           :options="[
             { label: '启用', value: 1 },
@@ -79,8 +80,8 @@
             class="cus-scroll max-h-200 w-full"
           />
         </n-form-item>
-        <n-form-item label="状态" path="enable">
-          <NSwitch v-model:value="modalForm.enable">
+        <n-form-item label="状态" path="enabled">
+          <NSwitch v-model:value="modalForm.enabled">
             <template #checked>
               启用
             </template>
@@ -96,7 +97,8 @@
 
 <script setup>
 import { NButton, NSwitch } from 'naive-ui'
-import { MeCrud, MeModal, MeQueryItem } from '@/components'
+import { h } from 'vue'
+import { EnableSwitch, MeCrud, MeModal, MeQueryItem } from '@/components'
 import { useCrud } from '@/composables'
 import api from './api'
 
@@ -112,13 +114,13 @@ onMounted(() => {
   $table.value?.handleSearch()
 })
 
-const { modalRef, modalFormRef, modalAction, modalForm, handleAdd, handleDelete, handleEdit }
+const { modalRef, modalFormRef, modalAction, modalForm, handleAdd, handleDelete, handleEdit, handleEnable }
   = useCrud({
     name: '角色',
     doCreate: api.create,
     doDelete: api.delete,
     doUpdate: api.update,
-    initForm: { enable: true },
+    initForm: { enabled: true },
     refresh: (_, keepCurrentPage) => $table.value?.handleSearch(keepCurrentPage),
   })
 
@@ -127,23 +129,12 @@ const columns = [
   { title: '角色编码', key: 'code' },
   {
     title: '状态',
-    key: 'enable',
-    render: row =>
-      h(
-        NSwitch,
-        {
-          size: 'small',
-          rubberBand: false,
-          value: row.enable,
-          loading: !!row.enableLoading,
-          disabled: row.code === 'SUPER_ADMIN',
-          onUpdateValue: () => handleEnable(row),
-        },
-        {
-          checked: () => '启用',
-          unchecked: () => '停用',
-        },
-      ),
+    key: 'enabled',
+    render: row => h(EnableSwitch, {
+      value: row.enabled,
+      loading: !!row.enabledLoading,
+      onUpdateValue: () => handleEnable(row, 'roleId'),
+    }),
   },
   {
     title: '操作',
@@ -160,7 +151,7 @@ const columns = [
             type: 'primary',
             secondary: true,
             onClick: () =>
-              router.push({ path: `/pms/role/user/${row.id}`, query: { roleName: row.name } }),
+              router.push({ path: `/pms/role/user/${row.roleId}`, query: { roleName: row.name } }),
           },
           {
             default: () => '分配用户',
@@ -189,7 +180,7 @@ const columns = [
             type: 'error',
             style: 'margin-left: 12px;',
             disabled: row.code === 'SUPER_ADMIN',
-            onClick: () => handleDelete(row.id),
+            onClick: () => handleDelete(row.roleId),
           },
           {
             default: () => '删除',
@@ -200,20 +191,6 @@ const columns = [
     },
   },
 ]
-
-async function handleEnable(row) {
-  row.enableLoading = true
-  try {
-    await api.update({ id: row.id, enable: !row.enable })
-    row.enableLoading = false
-    $message.success('操作成功')
-    $table.value?.handleSearch()
-  }
-  catch (error) {
-    console.error(error)
-    row.enableLoading = false
-  }
-}
 
 const permissionTree = ref([])
 api.getAllPermissionTree().then(({ data = [] }) => (permissionTree.value = data))

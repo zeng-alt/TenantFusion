@@ -12,7 +12,7 @@ public enum MethodMeta {
     SEARCH("search", "GET", "/search", false),
     SEARCH_BODY("search", "POST", "/search", true),
     LIST("list", "GET", "", false),
-    LIST_ALL("listAll", "POST", "/all", false),
+    LIST_ALL("listAll", "GET", "/all", false),
     DETAIL("detail", "GET", "/{id:\\d+}", false),
     CREATE("create", "POST", "", true),
     UPDATE("update", "PUT", "/{id:\\d+}", true),

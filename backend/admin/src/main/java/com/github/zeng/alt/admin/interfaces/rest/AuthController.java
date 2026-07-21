@@ -1,6 +1,5 @@
 package com.github.zeng.alt.admin.interfaces.rest;
 
-import com.github.zeng.alt.admin.infrastructure.repository.UserRepository;
 import com.github.zeng.alt.captcha.core.CaptchaTemplate;
 import com.github.zeng.alt.captcha.model.CaptchaInfo;
 import com.github.zeng.alt.security.captcha.CaptchaAuthProperties;
