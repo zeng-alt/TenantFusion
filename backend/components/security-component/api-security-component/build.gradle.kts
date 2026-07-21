@@ -7,6 +7,7 @@ description = "security api"
 dependencies {
     implementation("org.springframework:spring-web")
     implementation("org.springframework.security:spring-security-core")
+    implementation("org.springframework.security:spring-security-web")
     implementation("org.springframework.boot:spring-boot-autoconfigure")
     implementation("jakarta.servlet:jakarta.servlet-api")
     compileOnly("org.springframework.data:spring-data-commons")

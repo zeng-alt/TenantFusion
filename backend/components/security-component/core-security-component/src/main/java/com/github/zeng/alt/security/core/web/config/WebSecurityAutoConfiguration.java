@@ -140,6 +140,7 @@ public class WebSecurityAutoConfiguration {
 		List<AuthorizationManager<RequestAuthorizationContext>> list = new ArrayList<>();
 		list.add(WhiteListAuthorizationManager.authenticated(whiteListService));
 		List<AuthorizationManager<RequestAuthorizationContext>> managers = authorizationManagerProviders.orderedStream().map(AuthorizationManagerProvider::get).toList();
+		list.addAll(managers);
 		if (CollectionUtils.isEmpty(managers)) {
 			list.add(AuthenticatedAuthorizationManager.authenticated());
 		}

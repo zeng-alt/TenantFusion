@@ -1,0 +1,3 @@
+com.github.zeng.alt.security.rbac.serve.config.RbacAutoConfiguration
+com.github.zeng.alt.security.rbac.serve.config.RbacWebAutoConfiguration
+com.github.zeng.alt.security.rbac.serve.config.RbacReactiveAutoConfiguration
