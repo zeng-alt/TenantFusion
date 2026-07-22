@@ -72,6 +72,7 @@ security:
   filter:
     ignore-url:
       - "/v1/auth/**"
+      - "/v1/menu/resource/validate"
       - "/v3/api-docs/**"
       - "/swagger-ui/**"
       - "/swagger-ui.html"

@@ -143,8 +143,8 @@ INSERT INTO main_role (role_id, code, name, role_sort, is_enabled, is_deleted, c
 
 
 INSERT INTO main_user_role VALUES
-(1, 1, 3, FALSE, 'admin', CURRENT_TIMESTAMP, 'admin', CURRENT_TIMESTAMP),
-(2, 1, 1, FALSE, 'admin', CURRENT_TIMESTAMP, 'admin', CURRENT_TIMESTAMP);
+(1, 1, 1, FALSE, 'admin', CURRENT_TIMESTAMP, 'admin', CURRENT_TIMESTAMP),
+(2, 1, 3, FALSE, 'admin', CURRENT_TIMESTAMP, 'admin', CURRENT_TIMESTAMP);
 
 INSERT INTO main_role_permission VALUES
 (1, 3, 10010, FALSE, 'admin', CURRENT_TIMESTAMP, 'admin', CURRENT_TIMESTAMP),

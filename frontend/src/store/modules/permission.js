@@ -18,6 +18,14 @@ export const usePermissionStore = defineStore('permission', {
     menus: [],
     admin: {},
   }),
+  getters: {
+    getSuperAdminIdentity() {
+      return this.admin?.id
+    },
+    getAdminIdentity() {
+      return this.admin?.code
+    },
+  },
   actions: {
     setAdmin(admin) {
       this.admin = admin

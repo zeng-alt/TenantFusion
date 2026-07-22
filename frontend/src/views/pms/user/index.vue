@@ -114,10 +114,13 @@ import { NAvatar, NButton, NSwitch, NTag } from 'naive-ui'
 import { h, onMounted, ref } from 'vue'
 import { EnableSwitch, MeCrud, MeModal, MeQueryItem } from '@/components'
 import { useCrud } from '@/composables'
+import { usePermissionStore } from '@/store'
 import { formatDateTime } from '@/utils'
 import api from './api'
 
 defineOptions({ name: 'UserMgt' })
+
+const permission = usePermissionStore()
 
 const $table = ref(null)
 /** QueryBar筛选参数（可选） */
@@ -205,6 +208,7 @@ const columns = [
     render: row => h(EnableSwitch, {
       value: row.enabled,
       loading: !!row.enabledLoading,
+      disabled: row.code === permission.getSuperAdminIdentity,
       onUpdateValue: () => handleEnable(row, 'userId'),
     }),
   },
@@ -224,6 +228,7 @@ const columns = [
             type: 'primary',
             class: 'ml-12px',
             secondary: true,
+            disabled: row.userId === permission.getSuperAdminIdentity,
             onClick: () => handleOpenRolesSet(row),
           },
           {
@@ -237,6 +242,7 @@ const columns = [
             size: 'small',
             type: 'primary',
             style: 'margin-left: 12px;',
+            disabled: row.userId === permission.getSuperAdminIdentity,
             onClick: () => handleOpen({ action: 'reset', title: '重置密码', row, onOk: onSave }),
           },
           {
@@ -251,6 +257,7 @@ const columns = [
             size: 'small',
             type: 'error',
             style: 'margin-left: 12px;',
+            disabled: row.userId === permission.getSuperAdminIdentity,
             onClick: () => handleDelete(row.userId),
           },
           {
