@@ -12,10 +12,12 @@ import com.github.zeng.alt.security.rbac.serve.handler.ResourceHandler;
 import com.github.zeng.alt.security.rbac.serve.locator.AbstractReactiveResourceLocator;
 import com.github.zeng.alt.security.rbac.serve.locator.AbstractResourceLocator;
 import com.github.zeng.alt.security.rbac.serve.locator.HttpResourceLocator;
+import com.github.zeng.alt.security.rbac.serve.locator.PermissionLocator;
 import com.github.zeng.alt.security.rbac.serve.locator.ReactiveHttpResourceLocator;
 import com.github.zeng.alt.security.rbac.serve.locator.ReactivePermissionLocator;
 import com.github.zeng.alt.security.rbac.serve.locator.ReactiveResourceLocator;
 import com.github.zeng.alt.security.rbac.serve.locator.ResourceLocator;
+import com.github.zeng.alt.security.rbac.serve.manager.AdminAuthorizationManager;
 import com.github.zeng.alt.security.rbac.serve.manager.ParseManager;
 import com.github.zeng.alt.security.rbac.serve.manager.RbacAccessAuthorizationManager;
 import com.github.zeng.alt.security.rbac.serve.manager.ReactiveAdminAuthorizationManager;
@@ -24,6 +26,7 @@ import com.github.zeng.alt.security.rbac.serve.manager.ReactiveRbacAccessAuthori
 import com.github.zeng.alt.security.rbac.serve.manager.ReactiveResourceQueryManager;
 import com.github.zeng.alt.security.rbac.serve.manager.ResourceQueryManager;
 import com.github.zeng.alt.security.rbac.serve.repository.DefaultRbacResourceService;
+import com.github.zeng.alt.security.rbac.serve.repository.RbacResourceLoader;
 import com.github.zeng.alt.security.rbac.serve.repository.RbacResourceService;
 import com.github.zeng.alt.security.rbac.serve.router.RouteTemplateEvent;
 import com.github.zeng.alt.security.rbac.serve.router.RouteTemplateManager;
@@ -43,6 +46,7 @@ public class RbacServeRuntimeHints implements RuntimeHintsRegistrar {
                 RouteTemplateManager.class,
                 RouteTemplateTrie.class,
                 RouteTemplateEvent.class,
+                RbacResourceLoader.class,
                 RbacResourceService.class,
                 DefaultRbacResourceService.class,
                 ResourceHandler.class,
@@ -58,6 +62,8 @@ public class RbacServeRuntimeHints implements RuntimeHintsRegistrar {
                 AbstractReactiveResourceLocator.class,
                 ReactiveHttpResourceLocator.class,
                 ReactivePermissionLocator.class,
+                PermissionLocator.class,
+                AdminAuthorizationManager.class,
                 ParseManager.class,
                 ResourceQueryManager.class,
                 RbacAccessAuthorizationManager.class,

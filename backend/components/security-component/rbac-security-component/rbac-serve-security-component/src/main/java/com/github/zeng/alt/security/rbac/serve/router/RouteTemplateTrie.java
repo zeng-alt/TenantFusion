@@ -1,14 +1,24 @@
 package com.github.zeng.alt.security.rbac.serve.router;
 
+import lombok.extern.slf4j.Slf4j;
+
 import java.util.*;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 /**
- * @author zengJiaJun
- * @version 1.0
- * @crateTime 2025年04月07日 21:42
+ * 路由模板前缀树（Trie），支持路径变量匹配。
+ *
+ * <p>用于将实际请求路径（如 {@code /users/123}）匹配到路由模板（如 {@code /users/{id}}）。
+ * 线程安全，内部使用 {@link ReadWriteLock} 控制并发。</p>
+ *
+ * <p>匹配规则：</p>
+ * <ul>
+ *   <li>优先匹配静态路径段</li>
+ *   <li>其次匹配变量路径段（{@code {name}} 格式）</li>
+ * </ul>
  */
+@Slf4j
 public class RouteTemplateTrie {
 
     private final TrieNode root = new TrieNode();
@@ -24,6 +34,11 @@ public class RouteTemplateTrie {
         return (part.startsWith("{") && part.endsWith("}")) ? "{}" : part;
     }
 
+    /**
+     * 插入一个路由模板到前缀树。
+     *
+     * @param template 路由模板，如 {@code /api/users/{id}/details}
+     */
     public void insert(String template) {
         lock.writeLock().lock();
         try {
@@ -38,16 +53,25 @@ public class RouteTemplateTrie {
                 node.isVariable = "{}".equals(key);
             }
             node.fullTemplate = template;
+            log.trace("Inserted route template: {}", template);
         } finally {
             lock.writeLock().unlock();
         }
     }
 
+    /**
+     * 将实际请求路径匹配到已注册的路由模板。
+     *
+     * @param actualPath 实际请求路径，如 {@code /api/users/123/details}
+     * @return 匹配到的路由模板，如 {@code /api/users/{id}/details}；无匹配时返回 {@code null}
+     */
     public String match(String actualPath) {
         lock.readLock().lock();
         try {
             String[] parts = this.tokenizePath(actualPath);
-            return matchRecursive(parts, 0, root);
+            String result = matchRecursive(parts, 0, root);
+            log.trace("Path [{}] matched to template [{}]", actualPath, result);
+            return result;
         } finally {
             lock.readLock().unlock();
         }
@@ -66,14 +90,12 @@ public class RouteTemplateTrie {
 
         String part = parts[index];
 
-        // 优先静态路径
         TrieNode exactNode = node.children.get(part);
         if (exactNode != null) {
             String result = matchRecursive(parts, index + 1, exactNode);
             if (result != null) return result;
         }
 
-        // 再尝试变量路径段（{}）
         TrieNode variableNode = node.children.get("{}");
         if (variableNode != null) {
             String result = matchRecursive(parts, index + 1, variableNode);
@@ -83,6 +105,9 @@ public class RouteTemplateTrie {
         return null;
     }
 
+    /**
+     * 获取所有已注册的路由模板。
+     */
     public List<String> getAllTemplates() {
         List<String> results = new ArrayList<>();
         lock.readLock().lock();
@@ -104,11 +129,15 @@ public class RouteTemplateTrie {
     }
 
     /**
-     * 删除以某个路径为前缀的所有模板路径
+     * 删除以某个路径为前缀的所有模板路径。
+     * <p>用于当某业务服务的路由整体刷新时，先清理旧路由再插入新路由。</p>
+     *
+     * @param prefixPath 路径前缀，如 {@code /api/users}
      */
     public void deleteSubtree(String prefixPath) {
         lock.writeLock().lock();
         try {
+            log.debug("Deleting route subtree for prefix: {}", prefixPath);
             String[] parts = tokenizePath(prefixPath);
             deleteRecursive(root, parts, 0);
         } finally {
@@ -118,7 +147,6 @@ public class RouteTemplateTrie {
 
     private boolean deleteRecursive(TrieNode node, String[] parts, int index) {
         if (index == parts.length) {
-            // 清空当前子树
             node.children.clear();
             node.fullTemplate = null;
             return true;

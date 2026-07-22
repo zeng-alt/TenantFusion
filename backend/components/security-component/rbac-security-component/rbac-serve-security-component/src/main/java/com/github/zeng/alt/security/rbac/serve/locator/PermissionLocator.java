@@ -7,7 +7,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
-import reactor.core.publisher.Mono;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -15,22 +14,26 @@ import java.util.List;
 import java.util.Set;
 
 /**
- * Reactive 权限定位器。
+ * Servlet 环境权限定位器。
  *
- * <p>根据认证主体的角色信息，从 {@link RbacResourceService} 查询用户拥有的全部权限标识集合。
+ * <p>{@link com.github.zeng.alt.security.rbac.serve.locator.ReactivePermissionLocator} 的同步版本。
+ * 根据认证主体的角色信息，从 {@link RbacResourceService} 查询用户拥有的全部权限标识集合。
  * 优先使用 {@link SecurityUser#getCurrentRole()}（当前激活角色），否则使用全部角色。</p>
  */
 @Slf4j
-public class ReactivePermissionLocator {
+public class PermissionLocator {
 
     private final RbacResourceService rbacResourceService;
 
-    public ReactivePermissionLocator(RbacResourceService rbacResourceService) {
+    public PermissionLocator(RbacResourceService rbacResourceService) {
         this.rbacResourceService = rbacResourceService;
     }
 
     /**
      * 根据认证主体查询其拥有的权限标识。
+     *
+     * @param principal 认证主体
+     * @return 权限标识集合
      */
     public Set<String> findPermissions(Object principal) {
         if (principal == null) {
@@ -64,16 +67,15 @@ public class ReactivePermissionLocator {
     }
 
     /**
-     * 响应式加载当前认证用户的权限集合。
+     * 加载当前认证用户的权限集合。
      *
-     * @param authentication 认证信息 Mono
+     * @param authentication 当前认证信息
      * @return 用户拥有的权限标识集合
      */
-    public Mono<Set<String>> load(Mono<Authentication> authentication) {
-        return authentication
-                .filter(this::isNotAnonymous)
-                .map(this::getAuthorizationPrincipal)
-                .map(this::findPermissions)
-                .switchIfEmpty(Mono.empty());
+    public Set<String> load(Authentication authentication) {
+        if (!isNotAnonymous(authentication)) {
+            return new HashSet<>();
+        }
+        return findPermissions(getAuthorizationPrincipal(authentication));
     }
 }

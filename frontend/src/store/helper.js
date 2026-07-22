@@ -29,3 +29,13 @@ export async function getPermissions() {
   }
   return cloneDeep(basePermissions).concat(asyncPermissions)
 }
+
+export async function getAdmin() {
+  try {
+    const res = await api.getAdmin()
+    return res?.data || {}
+  }
+  catch (error) {
+    console.error(error)
+  }
+}

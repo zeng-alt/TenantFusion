@@ -32,24 +32,37 @@ public class JwtProperties {
     /** 开启jwt认证，请求要带上jwt */
     private Boolean validation = false;
 
-    /** Base64 编码的 HMAC 签名密钥（至少 256 位） */
+    /** Base64 编码的 HMAC 签名密钥（至少 256 位），用于 HS256 Access Token */
     @NotBlank(message = "HMAC 签名密钥不能为空")
     @Length(min = 256, message = "HMAC 签名密钥长度最小为【256】位")
     private String base64Secret;
+
+    /** Base64 编码的 HMAC 签名密钥（至少 512 位），用于 HS512 Refresh Token，不配置则复用 base64Secret */
+    @Length(min = 512, message = "Refresh HMAC 签名密钥长度最小为【512】位")
+    private String base64SecretRefresh;
 
     /** Token 过期时间（秒），默认 4 小时 */
     private Long expiration = 60 * 60 * 4L;
 
     /** Token 类型 */
-    private String tokenType = "Bearer";
+    private String tokenType = "Bearer ";
 
     /** 记住我功能：Refresh Token 过期时间（秒），默认 7 天 */
     private Long rememberMeExpiration = 60 * 60 * 24 * 7L;
 
-    /** 前端携带 refresh token 的请求头名称 */
+    /** 前端携带 refresh token 的请求头名称（仅用于 API 登录路径） */
     private String refreshTokenHeader = "X-Refresh-Token";
 
     /** 下发新 access token 的响应头名称 */
     private String newAccessTokenHeader = "X-New-Access-Token";
+
+    /** Cookie 名称 */
+    private String refreshCookieName = "refresh_token";
+
+    /** Cookie 路径 */
+    private String refreshCookiePath = "/";
+
+    /** Cookie SameSite 属性 */
+    private String refreshCookieSameSite = "Lax";
 
 }

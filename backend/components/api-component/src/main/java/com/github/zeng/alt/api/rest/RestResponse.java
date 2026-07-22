@@ -35,9 +35,9 @@ public class RestResponse<T> implements Serializable {
 	protected RestResponse() {
 	}
 
-	protected RestResponse(Integer code, String message) {
+	protected RestResponse(Integer code, String title) {
 		this.status = code;
-		this.title = message;
+		this.title = title;
 	}
 
 	public RestResponse<T> error(List<String> error) {
@@ -50,6 +50,11 @@ public class RestResponse<T> implements Serializable {
 		return this;
 	}
 
+	public RestResponse<T> title(String title) {
+		this.title = title;
+		return this;
+	}
+
 	public static <T> RestResponse<T> status(Integer status) {
 		return new RestResponse<T>().code(status);
 	}
@@ -59,15 +64,15 @@ public class RestResponse<T> implements Serializable {
 	}
 
 	public static <T> RestResponse<T> success(T data) {
-		return new RestResponse<T>().code(SUCCESS_CODE).message("success").data(data);
+		return new RestResponse<T>().code(SUCCESS_CODE).title("业务错误").message("success").data(data);
 	}
 
-	public static RestResponse<Void> fail() {
-		return new RestResponse<Void>().code(FAIL_CODE).message("fail").error(new ArrayList<>());
+	public static <T> RestResponse<T> fail() {
+		return new RestResponse<T>().code(FAIL_CODE).title("业务错误").message("fail").error(new ArrayList<>());
 	}
 
-	public static RestResponse<Void> fail(String message) {
-		return new RestResponse<Void>().code(FAIL_CODE).message(message).data(null).error(new ArrayList<>());
+	public static <T> RestResponse<T> fail(String message) {
+		return new RestResponse<T>().code(FAIL_CODE).title("业务错误").message(message).data(null).error(new ArrayList<>());
 	}
 
 	public static <T> RestResponse<T> warn() {

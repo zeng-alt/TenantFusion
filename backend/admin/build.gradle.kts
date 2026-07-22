@@ -60,6 +60,10 @@ dependencies {
     implementation(project(":backend:components:lock-component:database-lock-component"))
     implementation(project(":backend:components:security-component:jwt-auth-security-component"))
     implementation(project(":backend:components:security-component:captcha-auth-security-component"))
+    // RBAC 服务端（鉴权）
+    implementation(project(":backend:components:security-component:rbac-security-component:rbac-serve-security-component"))
+    // RBAC 客户端（路由收集，可选）
+    implementation(project(":backend:components:security-component:rbac-security-component:rbac-client-security-component"))
     implementation(project(":backend:components:doc-component"))
     implementation(project(":backend:components:log-component:jpa-log-component"))
     implementation(project(":backend:components:oss-component:jpa-oss-component"))

@@ -43,6 +43,7 @@
 </template>
 
 <script setup>
+import { useStorage } from '@vueuse/core'
 import api from '@/api'
 import { MeModal } from '@/components'
 import { useModal } from '@/composables'
@@ -64,7 +65,7 @@ function open(options) {
 async function setCurrentRole() {
   try {
     okLoading.value = true
-    const { data } = await api.switchCurrentRole(roleCode.value)
+    const { data } = await api.switchCurrentRole(roleCode.value, useStorage('isRemember', true).value)
     await authStore.switchCurrentRole(data)
     okLoading.value = false
     $message.success('切换成功')

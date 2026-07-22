@@ -41,7 +41,7 @@ public class CookieLoginHelper implements LoginHelper {
 
         String sessionId = sessionManager.createSession(user);
 
-        return LoginResponse.success(user)
+        return LoginResponse.ofUser(user)
                 .attribute("sessionId", sessionId)
                 .attribute("cookieName", cookieAuthProperties.getCookieName())
                 .attribute("expiresIn", cookieAuthProperties.getExpiration());

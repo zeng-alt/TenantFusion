@@ -1,23 +1,31 @@
 package com.github.zeng.alt.security.rbac.serve.handler;
 
-
 import com.github.zeng.alt.security.api.HttpResource;
 import com.github.zeng.alt.security.api.Resource;
 import com.github.zeng.alt.security.rbac.serve.manager.ResourceQueryManager;
+import com.github.zeng.alt.security.rbac.serve.router.RouteTemplateManager;
 import jakarta.servlet.http.HttpServletRequest;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.web.access.intercept.RequestAuthorizationContext;
 
 import java.util.List;
 
 /**
- * @author zengJiaJun
- * @version 1.0
- * @crateTime 2024年12月11日 21:49
+ * Servlet 环境默认 HTTP 资源处理器。
+ *
+ * <p>作为 {@link ParseManager} 的最终 fallback，始终匹配（{@code matcher()} 返回 {@code true}）。
+ * 鉴权逻辑：从 {@link ResourceQueryManager} 获取当前用户可访问的 HTTP 资源列表，
+ * 逐个调用 {@link Resource#compareTo(HttpServletRequest)} 匹配当前请求。</p>
  */
+@Slf4j
 public class HttpResourceHandler extends AbstractResourceHandler {
-    public HttpResourceHandler(ResourceQueryManager resourceQueryManager) {
+
+    private final RouteTemplateManager routeTemplateManager;
+
+    public HttpResourceHandler(ResourceQueryManager resourceQueryManager, RouteTemplateManager routeTemplateManager) {
         super(resourceQueryManager);
+        this.routeTemplateManager = routeTemplateManager;
     }
 
     @Override
@@ -27,20 +35,27 @@ public class HttpResourceHandler extends AbstractResourceHandler {
 
     @Override
     public Boolean handler(Authentication authentication, RequestAuthorizationContext object) {
-        List<Resource> resources = resourceQueryManager.query(new HttpResource(), authentication);
+        String uri = object.getRequest().getRequestURI();
+        String method = object.getRequest().getMethod();
+        String template = this.routeTemplateManager.match(uri);
+
+        List<Resource> resources = resourceQueryManager.query(create(template, method), authentication);
+        log.debug("Authorizing {} {} for user '{}', found {} permitted resources",
+                method, uri, authentication.getName(), resources.size());
         for (Resource resource : resources) {
-            if (resource.compareTo(object.getRequest())) {
+            if (resource.getMethod().equalsIgnoreCase(method) && resource.getUri().equalsIgnoreCase(template)) {
+                log.debug("GRANT {} {} to user '{}'", method, uri, authentication.getName());
                 return true;
             }
         }
+        log.debug("DENY {} {} to user '{}'", method, uri, authentication.getName());
         return false;
     }
 
-    public HttpResource create(RequestAuthorizationContext object) {
+    private HttpResource create(String path, String method) {
         HttpResource httpResource = new HttpResource();
-        HttpServletRequest request = object.getRequest();
-        httpResource.setUri(request.getRequestURI());
-        httpResource.setMethod(request.getMethod());
+        httpResource.setUri(path);
+        httpResource.setMethod(method);
         return httpResource;
     }
 }

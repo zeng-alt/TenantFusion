@@ -33,27 +33,6 @@ import org.springframework.security.web.servlet.util.matcher.PathPatternRequestM
 
 import java.util.List;
 
-/**
- * JWT 认证自动配置.
- * <p>
- * 通过 {@code security.jwt.enabled=true} 启用 JWT 认证，使用
- * {@link UsernameLoginProperties} 配置登录路径和参数名，
- * {@link LogoutProperties} 配置退出路径。
- * <p>
- * 启用后自动注册：
- * <ul>
- *   <li>{@link JwtTokenProvider} — JWT 创建和验证</li>
- *   <li>{@link JwtAuthenticationSuccessHandler} — 登录成功生成 JWT 并写入缓存</li>
- *   <li>{@link JwtAuthenticationFailureHandler} — 登录失败返回 JSON</li>
- *   <li>{@link JwtLogoutHandler} — 登出时清除缓存中的 JWT</li>
- *   <li>{@link JwtLogoutSuccessHandler} — 登出成功返回 JSON</li>
- *   <li>{@link SecurityBuilderCustomizer} — 装配登录/登出过滤器链，设置无状态会话</li>
- * </ul>
- *
- * @author zengJiaJun
- * @version 1.0
- * @since 2024年10月07日
- */
 @AutoConfiguration
 @ImportRuntimeHints(JjwtHints.class)
 @ConditionalOnWebApplication(type = ConditionalOnWebApplication.Type.SERVLET)
@@ -63,7 +42,7 @@ public class JwtAuthAutoConfiguration {
     @Bean
     @ConditionalOnMissingBean
     public JwtTokenProvider jwtTokenProvider(JwtProperties jwtProperties) {
-        return new JwtTokenProvider(jwtProperties.getBase64Secret(), jwtProperties.getExpiration());
+        return new JwtTokenProvider(jwtProperties);
     }
 
     @Bean
@@ -109,26 +88,33 @@ public class JwtAuthAutoConfiguration {
             AuthenticationManager authenticationManager,
             JwtTokenProvider jwtTokenProvider,
             StorageTemplate storageTemplate,
-            JwtProperties jwtProperties) {
+            JwtProperties jwtProperties,
+            ObjectProvider<ObjectMapper> objectMapperProvider) {
 
+        ObjectMapper objectMapper = objectMapperProvider.getIfAvailable(ObjectMapper::new);
         return new JwtLoginHelper(
                 authenticationManager, jwtTokenProvider, storageTemplate,
-                jwtProperties.getExpiration(), jwtProperties.getRememberMeExpiration());
+                jwtProperties, objectMapper);
     }
 
     @Bean
     @ConditionalOnProperty(prefix = "security.jwt-auth", name = "validation", havingValue = "true")
-    public SecurityBuilderCustomizer authCookieSecurityCustomizer(JwtTokenProvider jwtTokenProvider, ObjectProvider<StorageTemplate> storageTemplateProvider, JwtProperties jwtProperties) {
+    public SecurityBuilderCustomizer authCookieSecurityCustomizer(
+            JwtTokenProvider jwtTokenProvider,
+            ObjectProvider<StorageTemplate> storageTemplateProvider,
+            ObjectProvider<ObjectMapper> objectMapperProvider,
+            JwtProperties jwtProperties) {
         return http -> {
             StorageTemplate storageTemplate = storageTemplateProvider.getIfAvailable();
-            // ===== JWT 认证过滤器（校验 Bearer token + 记住我无感续期）=====
+            ObjectMapper objectMapper = objectMapperProvider.getIfAvailable(ObjectMapper::new);
             JwtAuthenticationFilter authFilter = new JwtAuthenticationFilter(
                     jwtTokenProvider,
                     storageTemplate,
+                    objectMapper,
                     "Authorization",
                     jwtProperties.getLogin(),
-                    jwtProperties.getRefreshTokenHeader(),
-                    jwtProperties.getNewAccessTokenHeader()
+                    jwtProperties.getNewAccessTokenHeader(),
+                    jwtProperties.getRefreshCookieName()
             );
 
             http.addFilterBefore(authFilter, UsernamePasswordAuthenticationFilter.class);
@@ -158,7 +144,6 @@ public class JwtAuthAutoConfiguration {
                         "Ensure WebSecurityAutoConfiguration is active.");
             }
 
-            // ===== JWT 登录过滤器 =====
             JwtLoginFilter loginFilter = new JwtLoginFilter(objectMapper);
             LoginProperties login = jwtProperties.getLogin();
             loginFilter.setRequiresAuthenticationRequestMatcher(PathPatternRequestMatcher.withDefaults().matcher(login.getMethod(), login.getLoginPath()));
@@ -168,9 +153,6 @@ public class JwtAuthAutoConfiguration {
             loginFilter.setAuthenticationFailureHandler(jwtFailureHandler);
             loginFilter.setAuthenticationManager(authenticationManager);
 
-
-
-            // ===== JWT 登出过滤器 =====
             LogoutFilter logoutFilter = new LogoutFilter(jwtLogoutSuccessHandler, jwtLogoutHandler);
             logoutFilter.setLogoutRequestMatcher(
                     PathPatternRequestMatcher.withDefaults().matcher(jwtProperties.getLogout().getMethod(), jwtProperties.getLogout().getLogoutPath())
@@ -189,7 +171,6 @@ public class JwtAuthAutoConfiguration {
             name = "org.springdoc.core.customizers.OpenApiCustomizer"
     )
     static class SpringDocConfiguration {
-
 
         @Bean
         @ConditionalOnProperty(prefix = "security.jwt-auth", name = "authentication", havingValue = "true")
@@ -230,8 +211,6 @@ public class JwtAuthAutoConfiguration {
                 PathItem pathItem = new PathItem()
                         .post(operation);
 
-
-
                 openApi.path(jwtProperties.getLogin().getLoginPath(), pathItem);
 
                 operation = new Operation()
@@ -253,9 +232,6 @@ public class JwtAuthAutoConfiguration {
             };
         }
 
-
-
     }
-
 
 }

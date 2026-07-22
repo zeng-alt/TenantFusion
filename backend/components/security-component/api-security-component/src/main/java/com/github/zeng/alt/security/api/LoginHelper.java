@@ -1,6 +1,7 @@
 package com.github.zeng.alt.security.api;
 
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 /**
  * 登录认证助手，抽象不同认证方式的登录、登出等操作.
@@ -26,6 +27,15 @@ public interface LoginHelper {
      * @return 登录结果，包含认证用户及各方式特有属性
      */
     LoginResponse login(String username, String password);
+
+
+    default LoginResponse reset(SecurityUser user, boolean rememberMe) {
+        return null;
+    }
+
+    default LoginResponse reset(SecurityUser user, boolean rememberMe, HttpServletRequest request, HttpServletResponse response) {
+        return null;
+    }
 
     /**
      * 用户登录（支持记住我）.

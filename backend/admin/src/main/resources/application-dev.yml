@@ -56,6 +56,7 @@ spring:
 security:
   jwt-auth:
     base64-secret: "aGRzaGRnYWhkampydXV1dWtkZGRkamZzc2ZqamlrZHNzZGdkZ2RzamdrLGIvY24yNTQ0Ly4tPT1bXTIzOTQ0NzUwLWpmZHNzZ2htdGtqanR0dGV0NGJhZGFocG9laW9uYmlqcGRpYW9oamo0MzA4MDUzMGhnanl5aW9wc29vcGRvZmZqbm1rbW1tbWdoMFtbWzQ4M3FodTMyMm9yNjY0NDY0OHd3YWhzandiYWRoYWhkYWFhYWZlcmhhd2VlYzNmZGpzZGRzaA=="
+    base64-secret-refresh: "c1cyMmxvbmdoYXc1cyMmxvbmdoYXNoNTEyc2VjcmV0a2V5dGhhdGlzNjRicnl0ZXNmb3J0aGVuZXdyZWZyZXNodG9rZW5hc1cyMmxvbmdoYXc1cyMmxvbmdoYXNoNTEyc2VjcmV0a2V5c1cyMmxvbmdoYXc1cyMmxvbmdoYXNoNTEyc2VjcmV0a2V5dGhhdGlzNjRicnl0ZXNmb3J0aGVuZXdyZWZyZXNodG9rZW5hbmRpdHdvcmtzZdGhhdGlzNjRicnl0ZXNmb3J0aGVuZXdyZWZyZXNodG9rZW5hbmRpdHdvcmtzZbmRpdHdvcmtzZm9yaHNpZ25hdHVyZXlvdXRoZWxwYmFzZTY0ZW5jb2RlZGFuZHN0dWZmbGlrZXlvdXJ0ZXh0dGhhdHNob3VsZGJlZWNoNTEyc2VjcmV0a2V5dGhhdGlzNjRicnl0ZXNmb3J0aGVuZXdyZWZyZXNodG9rZW5hbmRpdHdvcmtzZm9yaHNpZ25hdHVyZXlvdXRoZWxwYmFzZTY0ZW5jb2RlZGFuZHN0dWZmbGlrZXlvdXJ0ZXh0dGhhdHNob3VsZGJlZW5vdXRoZXJ0Zg=="
     authentication: true
     validation: true
     login:
@@ -77,6 +78,12 @@ security:
       - "/webjars/**"
   context:
     enabled-access: true
+    admin:
+      id: 1001
+      code: admin
+  rbac:
+    client:
+      enabled: true
 
 
 springdoc:

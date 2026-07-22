@@ -11,9 +11,10 @@ import reactor.core.publisher.Mono;
 import java.util.List;
 
 /**
- * @author zengJiaJun
- * @version 1.0
- * @crateTime 2024年11月29日 21:15
+ * Reactive 环境请求解析管理器。
+ *
+ * <p>遍历所有 {@link ReactiveResourceHandler}，通过 {@code matcher()} 方法查找匹配当前请求的处理器，
+ * 无匹配时回退到 {@link ReactiveHttpResourceHandler}。</p>
  */
 @Slf4j
 public class ReactiveParseManager {

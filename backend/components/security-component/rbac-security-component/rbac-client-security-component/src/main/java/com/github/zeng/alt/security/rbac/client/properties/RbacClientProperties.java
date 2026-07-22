@@ -2,7 +2,7 @@ package com.github.zeng.alt.security.rbac.client.properties;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
-@ConfigurationProperties(prefix = "rbac.client")
+@ConfigurationProperties(prefix = "security.rbac.client")
 public class RbacClientProperties {
 
     private boolean enabled = true;

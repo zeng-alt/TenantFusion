@@ -16,8 +16,12 @@ export const usePermissionStore = defineStore('permission', {
     accessRoutes: [],
     permissions: [],
     menus: [],
+    admin: {},
   }),
   actions: {
+    setAdmin(admin) {
+      this.admin = admin
+    },
     setPermissions(permissions) {
       this.permissions = permissions
       this.menus = this.permissions

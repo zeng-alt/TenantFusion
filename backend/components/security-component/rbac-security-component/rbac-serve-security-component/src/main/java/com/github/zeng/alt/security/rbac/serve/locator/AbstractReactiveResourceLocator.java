@@ -12,9 +12,15 @@ import java.util.List;
 import java.util.Set;
 
 /**
- * @author zengJiaJun
- * @version 1.0
- * @crateTime 2024年12月09日 21:47
+ * Reactive 环境资源定位器的抽象基类。
+ *
+ * <p>提供匿名用户过滤和认证信息提取的通用逻辑，
+ * 子类需实现以下抽象方法：</p>
+ * <ul>
+ *   <li>{@link #list(Object)} — 根据认证主体加载资源列表</li>
+ *   <li>{@link #loadPermissionForResource(Resource, Object)} — 根据资源获取所需的权限标识</li>
+ *   <li>{@link #verifyInstance(Resource)} — 校验资源类型</li>
+ * </ul>
  */
 @Slf4j
 public abstract class AbstractReactiveResourceLocator implements ReactiveResourceLocator {

@@ -19,135 +19,104 @@ INSERT INTO main_dict_data (dict_data_id,dict_sort,dict_label,dict_value,css_cla
 
 INSERT INTO MAIN_PERMISSION (permission_id, resource_type, code, name, description, is_enabled, path, component, redirect, icon, layout, keep_alive, menu_name, menu_style, resource_order, is_show, parent_id, created_by, created_date, last_modified_by, last_modified_date) VALUES
     (277, 'MENU', 'AssginRoleMgt', '分配用户', NULL, TRUE, '/pms/role/user/:roleId', '/src/views/pms/role/role-user.vue', NULL, 'i-fe:user-plus', '', 't', NULL, NULL, 2, FALSE, 283, NULL, '2025-05-22 20:57:26.822246', NULL, '2025-05-22 20:57:26.822246');
-
 INSERT INTO MAIN_PERMISSION (permission_id, resource_type, code, name, description, is_enabled, path, component, redirect, icon, layout, keep_alive, menu_name, menu_style, resource_order, is_show, parent_id, created_by, created_date, last_modified_by, last_modified_date) VALUES
     (278, 'MENU', 'HttpMgt', 'HTTP资源管理', NULL, TRUE, '/pms/resource/http', '/src/views/pms/resource/http/index.vue', NULL, 'i-carbon:Http', '', 't', NULL, NULL, 2, TRUE, 279, NULL, '2025-05-22 20:57:26.822246', NULL, '2025-05-22 20:57:26.822246');
-
 INSERT INTO MAIN_PERMISSION (permission_id, resource_type, code, name, description, is_enabled, path, component, redirect, icon, layout, keep_alive, menu_name, menu_style, resource_order, is_show, parent_id, created_by, created_date, last_modified_by, last_modified_date) VALUES
     (279, 'MENU', 'SysMgt', '系统管理', NULL, TRUE, '/pms', NULL, NULL, 'i-fe:grid', '', 't', NULL, NULL, 1, TRUE, NULL, NULL, '2025-05-22 20:57:26.822246', NULL, '2025-05-22 20:57:26.822246');
-
 INSERT INTO MAIN_PERMISSION (permission_id, resource_type, code, name, description, is_enabled, path, component, redirect, icon, layout, keep_alive, menu_name, menu_style, resource_order, is_show, parent_id, created_by, created_date, last_modified_by, last_modified_date) VALUES
     (280, 'MENU', 'MenuResourceMgt', '菜单资源管理', NULL, TRUE, '/pms/resource/menu', '/src/views/pms/resource/menu/index.vue', NULL, 'i-fe:menu', '', 't', NULL, '', 1, TRUE, 279, 'superAdmin', '2025-05-22 20:57:26.822246', 'superAdmin', '2025-06-12 15:45:49.601032');
-
 INSERT INTO MAIN_PERMISSION (permission_id, resource_type, code, name, description, is_enabled, path, component, redirect, icon, layout, keep_alive, menu_name, menu_style, resource_order, is_show, parent_id, created_by, created_date, last_modified_by, last_modified_date) VALUES
     (282, 'MENU', 'UserMgt', '用户管理', NULL, TRUE, '/pms/user', '/src/views/pms/user/index.vue', NULL, 'i-fe:user', '', 't', NULL, NULL, 4, TRUE, 279, NULL, '2025-05-22 20:57:26.822246', 'superAdmin', '2025-05-27 22:36:35.047659');
-
 INSERT INTO MAIN_PERMISSION (permission_id, resource_type, code, name, description, is_enabled, path, component, redirect, icon, layout, keep_alive, menu_name, menu_style, resource_order, is_show, parent_id, created_by, created_date, last_modified_by, last_modified_date) VALUES
     (283, 'MENU', 'RoleMgt', '角色管理', '用于管理角色', TRUE, '/pms/role', '/src/views/pms/role/index.vue', NULL, 'i-ali:role', '', 't', NULL, NULL, 5, TRUE, 279, NULL, '2025-05-22 20:57:26.822246', 'superAdmin', '2025-05-27 22:36:41.126443');
-
 INSERT INTO MAIN_PERMISSION (permission_id, resource_type, code, name, description, is_enabled, path, component, redirect, icon, layout, keep_alive, menu_name, menu_style, resource_order, is_show, parent_id, created_by, created_date, last_modified_by, last_modified_date) VALUES
     (284, 'MENU', 'DictMgt', '字典管理', '用于管理系统字典', TRUE, '/pms/dict', '/src/views/pms/dict/index.vue', NULL, 'i-ali:dictionary', '', 't', NULL, NULL, 6, TRUE, 279, NULL, '2025-05-22 20:57:26.822246', 'superAdmin', '2025-05-27 22:36:51.993415');
-
 INSERT INTO MAIN_PERMISSION (permission_id, resource_type, code, name, description, is_enabled, path, component, redirect, icon, layout, keep_alive, menu_name, menu_style, resource_order, is_show, parent_id, created_by, created_date, last_modified_by, last_modified_date) VALUES
     (285, 'MENU', 'SystemPerMgt', '系统参数管理', '用于管理系统参数', TRUE, '/pms/parameter', '/src/views/pms/parameter/index.vue', NULL, 'i-ali:SystemParameter', '', 't', NULL, NULL, 7, TRUE, 279, NULL, '2025-05-22 20:57:26.822246', 'superAdmin', '2025-05-27 22:41:56.283981');
-
 INSERT INTO MAIN_PERMISSION (permission_id, resource_type, code, name, description, is_enabled, path, component, redirect, icon, layout, keep_alive, menu_name, menu_style, resource_order, is_show, parent_id, created_by, created_date, last_modified_by, last_modified_date) VALUES
     (286, 'MENU', 'FormMgt', '动态表单', NULL, TRUE, '/base/form', '/src/views/base/form.vue', NULL, NULL, '', 't', NULL, '', 3, TRUE, 291, 'superAdmin', '2025-06-03 10:31:44.951313', 'superAdmin', '2025-06-03 10:31:44.951313');
-
 INSERT INTO MAIN_PERMISSION (permission_id, resource_type, code, name, description, is_enabled, path, component, redirect, icon, layout, keep_alive, menu_name, menu_style, resource_order, is_show, parent_id, created_by, created_date, last_modified_by, last_modified_date) VALUES
     (287, 'MENU', 'TenantMgt', '租户管理', '用于管理系统租户', TRUE, '/pms/tenant', '/src/views/pms/tenant/index.vue', NULL, 'i-fa:building-regular', '', 't', NULL, NULL, 0, TRUE, 279, NULL, '2025-05-22 20:57:26.822246', 'superAdmin', '2025-05-29 11:04:44.439517');
-
 INSERT INTO MAIN_PERMISSION (permission_id, resource_type, code, name, description, is_enabled, path, component, redirect, icon, layout, keep_alive, menu_name, menu_style, resource_order, is_show, parent_id, created_by, created_date, last_modified_by, last_modified_date) VALUES
     (288, 'MENU', 'AbacMgt', 'ABAC权限管理', NULL, TRUE, '/pms/abac', '/src/views/pms/abac/index.vue', NULL, 'i-ma:RuleFilled', '', 't', NULL, '', 10, TRUE, 279, 'superAdmin', '2025-06-02 21:29:01.53098', 'superAdmin', '2025-06-02 22:11:45.164261');
-
 INSERT INTO MAIN_PERMISSION (permission_id, resource_type, code, name, description, is_enabled, path, component, redirect, icon, layout, keep_alive, menu_name, menu_style, resource_order, is_show, parent_id, created_by, created_date, last_modified_by, last_modified_date) VALUES
     (289, 'MENU', 'IconMgt', '图标管理', NULL, TRUE, '/base/uncon', '/src/views/base/unocss-icon.vue', NULL, 'i-fe:feather', '', 't', NULL, '', 12, TRUE, 291, 'superAdmin', '2025-06-02 21:39:31.020834', 'superAdmin', '2025-06-02 21:46:40.490375');
-
 INSERT INTO MAIN_PERMISSION (permission_id, resource_type, code, name, description, is_enabled, path, component, redirect, icon, layout, keep_alive, menu_name, menu_style, resource_order, is_show, parent_id, created_by, created_date, last_modified_by, last_modified_date) VALUES
     (290, 'MENU', 'BaseComponents', '基础组件', NULL, TRUE, '/base/components', '/src/views/base/index.vue', NULL, 'i-me:awesome', '', 't', NULL, '', 1, TRUE, 291, 'superAdmin', '2025-06-02 21:51:36.006087', 'superAdmin', '2025-06-02 21:51:50.051997');
-
 INSERT INTO MAIN_PERMISSION (permission_id, resource_type, code, name, description, is_enabled, path, component, redirect, icon, layout, keep_alive, menu_name, menu_style, resource_order, is_show, parent_id, created_by, created_date, last_modified_by, last_modified_date) VALUES
     (291, 'MENU', 'BaseMgt', '基础管理', NULL, TRUE, '/base', NULL, NULL, 'i-fe:grid', '', 't', NULL, '', 0, TRUE, NULL, 'superAdmin', '2025-06-02 21:44:13.358837', 'superAdmin', '2025-06-02 21:52:52.979418');
-
 INSERT INTO MAIN_PERMISSION (permission_id, resource_type, code, name, description, is_enabled, path, component, redirect, icon, layout, keep_alive, menu_name, menu_style, resource_order, is_show, parent_id, created_by, created_date, last_modified_by, last_modified_date) VALUES
     (292, 'MENU', 'UserProfile', '个人资料', NULL, TRUE, '/profile', '/src/views/profile/index.vue', NULL, 'i-fe:user', '', 't', NULL, '', 99, FALSE, NULL, 'superAdmin', '2025-06-06 13:41:01.652181', 'superAdmin', '2025-06-06 14:06:03.455539');
-
 INSERT INTO MAIN_PERMISSION (permission_id, resource_type, code, name, description, is_enabled, path, component, redirect, icon, layout, keep_alive, menu_name, menu_style, resource_order, is_show, parent_id, created_by, created_date, last_modified_by, last_modified_date) VALUES
     (293, 'MENU', 'SpelMgt', 'spel管理', NULL, TRUE, '/base/spel', '/src/views/base/spel.vue', NULL, NULL, '', 't', NULL, '', 10, TRUE, 291, 'superAdmin', '2025-06-06 22:26:44.468541', 'superAdmin', '2025-06-06 22:26:44.468541');
-
 INSERT INTO MAIN_PERMISSION (permission_id, resource_type, code, name, description, is_enabled, path, component, redirect, icon, layout, keep_alive, menu_name, menu_style, resource_order, is_show, parent_id, created_by, created_date, last_modified_by, last_modified_date) VALUES
     (294, 'MENU', 'SpelInfo', 'Spel文档', NULL, TRUE, '/pms/abac/info', '/src/views/pms/abac/spel-info.vue', NULL, NULL, '', 't', NULL, '', 2, TRUE, 288, 'superAdmin', '2025-06-08 22:29:47.252435', 'superAdmin', '2025-06-08 22:29:47.252435');
-
 INSERT INTO MAIN_PERMISSION (permission_id, resource_type, code, name, description, is_enabled, path, component, redirect, icon, layout, keep_alive, menu_name, menu_style, resource_order, is_show, parent_id, created_by, created_date, last_modified_by, last_modified_date) VALUES
     (295, 'MENU', 'EventMgt', '事件管理', NULL, TRUE, '/pms/event', '/src/views/pms/event/index.vue', NULL, 'i-ma:EventRepeatOutlined', '', 't', NULL, '', 14, TRUE, 279, 'superAdmin', '2025-06-03 14:17:34.806673', 'superAdmin', '2025-06-11 15:23:11.691221');
 
-INSERT INTO MAIN_PERMISSION (permission_id, resource_type, code, name, description, is_enabled, method, button_name, menu_id, path, created_by, created_date, last_modified_by, last_modified_date) VALUES
-    (253, 'HTTP', 'functionCancelAuthorize', '取消所选角色graphql功能权限', NULL, TRUE, 'POST', NULL, NULL, '/main/v1/role/function/cancel/authorize', NULL, '2025-06-23 11:09:18.127688', NULL, '2025-06-23 11:09:18.127688');
 
-INSERT INTO MAIN_PERMISSION (permission_id, resource_type, code, name, description, is_enabled, method, button_name, menu_id, path, created_by, created_date, last_modified_by, last_modified_date) VALUES
-    (254, 'HTTP', 'button', '获取菜单下的按钮', NULL, TRUE, 'GET', NULL, NULL, '/main/v1/menu/resource/button/{id}', NULL, '2025-06-23 11:09:18.133842', NULL, '2025-06-23 11:09:18.133842');
+INSERT INTO main_permission(permission_id,resource_type,code,name,description,is_enabled,is_deleted,method,path,created_date) VALUES(10001,'HTTP','GET:/v1/resource/http/associate','批量关联HTTP资源到菜单','批量关联HTTP资源到菜单',TRUE,FALSE,'POST','/v1/resource/http/associate',CURRENT_TIMESTAMP);
+INSERT INTO main_permission(permission_id,resource_type,code,name,description,is_enabled,is_deleted,method,path,created_date) VALUES(10002,'HTTP','PATCH:/v1/resource/http/{id}/disconnect','取消HTTP资源菜单关联','取消HTTP资源的菜单关联',TRUE,FALSE,'PATCH','/v1/resource/http/{id}/disconnect',CURRENT_TIMESTAMP);
+INSERT INTO main_permission(permission_id,resource_type,code,name,description,is_enabled,is_deleted,method,path,created_date) VALUES(10003,'HTTP','GET:/v1/resource/http/page','分页查询HTTP资源','分页查询HTTP资源列表',TRUE,FALSE,'GET','/v1/resource/http/page',CURRENT_TIMESTAMP);
+INSERT INTO main_permission(permission_id,resource_type,code,name,description,is_enabled,is_deleted,method,path,created_date) VALUES(10004,'HTTP','GET:/v1/menu/resource/validate','验证菜单路径','验证菜单路径',TRUE,FALSE,'GET','/v1/menu/resource/validate',CURRENT_TIMESTAMP);
+INSERT INTO main_permission(permission_id,resource_type,code,name,description,is_enabled,is_deleted,method,path,created_date) VALUES(10005,'HTTP','GET:/v1/menu/resource/tree','获取当前用户资源树','获取当前用户资源树',TRUE,FALSE,'GET','/v1/menu/resource/tree',CURRENT_TIMESTAMP);
+INSERT INTO main_permission(permission_id,resource_type,code,name,description,is_enabled,is_deleted,method,path,created_date) VALUES(10006,'HTTP','GET:/v1/menu/resource/tree/menu','获取所有菜单资源','获取所有菜单资源',TRUE,FALSE,'GET','/v1/menu/resource/tree/menu',CURRENT_TIMESTAMP);
+INSERT INTO main_permission(permission_id,resource_type,code,name,description,is_enabled,is_deleted,method,path,created_date) VALUES(10007,'HTTP','GET:/v1/menu/resource/tree/enable/all','获取所有开启资源树','获取所有开启的资源树',TRUE,FALSE,'GET','/v1/menu/resource/tree/enable/all',CURRENT_TIMESTAMP);
+INSERT INTO main_permission(permission_id,resource_type,code,name,description,is_enabled,is_deleted,method,path,created_date) VALUES(10008,'HTTP','GET:/v1/menu/resource/tree/all','获取所有资源树','获取所有资源树',TRUE,FALSE,'GET','/v1/menu/resource/tree/all',CURRENT_TIMESTAMP);
+INSERT INTO main_permission(permission_id,resource_type,code,name,description,is_enabled,is_deleted,method,path,created_date) VALUES(10009,'HTTP','GET:/v1/menu/resource/button/{id}','获取菜单按钮','获取菜单下按钮',TRUE,FALSE,'GET','/v1/menu/resource/button/{id}',CURRENT_TIMESTAMP);
+INSERT INTO main_permission(permission_id,resource_type,code,name,description,is_enabled,is_deleted,method,path,created_date) VALUES(10010,'HTTP','GET:/v1/user/detail','获取当前登录用户信息','获取当前登录用户信息',TRUE,FALSE,'GET','/v1/user/detail',CURRENT_TIMESTAMP);
+INSERT INTO main_permission(permission_id,resource_type,code,name,description,is_enabled,is_deleted,method,path,created_date) VALUES(10011,'HTTP','GET:/hello','Hello接口','测试接口',TRUE,FALSE,'GET','/hello',CURRENT_TIMESTAMP);
+INSERT INTO main_permission(permission_id,resource_type,code,name,description,is_enabled,is_deleted,method,path,created_date) VALUES(10012,'HTTP','GET:/v1/auth/captcha','获取验证码','认证验证码接口',TRUE,FALSE,'GET','/v1/auth/captcha',CURRENT_TIMESTAMP);
+INSERT INTO main_permission(permission_id,resource_type,code,name,description,is_enabled,is_deleted,method,path,created_date) VALUES(10013,'HTTP','POST:/v1/login/jwt','JWT登录','用户登录接口',TRUE,FALSE,'POST','/v1/login/jwt',CURRENT_TIMESTAMP);
+INSERT INTO main_permission(permission_id,resource_type,code,name,description,is_enabled,is_deleted,method,path,created_date) VALUES(10014,'HTTP','POST:/v1/logout/jwt','JWT登出','用户退出登录',TRUE,FALSE,'POST','/v1/logout/jwt',CURRENT_TIMESTAMP);
+INSERT INTO main_permission(permission_id,resource_type,code,name,description,is_enabled,is_deleted,method,path,created_date) VALUES(10015,'HTTP','GET:/v1/dict/data','分页查询DictData','分页查询DictData列表',TRUE,FALSE,'GET','/v1/dict/data',CURRENT_TIMESTAMP);
+INSERT INTO main_permission(permission_id,resource_type,code,name,description,is_enabled,is_deleted,method,path,created_date) VALUES(10016,'HTTP','POST:/v1/dict/data','新增DictData','创建新的DictData记录',TRUE,FALSE,'POST','/v1/dict/data',CURRENT_TIMESTAMP);
+INSERT INTO main_permission(permission_id,resource_type,code,name,description,is_enabled,is_deleted,method,path,created_date) VALUES(10017,'HTTP','GET:/v1/dict/data/all','查询所有DictData','条件查询所有DictData不分页',TRUE,FALSE,'GET','/v1/dict/data/all',CURRENT_TIMESTAMP);
+INSERT INTO main_permission(permission_id,resource_type,code,name,description,is_enabled,is_deleted,method,path,created_date) VALUES(10018,'HTTP','GET:/v1/dict/data/{id}','获取DictData详情','根据ID获取DictData详情',TRUE,FALSE,'GET','/v1/dict/data/{id}',CURRENT_TIMESTAMP);
+INSERT INTO main_permission(permission_id,resource_type,code,name,description,is_enabled,is_deleted,method,path,created_date) VALUES(10019,'HTTP','PUT:/v1/dict/data/{id}','更新DictData','全量更新DictData',TRUE,FALSE,'PUT','/v1/dict/data/{id}',CURRENT_TIMESTAMP);
+INSERT INTO main_permission(permission_id,resource_type,code,name,description,is_enabled,is_deleted,method,path,created_date) VALUES(10020,'HTTP','PATCH:/v1/dict/data/{id}','部分更新DictData','部分更新DictData',TRUE,FALSE,'PATCH','/v1/dict/data/{id}',CURRENT_TIMESTAMP);
+INSERT INTO main_permission(permission_id,resource_type,code,name,description,is_enabled,is_deleted,method,path,created_date) VALUES(10021,'HTTP','DELETE:/v1/dict/data/{ids}','批量删除DictData','批量删除DictData',TRUE,FALSE,'DELETE','/v1/dict/data/{ids}',CURRENT_TIMESTAMP);
+INSERT INTO main_permission(permission_id,resource_type,code,name,description,is_enabled,is_deleted,method,path,created_date) VALUES(10022,'HTTP','PUT:/v1/dict/data/sort','DictData排序','批量重排序DictData',TRUE,FALSE,'PUT','/v1/dict/data/sort',CURRENT_TIMESTAMP);
 
-INSERT INTO MAIN_PERMISSION (permission_id, resource_type, code, name, description, is_enabled, method, button_name, menu_id, path, created_by, created_date, last_modified_by, last_modified_date) VALUES
-    (255, 'HTTP', 'validateMenuPath', '验证菜单路径', NULL, TRUE, 'GET', NULL, NULL, '/main/v1/menu/resource/validate', NULL, '2025-06-23 11:09:18.136491', NULL, '2025-06-23 11:09:18.136491');
+INSERT INTO main_permission(permission_id,resource_type,code,name,description,is_enabled,is_deleted,method,path,created_date) VALUES(10023,'HTTP','GET:/v1/dict/type','分页查询DictType','分页查询DictType列表',TRUE,FALSE,'GET','/v1/dict/type',CURRENT_TIMESTAMP);
+INSERT INTO main_permission(permission_id,resource_type,code,name,description,is_enabled,is_deleted,method,path,created_date) VALUES(10024,'HTTP','POST:/v1/dict/type','新增DictType','创建新的DictType记录',TRUE,FALSE,'POST','/v1/dict/type',CURRENT_TIMESTAMP);
+INSERT INTO main_permission(permission_id,resource_type,code,name,description,is_enabled,is_deleted,method,path,created_date) VALUES(10025,'HTTP','GET:/v1/dict/type/{id}','获取DictType详情','根据ID获取DictType详情',TRUE,FALSE,'GET','/v1/dict/type/{id}',CURRENT_TIMESTAMP);
+INSERT INTO main_permission(permission_id,resource_type,code,name,description,is_enabled,is_deleted,method,path,created_date) VALUES(10026,'HTTP','PUT:/v1/dict/type/{id}','更新DictType','全量更新DictType',TRUE,FALSE,'PUT','/v1/dict/type/{id}',CURRENT_TIMESTAMP);
+INSERT INTO main_permission(permission_id,resource_type,code,name,description,is_enabled,is_deleted,method,path,created_date) VALUES(10027,'HTTP','PATCH:/v1/dict/type/{id}','部分更新DictType','部分更新DictType',TRUE,FALSE,'PATCH','/v1/dict/type/{id}',CURRENT_TIMESTAMP);
+INSERT INTO main_permission(permission_id,resource_type,code,name,description,is_enabled,is_deleted,method,path,created_date) VALUES(10028,'HTTP','DELETE:/v1/dict/type/{ids}','批量删除DictType','批量删除DictType',TRUE,FALSE,'DELETE','/v1/dict/type/{ids}',CURRENT_TIMESTAMP);
 
-INSERT INTO MAIN_PERMISSION (permission_id, resource_type, code, name, description, is_enabled, method, button_name, menu_id, path, created_by, created_date, last_modified_by, last_modified_date) VALUES
-    (256, 'HTTP', 'initPassword', '更新密码', NULL, TRUE, 'PUT', NULL, NULL, '/main/v1/user/init/password', NULL, '2025-06-23 11:09:18.139807', NULL, '2025-06-23 11:09:18.139807');
+INSERT INTO main_permission(permission_id,resource_type,code,name,description,is_enabled,is_deleted,method,path,created_date) VALUES(10029,'HTTP','GET:/v1/http','分页查询HttpResource','分页查询HttpResource列表',TRUE,FALSE,'GET','/v1/http',CURRENT_TIMESTAMP);
+INSERT INTO main_permission(permission_id,resource_type,code,name,description,is_enabled,is_deleted,method,path,created_date) VALUES(10030,'HTTP','POST:/v1/http','新增HttpResource','创建新的HttpResource记录',TRUE,FALSE,'POST','/v1/http',CURRENT_TIMESTAMP);
+INSERT INTO main_permission(permission_id,resource_type,code,name,description,is_enabled,is_deleted,method,path,created_date) VALUES(10031,'HTTP','GET:/v1/http/{id}','获取HttpResource详情','根据ID获取HttpResource详情',TRUE,FALSE,'GET','/v1/http/{id}',CURRENT_TIMESTAMP);
+INSERT INTO main_permission(permission_id,resource_type,code,name,description,is_enabled,is_deleted,method,path,created_date) VALUES(10032,'HTTP','PUT:/v1/http/{id}','更新HttpResource','全量更新HttpResource',TRUE,FALSE,'PUT','/v1/http/{id}',CURRENT_TIMESTAMP);
+INSERT INTO main_permission(permission_id,resource_type,code,name,description,is_enabled,is_deleted,method,path,created_date) VALUES(10033,'HTTP','PATCH:/v1/http/{id}','部分更新HttpResource','部分更新HttpResource',TRUE,FALSE,'PATCH','/v1/http/{id}',CURRENT_TIMESTAMP);
+INSERT INTO main_permission(permission_id,resource_type,code,name,description,is_enabled,is_deleted,method,path,created_date) VALUES(10034,'HTTP','DELETE:/v1/http/{ids}','批量删除HttpResource','批量删除HttpResource',TRUE,FALSE,'DELETE','/v1/http/{ids}',CURRENT_TIMESTAMP);
 
-INSERT INTO MAIN_PERMISSION (permission_id, resource_type, code, name, description, is_enabled, method, button_name, menu_id, path, created_by, created_date, last_modified_by, last_modified_date) VALUES
-    (257, 'HTTP', 'deleteHttpResource', '根据id删除http资源', NULL, TRUE, 'DELETE', NULL, NULL, '/main/v1/http/resource/{id}', NULL, '2025-06-23 11:09:18.14557', NULL, '2025-06-23 11:09:18.14557');
+INSERT INTO main_permission(permission_id,resource_type,code,name,description,is_enabled,is_deleted,method,path,created_date) VALUES(10035,'HTTP','GET:/v1/menu','分页查询MenuResource','分页查询MenuResource列表',TRUE,FALSE,'GET','/v1/menu',CURRENT_TIMESTAMP);
+INSERT INTO main_permission(permission_id,resource_type,code,name,description,is_enabled,is_deleted,method,path,created_date) VALUES(10036,'HTTP','POST:/v1/menu','新增MenuResource','创建新的MenuResource记录',TRUE,FALSE,'POST','/v1/menu',CURRENT_TIMESTAMP);
+INSERT INTO main_permission(permission_id,resource_type,code,name,description,is_enabled,is_deleted,method,path,created_date) VALUES(10037,'HTTP','GET:/v1/menu/{id}','获取MenuResource详情','根据ID获取MenuResource详情',TRUE,FALSE,'GET','/v1/menu/{id}',CURRENT_TIMESTAMP);
+INSERT INTO main_permission(permission_id,resource_type,code,name,description,is_enabled,is_deleted,method,path,created_date) VALUES(10038,'HTTP','PUT:/v1/menu/{id}','更新MenuResource','全量更新MenuResource',TRUE,FALSE,'PUT','/v1/menu/{id}',CURRENT_TIMESTAMP);
+INSERT INTO main_permission(permission_id,resource_type,code,name,description,is_enabled,is_deleted,method,path,created_date) VALUES(10039,'HTTP','PATCH:/v1/menu/{id}','部分更新MenuResource','部分更新MenuResource',TRUE,FALSE,'PATCH','/v1/menu/{id}',CURRENT_TIMESTAMP);
+INSERT INTO main_permission(permission_id,resource_type,code,name,description,is_enabled,is_deleted,method,path,created_date) VALUES(10040,'HTTP','DELETE:/v1/menu/{ids}','批量删除MenuResource','批量删除MenuResource',TRUE,FALSE,'DELETE','/v1/menu/{ids}',CURRENT_TIMESTAMP);
+INSERT INTO main_permission(permission_id,resource_type,code,name,description,is_enabled,is_deleted,method,path,created_date) VALUES(10041,'HTTP','PUT:/v1/menu/sort','MenuResource排序','批量重排序MenuResource',TRUE,FALSE,'PUT','/v1/menu/sort',CURRENT_TIMESTAMP);
 
-INSERT INTO MAIN_PERMISSION (permission_id, resource_type, code, name, description, is_enabled, method, button_name, menu_id, path, created_by, created_date, last_modified_by, last_modified_date) VALUES
-    (258, 'HTTP', 'detail', '获取当前用户信息', NULL, TRUE, 'GET', NULL, NULL, '/main/v1/user/detail', NULL, '2025-06-23 11:09:18.149432', NULL, '2025-06-23 11:09:18.149432');
+INSERT INTO main_permission(permission_id,resource_type,code,name,description,is_enabled,is_deleted,method,path,created_date) VALUES(10042,'HTTP','GET:/v1/role','分页查询Role','分页查询Role列表',TRUE,FALSE,'GET','/v1/role',CURRENT_TIMESTAMP);
+INSERT INTO main_permission(permission_id,resource_type,code,name,description,is_enabled,is_deleted,method,path,created_date) VALUES(10043,'HTTP','GET:/v1/role/all','查询所有Role','条件查询所有Role不分页',TRUE,FALSE,'GET','/v1/role/all',CURRENT_TIMESTAMP);
+INSERT INTO main_permission(permission_id,resource_type,code,name,description,is_enabled,is_deleted,method,path,created_date) VALUES(10044,'HTTP','GET:/v1/role/{id}','获取Role详情','根据ID获取Role详情',TRUE,FALSE,'GET','/v1/role/{id}',CURRENT_TIMESTAMP);
+INSERT INTO main_permission(permission_id,resource_type,code,name,description,is_enabled,is_deleted,method,path,created_date) VALUES(10045,'HTTP','PATCH:/v1/role/{id}','更新Role','部分更新Role',TRUE,FALSE,'PATCH','/v1/role/{id}',CURRENT_TIMESTAMP);
+INSERT INTO main_permission(permission_id,resource_type,code,name,description,is_enabled,is_deleted,method,path,created_date) VALUES(10046,'HTTP','DELETE:/v1/role/{ids}','删除Role','批量删除Role',TRUE,FALSE,'DELETE','/v1/role/{ids}',CURRENT_TIMESTAMP);
+INSERT INTO main_permission(permission_id,resource_type,code,name,description,is_enabled,is_deleted,method,path,created_date) VALUES(10047,'HTTP','PATCH:/v1/role/users/add/{roleId}','添加角色用户','给角色添加用户',TRUE,FALSE,'PATCH','/v1/role/users/add/{roleId}',CURRENT_TIMESTAMP);
+INSERT INTO main_permission(permission_id,resource_type,code,name,description,is_enabled,is_deleted,method,path,created_date) VALUES(10048,'HTTP','PATCH:/v1/role/users/remove/{roleId}','移除角色用户','从角色移除用户',TRUE,FALSE,'PATCH','/v1/role/users/remove/{roleId}',CURRENT_TIMESTAMP);
 
-INSERT INTO MAIN_PERMISSION (permission_id, resource_type, code, name, description, is_enabled, method, button_name, menu_id, path, created_by, created_date, last_modified_by, last_modified_date) VALUES
-    (259, 'HTTP', 'addUserRole', '批量授权用户角色', NULL, TRUE, 'PATCH', NULL, NULL, '/main/v1/user/add/role/{roleId}', NULL, '2025-06-23 11:09:18.153139', NULL, '2025-06-23 11:09:18.153139');
-
-INSERT INTO MAIN_PERMISSION (permission_id, resource_type, code, name, description, is_enabled, method, button_name, menu_id, path, created_by, created_date, last_modified_by, last_modified_date) VALUES
-    (260, 'HTTP', 'saveUser', '保存或更新用户', NULL, TRUE, 'PUT', NULL, NULL, '/main/v1/user', NULL, '2025-06-23 11:09:18.155804', NULL, '2025-06-23 11:09:18.155804');
-
-INSERT INTO MAIN_PERMISSION (permission_id, resource_type, code, name, description, is_enabled, method, button_name, menu_id, path, created_by, created_date, last_modified_by, last_modified_date) VALUES
-    (261, 'HTTP', 'tree', '获取当前用户资源树', NULL, TRUE, 'GET', NULL, NULL, '/main/v1/menu/resource/tree', NULL, '2025-06-23 11:09:18.157498', NULL, '2025-06-23 11:09:18.157498');
-
-INSERT INTO MAIN_PERMISSION (permission_id, resource_type, code, name, description, is_enabled, method, button_name, menu_id, path, created_by, created_date, last_modified_by, last_modified_date) VALUES
-    (262, 'HTTP', 'treeAll', '获取所有资源树', NULL, TRUE, 'GET', NULL, NULL, '/main/v1/menu/resource/tree/all', NULL, '2025-06-23 11:09:18.158834', NULL, '2025-06-23 11:09:18.158834');
-
-INSERT INTO MAIN_PERMISSION (permission_id, resource_type, code, name, description, is_enabled, method, button_name, menu_id, path, created_by, created_date, last_modified_by, last_modified_date) VALUES
-    (263, 'HTTP', 'treeMenu', '获取所有菜单资源', NULL, TRUE, 'GET', NULL, NULL, '/main/v1/menu/resource/tree/menu', NULL, '2025-06-23 11:09:18.160845', NULL, '2025-06-23 11:09:18.160845');
-
-INSERT INTO MAIN_PERMISSION (permission_id, resource_type, code, name, description, is_enabled, method, button_name, menu_id, path, created_by, created_date, last_modified_by, last_modified_date) VALUES
-    (264, 'HTTP', 'functionAuthorize', '授权所选角色graphql功能权限', NULL, TRUE, 'POST', NULL, NULL, '/main/v1/role/function/authorize', NULL, '2025-06-23 11:09:18.162839', NULL, '2025-06-23 11:09:18.162839');
-
-INSERT INTO MAIN_PERMISSION (permission_id, resource_type, code, name, description, is_enabled, method, button_name, menu_id, path, created_by, created_date, last_modified_by, last_modified_date) VALUES
-    (265, 'HTTP', 'detailById', '根据id获取用户信息', NULL, TRUE, 'GET', NULL, NULL, '/main/v1/user/detail/{id}', NULL, '2025-06-23 11:09:18.165566', NULL, '2025-06-23 11:09:18.165566');
-
-INSERT INTO MAIN_PERMISSION (permission_id, resource_type, code, name, description, is_enabled, method, button_name, menu_id, path, created_by, created_date, last_modified_by, last_modified_date) VALUES
-    (266, 'HTTP', 'authorizePermission', '授权所选角色权限', NULL, TRUE, 'POST', NULL, NULL, '/main/v1/role/authorize/permission', NULL, '2025-06-23 11:09:18.166595', NULL, '2025-06-23 11:09:18.166595');
-
-INSERT INTO MAIN_PERMISSION (permission_id, resource_type, code, name, description, is_enabled, method, button_name, menu_id, path, created_by, created_date, last_modified_by, last_modified_date) VALUES
-    (267, 'HTTP', 'findRuleByCode', '根据编码查询安全规则', NULL, TRUE, 'GET', NULL, NULL, '/main/v1/policy/rule/findRuleByCode/{code}/{isPreAuth}', NULL, '2025-06-23 11:09:18.169485', NULL, '2025-06-23 11:09:18.169485');
-
-INSERT INTO MAIN_PERMISSION (permission_id, resource_type, code, name, description, is_enabled, method, button_name, menu_id, path, created_by, created_date, last_modified_by, last_modified_date) VALUES
-    (268, 'HTTP', 'initUserPassword', '初始化用户密码', NULL, TRUE, 'POST', NULL, NULL, '/main/v1/parameter/init/password', NULL, '2025-06-23 11:09:18.171288', NULL, '2025-06-23 11:09:18.171288');
-
-INSERT INTO MAIN_PERMISSION (permission_id, resource_type, code, name, description, is_enabled, method, button_name, menu_id, path, created_by, created_date, last_modified_by, last_modified_date) VALUES
-    (269, 'HTTP', 'assignRole', '授权用户角色', NULL, TRUE, 'PATCH', NULL, NULL, '/main/v1/user/assign/{userId}', NULL, '2025-06-23 11:09:18.17368', NULL, '2025-06-23 11:09:18.17368');
-
-INSERT INTO MAIN_PERMISSION (permission_id, resource_type, code, name, description, is_enabled, method, button_name, menu_id, path, created_by, created_date, last_modified_by, last_modified_date) VALUES
-    (270, 'HTTP', 'removeUserRole', '批量取消授权用户角色', NULL, TRUE, 'PATCH', NULL, NULL, '/main/v1/user/remove/role/{roleId}', NULL, '2025-06-23 11:09:18.175727', NULL, '2025-06-23 11:09:18.175727');
-
-INSERT INTO MAIN_PERMISSION (permission_id, resource_type, code, name, description, is_enabled, method, button_name, menu_id, path, created_by, created_date, last_modified_by, last_modified_date) VALUES
-    (271, 'HTTP', 'saveRule', '保存或更新安全规则', NULL, TRUE, 'POST', NULL, NULL, '/main/v1/policy/rule', NULL, '2025-06-23 11:09:18.177758', NULL, '2025-06-23 11:09:18.177758');
-
-INSERT INTO MAIN_PERMISSION (permission_id, resource_type, code, name, description, is_enabled, method, button_name, menu_id, path, created_by, created_date, last_modified_by, last_modified_date) VALUES
-    (272, 'HTTP', 'saveRole', '保存或更新角色', NULL, TRUE, 'POST', NULL, NULL, '/main/v1/role', NULL, '2025-06-23 11:09:18.178982', NULL, '2025-06-23 11:09:18.178982');
-
-INSERT INTO MAIN_PERMISSION (permission_id, resource_type, code, name, description, is_enabled, method, button_name, menu_id, path, created_by, created_date, last_modified_by, last_modified_date) VALUES
-    (273, 'HTTP', 'serviceCancelAuthorize', '取消所选角色graphql服务权限', NULL, TRUE, 'POST', NULL, NULL, '/main/v1/role/service/cancel/authorize', NULL, '2025-06-23 11:09:18.181068', NULL, '2025-06-23 11:09:18.181068');
-
-INSERT INTO MAIN_PERMISSION (permission_id, resource_type, code, name, description, is_enabled, method, button_name, menu_id, path, created_by, created_date, last_modified_by, last_modified_date) VALUES
-    (274, 'HTTP', 'deleteRole', '根据id删除角色', NULL, TRUE, 'DELETE', NULL, NULL, '/main/v1/role/{id}', NULL, '2025-06-23 11:09:18.183082', NULL, '2025-06-23 11:09:18.183082');
-
-INSERT INTO MAIN_PERMISSION (permission_id, resource_type, code, name, description, is_enabled, method, button_name, menu_id, path, created_by, created_date, last_modified_by, last_modified_date) VALUES
-    (275, 'HTTP', 'saveHttpResource', '保存或更新http资源', NULL, TRUE, 'POST', NULL, NULL, '/main/v1/http/resource', NULL, '2025-06-23 11:09:18.1846', NULL, '2025-06-23 11:09:18.1846');
-
-INSERT INTO MAIN_PERMISSION (permission_id, resource_type, code, name, description, is_enabled, method, button_name, menu_id, path, created_by, created_date, last_modified_by, last_modified_date) VALUES
-    (276, 'HTTP', 'serviceAuthorize', '授权所选角色graphql服务权限', NULL, TRUE, 'POST', NULL, NULL, '/main/v1/role/service/authorize', NULL, '2025-06-23 11:09:18.186232', NULL, '2025-06-23 11:09:18.186232');
-
+INSERT INTO main_permission(permission_id,resource_type,code,name,description,is_enabled,is_deleted,method,path,created_date) VALUES(10049,'HTTP','GET:/v1/user','分页查询User','分页查询User列表',TRUE,FALSE,'GET','/v1/user',CURRENT_TIMESTAMP);
+INSERT INTO main_permission(permission_id,resource_type,code,name,description,is_enabled,is_deleted,method,path,created_date) VALUES(10050,'HTTP','GET:/v1/user/{id}','获取User详情','根据ID获取User详情',TRUE,FALSE,'GET','/v1/user/{id}',CURRENT_TIMESTAMP);
+INSERT INTO main_permission(permission_id,resource_type,code,name,description,is_enabled,is_deleted,method,path,created_date) VALUES(10051,'HTTP','PATCH:/v1/user/{id}','更新User','部分更新User',TRUE,FALSE,'PATCH','/v1/user/{id}',CURRENT_TIMESTAMP);
+INSERT INTO main_permission(permission_id,resource_type,code,name,description,is_enabled,is_deleted,method,path,created_date) VALUES(10052,'HTTP','DELETE:/v1/user/{ids}','删除User','批量删除User',TRUE,FALSE,'DELETE','/v1/user/{ids}',CURRENT_TIMESTAMP);
 
 INSERT INTO MAIN_USER
 (user_id, username, password, nick_name, avatar, email, phone_number, gender, is_enabled, is_deleted)
 VALUES
-    (1001, 'admin', '{noop}123456', '管理员', NULL, 'admin@test.com', '13800000001', 'M', true, false);
+    (1, 'admin', '{noop}123456', '管理员', NULL, 'admin@test.com', '13800000001', 'M', true, false);
 
 INSERT INTO MAIN_USER
 (user_id, username, password, nick_name, avatar, email, phone_number, gender, is_enabled, is_deleted)
@@ -171,3 +140,12 @@ INSERT INTO main_role (role_id, code, name, role_sort, is_enabled, is_deleted, c
 (3, 'MANAGER', '管理员', 3, TRUE, FALSE, 'system', CURRENT_TIMESTAMP, 'system', CURRENT_TIMESTAMP),
 (4, 'AUDITOR', '审计员', 4, TRUE, FALSE, 'system', CURRENT_TIMESTAMP, 'system', CURRENT_TIMESTAMP),
 (5, 'GUEST', '访客', 5, TRUE, FALSE, 'system', CURRENT_TIMESTAMP, 'system', CURRENT_TIMESTAMP);
+
+
+INSERT INTO main_user_role VALUES
+(1, 1, 3, FALSE, 'admin', CURRENT_TIMESTAMP, 'admin', CURRENT_TIMESTAMP),
+(2, 1, 1, FALSE, 'admin', CURRENT_TIMESTAMP, 'admin', CURRENT_TIMESTAMP);
+
+INSERT INTO main_role_permission VALUES
+(1, 3, 10010, FALSE, 'admin', CURRENT_TIMESTAMP, 'admin', CURRENT_TIMESTAMP),
+(2, 3, 10005, FALSE, 'admin', CURRENT_TIMESTAMP, 'admin', CURRENT_TIMESTAMP);

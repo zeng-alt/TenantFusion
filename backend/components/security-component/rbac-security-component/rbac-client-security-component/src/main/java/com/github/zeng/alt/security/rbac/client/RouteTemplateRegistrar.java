@@ -8,6 +8,12 @@ import org.springframework.core.Ordered;
 
 import java.util.List;
 
+/**
+ * 路由模板注册器抽象基类。
+ *
+ * <p>实现 {@link SmartInitializingSingleton}，在应用启动完成后自动触发路由模板收集和注册。
+ * 子类决定注册方式：直接注册（单体）或消息队列通知（微服务）。</p>
+ */
 @Slf4j
 public abstract class RouteTemplateRegistrar implements SmartInitializingSingleton, Ordered {
 
@@ -24,9 +30,13 @@ public abstract class RouteTemplateRegistrar implements SmartInitializingSinglet
         reRegister();
     }
 
+    /**
+     * 执行路由模板注册。
+     * <p>可由 {@code POST /actuator/rbac} 触发重新注册。</p>
+     */
     public void reRegister() {
         if (!properties.isEnabled()) {
-            log.info("Rbac client route registration is disabled");
+            log.info("Rbac client route registration is disabled (rbac.client.enabled=false)");
             return;
         }
         List<String> templates = collector.collectTemplates();
@@ -35,8 +45,8 @@ public abstract class RouteTemplateRegistrar implements SmartInitializingSinglet
             return;
         }
         String contextPath = properties.getContextPath();
+        log.debug("Re-registering {} route templates for contextPath '{}'", templates.size(), contextPath);
         doRegister(contextPath, templates);
-        log.info("Registered {} route templates for contextPath '{}'", templates.size(), contextPath);
     }
 
     protected abstract void doRegister(String contextPath, List<String> templates);

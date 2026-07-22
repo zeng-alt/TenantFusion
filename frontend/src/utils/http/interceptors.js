@@ -43,14 +43,14 @@ function reqResolve(config) {
     return config
   }
 
-  const { accessToken, refreshToken } = useAuthStore()
+  const { accessToken } = useAuthStore()
   if (accessToken) {
     // token: Bearer + xxx
     config.headers.Authorization = `Bearer ${accessToken}`
   }
-  if (refreshToken) {
-    config.headers['X-Refresh-Token'] = refreshToken
-  }
+  // if (refreshToken) {
+  //   config.headers['X-Refresh-Token'] = refreshToken
+  // }
 
   return config
 }

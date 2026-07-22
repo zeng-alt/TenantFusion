@@ -20,17 +20,11 @@ import java.util.Map;
 @Accessors(chain = true)
 public class LoginResponse {
 
-    private boolean success;
-    private String message;
     private SecurityUser user;
     private Map<String, Object> attributes = new LinkedHashMap<>();
 
-    public static LoginResponse success(SecurityUser user) {
-        return new LoginResponse().setSuccess(true).setMessage("登录成功").setUser(user);
-    }
-
-    public static LoginResponse failed(String message) {
-        return new LoginResponse().setSuccess(false).setMessage(message);
+    public static LoginResponse ofUser(SecurityUser user) {
+        return new LoginResponse().setUser(user);
     }
 
     public LoginResponse attribute(String key, Object value) {

@@ -8,9 +8,17 @@
 
 import { withDirectives } from 'vue'
 import { router } from '@/router'
+import { usePermissionStore } from '@/store/modules/permission'
+import { useUserStore } from '@/store/modules/user'
 
 const permission = {
   mounted(el, binding) {
+    const userStore = useUserStore()
+    const permissionStore = usePermissionStore()
+    const admin = permissionStore.admin || {}
+    if (userStore.userId === admin.id || userStore.currentRole?.code === admin.code) {
+      return
+    }
     const currentRoute = unref(router.currentRoute)
     const btns = currentRoute.meta?.btns?.map(item => item.code) || []
     if (!btns.includes(binding.value)) {
@@ -19,20 +27,79 @@ const permission = {
   },
 }
 
+const superAdmin = {
+  mounted(el, binding) {
+    const userStore = useUserStore()
+    const permissionStore = usePermissionStore()
+    const adminId = permissionStore.admin?.id
+    const targetId = binding.value ?? adminId
+    if (userStore.userId !== targetId) {
+      el.remove()
+    }
+  },
+}
+
+const admin = {
+  mounted(el, binding) {
+    const userStore = useUserStore()
+    const permissionStore = usePermissionStore()
+    const admin = permissionStore.admin || {}
+    const target = binding.value
+    if (target != null) {
+      if (userStore.userId !== target && userStore.currentRole?.code !== target) {
+        el.remove()
+      }
+    }
+    else if (userStore.userId !== admin.id && userStore.currentRole?.code !== admin.code) {
+      el.remove()
+    }
+  },
+}
+
 export function setupDirectives(app) {
   app.directive('permission', permission)
+  app.directive('superAdmin', superAdmin)
+  app.directive('admin', admin)
 }
 
 /**
  * 用于h函数使用自定义权限指令
  *
- * @param {*} vnode 虚拟节点
- * @param {*} code 权限码
- * @returns 返回一个包含权限指令的vnode
+ * @param {import('vue').VNode} vnode 虚拟节点
+ * @param {string} code 权限码
+ * @returns {import('vue').VNode} 返回一个包含权限指令的vnode
  *
  * 使用示例：withPermission(h('button', {class: 'text-red-500'}, '删除'), 'user:delete')
  *
  */
 export function withPermission(vnode, code) {
   return withDirectives(vnode, [[permission, code]])
+}
+
+/**
+ * 用于h函数使用判断超级管理员指令
+ *
+ * @param {import('vue').VNode} vnode 虚拟节点
+ * @param {string} [id] 可选的用户ID，不传则使用配置的超级管理员ID
+ * @returns {import('vue').VNode} 返回一个包含superAdmin指令的vnode
+ *
+ * 使用示例：withSuperAdmin(h('button', {class: 'text-red-500'}, '删除'), '1')
+ *
+ */
+export function withSuperAdmin(vnode, id) {
+  return withDirectives(vnode, [[superAdmin, id]])
+}
+
+/**
+ * 用于h函数使用判断管理员指令
+ *
+ * @param {import('vue').VNode} vnode 虚拟节点
+ * @param {string} [value] 可选的ID或角色code，不传则使用配置的管理员ID或角色code
+ * @returns {import('vue').VNode} 返回一个包含admin指令的vnode
+ *
+ * 使用示例：withAdmin(h('button', {class: 'text-red-500'}, '删除'), '1')
+ *
+ */
+export function withAdmin(vnode, value) {
+  return withDirectives(vnode, [[admin, value]])
 }

@@ -16,9 +16,11 @@ export default {
   // 登出
   logout: () => request.post('/logout/jwt', {}, { needTip: false }),
   // 切换当前角色
-  switchCurrentRole: role => request.post(`/auth/current-role/switch/${role}`),
+  switchCurrentRole: (role, isRemember) => request.post(`/auth/current-role/switch/${role}/${isRemember}`),
   // 获取角色权限
   getRolePermissions: () => request.get('/menu/resource/tree'),
+  // 获取管理员信息
+  getAdmin: () => request.get('/auth/admin'),
   // 验证菜单路径
   validateMenuPath: path => request.get(`/menu/resource/validate?path=${path}`),
 }

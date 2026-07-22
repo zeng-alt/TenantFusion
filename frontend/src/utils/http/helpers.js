@@ -54,11 +54,10 @@ export function resolveResError(code, message, needTip = true, detail = '') {
 
   if (needTip) {
     if (code !== 500) {
-      window.$notification?.error(
+      window.$notification?.warning(
         {
           title: message,
           content: detail,
-          meta: message,
           duration: 2500,
           keepAliveOnHover: true,
         },

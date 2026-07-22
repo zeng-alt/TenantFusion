@@ -1,8 +1,7 @@
 package com.github.zeng.alt.security.api;
 
-import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.HttpMethod;
-import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
+
 
 /**
  * @author zengJiaJun
@@ -15,10 +14,6 @@ public interface Resource {
 
 	public HttpMethod getHttpMethod();
 	String getMethod();
-
-	default boolean compareTo(HttpServletRequest request) {
-		return AntPathRequestMatcher.antMatcher(getHttpMethod(), getUri()).matcher(request).isMatch();
-	}
 
 	default String getKey() {
 		return null;

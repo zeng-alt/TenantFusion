@@ -20,7 +20,7 @@ public class SecurityProperties {
 
     @Data
     public static class AdminRole {
-        private String id = "1001";
+        private String id = "1";
         private String code = "superAdmin";
         private String name = "超级管理员";
         private Boolean enabled = true;

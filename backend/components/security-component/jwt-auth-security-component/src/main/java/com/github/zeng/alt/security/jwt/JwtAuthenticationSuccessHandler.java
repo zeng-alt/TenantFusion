@@ -4,9 +4,11 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.zeng.alt.api.rest.RestResponse;
 import com.github.zeng.alt.security.api.SecurityUser;
 import com.github.zeng.alt.storage.StorageTemplate;
+import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.apachecommons.CommonsLog;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.security.core.Authentication;
@@ -18,20 +20,8 @@ import java.time.Duration;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-/**
- * JWT 认证成功处理器.
- * <p>
- * 登录成功后生成 JWT token，将其存入缓存（供后续请求验证），
- * 并以 JSON 格式返回 {@code accessToken}、{@code tokenType}、{@code expiresIn}。
- * <p>
- * 当请求参数中 {@code rememberMe=true} 时，额外生成一个长效 refreshToken 返回，
- * 供后续 accessToken 过期时无感续期使用。
- *
- * @author zengJiaJun
- * @version 1.0
- * @since 2024年10月07日
- */
 @RequiredArgsConstructor
+@CommonsLog
 public class JwtAuthenticationSuccessHandler implements AuthenticationSuccessHandler {
 
     private final JwtTokenProvider jwtTokenProvider;
@@ -46,7 +36,6 @@ public class JwtAuthenticationSuccessHandler implements AuthenticationSuccessHan
         String token = jwtTokenProvider.createToken(securityUser);
         String cacheKey = jwtTokenProvider.getCacheKey(token);
 
-        // JWT 存入缓存，TTL = token 有效期，用于后续请求校验 / 登出失效
         if (cacheKey != null) {
             storageTemplate.opsForString().set(
                     cacheKey,
@@ -60,9 +49,9 @@ public class JwtAuthenticationSuccessHandler implements AuthenticationSuccessHan
         tokenData.put("tokenType", "Bearer");
         tokenData.put("expiresIn", jwtProperties.getExpiration());
 
-        // 记住我：额外生成 refreshToken
         if (isRememberMe(request)) {
-            String refreshToken = jwtTokenProvider.createRefreshToken(securityUser, jwtProperties.getRememberMeExpiration());
+            String refreshToken = jwtTokenProvider.createRefreshToken(securityUser);
+
             String refreshCacheKey = jwtTokenProvider.getRefreshCacheKey(refreshToken);
             if (refreshCacheKey != null) {
                 storageTemplate.opsForString().set(
@@ -71,8 +60,13 @@ public class JwtAuthenticationSuccessHandler implements AuthenticationSuccessHan
                         Duration.ofSeconds(jwtProperties.getRememberMeExpiration())
                 );
             }
-            tokenData.put("refreshToken", refreshToken);
-            tokenData.put("refreshExpiresIn", jwtProperties.getRememberMeExpiration());
+
+            Cookie cookie = new Cookie(jwtProperties.getRefreshCookieName(), refreshToken);
+            cookie.setHttpOnly(true);
+            cookie.setSecure(request.isSecure());
+            cookie.setPath(jwtProperties.getRefreshCookiePath());
+            cookie.setMaxAge(jwtProperties.getRememberMeExpiration().intValue());
+            response.addCookie(cookie);
         }
 
         RestResponse<Map<String, Object>> restResponse = RestResponse.success(tokenData);
