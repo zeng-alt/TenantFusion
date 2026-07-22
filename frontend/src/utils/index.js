@@ -7,6 +7,7 @@
  * Copyright © 2023 Ronnie Zhang(大脸怪) | https://isme.top
  **********************************/
 
+export * from './auth'
 export * from './common'
 export * from './http'
 export * from './is'

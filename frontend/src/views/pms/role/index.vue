@@ -100,12 +100,11 @@ import { NButton, NSwitch } from 'naive-ui'
 import { h } from 'vue'
 import { EnableSwitch, MeCrud, MeModal, MeQueryItem } from '@/components'
 import { useCrud } from '@/composables'
-import { usePermissionStore } from '@/store'
+import { isAdmin } from '@/utils'
 import api from './api'
 
 defineOptions({ name: 'RoleMgt' })
 
-const permission = usePermissionStore()
 const router = useRouter()
 
 const $table = ref(null)
@@ -134,7 +133,7 @@ const columns = [
     key: 'enabled',
     render: row => h(EnableSwitch, {
       value: row.enabled,
-      disabled: row.code?.toLowerCase() === permission.getAdminIdentity?.toLowerCase(),
+      disabled: isAdmin(row.code),
       loading: !!row.enabledLoading,
       onUpdateValue: () => handleEnable(row, 'roleId'),
     }),
@@ -167,7 +166,7 @@ const columns = [
             size: 'small',
             type: 'primary',
             style: 'margin-left: 12px;',
-            disabled: row.code?.toLowerCase() === permission.getAdminIdentity?.toLowerCase(),
+            disabled: isAdmin(row.code),
             onClick: () => handleEdit(row),
           },
           {
@@ -182,7 +181,7 @@ const columns = [
             size: 'small',
             type: 'error',
             style: 'margin-left: 12px;',
-            disabled: row.code?.toLowerCase() === permission.getAdminIdentity?.toLowerCase(),
+            disabled: isAdmin(row.code),
             onClick: () => handleDelete(row.roleId),
           },
           {

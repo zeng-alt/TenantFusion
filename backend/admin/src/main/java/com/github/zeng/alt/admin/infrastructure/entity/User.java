@@ -2,6 +2,7 @@ package com.github.zeng.alt.admin.infrastructure.entity;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.github.zeng.alt.admin.infrastructure.listener.UserListener;
 import com.github.zeng.alt.domain.base.BaseEntity;
 import com.github.zeng.alt.domain.key.SnowflakeId;
 import com.github.zeng.alt.rest.annotation.QueryField;
@@ -25,6 +26,7 @@ import java.util.List;
     where user_id=?
 """)
 @SQLRestriction("is_deleted=false")
+@EntityListeners(UserListener.class)
 public class User extends BaseEntity<Long> {
 
     @Id @SnowflakeId

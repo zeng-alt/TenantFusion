@@ -12,7 +12,6 @@ import org.springframework.context.ApplicationContextAware;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.lang.NonNull;
-import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
 /**
@@ -20,7 +19,6 @@ import org.springframework.util.StringUtils;
  * @version 1.0
  * @crateTime 2024年06月27日 20:03
  */
-@Component
 public class ApplicationContextHelper implements ApplicationContextAware, BeanFactoryPostProcessor {
 
 	private static ApplicationContext applicationContext;
@@ -86,6 +84,10 @@ public class ApplicationContextHelper implements ApplicationContextAware, BeanFa
 		}
 
 		return factory;
+	}
+
+	public static void getConfigurableBeanFactory(Object bean) {
+		beanFactory.autowireBean(bean);
 	}
 
 	public static <T> void registerBean(String beanName, T bean) {

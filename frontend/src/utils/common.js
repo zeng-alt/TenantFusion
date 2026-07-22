@@ -104,3 +104,23 @@ export function useResize(el, cb) {
   observer.observe(el)
   return observer
 }
+
+/**
+ * @param {Function} fn 异步函数
+ * @param {Function} keyFn 生成缓存key的函数，默认JSON.stringify(args)
+ * @returns {Function} 去重后的异步函数，同一时刻相同key的请求只会发起一次
+ */
+export function dedupeAsync(fn, keyFn = (...args) => JSON.stringify(args)) {
+  const pending = new Map()
+  return function (...args) {
+    const key = keyFn(...args)
+    if (pending.has(key)) {
+      return pending.get(key)
+    }
+    const promise = fn.apply(this, args).finally(() => {
+      pending.delete(key)
+    })
+    pending.set(key, promise)
+    return promise
+  }
+}

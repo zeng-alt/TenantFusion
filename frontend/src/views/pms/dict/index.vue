@@ -72,6 +72,7 @@
 
 <script setup>
 import { NButton, NForm, NInput } from 'naive-ui'
+import { renderProCopyableText } from 'pro-naive-ui'
 import { h, onMounted, ref } from 'vue'
 import { CommonPage, MeCrud, MeModal, MeQueryItem } from '@/components'
 import { useCrud } from '@/composables'
@@ -131,7 +132,7 @@ const columns = [
             showDrawer.value = true
           },
         },
-        { default: () => row.dictCode },
+        { default: () => renderProCopyableText(row.dictCode) },
       )
     },
   },

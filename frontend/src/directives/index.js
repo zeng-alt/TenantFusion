@@ -8,15 +8,11 @@
 
 import { withDirectives } from 'vue'
 import { router } from '@/router'
-import { usePermissionStore } from '@/store/modules/permission'
-import { useUserStore } from '@/store/modules/user'
+import { isAdmin, isSuperAdmin } from '@/utils'
 
 const permission = {
   mounted(el, binding) {
-    const userStore = useUserStore()
-    const permissionStore = usePermissionStore()
-    const admin = permissionStore.admin || {}
-    if (userStore.userId === admin.id || userStore.currentRole?.code === admin.code) {
+    if (isAdmin()) {
       return
     }
     const currentRoute = unref(router.currentRoute)
@@ -29,11 +25,7 @@ const permission = {
 
 const superAdmin = {
   mounted(el, binding) {
-    const userStore = useUserStore()
-    const permissionStore = usePermissionStore()
-    const adminId = permissionStore.admin?.id
-    const targetId = binding.value ?? adminId
-    if (userStore.userId !== targetId) {
+    if (!isSuperAdmin(binding.value)) {
       el.remove()
     }
   },
@@ -41,16 +33,7 @@ const superAdmin = {
 
 const admin = {
   mounted(el, binding) {
-    const userStore = useUserStore()
-    const permissionStore = usePermissionStore()
-    const admin = permissionStore.admin || {}
-    const target = binding.value
-    if (target != null) {
-      if (userStore.userId !== target && userStore.currentRole?.code !== target) {
-        el.remove()
-      }
-    }
-    else if (userStore.userId !== admin.id && userStore.currentRole?.code !== admin.code) {
+    if (!isAdmin(binding.value)) {
       el.remove()
     }
   },

@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 
 /**
  * BeanUtils 增强工具，GraalVM Native Image 兼容。<br>
@@ -27,6 +28,14 @@ public class BeanHelper extends BeanUtils {
             return null;
         }
         return BeanUtils.instantiateClass(clazz);
+    }
+
+    /**
+     * 通过 Supplier 实例化，避免 Native Image 反射问题。
+     */
+    public static Object instantiateBean(Supplier<?> supplier) {
+        if (supplier == null) return null;
+        return supplier.get();
     }
 
     // ========== copyToObject ==========
@@ -71,6 +80,38 @@ public class BeanHelper extends BeanUtils {
         return target;
     }
 
+    // ========== copyToObject (Supplier) ==========
+
+    public static <T> T copyToObject(Object source, Supplier<T> supplier, String... ignoreProperties) {
+        T target = supplier.get();
+        BeanUtils.copyProperties(source, target, ignoreProperties);
+        return target;
+    }
+
+    public static <S, T> T copyToObject(S source, Supplier<T> supplier) {
+        T target = supplier.get();
+        BeanUtils.copyProperties(source, target);
+        return target;
+    }
+
+    public static <S, T> T copyToObject(S source, Supplier<T> supplier, Consumer<T> consumer) {
+        T target = supplier.get();
+        BeanUtils.copyProperties(source, target);
+        if (consumer != null) {
+            consumer.accept(target);
+        }
+        return target;
+    }
+
+    public static <S, T> T copyToObject(S source, Supplier<T> supplier, BiConsumer<S, T> consumer) {
+        T target = supplier.get();
+        BeanUtils.copyProperties(source, target);
+        if (consumer != null) {
+            consumer.accept(source, target);
+        }
+        return target;
+    }
+
     // ========== copyToList ==========
 
     public static <S, T> List<T> copyToList(Iterable<S> source, Class<T> targetClz) {
@@ -95,6 +136,19 @@ public class BeanHelper extends BeanUtils {
         for (S s : source) {
             T t = BeanUtils.instantiateClass(targetClz);
             BeanUtils.copyProperties(s, t, ignoreProperties);
+            result.add(t);
+        }
+        return result;
+    }
+
+    // ========== copyToList (Supplier) ==========
+
+    public static <S, T> List<T> copyToList(Iterable<S> source, Supplier<T> supplier) {
+        if (source == null) return List.of();
+        List<T> result = new ArrayList<>();
+        for (S s : source) {
+            T t = supplier.get();
+            BeanUtils.copyProperties(s, t);
             result.add(t);
         }
         return result;

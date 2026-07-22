@@ -69,7 +69,7 @@
             trigger: ['input', 'blur'],
           }"
         >
-          <NInput v-model:value="modalForm.dictValue" :disabled="modalAction !== 'add'" />
+          <NInput v-model:value="modalForm.dictValue" :disabled="!isAdmin() && modalForm.isDefault" />
         </NFormItem>
         <NFormItem
           label="样式属性"
@@ -102,7 +102,7 @@
         </NGrid>
         <NGrid :cols="24" :x-gap="24">
           <NFormItemGi :span="12" label="系统默认:" path="isDefault">
-            <NSwitch v-model:value="modalForm.isDefault">
+            <NSwitch v-model:value="modalForm.isDefault" :disabled="!isAdmin()">
               <template #checked>
                 是
               </template>
@@ -134,6 +134,7 @@ import { NButton, NForm, NFormItem, NFormItemGi, NGrid, NInput, NInputNumber, NS
 import { h, nextTick, ref, watch } from 'vue'
 import { EnableSwitch, MeCrud, MeModal, MeQueryItem } from '@/components'
 import { useCrud } from '@/composables'
+import { isAdmin } from '@/utils'
 import api from './api'
 
 const props = defineProps({
@@ -215,6 +216,16 @@ const columns = [
       onUpdateValue: () => handleEnable(row, 'dictDataId', 'enabled'),
     }),
   },
+  {
+    title: '默认',
+    key: 'isDefault',
+    render: row => h(EnableSwitch, {
+      value: row.isDefault,
+      loading: !!row.enabledLoading,
+      disabled: !isAdmin(),
+      onUpdateValue: () => handleEnable(row, 'dictDataId', 'isDefault'),
+    }),
+  },
   { title: '备注', key: 'remark' },
   {
     title: '操作',
@@ -237,6 +248,7 @@ const columns = [
           {
             type: 'error',
             size: 'small',
+            disabled: !isAdmin() && row.isDefault,
             onClick: () => handleDelete(row.dictDataId),
           },
           { default: () => '删除' },

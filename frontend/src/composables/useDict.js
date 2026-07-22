@@ -1,6 +1,7 @@
 import { computed, ref } from 'vue'
 import { useDictStore } from '@/store'
 import { request } from '@/utils'
+import { dedupeAsync } from '@/utils/common'
 
 const TAG_TYPE_MAP = {
   default: 'default',
@@ -10,6 +11,11 @@ const TAG_TYPE_MAP = {
   warning: 'warning',
   error: 'error',
 }
+
+const fetchDictByCode = dedupeAsync(async (code) => {
+  const res = await request.get('/dict/data/all', { params: { dictCode: code } })
+  return res?.data || []
+}, (code) => code)
 
 export function useDict(code) {
   const dictStore = useDictStore()
@@ -23,8 +29,7 @@ export function useDict(code) {
     }
     loading.value = true
     try {
-      const res = await request.post('/dict/data/all', { dictCode: code })
-      const data = res?.data || []
+      const data = await fetchDictByCode(code)
       dictStore.setDictData(code, data)
       dictData.value = data
     }

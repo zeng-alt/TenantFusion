@@ -18,7 +18,7 @@
     <MeCrud
       ref="$table"
       v-model:query-items="queryItems"
-      :scroll-x="1200"
+      :scroll-x="1500"
       :columns="columns"
       :get-data="api.read"
     >
@@ -112,15 +112,12 @@
 <script setup>
 import { NAvatar, NButton, NSwitch, NTag } from 'naive-ui'
 import { h, onMounted, ref } from 'vue'
-import { EnableSwitch, MeCrud, MeModal, MeQueryItem } from '@/components'
+import { DictTag, EnableSwitch, MeCrud, MeModal, MeQueryItem } from '@/components'
 import { useCrud } from '@/composables'
-import { usePermissionStore } from '@/store'
-import { formatDateTime } from '@/utils'
+import { formatDateTime, isSuperAdmin } from '@/utils'
 import api from './api'
 
 defineOptions({ name: 'UserMgt' })
-
-const permission = usePermissionStore()
 
 const $table = ref(null)
 /** QueryBar筛选参数（可选） */
@@ -190,7 +187,22 @@ const columns = [
     title: '性别',
     key: 'gender',
     width: 80,
-    render: ({ gender }) => genders.find(item => gender === item.value)?.label ?? '',
+    render: ({ gender }) => h(DictTag, {
+      code: 'sys_gender',
+      value: gender,
+    }),
+    // render: ({ gender }) => genders.find(item => gender === item.value)?.label ?? '未知',
+  },
+  {
+    title: '状态',
+    key: 'enable',
+    width: 120,
+    render: row => h(EnableSwitch, {
+      value: row.enabled,
+      loading: !!row.enabledLoading,
+      disabled: isSuperAdmin(row.userId),
+      onUpdateValue: () => handleEnable(row, 'userId'),
+    }),
   },
   { title: '邮箱', key: 'email', width: 150, ellipsis: { tooltip: true } },
   {
@@ -200,17 +212,6 @@ const columns = [
     render(row) {
       return h('span', formatDateTime(row.createTime))
     },
-  },
-  {
-    title: '状态',
-    key: 'enable',
-    width: 120,
-    render: row => h(EnableSwitch, {
-      value: row.enabled,
-      loading: !!row.enabledLoading,
-      disabled: row.code === permission.getSuperAdminIdentity,
-      onUpdateValue: () => handleEnable(row, 'userId'),
-    }),
   },
   {
     title: '操作',
@@ -228,7 +229,7 @@ const columns = [
             type: 'primary',
             class: 'ml-12px',
             secondary: true,
-            disabled: row.userId === permission.getSuperAdminIdentity,
+            disabled: isSuperAdmin(row.userId),
             onClick: () => handleOpenRolesSet(row),
           },
           {
@@ -242,7 +243,7 @@ const columns = [
             size: 'small',
             type: 'primary',
             style: 'margin-left: 12px;',
-            disabled: row.userId === permission.getSuperAdminIdentity,
+            disabled: isSuperAdmin(row.userId),
             onClick: () => handleOpen({ action: 'reset', title: '重置密码', row, onOk: onSave }),
           },
           {
@@ -257,7 +258,7 @@ const columns = [
             size: 'small',
             type: 'error',
             style: 'margin-left: 12px;',
-            disabled: row.userId === permission.getSuperAdminIdentity,
+            disabled: isSuperAdmin(row.userId),
             onClick: () => handleDelete(row.userId),
           },
           {
