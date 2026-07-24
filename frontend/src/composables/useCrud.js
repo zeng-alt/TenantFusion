@@ -21,21 +21,33 @@ export function useCrud({ name, initForm = {}, doCreate, doDelete, doUpdate, doS
   const [modalFormRef, modalForm, validation] = useForm(initForm)
 
   /** 排序 */
-  async function handleSort({ data, oldIndex, newIndex, rowKey }) {
+  async function handleSort({ data, oldIndex, newIndex, rowKey, sortKey }) {
     if (!doSort || oldIndex === newIndex)
       return
+
+    const list = [...data]
+
+    // 保存原排序值
     const start = Math.min(oldIndex, newIndex)
     const end = Math.max(oldIndex, newIndex)
-    const changedItems = data.slice(start, end + 1).map((item, i) => ({
-      id: item[rowKey],
-      sort: start + i + 1,
-    }))
-    try {
-      await doSort(changedItems)
-    }
-    finally {
-      refresh && refresh()
-    }
+
+    const sorts = list
+      .slice(start, end + 1)
+      .map(item => item[sortKey])
+
+    // 移动元素
+    const [movedItem] = list.splice(oldIndex, 1)
+    list.splice(newIndex, 0, movedItem)
+
+    // 重新分配排序值
+    const changedItems = list
+      .slice(start, end + 1)
+      .map((item, index) => ({
+        id: item[rowKey],
+        sort: sorts[index],
+      }))
+
+    await doSort(changedItems)
   }
 
   /** 新增 */

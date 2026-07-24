@@ -61,7 +61,7 @@
             </n-descriptions-item>
           </n-descriptions>
 
-          <div class="mt-32 flex items-center gap-12">
+          <div class="mt-8 flex justify-end gap-12">
             <NButton size="small" type="primary" @click="handleAddBtn">
               <i class="i-fe:plus mr-4 text-14" />新增按钮
             </NButton>

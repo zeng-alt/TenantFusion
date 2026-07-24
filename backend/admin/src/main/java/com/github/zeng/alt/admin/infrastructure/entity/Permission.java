@@ -33,7 +33,7 @@ public abstract class Permission extends BaseEntity<Long> {
     private Long permissionId;
 
     @Column(length = 64)
-    @QueryField
+    @QueryField(type = QueryType.LIKE)
     private String code;
     @QueryField(type = QueryType.LIKE)
     private String name;

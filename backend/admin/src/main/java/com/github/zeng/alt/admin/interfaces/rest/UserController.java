@@ -1,14 +1,16 @@
 package com.github.zeng.alt.admin.interfaces.rest;
 
 import com.github.zeng.alt.admin.query.api.UserService;
+import com.github.zeng.alt.admin.query.api.dto.CreateUserDto;
 import com.github.zeng.alt.admin.query.api.dto.CurrentUserDto;
+import com.github.zeng.alt.admin.query.api.dto.PatchUserDto;
+import com.github.zeng.alt.admin.query.api.dto.ResetUserPasswordDto;
 import com.github.zeng.alt.api.rest.RestResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 /**
  * @author zengJiaJun
@@ -29,4 +31,22 @@ public class UserController {
         return RestResponse.success(userService.currentUser());
     }
 
+    @Operation(summary = "新增后台用户")
+    @PostMapping
+    public RestResponse<Void> create(@Valid @RequestBody CreateUserDto dto) {
+        userService.create(dto);
+        return RestResponse.success();
+    }
+
+    @Operation(summary = "修改后台用户")
+    @PatchMapping("/{id}")
+    public RestResponse<?> patchUser(@PathVariable Long id, @Valid @RequestBody PatchUserDto dto) {
+        return userService.patchUser(id, dto).fold(RestResponse::fail, RestResponse::success);
+    }
+
+    @Operation(summary = "修改用户密码")
+    @PatchMapping("/password/reset/{id}")
+    public RestResponse<?> resetPassword(@PathVariable Long id, @Valid @RequestBody ResetUserPasswordDto dto) {
+        return userService.resetPassword(id, dto).fold(RestResponse::fail, RestResponse::success);
+    }
 }

@@ -9,7 +9,5 @@ public interface RolePermissionRepository extends BaseRepository<RolePermission,
 
     List<RolePermission> findByRoleId(Long roleId);
 
-    void deleteByRoleIdAndPermissionId(Long roleId, Long permissionId);
-
-    boolean existsByRoleIdAndPermissionId(Long roleId, Long permissionId);
+    void deleteByRoleIdIn(Iterable<Long> ids);
 }

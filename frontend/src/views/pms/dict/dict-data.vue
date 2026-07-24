@@ -19,7 +19,6 @@
       :get-data="api.readData"
       row-key="dictDataId"
       :scroll-x="800"
-      :drag-sort="{ columnPath: 'sortHandle' }"
       :batch-sort="handleSort"
     >
       <MeQueryItem label="字典标签" :label-width="70">
@@ -81,9 +80,6 @@
         >
           <NInput v-model:value="modalForm.cssClass" />
         </NFormItem>
-        <NFormItem label="字典排序" path="dictSort">
-          <NInputNumber v-model:value="modalForm.dictSort" :min="0" />
-        </NFormItem>
         <NGrid :cols="24" :x-gap="24">
           <NFormItemGi
             :span="12" label="回显样式" path="listClass"
@@ -130,12 +126,14 @@
 </template>
 
 <script setup>
-import { NButton, NForm, NFormItem, NFormItemGi, NGrid, NInput, NInputNumber, NSelect, NTag } from 'naive-ui'
+import { NButton, NForm, NFormItem, NFormItemGi, NGrid, NInput, NSelect, NTag } from 'naive-ui'
 import { h, nextTick, ref, watch } from 'vue'
 import { EnableSwitch, MeCrud, MeModal, MeQueryItem } from '@/components'
 import { useCrud } from '@/composables'
 import { isAdmin } from '@/utils'
 import api from './api'
+
+defineOptions({ name: 'DictDataMgt' })
 
 const props = defineProps({
   dictType: {
@@ -166,7 +164,6 @@ const initForm = {
   listClass: 'tertiary',
   isDefault: false,
   enabled: true,
-  dictSort: 0,
   cssClass: '',
   remark: '',
   dictLabel: '',
@@ -197,13 +194,13 @@ const {
 function handleAddData() {
   if (!props.dictType)
     return
-  initForm.dictCode = props.dictType.dictCode
+  initForm.dictCode = props.dictType?.dictCode
   handleAddRaw()
-  modalForm.value.dictCode = props.dictType.dictCode
+  modalForm.value.dictCode = props.dictType?.dictCode
 }
 
 const columns = [
-  { title: '', key: 'sortHandle', path: 'sortHandle', width: 50 },
+  { path: 'dragSort', key: 'dictSort' },
   { title: '字典标签', key: 'dictLabel' },
   { title: '字典值', key: 'dictValue' },
   { title: '排序', key: 'dictSort' },
@@ -226,11 +223,13 @@ const columns = [
       onUpdateValue: () => handleEnable(row, 'dictDataId', 'isDefault'),
     }),
   },
-  { title: '备注', key: 'remark' },
+  { title: '备注', key: 'remark', ellipsis: { tooltip: true } },
   {
     title: '操作',
     key: 'actions',
-    width: 150,
+    width: 200,
+    align: 'right',
+    fixed: 'right',
     render(row) {
       return [
         h(
@@ -241,17 +240,24 @@ const columns = [
             onClick: () => handleEdit(row),
             style: 'margin-right: 12px',
           },
-          { default: () => '编辑' },
+          {
+            default: () => '编辑',
+            icon: () => h('i', { class: 'i-material-symbols:edit-outline text-14' }),
+          },
         ),
         h(
           NButton,
           {
             type: 'error',
             size: 'small',
+            style: 'margin-left: 12px;',
             disabled: !isAdmin() && row.isDefault,
             onClick: () => handleDelete(row.dictDataId),
           },
-          { default: () => '删除' },
+          {
+            default: () => '删除',
+            icon: () => h('i', { class: 'i-material-symbols:delete-outline text-14' }),
+          },
         ),
       ]
     },

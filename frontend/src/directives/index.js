@@ -8,7 +8,7 @@
 
 import { withDirectives } from 'vue'
 import { router } from '@/router'
-import { isAdmin, isSuperAdmin } from '@/utils'
+import { hasMenu, isAdmin, isSuperAdmin } from '@/utils'
 
 const permission = {
   mounted(el, binding) {
@@ -31,6 +31,14 @@ const superAdmin = {
   },
 }
 
+const menu = {
+  mounted(el, binding) {
+    if (!hasMenu(binding.value)) {
+      el.remove()
+    }
+  },
+}
+
 const admin = {
   mounted(el, binding) {
     if (!isAdmin(binding.value)) {
@@ -43,6 +51,7 @@ export function setupDirectives(app) {
   app.directive('permission', permission)
   app.directive('superAdmin', superAdmin)
   app.directive('admin', admin)
+  app.directive('menu', menu)
 }
 
 /**

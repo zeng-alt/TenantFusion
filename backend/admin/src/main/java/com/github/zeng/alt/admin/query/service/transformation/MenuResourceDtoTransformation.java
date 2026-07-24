@@ -5,6 +5,7 @@ import com.github.zeng.alt.admin.query.api.dto.MenuResourceDto;
 import java.util.Collections;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
+import org.mapstruct.ReportingPolicy;
 import org.springframework.util.CollectionUtils;
 
 import java.util.Comparator;
@@ -16,7 +17,10 @@ import java.util.List;
  * @version 1.0
  * @since 2025年04月09日 16:57
  */
-@Mapper(componentModel = "spring")
+@Mapper(
+        componentModel = "spring",
+        unmappedTargetPolicy = ReportingPolicy.IGNORE
+)
 public interface MenuResourceDtoTransformation {
 
 

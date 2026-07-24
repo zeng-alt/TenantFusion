@@ -15,14 +15,11 @@ import lombok.Setter;
 public class HttpResource extends Permission {
 
     @Column(length = 10)
-//    @Comment("请求方法")
     @QueryField
     @Schema(name = "请求方法")
     private String method;              // GET, POST, PUT, DELETE
-//    @Comment("请求路径")
     @Schema(name = "请求路径")
     private String path;                // /api/users
-    @QueryField
     private String redirect;
     private String buttonName;
 

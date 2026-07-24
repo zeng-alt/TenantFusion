@@ -86,10 +86,6 @@ public class ApplicationContextHelper implements ApplicationContextAware, BeanFa
 		return factory;
 	}
 
-	public static void getConfigurableBeanFactory(Object bean) {
-		beanFactory.autowireBean(bean);
-	}
-
 	public static <T> void registerBean(String beanName, T bean) {
 		ConfigurableListableBeanFactory factory = getConfigurableBeanFactory();
 		factory.autowireBean(bean);
@@ -104,6 +100,10 @@ public class ApplicationContextHelper implements ApplicationContextAware, BeanFa
 		else {
 			throw new UtilException("Can not unregister bean, the factory is not a DefaultSingletonBeanRegistry!");
 		}
+	}
+
+	public static void autowireBean(Object object) {
+		getConfigurableBeanFactory().autowireBean(object);
 	}
 
 	@Override

@@ -1,7 +1,10 @@
 package com.github.zeng.alt.admin.infrastructure.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.github.zeng.alt.admin.infrastructure.listener.DictDataListener;
 import com.github.zeng.alt.domain.base.BaseEntity;
 import com.github.zeng.alt.domain.key.SnowflakeId;
+import com.github.zeng.alt.domain.validation.UniqueCheck;
 import com.github.zeng.alt.rest.annotation.QueryField;
 import com.github.zeng.alt.rest.annotation.QueryOrder;
 import jakarta.persistence.*;
@@ -13,12 +16,14 @@ import org.springframework.lang.Nullable;
 /**
  * @author zengJiaJun
  * @version 1.0
- * @crateTime 2025年05月16日 16:52
+ * @since 2025年05月16日 16:52
  */
 @Getter
 @Setter
 @Entity
 @Table(name = "main_dict_data")
+@EntityListeners(DictDataListener.class)
+@UniqueCheck(field = "dictValue")
 public class DictData extends BaseEntity<Long> {
 
     @Id @SnowflakeId
@@ -53,7 +58,7 @@ public class DictData extends BaseEntity<Long> {
     /**
      * 是否默认（Y是 N否）
      */
-    private Boolean isDefault;
+    private Boolean isDefault = false;
 
     /**
      * 备注
@@ -75,6 +80,11 @@ public class DictData extends BaseEntity<Long> {
      */
     @QueryField
     private String dictCode;
+
+
+    @Transient
+    @JsonIgnore
+    private transient Boolean oldIsDefault;
 
     @Override
     public @org.jspecify.annotations.Nullable Long getId() {

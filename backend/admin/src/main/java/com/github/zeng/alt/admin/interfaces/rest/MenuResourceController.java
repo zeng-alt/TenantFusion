@@ -23,7 +23,7 @@ import java.util.List;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/v1/menu/resource")
-public class MenuResourceQueryController {
+public class MenuResourceController {
 
     private final MenuResourceService menuResourceService;
 
@@ -65,14 +65,12 @@ public class MenuResourceQueryController {
         return RestResponse.success(this.menuResourceService.treeEnableAll());
     }
 
-
     @Operation(summary = "获取菜单下的按钮")
     @GetMapping("/button/{id}")
     public RestResponse<List<MenuResourceDto>> button(@PathVariable Long id) {
         return RestResponse.success(this.menuResourceService.button(id));
 
     }
-
 
     @Operation(summary = "验证菜单路径")
     @GetMapping("/validate")

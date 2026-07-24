@@ -402,9 +402,9 @@ public final class RouterGenerator {
                 // 查询参数（仅 LIST 和 LIST_ALL）
                 if (method == MethodMeta.LIST) {
                     body.addStatement("$L.addParametersItem(new $T().name($S).in($S).description($S).schema(new $T().$L(1).minimum(new java.math.BigDecimal(1))))",
-                            opVar, PARAMETER, "page", "query", "页码，从1开始", INTEGER_SCHEMA, "_default");
+                            opVar, PARAMETER, "pageNo", "query", "页码，从1开始", INTEGER_SCHEMA, "_default");
                     body.addStatement("$L.addParametersItem(new $T().name($S).in($S).description($S).schema(new $T().$L(10).minimum(new java.math.BigDecimal(1))))",
-                            opVar, PARAMETER, "size", "query", "每页条数", INTEGER_SCHEMA, "_default");
+                            opVar, PARAMETER, "pageSize", "query", "每页条数", INTEGER_SCHEMA, "_default");
                 }
 
                 if (method == MethodMeta.LIST || method == MethodMeta.LIST_ALL) {

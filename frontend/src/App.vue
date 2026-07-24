@@ -29,8 +29,8 @@
 </template>
 
 <script setup>
-import { darkTheme, dateZhCN, zhCN } from 'naive-ui'
-import { ProConfigProvider } from 'pro-naive-ui'
+import { darkTheme, dateZhCN } from 'naive-ui'
+import { ProConfigProvider, zhCN } from 'pro-naive-ui'
 import { LayoutSetting } from '@/components'
 import { useAppStore, useTabStore } from '@/store'
 import { layoutSettingVisible } from './settings'

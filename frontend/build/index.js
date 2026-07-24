@@ -16,6 +16,10 @@ import dynamicIcons from '../src/assets/icons/dynamic-icons.js'
 export function getIcons() {
   const feFiles = globSync('src/assets/icons/feather/*.svg', { nodir: true, strict: true })
   const meFiles = globSync('src/assets/icons/isme/*.svg', { nodir: true, strict: true })
+  const carbonFiles = globSync('src/assets/icons/carbon/*.svg', { nodir: true, strict: true })
+  const alibabaFiles = globSync('src/assets/icons/alibaba/*.svg', { nodir: true, strict: true })
+  const faFiles = globSync('src/assets/icons/fa/*.svg', { nodir: true, strict: true })
+  const maFiles = globSync('src/assets/icons/material/*.svg', { nodir: true, strict: true })
   const feIcons = feFiles.map((filePath) => {
     const fileName = path.basename(filePath) // 获取文件名，包括后缀
     const fileNameWithoutExt = path.parse(fileName).name // 获取去除后缀的文件名
@@ -26,8 +30,28 @@ export function getIcons() {
     const fileNameWithoutExt = path.parse(fileName).name // 获取去除后缀的文件名
     return `i-me:${fileNameWithoutExt}`
   })
+  const carbonIcons = carbonFiles.map((filePath) => {
+    const fileName = path.basename(filePath) // 获取文件名，包括后缀
+    const fileNameWithoutExt = path.parse(fileName).name // 获取去除后缀的文件名
+    return `i-carbon:${fileNameWithoutExt}`
+  })
+  const alibabaIcons = alibabaFiles.map((filePath) => {
+    const fileName = path.basename(filePath) // 获取文件名，包括后缀
+    const fileNameWithoutExt = path.parse(fileName).name // 获取去除后缀的文件名
+    return `i-ali:${fileNameWithoutExt}`
+  })
+  const faIcons = faFiles.map((filePath) => {
+    const fileName = path.basename(filePath) // 获取文件名，包括后缀
+    const fileNameWithoutExt = path.parse(fileName).name // 获取去除后缀的文件名
+    return `i-fa:${fileNameWithoutExt}`
+  })
+  const maIcons = maFiles.map((filePath) => {
+    const fileName = path.basename(filePath) // 获取文件名，包括后缀
+    const fileNameWithoutExt = path.parse(fileName).name // 获取去除后缀的文件名
+    return `i-ma:${fileNameWithoutExt}`
+  })
 
-  return [...dynamicIcons, ...feIcons, ...meIcons]
+  return [...dynamicIcons, ...feIcons, ...meIcons, ...carbonIcons, ...alibabaIcons, ...faIcons, ...maIcons]
 }
 
 /**

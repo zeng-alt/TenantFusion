@@ -12,11 +12,10 @@
               :data="permissionTree"
               :checked-keys="permissionIds"
               :on-update:checked-keys="(keys) => (permissionIds = keys)"
-              :cascade="true"
               default-expand-all
               checkable
               check-on-click
-              class="cus-scroll max-h-600 w-full"
+              class="cus-scroll max-h-500 w-full"
             />
           </n-spin>
         </NCard>
@@ -24,30 +23,24 @@
 
       <!-- 右侧角色表格 -->
       <div class="flex-1">
-        <NCard title="角色列表" hoverable size="small">
+        <NCard title="角色列表" hoverable size="small" class="h-full flex flex-col">
           <MeCrud
             ref="$table"
             v-model:query-items="queryItems"
             size="small"
             :scroll-x="-1"
             :columns="columns"
-            class="min-h-450"
-            :get-data="handlePageRole"
-            @update:checked-row-keys="onChecked"
+            class="min-h-400 flex-1"
+            :get-data="api.read"
+            expand
+            row-key="roleId"
+            @on-checked="onChecked"
           >
             <MeQueryItem label="角色名" :label-width="50">
               <n-input v-model:value="queryItems.name" size="small" type="text" placeholder="请输入角色名" clearable />
             </MeQueryItem>
-            <MeQueryItem label="状态" :label-width="50">
-              <n-select
-                v-model:value="queryItems.enabled"
-                size="small"
-                clearable
-                :options="[
-                  { label: '启用', value: true },
-                  { label: '停用', value: false },
-                ]"
-              />
+            <MeQueryItem label="编码" :label-width="50">
+              <n-input v-model:value="queryItems.code" size="small" type="text" placeholder="请输入角色编码" clearable />
             </MeQueryItem>
           </MeCrud>
         </NCard>
@@ -58,9 +51,10 @@
 
 <script setup>
 import { NCard, NSwitch } from 'naive-ui'
-import { ref } from 'vue'
+import { nextTick, ref } from 'vue'
 import { MeCrud, MeModal, MeQueryItem } from '@/components'
 import { useModal } from '@/composables'
+import { isAdmin } from '@/utils'
 import api from '@/views/pms/role/api.js'
 
 const emit = defineEmits(['refresh'])
@@ -69,15 +63,10 @@ const $table = ref(null)
 const [modalRef, okLoading] = useModal()
 const modalAction = ref('')
 
-function handlePageRole(params) {
-  const { pageNo, pageSize, ...rest } = params
-  return api.read({ page: pageNo, size: pageSize, ...rest })
-}
-
 /** QueryBar筛选参数（可选） */
 const queryItems = ref({
   name: '',
-  enabled: null,
+  code: '',
 })
 
 const permissionTree = ref([])
@@ -110,6 +99,7 @@ function handleOpen(options = {}) {
   permissionIds.value = ids
   loadPermissionTree()
   modalRef.value.open({ ...rest, onOk: onSave })
+  nextTick().then(() => $table.value?.handleSearch())
 }
 
 async function onSave() {
@@ -133,19 +123,14 @@ async function onSave() {
   }
 }
 
-async function handleEnable(row) {
-  try {
-    await api.update({ id: row.id, enabled: !row.enabled })
-    $message.success('操作成功')
-    $table.value?.handleSearch()
-  }
-  catch (error) {
-    console.error(error)
-  }
-}
-
 const columns = [
-  { type: 'selection', fixed: 'left' },
+  {
+    type: 'selection',
+    fixed: 'left',
+    disabled: (row) => {
+      return isAdmin(row.code)
+    },
+  },
   { title: '角色名', key: 'name' },
   { title: '角色编码', key: 'code' },
   {
@@ -158,9 +143,6 @@ const columns = [
           size: 'small',
           rubberBand: false,
           value: row.enabled,
-          loading: !!row.enableLoading,
-          disabled: row.code === 'SUPER_ADMIN',
-          onUpdateValue: () => handleEnable(row),
         },
         {
           checked: () => '启用',

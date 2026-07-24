@@ -8,7 +8,7 @@ import com.github.zeng.alt.rest.annotation.CrudRest;
 import java.util.List;
 import java.util.Optional;
 
-@CrudRest(path = "/v1/user", listType = UserDto.class, create = false, update = false)
+@CrudRest(path = "/v1/user", listType = UserDto.class, create = false, update = false, patch = false)
 public interface UserRepository extends BaseRepository<User, Long> {
 
     Optional<User> findByUsername(String username);

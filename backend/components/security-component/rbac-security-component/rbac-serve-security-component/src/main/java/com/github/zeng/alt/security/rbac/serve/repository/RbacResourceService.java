@@ -11,5 +11,7 @@ public interface RbacResourceService {
 
     String findPermissionByResource(String tenantName, String resourceKey);
 
+    String findPermissionByMethodAndPath(String tenantName, String method, String path);
+
     Set<String> findPermission(List<String> authorities, String tenantName);
 }

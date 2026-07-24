@@ -99,7 +99,7 @@ export const usePermissionStore = defineStore('permission', {
           parentKey,
           menuStyle: item.menuStyle || 'default',
           btns: item.children
-            ?.filter(item => item.type === 'HTTP')
+            ?.filter(item => item.type === 'HTTP' || item.type === 'BUTTON')
             .map(item => ({ code: item.code, name: item.name })),
         },
       }

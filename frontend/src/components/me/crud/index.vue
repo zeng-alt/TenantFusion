@@ -114,7 +114,9 @@ const props = defineProps({
    */
   dragSort: {
     type: Object,
-    default: null,
+    default: () => ({
+      columnPath: 'dragSort',
+    }),
   },
   /**
    * 排序处理函数，通常传入 useCrud 返回的 handleSort
@@ -192,14 +194,25 @@ function handleSearch(keepCurrentPage = false) {
   }
 }
 
+const dragColumn = computed(() =>
+  props.columns.find(item => item.path === props.dragSort?.columnPath),
+)
+
 async function onDragEnd({ newIndex, oldIndex }) {
   if (newIndex === oldIndex || !props.batchSort)
     return
+  if (!props.batchSort) {
+    throw new Error('没有传入batchSort方法')
+  }
+  if (!dragColumn.value?.key) {
+    throw new Error(`${props.dragSort?.columnPath} 行没有定义key`)
+  }
   const data = [...tableData.value]
   const [moved] = data.splice(oldIndex, 1)
   data.splice(newIndex, 0, moved)
   tableData.value = data
-  await props.batchSort({ data, oldIndex, newIndex, rowKey: props.rowKey })
+  await props.batchSort({ data, oldIndex, newIndex, rowKey: props.rowKey, sortKey: dragColumn.value?.key })
+  await handleQuery()
 }
 
 async function handleReset() {

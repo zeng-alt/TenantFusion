@@ -22,6 +22,7 @@
       :columns="columns"
       :get-data="api.read"
       row-key="roleId"
+      :batch-sort="handleSort"
     >
       <MeQueryItem label="角色名" :label-width="50">
         <n-input v-model:value="queryItems.name" type="text" placeholder="请输入角色名" clearable />
@@ -115,17 +116,19 @@ onMounted(() => {
   $table.value?.handleSearch()
 })
 
-const { modalRef, modalFormRef, modalAction, modalForm, handleAdd, handleDelete, handleEdit, handleEnable }
+const { modalRef, modalFormRef, modalAction, modalForm, handleAdd, handleDelete, handleEdit, handleEnable, handleSort }
   = useCrud({
     name: '角色',
     doCreate: api.create,
     doDelete: api.delete,
     doUpdate: api.update,
+    doSort: api.sortData,
     initForm: { enabled: true },
     refresh: (_, keepCurrentPage) => $table.value?.handleSearch(keepCurrentPage),
   })
 
 const columns = [
+  { key: 'roleSort', path: 'dragSort' },
   { title: '角色名', key: 'name' },
   { title: '角色编码', key: 'code' },
   {

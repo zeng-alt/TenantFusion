@@ -71,7 +71,7 @@
 import { NAvatar, NButton, NSwitch, NTag } from 'naive-ui'
 import { h } from 'vue'
 import { CommonPage, MeCrud, MeQueryItem } from '@/components'
-import { formatDateTime } from '@/utils'
+import { formatDateTime, isSuperAdmin } from '@/utils'
 import api from './api'
 
 defineOptions({ name: 'RoleUser' })
@@ -91,7 +91,13 @@ const genders = [
 ]
 
 const columns = [
-  { type: 'selection', fixed: 'left' },
+  {
+    type: 'selection',
+    fixed: 'left',
+    disabled: (row) => {
+      return isSuperAdmin(row.userId)
+    },
+  },
   {
     title: '头像',
     key: 'avatar',
@@ -169,6 +175,7 @@ const columns = [
               size: 'small',
               type: 'error',
               secondary: true,
+              disabled: isSuperAdmin(row.userId),
               onClick: () => handleBatchRemove([row.userId]),
             },
             {
@@ -182,6 +189,7 @@ const columns = [
               size: 'small',
               type: 'primary',
               secondary: true,
+              disabled: isSuperAdmin(row.userId),
               onClick: () => handleBatchAdd([row.userId]),
             },
             {

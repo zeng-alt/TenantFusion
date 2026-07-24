@@ -276,7 +276,7 @@ function handleOpenRolesSet(row) {
   handleOpen({
     action: 'setRole',
     title: '分配角色',
-    row: { id: row.userId, username: row.username, roleIds },
+    row: { userId: row.userId, username: row.username, roleIds },
     onOk: onSave,
   })
 }
@@ -290,7 +290,7 @@ function onSave() {
   }
   else if (modalAction.value === 'reset') {
     return handleSave({
-      api: () => api.resetPwd(modalForm.value.id, modalForm.value),
+      api: () => api.resetPwd(modalForm.value.userId, modalForm.value),
       cb: () => $message.success('密码重置成功'),
     })
   }

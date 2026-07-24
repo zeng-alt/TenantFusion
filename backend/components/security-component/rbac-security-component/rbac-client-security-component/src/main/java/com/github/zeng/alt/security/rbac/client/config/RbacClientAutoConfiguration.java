@@ -21,6 +21,9 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.ImportRuntimeHints;
+import org.springframework.web.reactive.function.server.RouterFunction;
+
+import java.util.List;
 
 /**
  * RBAC 客户端自动配置。
@@ -64,9 +67,11 @@ public class RbacClientAutoConfiguration {
         @Bean
         @ConditionalOnMissingBean(RouteTemplateCollector.class)
         public ServletRouteTemplateCollector servletRouteTemplateCollector(
-                java.util.List<org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerMapping> handlerMappings) {
-            log.debug("Creating ServletRouteTemplateCollector with {} handler mappings", handlerMappings.size());
-            return new ServletRouteTemplateCollector(handlerMappings);
+                java.util.List<org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerMapping> handlerMappings,
+                List<org.springframework.web.servlet.function.RouterFunction<?>> routerFunctions) {
+            log.debug("Creating ServletRouteTemplateCollector with {} handler mappings and {} router functions",
+                    handlerMappings.size(), routerFunctions.size());
+            return new ServletRouteTemplateCollector(handlerMappings, routerFunctions);
         }
 
         @Configuration
@@ -114,9 +119,11 @@ public class RbacClientAutoConfiguration {
         @Bean
         @ConditionalOnMissingBean(RouteTemplateCollector.class)
         public ReactiveRouteTemplateCollector reactiveRouteTemplateCollector(
-                java.util.List<org.springframework.web.reactive.result.method.annotation.RequestMappingHandlerMapping> handlerMappings) {
-            log.debug("Creating ReactiveRouteTemplateCollector with {} handler mappings", handlerMappings.size());
-            return new ReactiveRouteTemplateCollector(handlerMappings);
+                java.util.List<org.springframework.web.reactive.result.method.annotation.RequestMappingHandlerMapping> handlerMappings,
+                List<org.springframework.web.reactive.function.server.RouterFunction<?>> routerFunctions) {
+            log.debug("Creating ReactiveRouteTemplateCollector with {} handler mappings and {} router functions",
+                    handlerMappings.size(), routerFunctions.size());
+            return new ReactiveRouteTemplateCollector(handlerMappings, routerFunctions);
         }
 
         @Configuration

@@ -193,8 +193,8 @@ public final class HandlerGenerator {
         TypeName pageType = ParameterizedTypeName.get(ClassName.get(Page.class), entityType);
         TypeName pageRestType = ParameterizedTypeName.get(PAGE_REST_RESPONSE, itemType);
 
-        builder.addStatement("int page = Integer.parseInt(request.param($S).orElse($S))", "page", "1")
-                .addStatement("int size = Integer.parseInt(request.param($S).orElse($S))", "size", "10");
+        builder.addStatement("int page = Integer.parseInt(request.param($S).orElse($S))", "pageNo", "1")
+                .addStatement("int size = Integer.parseInt(request.param($S).orElse($S))", "pageSize", "10");
 
         boolean hasQueryFields = meta.isHasQueryFields();
 

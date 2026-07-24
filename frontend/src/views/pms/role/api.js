@@ -13,6 +13,8 @@ export default {
   read: (params = {}) => request.get('/role', { params }),
   update: data => request.patch(`/role/${data.roleId}`, data),
   delete: id => request.delete(`/role/${id}`),
+  sortData: data => request.put('/role/sort', data),
+  authorizePermission: data => request.post('/role/authorizePermission', data),
 
   getAllPermissionTree: () => request.get('/menu/resource/tree/all'),
   getAllUsers: (params = {}) => request.get('/user', { params }),

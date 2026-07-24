@@ -62,12 +62,12 @@ public class RbacReactiveAutoConfiguration {
     @Bean
     public ReactiveParseManager reactiveParseManager(
             ObjectProvider<ReactiveResourceHandler> reactiveResourceHandlers,
-            ReactiveResourceQueryManager reactiveResourceQueryManager,
+            RouteTemplateManager routeTemplateManager,
             ReactivePermissionLocator permissionLocator,
-            RouteTemplateManager routeTemplateManager) {
+            RbacResourceService rbacResourceService) {
         List<ReactiveResourceHandler> list = new ArrayList<>(reactiveResourceHandlers.orderedStream().toList());
         log.debug("Creating ReactiveParseManager with {} custom handlers + ReactiveHttpResourceHandler fallback", list.size());
-        return new ReactiveParseManager(list, new ReactiveHttpResourceHandler(reactiveResourceQueryManager, routeTemplateManager, permissionLocator));
+        return new ReactiveParseManager(list, new ReactiveHttpResourceHandler(routeTemplateManager, permissionLocator, rbacResourceService));
     }
 
     @Bean

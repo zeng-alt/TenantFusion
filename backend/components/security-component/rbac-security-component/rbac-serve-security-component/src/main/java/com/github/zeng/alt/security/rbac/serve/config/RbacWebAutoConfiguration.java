@@ -60,10 +60,10 @@ public class RbacWebAutoConfiguration {
 	}
 
 	@Bean
-	public ParseManager parseManager(ObjectProvider<ResourceHandler> resourceHandlers, RouteTemplateManager routeTemplateManager, ResourceQueryManager resourceQueryManager) {
+	public ParseManager parseManager(ObjectProvider<ResourceHandler> resourceHandlers, RouteTemplateManager routeTemplateManager, PermissionLocator permissionLocator, RbacResourceService rbacResourceService) {
 		List<ResourceHandler> list = new ArrayList<>(resourceHandlers.orderedStream().toList());
 		log.debug("Creating ParseManager with {} custom handlers + HttpResourceHandler fallback", list.size());
-		return new ParseManager(list, new HttpResourceHandler(resourceQueryManager, routeTemplateManager));
+		return new ParseManager(list, new HttpResourceHandler(routeTemplateManager, permissionLocator, rbacResourceService));
 	}
 
 	@Bean

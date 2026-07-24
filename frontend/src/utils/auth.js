@@ -6,15 +6,22 @@ export function isSuperAdmin(target = null) {
   const permissionStore = usePermissionStore()
   const admin = permissionStore.admin || {}
   const targetId = target ?? userStore?.userId
-  return admin?.id === targetId
+  return String(admin?.id) === String(targetId)
 }
 
 export function isAdmin(target = null) {
   const permissionStore = usePermissionStore()
   const admin = permissionStore.admin || {}
   if (target != null) {
-    return (admin?.id === target || admin?.code?.toLowerCase() === target?.toLowerCase())
+    return (String(admin?.id) === String(target) || admin?.code?.toLowerCase() === target?.toLowerCase())
   }
   const userStore = useUserStore()
-  return userStore.userId !== admin?.id || userStore.currentRole?.code?.toLowerCase() === admin?.code?.toLowerCase()
+  return String(userStore.userId) === String(admin?.id) || userStore.currentRole?.code?.toLowerCase() === admin?.code?.toLowerCase()
+}
+
+export function hasMenu(code) {
+  if (isAdmin())
+    return true
+  const permissionStore = usePermissionStore()
+  return permissionStore.accessRoutes.some(p => p.name === code)
 }

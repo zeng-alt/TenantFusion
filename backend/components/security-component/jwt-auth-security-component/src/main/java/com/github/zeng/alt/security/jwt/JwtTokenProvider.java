@@ -63,17 +63,18 @@ public class JwtTokenProvider {
                 .map(GrantedAuthority::getAuthority)
                 .toList();
 
-        JwtClaimsSet claims = JwtClaimsSet.builder()
+        JwtClaimsSet.Builder builder = JwtClaimsSet.builder()
                 .id(UUID.randomUUID().toString().replace("-", ""))
                 .subject(user.getUsername())
                 .claim(CLAIM_ID, user.getId())
                 .claim(CLAIM_ROLES, roles)
-                .claim(CLAIM_CURRENT_ROLE, user.getCurrentRole().getAuthority())
                 .claim(CLAIM_TENANT, user.getTenant())
                 .issuedAt(now)
-                .expiresAt(now.plusSeconds(jwtProperties.getExpiration()))
-                .build();
-
+                .expiresAt(now.plusSeconds(jwtProperties.getExpiration()));
+        if (user.getCurrentRole() != null) {
+            builder.claim(CLAIM_CURRENT_ROLE, user.getCurrentRole().getAuthority());
+        }
+        JwtClaimsSet claims = builder.build();
         return accessEncoder.encode(JwtEncoderParameters.from(JwsHeader.with(MacAlgorithm.HS256).build(), claims))
                 .getTokenValue();
     }

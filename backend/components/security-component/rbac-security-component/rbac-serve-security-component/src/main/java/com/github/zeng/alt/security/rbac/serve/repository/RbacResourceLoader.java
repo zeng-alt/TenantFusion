@@ -12,5 +12,7 @@ public interface RbacResourceLoader {
 
     String loadPermissionByResource(String tenantName, String resourceKey);
 
+    String loadPermissionByMethodAndPath(String tenantName, String method, String path);
+
     Map<String, Set<String>> loadPermissions(List<String> authorities, String tenantName);
 }

@@ -80,7 +80,7 @@ security:
   context:
     enabled-access: true
     admin:
-      id: 1001
+      id: 1
       code: admin
   rbac:
     client:

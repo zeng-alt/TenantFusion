@@ -13,7 +13,6 @@ import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
 import java.util.*;
-import java.util.stream.Collectors;
 
 @Slf4j
 @Component
@@ -84,7 +83,7 @@ public class RbacResourceLoaderImpl implements RbacResourceLoader {
                     r.setMethod(e.getMethod());
                     return (Resource) r;
                 })
-                .collect(Collectors.toList());
+                .toList();
     }
 
     @Override
@@ -99,19 +98,23 @@ public class RbacResourceLoaderImpl implements RbacResourceLoader {
         }
         String uri = resourceKey.substring(0, idx);
         String method = resourceKey.substring(idx + 1);
+        return loadPermissionByMethodAndPath(tenantName, method, uri);
+    }
 
+    @Override
+    public String loadPermissionByMethodAndPath(String tenantName, String method, String path) {
         JPAQueryFactory qf = new JPAQueryFactory(entityManager);
         QHttpResource http = QHttpResource.httpResource;
 
         String code = qf
                 .select(http.code)
                 .from(http)
-                .where(http.path.eq(uri))
+                .where(http.path.eq(path))
                 .where(http.method.eq(method))
                 .where(http.enabled.isTrue())
                 .fetchOne();
 
-        log.debug("Permission for {}:{} -> {}", uri, method, code);
+        log.debug("Permission for {}:{} -> {}", method, path, code);
         return code;
     }
 

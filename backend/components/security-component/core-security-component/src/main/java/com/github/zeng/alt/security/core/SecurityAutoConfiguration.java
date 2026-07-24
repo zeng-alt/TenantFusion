@@ -1,6 +1,7 @@
 package com.github.zeng.alt.security.core;
 
 
+import com.github.zeng.alt.security.api.AuthHelper;
 import com.github.zeng.alt.security.api.SecurityUser;
 import com.github.zeng.alt.security.api.WhiteListService;
 import com.github.zeng.alt.security.core.properties.SecurityProperties;
@@ -33,6 +34,12 @@ public class SecurityAutoConfiguration {
 	@ConditionalOnMissingBean(PasswordEncoder.class)
 	public PasswordEncoder passwordEncoder() {
 		return PasswordEncoderFactories.createDelegatingPasswordEncoder();
+	}
+
+	@Bean
+	@ConditionalOnMissingBean
+	public AuthHelper authHelper(SecurityProperties securityProperties) {
+		return new AuthHelperImpl(securityProperties);
 	}
 
 	@Bean

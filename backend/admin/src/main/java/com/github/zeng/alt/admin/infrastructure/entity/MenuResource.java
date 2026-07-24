@@ -2,7 +2,9 @@ package com.github.zeng.alt.admin.infrastructure.entity;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.github.zeng.alt.api.base.BaseTreeEntity;
+import com.github.zeng.alt.rest.annotation.QueryField;
 import com.github.zeng.alt.rest.annotation.QueryOrder;
+import com.github.zeng.alt.rest.annotation.QueryType;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -22,6 +24,7 @@ public class MenuResource extends Permission implements BaseTreeEntity<MenuResou
     private String icon;
     private String layout;
     private String keepAlive;
+    @QueryField(type = QueryType.LIKE)
     private String menuName;
     private String menuStyle;
 

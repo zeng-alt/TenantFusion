@@ -2,11 +2,15 @@ package com.github.zeng.alt.security.api;
 
 
 import com.github.zeng.alt.tenant.api.TenantDetail;
+import org.springframework.lang.Nullable;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.context.SecurityContextImpl;
 import org.springframework.security.core.userdetails.UserDetails;
+
+import java.util.Optional;
 
 /**
  * @author zengJiaJun
@@ -17,6 +21,7 @@ public final class UserContextHolder {
 
     private UserContextHolder() {}
 
+    @Nullable
     public static String getUsername() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication == null) {
@@ -30,6 +35,7 @@ public final class UserContextHolder {
         return null;
     }
 
+    @Nullable
     public static String getId() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication == null || !authentication.isAuthenticated()) {
@@ -44,6 +50,22 @@ public final class UserContextHolder {
         return null;
     }
 
+    @Nullable
+    public static String getCurrentRole() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !authentication.isAuthenticated()) {
+            return null;
+        }
+
+        Object principal = authentication.getPrincipal();
+        if (principal instanceof SecurityUser securityUser) {
+            return Optional.ofNullable(securityUser.getCurrentRole()).map(GrantedAuthority::getAuthority).orElse(null);
+        }
+
+        return null;
+    }
+
+    @Nullable
     public static UserDetails getUserDetails() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication == null || !authentication.isAuthenticated()) {
@@ -54,6 +76,7 @@ public final class UserContextHolder {
     }
 
 
+    @Nullable
     public static String getTenant() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication == null || !authentication.isAuthenticated()) {
@@ -68,7 +91,11 @@ public final class UserContextHolder {
         return null;
     }
 
+    @Nullable
     public static Authentication getAuthentication() {
+        if (SecurityContextHolder.getContext() == null) {
+            return null;
+        }
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication == null || !authentication.isAuthenticated()) {
             return null;
@@ -85,6 +112,7 @@ public final class UserContextHolder {
         }
     }
 
+    @Nullable
     public static SecurityUser getSecurityUser() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication == null || !authentication.isAuthenticated()) {

@@ -4,12 +4,10 @@ import com.github.zeng.alt.security.api.Resource;
 import com.github.zeng.alt.security.rbac.serve.locator.ReactiveResourceLocator;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.Authentication;
-import org.springframework.util.CollectionUtils;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.util.List;
-import java.util.Set;
 
 /**
  * Reactive 环境资源查询管理器。
@@ -18,7 +16,6 @@ import java.util.Set;
  * <ul>
  *   <li>加载用户资源列表 — {@link #query(Resource, Mono)}</li>
  *   <li>查询资源所需权限 — {@link #queryPermissionForResource(Resource, Mono)}</li>
- *   <li>批量查询资源权限 — {@link #queryPermissionsForResources(Set, Mono)}</li>
  * </ul>
  */
 @Slf4j
@@ -49,15 +46,4 @@ public class ReactiveResourceQueryManager {
                 .switchIfEmpty(Mono.empty());
     }
 
-    public Mono<Set<String>> queryPermissionsForResources(Set<Resource> resource, Mono<Authentication> authentication) {
-        if (CollectionUtils.isEmpty(resource)) {
-            return Mono.empty();
-        }
-
-        return Flux
-                .fromIterable(this.resourceLocators)
-                .filter(locator -> locator.supports(resource.iterator().next().getClass()))
-                .next()
-                .flatMap(locator -> locator.load(resource, authentication));
-    }
 }

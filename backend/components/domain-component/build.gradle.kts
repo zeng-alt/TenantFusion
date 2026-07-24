@@ -8,10 +8,12 @@ dependencies {
     api(project(":backend:components:core-component"))
     api("jakarta.persistence:jakarta.persistence-api")
     api("org.hibernate.orm:hibernate-core")
+    api("org.hibernate.validator:hibernate-validator")
     api(rootProject.libs.jpa.search.helper)
     api(project(":backend:components:rest-component:rest-annotation-component"))
     implementation("org.springframework.data:spring-data-commons")
     implementation("org.springframework.data:spring-data-jpa")
+    implementation("org.springframework:spring-web")
     implementation("org.springframework.boot:spring-boot-autoconfigure")
     api(rootProject.libs.querydsl.jpa)
     annotationProcessor(rootProject.libs.querydsl.apt) {

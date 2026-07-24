@@ -1,6 +1,7 @@
 package com.github.zeng.alt.excel.exception;
 
-import com.zjj.i18n.component.BaseI18nException;
+
+import com.github.zeng.alt.api.exception.BaseI18nException;
 
 /**
  * @author zengJiaJun

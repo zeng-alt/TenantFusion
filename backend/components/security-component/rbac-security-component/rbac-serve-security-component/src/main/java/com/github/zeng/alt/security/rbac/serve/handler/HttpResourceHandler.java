@@ -1,31 +1,34 @@
 package com.github.zeng.alt.security.rbac.serve.handler;
 
-import com.github.zeng.alt.security.api.HttpResource;
-import com.github.zeng.alt.security.api.Resource;
-import com.github.zeng.alt.security.rbac.serve.manager.ResourceQueryManager;
+import com.github.zeng.alt.security.rbac.serve.locator.PermissionLocator;
+import com.github.zeng.alt.security.rbac.serve.repository.RbacResourceService;
 import com.github.zeng.alt.security.rbac.serve.router.RouteTemplateManager;
+import com.github.zeng.alt.tenant.api.TenantDetail;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.web.access.intercept.RequestAuthorizationContext;
 
-import java.util.List;
+import java.util.Set;
 
 /**
  * Servlet 环境默认 HTTP 资源处理器。
  *
  * <p>作为 {@link ParseManager} 的最终 fallback，始终匹配（{@code matcher()} 返回 {@code true}）。
- * 鉴权逻辑：从 {@link ResourceQueryManager} 获取当前用户可访问的 HTTP 资源列表，
- * 逐个调用 {@link Resource#compareTo(HttpServletRequest)} 匹配当前请求。</p>
+ * 鉴权逻辑：根据当前请求的 method + path 获取所需的权限 code，
+ * 与当前角色拥有的全部权限 code 集合比对，判断是否授权。</p>
  */
 @Slf4j
-public class HttpResourceHandler extends AbstractResourceHandler {
+public class HttpResourceHandler implements ResourceHandler {
 
     private final RouteTemplateManager routeTemplateManager;
+    private final PermissionLocator permissionLocator;
+    private final RbacResourceService rbacResourceService;
 
-    public HttpResourceHandler(ResourceQueryManager resourceQueryManager, RouteTemplateManager routeTemplateManager) {
-        super(resourceQueryManager);
+    public HttpResourceHandler(RouteTemplateManager routeTemplateManager, PermissionLocator permissionLocator, RbacResourceService rbacResourceService) {
         this.routeTemplateManager = routeTemplateManager;
+        this.permissionLocator = permissionLocator;
+        this.rbacResourceService = rbacResourceService;
     }
 
     @Override
@@ -37,25 +40,22 @@ public class HttpResourceHandler extends AbstractResourceHandler {
     public Boolean handler(Authentication authentication, RequestAuthorizationContext object) {
         String uri = object.getRequest().getRequestURI();
         String method = object.getRequest().getMethod();
-        String template = this.routeTemplateManager.match(uri);
+        String template = this.routeTemplateManager.match(method, uri);
 
-        List<Resource> resources = resourceQueryManager.query(create(template, method), authentication);
-        log.debug("Authorizing {} {} for user '{}', found {} permitted resources",
-                method, uri, authentication.getName(), resources.size());
-        for (Resource resource : resources) {
-            if (resource.getMethod().equalsIgnoreCase(method) && resource.getUri().equalsIgnoreCase(template)) {
-                log.debug("GRANT {} {} to user '{}'", method, uri, authentication.getName());
-                return true;
-            }
-        }
-        log.debug("DENY {} {} to user '{}'", method, uri, authentication.getName());
-        return false;
+        Set<String> userPermissions = permissionLocator.load(authentication);
+        String requiredPermission = rbacResourceService.findPermissionByMethodAndPath(
+                resolveTenant(authentication), method, template);
+
+        boolean granted = requiredPermission != null && userPermissions.contains(requiredPermission);
+        log.debug("{} {} {} to user '{}'", granted ? "GRANT" : "DENY", method, uri, authentication.getName());
+        return granted;
     }
 
-    private HttpResource create(String path, String method) {
-        HttpResource httpResource = new HttpResource();
-        httpResource.setUri(path);
-        httpResource.setMethod(method);
-        return httpResource;
+    private static String resolveTenant(Authentication authentication) {
+        Object principal = authentication.getPrincipal();
+        if (principal instanceof TenantDetail tenantDetail) {
+            return tenantDetail.getTenantName();
+        }
+        return "";
     }
 }

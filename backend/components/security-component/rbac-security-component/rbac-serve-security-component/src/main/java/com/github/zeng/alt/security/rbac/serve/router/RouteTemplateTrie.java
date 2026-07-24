@@ -26,7 +26,7 @@ public class RouteTemplateTrie {
 
     static class TrieNode {
         Map<String, TrieNode> children = new HashMap<>();
-        String fullTemplate = null;
+        Map<String, String> templates = new HashMap<>();
         boolean isVariable = false;
     }
 
@@ -35,11 +35,25 @@ public class RouteTemplateTrie {
     }
 
     /**
-     * 插入一个路由模板到前缀树。
+     * 插入一个路由模板到前缀树（不限定 HTTP 方法）。
      *
      * @param template 路由模板，如 {@code /api/users/{id}/details}
      */
     public void insert(String template) {
+        doInsert("*", template);
+    }
+
+    /**
+     * 插入一个路由模板到前缀树，关联指定的 HTTP 方法。
+     *
+     * @param method   HTTP 方法（{@code GET}、{@code POST} 等），或 {@code null} 表示不限定方法
+     * @param template 路由模板，如 {@code /api/users/{id}/details}
+     */
+    public void insert(String method, String template) {
+        doInsert(method, template);
+    }
+
+    private void doInsert(String method, String template) {
         lock.writeLock().lock();
         try {
             String[] parts = template.split("/");
@@ -52,25 +66,46 @@ public class RouteTemplateTrie {
                 node = node.children.get(key);
                 node.isVariable = "{}".equals(key);
             }
-            node.fullTemplate = template;
-            log.trace("Inserted route template: {}", template);
+            node.templates.put(method, template);
+            log.trace("Inserted route template [{}] for method [{}]", template, method);
         } finally {
             lock.writeLock().unlock();
         }
     }
 
     /**
-     * 将实际请求路径匹配到已注册的路由模板。
+     * 将实际请求路径匹配到已注册的路由模板（不限定 HTTP 方法）。
      *
      * @param actualPath 实际请求路径，如 {@code /api/users/123/details}
      * @return 匹配到的路由模板，如 {@code /api/users/{id}/details}；无匹配时返回 {@code null}
      */
     public String match(String actualPath) {
+        return match(null, actualPath);
+    }
+
+    /**
+     * 将实际请求路径和 HTTP 方法匹配到已注册的路由模板。
+     * <p>优先匹配方法相关的模板；未命中时回退到不限定方法的模板。</p>
+     *
+     * @param method     HTTP 方法（{@code GET}、{@code POST} 等），为 {@code null} 时只匹配不限定方法的模板
+     * @param actualPath 实际请求路径，如 {@code /api/users/123/details}
+     * @return 匹配到的路由模板；无匹配时返回 {@code null}
+     */
+    public String match(String method, String actualPath) {
         lock.readLock().lock();
         try {
             String[] parts = this.tokenizePath(actualPath);
-            String result = matchRecursive(parts, 0, root);
-            log.trace("Path [{}] matched to template [{}]", actualPath, result);
+            TrieNode node = matchRecursive(parts, 0, root);
+            if (node == null) return null;
+
+            String result = null;
+            if (method != null) {
+                result = node.templates.get(method);
+            }
+            if (result == null) {
+                result = node.templates.get("*");
+            }
+            log.trace("Path [{}] method [{}] matched to template [{}]", actualPath, method, result);
             return result;
         } finally {
             lock.readLock().unlock();
@@ -83,22 +118,22 @@ public class RouteTemplateTrie {
                 .toArray(String[]::new);
     }
 
-    private String matchRecursive(String[] parts, int index, TrieNode node) {
+    private TrieNode matchRecursive(String[] parts, int index, TrieNode node) {
         if (index == parts.length) {
-            return node.fullTemplate;
+            return node.templates.isEmpty() ? null : node;
         }
 
         String part = parts[index];
 
         TrieNode exactNode = node.children.get(part);
         if (exactNode != null) {
-            String result = matchRecursive(parts, index + 1, exactNode);
+            TrieNode result = matchRecursive(parts, index + 1, exactNode);
             if (result != null) return result;
         }
 
         TrieNode variableNode = node.children.get("{}");
         if (variableNode != null) {
-            String result = matchRecursive(parts, index + 1, variableNode);
+            TrieNode result = matchRecursive(parts, index + 1, variableNode);
             if (result != null) return result;
         }
 
@@ -120,8 +155,8 @@ public class RouteTemplateTrie {
     }
 
     private void collectTemplates(TrieNode node, List<String> results) {
-        if (node.fullTemplate != null) {
-            results.add(node.fullTemplate);
+        if (!node.templates.isEmpty()) {
+            results.addAll(node.templates.values());
         }
         for (TrieNode child : node.children.values()) {
             collectTemplates(child, results);
@@ -148,7 +183,7 @@ public class RouteTemplateTrie {
     private boolean deleteRecursive(TrieNode node, String[] parts, int index) {
         if (index == parts.length) {
             node.children.clear();
-            node.fullTemplate = null;
+            node.templates.clear();
             return true;
         }
 
@@ -157,7 +192,7 @@ public class RouteTemplateTrie {
         if (child != null) {
             boolean deleted = deleteRecursive(child, parts, index + 1);
             if (deleted) {
-                if (child.children.isEmpty() && child.fullTemplate == null) {
+                if (child.children.isEmpty() && child.templates.isEmpty()) {
                     node.children.remove(key);
                 }
             }

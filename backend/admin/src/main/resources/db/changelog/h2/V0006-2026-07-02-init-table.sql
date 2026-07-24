@@ -266,6 +266,8 @@ CREATE TABLE main_dict_type
 
     dict_code VARCHAR(100) NOT NULL COMMENT '字典类型编码',
 
+    is_default BOOLEAN DEFAULT FALSE COMMENT '是否默认',
+
     remark VARCHAR(500) COMMENT '备注',
 
     tenant_by VARCHAR(64) COMMENT '租户标识',
@@ -318,7 +320,7 @@ CREATE TABLE main_dict_data
 
     list_class VARCHAR(100) COMMENT '表格字典样式',
 
-    is_default BOOLEAN DEFAULT FALSE COMMENT '是否默认(Y是 N否)',
+    is_default BOOLEAN DEFAULT FALSE COMMENT '是否默认',
 
     remark VARCHAR(500) COMMENT '备注',
 

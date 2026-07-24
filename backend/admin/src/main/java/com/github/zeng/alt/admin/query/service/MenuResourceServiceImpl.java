@@ -240,7 +240,7 @@ public class MenuResourceServiceImpl implements MenuResourceService {
             } else if (p instanceof HttpResource http) {
                 httpMap
                         .computeIfAbsent(
-                                http.getId() == null ? 0L : http.getId(),
+                                http.getMenuId() == null ? 0L : http.getMenuId(),
                                 k -> new ArrayList<>()
                         )
                         .add(http);

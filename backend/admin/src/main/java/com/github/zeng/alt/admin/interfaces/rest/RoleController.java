@@ -1,9 +1,13 @@
 package com.github.zeng.alt.admin.interfaces.rest;
 
 import com.github.zeng.alt.admin.query.api.RoleService;
+import com.github.zeng.alt.admin.query.api.dto.AuthorizePermissionDto;
+import com.github.zeng.alt.admin.query.api.dto.CreateRoleDto;
+import com.github.zeng.alt.admin.query.api.dto.PatchRoleDto;
 import com.github.zeng.alt.api.rest.RestResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
@@ -18,6 +22,26 @@ import java.util.Map;
 public class RoleController {
 
     private final RoleService roleService;
+
+    @Operation(summary = "新增角色")
+    @PostMapping
+    public RestResponse<Void> create(@Valid @RequestBody CreateRoleDto dto) {
+        roleService.create(dto);
+        return RestResponse.success();
+    }
+
+    @Operation(summary = "修改角色")
+    @PatchMapping("/{id}")
+    public RestResponse<?> patchRole(@PathVariable Long id, @Valid @RequestBody PatchRoleDto dto) {
+        return roleService.patchRole(id, dto).fold(RestResponse::fail, RestResponse::success);
+    }
+
+    @Operation(summary = "批量分配权限给角色")
+    @PostMapping("/authorizePermission")
+    public RestResponse<Void> authorizePermission(@Valid @RequestBody AuthorizePermissionDto dto) {
+        roleService.authorizePermission(dto);
+        return RestResponse.success();
+    }
 
     @Operation(summary = "给角色添加用户")
     @PatchMapping("/users/add/{roleId}")

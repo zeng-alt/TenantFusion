@@ -4,11 +4,9 @@ import com.github.zeng.alt.security.api.Resource;
 import com.github.zeng.alt.security.rbac.serve.locator.ResourceLocator;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.Authentication;
-import org.springframework.util.CollectionUtils;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
 
 /**
  * Servlet 环境资源查询管理器。
@@ -17,7 +15,6 @@ import java.util.Set;
  * <ul>
  *   <li>加载用户资源列表 — {@link #query(Resource, Authentication)}</li>
  *   <li>查询资源所需权限 — {@link #queryPermissionForResource(Resource, Authentication)}</li>
- *   <li>批量查询资源权限 — {@link #queryPermissionsForResources(Set, Authentication)}</li>
  * </ul>
  */
 @Slf4j
@@ -62,26 +59,4 @@ public class ResourceQueryManager {
                 .orElse(null);
     }
 
-    /**
-     * 批量查询资源所需的权限标识集合。
-     *
-     * @param resources      资源集合
-     * @param authentication 当前认证信息
-     * @return 权限标识集合，无匹配时返回空集合
-     */
-    public Set<String> queryPermissionsForResources(Set<Resource> resources, Authentication authentication) {
-        if (CollectionUtils.isEmpty(resources)) {
-            return Set.of();
-        }
-        return resourceLocators
-                .stream()
-                .filter(locator -> locator.supports(resources.iterator().next().getClass()))
-                .findFirst()
-                .map(locator -> {
-                    log.trace("Querying permissions for {} resources", resources.size());
-                    return locator.loadPermissionForResource(resources.iterator().next(), authentication);
-                })
-                .map(Set::of)
-                .orElse(Set.of());
-    }
 }

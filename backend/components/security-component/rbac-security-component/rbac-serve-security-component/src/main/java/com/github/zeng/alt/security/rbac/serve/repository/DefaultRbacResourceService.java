@@ -4,6 +4,7 @@ import com.github.zeng.alt.security.api.Resource;
 import com.github.zeng.alt.storage.StorageTemplate;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.util.CollectionUtils;
+import org.springframework.util.StringUtils;
 
 import java.util.Collections;
 import java.util.HashSet;
@@ -59,7 +60,20 @@ public class DefaultRbacResourceService implements RbacResourceService {
 
     @Override
     public String findPermissionByResource(String tenantName, String resourceKey) {
-        String key = PERMISSION_KEY_PREFIX + tenantName + ":" + resourceKey;
+        if (!StringUtils.hasText(resourceKey)) {
+            return null;
+        }
+        int idx = resourceKey.lastIndexOf(':');
+        if (idx <= 0 || idx == resourceKey.length() - 1) {
+            log.warn("Invalid resource key format: {}", resourceKey);
+            return null;
+        }
+        return findPermissionByMethodAndPath(tenantName, resourceKey.substring(idx + 1), resourceKey.substring(0, idx));
+    }
+
+    @Override
+    public String findPermissionByMethodAndPath(String tenantName, String method, String path) {
+        String key = PERMISSION_KEY_PREFIX + tenantName + ":" + method + ":" + path;
         log.trace("Fetching permission for key: {}", key);
         String cached = storageTemplate.opsForString().get(key, String.class);
         if (cached != null) {
@@ -67,7 +81,7 @@ public class DefaultRbacResourceService implements RbacResourceService {
             return cached;
         }
         log.debug("Cache miss for permission key: {}, loading from RbacResourceLoader", key);
-        String loaded = resourceLoader.loadPermissionByResource(tenantName, resourceKey);
+        String loaded = resourceLoader.loadPermissionByMethodAndPath(tenantName, method, path);
         if (loaded != null) {
             log.debug("Caching permission for key: {} -> {}", key, loaded);
             storageTemplate.opsForString().set(key, loaded);

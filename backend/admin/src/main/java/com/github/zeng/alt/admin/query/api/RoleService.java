@@ -1,5 +1,11 @@
 package com.github.zeng.alt.admin.query.api;
 
+import com.github.zeng.alt.admin.query.api.dto.AuthorizePermissionDto;
+import com.github.zeng.alt.admin.query.api.dto.CreateRoleDto;
+import com.github.zeng.alt.admin.query.api.dto.PatchRoleDto;
+import io.vavr.control.Either;
+import jakarta.validation.Valid;
+
 import java.util.List;
 
 /**
@@ -9,8 +15,14 @@ import java.util.List;
  */
 public interface RoleService {
 
+    void create(CreateRoleDto dto);
+
+    Either<String, Long> patchRole(Long id, PatchRoleDto dto);
+
     void addRoleUsers(Long roleId, List<Long> userIds);
 
     void removeRoleUsers(Long roleId, List<Long> userIds);
+
+    void authorizePermission(AuthorizePermissionDto dto);
 }
 

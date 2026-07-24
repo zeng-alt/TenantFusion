@@ -120,7 +120,8 @@
 </template>
 
 <script setup>
-import { NButton, NInput, NSwitch, NTag, NTooltip } from 'naive-ui'
+import { NButton, NInput, NSwitch, NTag } from 'naive-ui'
+import { renderProCopyableText } from 'pro-naive-ui'
 import { h } from 'vue'
 import { MeCrud, MeModal, MeQueryItem } from '@/components'
 import { useCrud } from '@/composables'
@@ -211,17 +212,20 @@ const columns = [
     key: 'code',
     width: 150,
     ellipsis: { tooltip: true },
+    render(row) {
+      return renderProCopyableText(row.code)
+    },
   },
   {
     title: '名称',
     key: 'name',
-    width: 150,
+    width: 120,
     ellipsis: { tooltip: true },
   },
   {
     title: '状态',
     key: 'enabled',
-    width: 100,
+    width: 80,
     render: row =>
       h(
         NSwitch,
@@ -241,43 +245,48 @@ const columns = [
   {
     title: '协议',
     key: 'method',
-    width: 100,
+    width: 80,
     render: row => h(NTag, { type: 'success' }, { default: () => row.method }),
   },
   {
     title: '路径',
     key: 'path',
+    width: 150,
     ellipsis: { tooltip: true },
   },
   {
     title: '操作',
     key: 'actions',
-    width: 100,
+    width: 150,
     align: 'right',
     fixed: 'right',
-    hideInExcel: true,
     render(row) {
       return [
-        h(NTooltip, { trigger: 'hover' }, {
-          trigger: () => h(NButton, {
-            text: true,
-            size: 'large',
-            style: 'margin-left: 12px;',
-            type: 'info',
+        h(
+          NButton,
+          {
+            size: 'small',
+            type: 'success',
             onClick: () => handleEdit(row),
-          }, { icon: () => h('i', { class: 'i-material-symbols:edit-outline text-14' }) }),
-          default: () => '修改',
-        }),
-        h(NTooltip, { trigger: 'hover' }, {
-          trigger: () => h(NButton, {
-            text: true,
-            size: 'large',
-            style: 'margin-left: 12px;',
+          },
+          {
+            default: () => '编辑',
+            icon: () => h('i', { class: 'i-material-symbols:edit-outline text-14' }),
+          },
+        ),
+        h(
+          NButton,
+          {
+            size: 'small',
             type: 'error',
+            style: 'margin-left: 12px;',
             onClick: () => handleDelete(row.permissionId),
-          }, { icon: () => h('i', { class: 'i-material-symbols:delete-outline text-14' }) }),
-          default: () => '删除',
-        }),
+          },
+          {
+            default: () => '删除',
+            icon: () => h('i', { class: 'i-material-symbols:delete-outline text-14' }),
+          },
+        ),
       ]
     },
   },

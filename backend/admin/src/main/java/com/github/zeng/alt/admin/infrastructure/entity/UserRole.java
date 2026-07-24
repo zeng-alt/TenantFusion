@@ -14,12 +14,12 @@ import org.jspecify.annotations.Nullable;
 @Entity
 @Table(name = "main_user_role")
 @Getter @Setter
-@SQLDelete(sql = """
-    update main_user_role
-    set is_deleted=true
-    where user_role_id=?
-""")
-@SQLRestriction("is_deleted=false")
+//@SQLDelete(sql = """
+//    update main_user_role
+//    set is_deleted=true
+//    where user_role_id=?
+//""")
+//@SQLRestriction("is_deleted=false")
 public class UserRole extends BaseEntity<Long> {
 
     @Id @SnowflakeId
@@ -33,8 +33,8 @@ public class UserRole extends BaseEntity<Long> {
     @JoinColumn(name = "role_id")
     private Role role;
 
-    @Column(name = "is_deleted")
-    private Boolean deleted = false;
+//    @Column(name = "is_deleted")
+//    private Boolean deleted = false;
 
     @Override
     @JsonIgnore

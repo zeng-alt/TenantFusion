@@ -5,7 +5,9 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.github.zeng.alt.admin.infrastructure.listener.UserListener;
 import com.github.zeng.alt.domain.base.BaseEntity;
 import com.github.zeng.alt.domain.key.SnowflakeId;
+import com.github.zeng.alt.domain.validation.UniqueCheck;
 import com.github.zeng.alt.rest.annotation.QueryField;
+import com.github.zeng.alt.rest.annotation.QueryType;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -27,13 +29,14 @@ import java.util.List;
 """)
 @SQLRestriction("is_deleted=false")
 @EntityListeners(UserListener.class)
+@UniqueCheck(field = "username")
 public class User extends BaseEntity<Long> {
 
     @Id @SnowflakeId
     private Long userId;
 
     @Column(length = 64)
-    @QueryField
+    @QueryField(type = QueryType.LIKE)
     private String username;
     @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     private String password;
@@ -52,7 +55,12 @@ public class User extends BaseEntity<Long> {
     private Boolean deleted = false;
 
     @JsonIgnore
-    @OneToMany(mappedBy = "user", fetch = FetchType.LAZY, cascade = CascadeType.REMOVE, orphanRemoval = true)
+    @OneToMany(
+            mappedBy = "user",
+            fetch = FetchType.LAZY,
+            cascade = CascadeType.ALL,
+            orphanRemoval = true
+    )
     private List<UserRole> userRoles = new LinkedList<>();
 
     @JsonIgnore

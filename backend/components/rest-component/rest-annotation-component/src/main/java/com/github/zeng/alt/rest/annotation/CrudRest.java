@@ -34,7 +34,7 @@ public @interface CrudRest {
     /**
      * 是否生成 update 接口（全量更新 PUT）
      */
-    boolean update() default true;
+    boolean update() default false;
 
     /**
      * 是否生成 patch 接口（部分更新 PATCH，只更新非 null 字段）

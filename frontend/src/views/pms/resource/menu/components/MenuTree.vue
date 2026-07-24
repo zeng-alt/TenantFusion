@@ -40,7 +40,6 @@
         :on-update:selected-keys="onSelect"
         key-field="code"
         label-field="name"
-
         block-line default-expand-all
       />
     </n-space>

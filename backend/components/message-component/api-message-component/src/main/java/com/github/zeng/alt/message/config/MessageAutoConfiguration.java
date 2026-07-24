@@ -6,10 +6,10 @@ import com.github.zeng.alt.message.codec.JacksonMessagePacketCodec;
 import com.github.zeng.alt.message.codec.MessagePacketCodec;
 import com.github.zeng.alt.message.subscription.MessageListenerBeanPostProcessor;
 import org.springframework.beans.factory.ListableBeanFactory;
+import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.ImportRuntimeHints;
 
 /**
@@ -24,7 +24,7 @@ import org.springframework.context.annotation.ImportRuntimeHints;
  * @since 2026-07-01
  * @version 1.0
  */
-@Configuration
+@AutoConfiguration
 @ImportRuntimeHints(MessageRuntimeHints.class)
 public class MessageAutoConfiguration {
 

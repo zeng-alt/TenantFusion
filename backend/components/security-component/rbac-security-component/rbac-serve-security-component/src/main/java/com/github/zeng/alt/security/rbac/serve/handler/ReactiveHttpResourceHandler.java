@@ -1,9 +1,9 @@
 package com.github.zeng.alt.security.rbac.serve.handler;
 
-import com.github.zeng.alt.security.api.HttpResource;
 import com.github.zeng.alt.security.rbac.serve.locator.ReactivePermissionLocator;
-import com.github.zeng.alt.security.rbac.serve.manager.ReactiveResourceQueryManager;
+import com.github.zeng.alt.security.rbac.serve.repository.RbacResourceService;
 import com.github.zeng.alt.security.rbac.serve.router.RouteTemplateManager;
+import com.github.zeng.alt.tenant.api.TenantDetail;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.web.server.authorization.AuthorizationContext;
@@ -17,24 +17,20 @@ import java.util.Set;
  * Reactive 环境默认 HTTP 资源处理器。
  *
  * <p>作为 {@link ReactiveParseManager} 的最终 fallback，始终匹配。
- * 鉴权逻辑：</p>
- * <ol>
- *   <li>通过 {@link RouteTemplateManager#match(String)} 将实际路径归一化为路由模板</li>
- *   <li>通过 {@link ReactiveResourceQueryManager#queryPermissionForResource} 获取该路由所需的权限标识</li>
- *   <li>通过 {@link ReactivePermissionLocator#load(Mono)} 获取当前用户的权限集合</li>
- *   <li>判断用户权限是否包含所需权限</li>
- * </ol>
+ * 鉴权逻辑：根据当前请求的 method + path 获取所需的权限 code，
+ * 与当前角色拥有的全部权限 code 集合比对，判断是否授权。</p>
  */
 @Slf4j
-public class ReactiveHttpResourceHandler extends AbstractReactiveResourceHandler {
+public class ReactiveHttpResourceHandler implements ReactiveResourceHandler {
 
     private final ReactivePermissionLocator permissionLocator;
     private final RouteTemplateManager routeTemplateManager;
+    private final RbacResourceService rbacResourceService;
 
-    public ReactiveHttpResourceHandler(ReactiveResourceQueryManager reactiveResourceQueryManager, RouteTemplateManager routeTemplateManager, ReactivePermissionLocator permissionLocator) {
-        super(reactiveResourceQueryManager);
-        this.permissionLocator = permissionLocator;
+    public ReactiveHttpResourceHandler(RouteTemplateManager routeTemplateManager, ReactivePermissionLocator permissionLocator, RbacResourceService rbacResourceService) {
         this.routeTemplateManager = routeTemplateManager;
+        this.permissionLocator = permissionLocator;
+        this.rbacResourceService = rbacResourceService;
     }
 
     @Override
@@ -46,28 +42,30 @@ public class ReactiveHttpResourceHandler extends AbstractReactiveResourceHandler
     public Mono<Boolean> handler(Mono<Authentication> authentication, AuthorizationContext object) {
         String path = object.getExchange().getRequest().getURI().getPath();
         String method = object.getExchange().getRequest().getMethod().name();
-        String template = this.routeTemplateManager.match(path);
+        String template = this.routeTemplateManager.match(method, path);
 
         log.debug("Authorizing {} {} (template: {})", method, path, template);
 
-        Mono<Set<String>> userPermissions = permissionLocator.load(authentication);
-        return this.reactiveResourceQueryManager
-                .queryPermissionForResource(create(template, method), authentication)
-                .flatMap(requiredPermission -> userPermissions.map(permissions -> {
-                    boolean granted = permissions.contains(requiredPermission);
+        return authentication.flatMap(auth ->
+                permissionLocator.load(Mono.just(auth)).map(userPermissions -> {
+                    String requiredPermission = rbacResourceService.findPermissionByMethodAndPath(
+                            resolveTenant(auth), method, template);
+                    boolean granted = requiredPermission != null && userPermissions.contains(requiredPermission);
                     if (granted) {
                         log.info("GRANT {} {} to user", method, path);
                     } else {
                         log.warn("DENY {} {} to user (required permission: {})", method, path, requiredPermission);
                     }
                     return granted;
-                }));
+                })
+        );
     }
 
-    private HttpResource create(String path, String method) {
-        HttpResource httpResource = new HttpResource();
-        httpResource.setUri(path);
-        httpResource.setMethod(method);
-        return httpResource;
+    private static String resolveTenant(Authentication authentication) {
+        Object principal = authentication.getPrincipal();
+        if (principal instanceof TenantDetail tenantDetail) {
+            return tenantDetail.getTenantName();
+        }
+        return "";
     }
 }

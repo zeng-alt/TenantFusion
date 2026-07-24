@@ -31,6 +31,8 @@ public interface BaseRepository<T, ID> extends Repository<T, ID>, QuerydslPredic
 
     void delete(T entities);
 
+    void deleteAll(Iterable<T> entities);
+
     <S extends T> List<S> findAll();
 
     void deleteAllById(Iterable<? extends ID> ids);
