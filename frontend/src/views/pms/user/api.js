@@ -14,6 +14,6 @@ export default {
   update: data => request.patch(`/user/${data.userId}`, data),
   delete: id => request.delete(`/user/${id}`),
   resetPwd: (id, data) => request.patch(`/user/password/reset/${id}`, data),
-
+  logoff: id => request.get(`/auth/logoff/${id}`),
   getAllRoles: () => request.get('/role/all?enabled=true'),
 }

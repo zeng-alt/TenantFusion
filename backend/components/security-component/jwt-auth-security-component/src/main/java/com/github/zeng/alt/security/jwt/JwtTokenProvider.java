@@ -1,5 +1,6 @@
 package com.github.zeng.alt.security.jwt;
 
+import com.github.zeng.alt.security.api.UserContextHolder;
 import com.nimbusds.jose.jwk.source.ImmutableSecret;
 import com.github.zeng.alt.security.api.SecurityUser;
 import com.nimbusds.jwt.SignedJWT;
@@ -24,9 +25,8 @@ public class JwtTokenProvider {
     private static final String CLAIM_ROLES = "roles";
     private static final String CLAIM_CURRENT_ROLE = "currentRole";
     private static final String CLAIM_TENANT = "tenant";
-    static final String CACHE_KEY_PREFIX = "jwt:token:";
-    static final String REFRESH_CACHE_KEY_PREFIX = "jwt:refresh:";
-    static final String REFRESH_USER_CACHE_KEY_PREFIX = "jwt:refresh:user:";
+    static final String CACHE_KEY_PREFIX = "jwt:token";
+    static final String REFRESH_CACHE_KEY_PREFIX = "jwt:refresh";
 
     private final JwtProperties jwtProperties;
     private final JwtEncoder accessEncoder;
@@ -84,77 +84,81 @@ public class JwtTokenProvider {
 
         JwtClaimsSet claims = JwtClaimsSet.builder()
                 .id(UUID.randomUUID().toString().replace("-", ""))
-                .subject(user.getId())
+                .subject(user.getUsername())
                 .claim(CLAIM_ID, user.getId())
+                .claim(CLAIM_TENANT, user.getTenant())
                 .issuedAt(now)
                 .expiresAt(now.plusSeconds(jwtProperties.getRememberMeExpiration()))
                 .build();
-
         return refreshEncoder.encode(JwtEncoderParameters.from(JwsHeader.with(MacAlgorithm.HS512).build(), claims))
                 .getTokenValue();
-    }
-
-    public String getTokenId(String token) {
-        Jwt decode = accessDecoder.decode(token);
-        return getTokenId(decode);
-    }
-
-    public String getTokenId(Jwt jwt) {
-        String id = jwt.getId();
-        if (StringUtils.hasText(id)) {
-            return jwt.getClaim(CLAIM_ID) + ":" + jwt.getId();
-        }
-        return jwt.getClaim(CLAIM_ID);
-    }
-
-    public String getCacheKey(String token) {
-        try {
-            String jti = getTokenId(token);
-            return jti == null ? null : CACHE_KEY_PREFIX + jti;
-        } catch (JwtException e) {
-            return null;
-        }
-    }
-
-    public String getCacheKey(Jwt jwt) {
-        String jti = getTokenId(jwt);
-        return jti == null ? null : CACHE_KEY_PREFIX + jti;
-    }
-
-    public long getExpirationSeconds() {
-        return jwtProperties.getExpiration();
     }
 
     public enum TokenValidationResult {
         VALID, EXPIRED, INVALID
     }
 
-    public TokenValidationResult validateTokenWithResult(String token) {
-        try {
-            accessDecoder.decode(token);
-            return TokenValidationResult.VALID;
-        } catch (JwtValidationException e) {
-            if (e.getMessage() != null && e.getMessage().toLowerCase().contains("expired")) {
-                return TokenValidationResult.EXPIRED;
-            }
-            log.warn(LogMessage.format("JWT token 验证失败: %s", e.getMessage()));
-            return TokenValidationResult.INVALID;
-        } catch (JwtException e) {
-            log.warn(LogMessage.format("JWT token 无效: %s", e.getMessage()));
-            return TokenValidationResult.INVALID;
+    public record TokenParseResult(
+            TokenValidationResult result,
+            Jwt jwt
+    ) {
+
+        public static TokenParseResult valid(Jwt jwt) {
+            return new TokenParseResult(
+                    TokenValidationResult.VALID,
+                    jwt
+            );
+        }
+
+        public static TokenParseResult expired() {
+            return new TokenParseResult(
+                    TokenValidationResult.EXPIRED,
+                    null
+            );
+        }
+
+        public static TokenParseResult invalid() {
+            return new TokenParseResult(
+                    TokenValidationResult.INVALID,
+                    null
+            );
         }
     }
 
-    public boolean validateToken(String token) {
+    public TokenParseResult parseAccessToken(String token) {
+
         try {
-            accessDecoder.decode(token);
-            return true;
+            Jwt jwt = accessDecoder.decode(token);
+
+            return TokenParseResult.valid(jwt);
+
         } catch (JwtValidationException e) {
+
+            if (e.getMessage() != null
+                    && e.getMessage().toLowerCase().contains("expired")) {
+
+                return TokenParseResult.expired();
+            }
+
             log.warn(LogMessage.format("JWT token 验证失败: %s", e.getMessage()));
+            return TokenParseResult.invalid();
+
         } catch (JwtException e) {
+
             log.warn(LogMessage.format("JWT token 无效: %s", e.getMessage()));
+
+            return TokenParseResult.invalid();
         }
-        return false;
+    }
+
+    public TokenParseResult parseRefreshToken(String token) {
+        try {
+            Jwt jwt = refreshDecoder.decode(token);
+            return TokenParseResult.valid(jwt);
+        } catch (JwtException e) {
+            log.warn(LogMessage.format("Refresh JWT token 无效: %s", e.getMessage()));
+            return TokenParseResult.invalid();
+        }
     }
 
     public boolean validateRefreshToken(String token) {
@@ -175,32 +179,118 @@ public class JwtTokenProvider {
         return refreshDecoder.decode(token);
     }
 
-    public String getRefreshCacheKey(String token) {
+    public String getCurrentRoleFromExpiredToken(String token) {
         try {
-            Jwt decode = refreshDecoder.decode(token);
-            String id = decode.getId();
-            if (StringUtils.hasText(id)) {
-                return REFRESH_CACHE_KEY_PREFIX + decode.getClaim(CLAIM_ID) + ":" + id;
-            }
-            return REFRESH_CACHE_KEY_PREFIX + decode.getClaim(CLAIM_ID);
+            SignedJWT signedJWT = SignedJWT.parse(token);
+            return signedJWT.getJWTClaimsSet().getStringClaim(CLAIM_CURRENT_ROLE);
+        } catch (ParseException e) {
+            return null;
+        }
+    }
+
+    // ======================================Cache Key============================================
+
+    public String getAccessCacheKey(String accessToken) {
+        try {
+            Jwt jwt = accessDecoder.decode(accessToken);
+            return getAccessCacheKey(jwt);
         } catch (JwtException e) {
             return null;
         }
     }
 
-    public String getUserCacheKey(String userId) {
-        return REFRESH_USER_CACHE_KEY_PREFIX + userId;
+    public String getAccessCacheKey(Jwt jwt) {
+        try {
+            return getCacheKey(CACHE_KEY_PREFIX, jwt);
+        } catch (JwtException e) {
+            return null;
+        }
+    }
+
+    public String getClaimTenant(Jwt jwt) {
+        try {
+            return jwt.getClaim(CLAIM_TENANT);
+        } catch (JwtException e) {
+            return null;
+        }
+    }
+
+    public String getRefreshCacheKey(Jwt jwt) {
+        try {
+            return getCacheKey(REFRESH_CACHE_KEY_PREFIX, jwt);
+        } catch (JwtException e) {
+            return null;
+        }
+    }
+
+    public String getRefreshCacheKey(String refreshToken) {
+        try {
+            Jwt jwt = refreshDecoder.decode(refreshToken);
+            return getRefreshCacheKey(jwt);
+        } catch (JwtException e) {
+            return null;
+        }
+    }
+
+    public String getAccessCachePrefix(String userId) {
+        return getCacheKeyPrefix(CACHE_KEY_PREFIX, userId);
+    }
+
+    public String getRefreshCachePrefix(String userId) {
+        return getCacheKeyPrefix(REFRESH_CACHE_KEY_PREFIX, userId);
+    }
+
+    private String getCacheKeyPrefix(String prefix, String userId) {
+
+        StringJoiner joiner = new StringJoiner(":");
+        joiner.add(prefix);
+        if (StringUtils.hasText(UserContextHolder.getTenant())) {
+            joiner.add(UserContextHolder.getTenant());
+        }
+        if (StringUtils.hasText(userId)) {
+            joiner.add(userId);
+        } else {
+            return null;
+        }
+        return joiner.toString();
+    }
+
+    private String getCacheKey(String prefix, Jwt jwt) {
+        String tenant = jwt.getClaimAsString(CLAIM_TENANT);
+        String userId = jwt.getClaimAsString(CLAIM_ID);
+        StringJoiner joiner = new StringJoiner(":");
+        joiner.add(prefix);
+        if (StringUtils.hasText(tenant)) {
+            joiner.add(tenant);
+        }
+        if (StringUtils.hasText(userId)) {
+            joiner.add(userId);
+        }
+        String id = jwt.getId();
+        if (StringUtils.hasText(id)) {
+            joiner.add(id);
+        }
+        return joiner.toString();
     }
 
     public String getCacheKeyFromExpiredToken(String token) {
         try {
             SignedJWT signedJWT = SignedJWT.parse(token);
-            String jti = signedJWT.getJWTClaimsSet().getJWTID();
+            String id = signedJWT.getJWTClaimsSet().getJWTID();
             String userId = signedJWT.getJWTClaimsSet().getStringClaim(CLAIM_ID);
-            if (StringUtils.hasText(jti)) {
-                return CACHE_KEY_PREFIX + userId + ":" + jti;
+            String tenant = signedJWT.getJWTClaimsSet().getStringClaim(CLAIM_TENANT);
+            StringJoiner joiner = new StringJoiner(":");
+            joiner.add(CACHE_KEY_PREFIX);
+            if (StringUtils.hasText(tenant)) {
+                joiner.add(tenant);
             }
-            return CACHE_KEY_PREFIX + userId;
+            if (StringUtils.hasText(userId)) {
+                joiner.add(userId);
+            }
+            if (StringUtils.hasText(id)) {
+                joiner.add(id);
+            }
+            return joiner.toString();
         } catch (ParseException e) {
             return null;
         }

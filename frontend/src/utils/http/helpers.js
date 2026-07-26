@@ -42,7 +42,7 @@ export function resolveResError(code, message, needTip = true, detail = undefine
       message = '请求被拒绝'
       break
     case 404:
-      message = '请求资源或接口不存在'
+      message = message ?? '请求资源或接口不存在'
       break
     case 500:
       message = '服务器发生异常'

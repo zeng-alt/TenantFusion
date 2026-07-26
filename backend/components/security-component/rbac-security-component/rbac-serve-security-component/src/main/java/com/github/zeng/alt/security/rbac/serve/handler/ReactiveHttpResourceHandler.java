@@ -1,15 +1,17 @@
 package com.github.zeng.alt.security.rbac.serve.handler;
 
+import com.github.zeng.alt.security.api.HttpResource;
 import com.github.zeng.alt.security.rbac.serve.locator.ReactivePermissionLocator;
-import com.github.zeng.alt.security.rbac.serve.repository.RbacResourceService;
+import com.github.zeng.alt.security.rbac.serve.locator.ReactiveResourceSignageLocator;
 import com.github.zeng.alt.security.rbac.serve.router.RouteTemplateManager;
-import com.github.zeng.alt.tenant.api.TenantDetail;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.web.server.authorization.AuthorizationContext;
 import org.springframework.security.web.server.util.matcher.ServerWebExchangeMatcher;
+import org.springframework.util.StringUtils;
 import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
+import reactor.util.function.Tuple2;
 
 import java.util.Set;
 
@@ -25,12 +27,12 @@ public class ReactiveHttpResourceHandler implements ReactiveResourceHandler {
 
     private final ReactivePermissionLocator permissionLocator;
     private final RouteTemplateManager routeTemplateManager;
-    private final RbacResourceService rbacResourceService;
+    private final ReactiveResourceSignageLocator reactiveResourceSignageLocator;
 
-    public ReactiveHttpResourceHandler(RouteTemplateManager routeTemplateManager, ReactivePermissionLocator permissionLocator, RbacResourceService rbacResourceService) {
+    public ReactiveHttpResourceHandler(RouteTemplateManager routeTemplateManager, ReactivePermissionLocator permissionLocator, ReactiveResourceSignageLocator reactiveResourceSignageLocator) {
         this.routeTemplateManager = routeTemplateManager;
         this.permissionLocator = permissionLocator;
-        this.rbacResourceService = rbacResourceService;
+        this.reactiveResourceSignageLocator = reactiveResourceSignageLocator;
     }
 
     @Override
@@ -47,25 +49,20 @@ public class ReactiveHttpResourceHandler implements ReactiveResourceHandler {
         log.debug("Authorizing {} {} (template: {})", method, path, template);
 
         return authentication.flatMap(auth ->
-                permissionLocator.load(Mono.just(auth)).map(userPermissions -> {
-                    String requiredPermission = rbacResourceService.findPermissionByMethodAndPath(
-                            resolveTenant(auth), method, template);
-                    boolean granted = requiredPermission != null && userPermissions.contains(requiredPermission);
-                    if (granted) {
-                        log.info("GRANT {} {} to user", method, path);
-                    } else {
-                        log.warn("DENY {} {} to user (required permission: {})", method, path, requiredPermission);
-                    }
-                    return granted;
-                })
-        );
+                Mono.zip(
+                        reactiveResourceSignageLocator.load(
+                                HttpResource.of(template, method),
+                                auth
+                        ),
+                        permissionLocator.load(auth)
+                )
+        ).map(this::checkPermission);
     }
+    private boolean checkPermission(Tuple2<String, Set<String>> tuple) {
+        String requiredPermission = tuple.getT1();
+        Set<String> permissions = tuple.getT2();
 
-    private static String resolveTenant(Authentication authentication) {
-        Object principal = authentication.getPrincipal();
-        if (principal instanceof TenantDetail tenantDetail) {
-            return tenantDetail.getTenantName();
-        }
-        return "";
+        return StringUtils.hasText(requiredPermission)
+                && permissions.contains(requiredPermission);
     }
 }

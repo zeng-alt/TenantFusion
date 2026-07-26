@@ -1,60 +1,56 @@
 package com.github.zeng.alt.security.jwt;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.zeng.alt.security.api.SecurityUser;
 import com.github.zeng.alt.security.core.properties.LoginProperties;
-import com.github.zeng.alt.storage.StorageTemplate;
+import com.github.zeng.alt.tenant.api.TenantContextHolder;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.jspecify.annotations.NonNull;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.web.servlet.util.matcher.PathPatternRequestMatcher;
 import org.springframework.security.web.util.matcher.RequestMatcher;
 import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
 
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import java.io.IOException;
-import java.time.Duration;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtTokenProvider jwtTokenProvider;
-    private final StorageTemplate storageTemplate;
-    private final ObjectMapper objectMapper;
+    private final JwtStorage jwtStorage;
     private final String headerName;
     private final RequestMatcher loginRequestMatcher;
     private final String newAccessTokenHeader;
     private final String refreshCookieName;
+    private final UserDetailsService userDetailsService;
 
-    public JwtAuthenticationFilter(JwtTokenProvider jwtTokenProvider,
-                                   StorageTemplate storageTemplate,
-                                   ObjectMapper objectMapper,
-                                   String headerName,
-                                   LoginProperties loginProperties,
-                                   String newAccessTokenHeader,
-                                   String refreshCookieName) {
+    public JwtAuthenticationFilter(
+        JwtTokenProvider jwtTokenProvider,
+        JwtStorage jwtStorage,
+        UserDetailsService userDetailsService,
+        String headerName,
+        LoginProperties loginProperties,
+        String newAccessTokenHeader,
+        String refreshCookieName
+    ) {
         this.jwtTokenProvider = jwtTokenProvider;
-        this.storageTemplate = storageTemplate;
-        this.objectMapper = objectMapper;
+        this.jwtStorage = jwtStorage;
         this.headerName = headerName;
+        this.userDetailsService = userDetailsService;
         this.loginRequestMatcher = PathPatternRequestMatcher.withDefaults().matcher(loginProperties.getMethod(), loginProperties.getLoginPath());
         this.newAccessTokenHeader = newAccessTokenHeader;
         this.refreshCookieName = refreshCookieName;
     }
 
     @Override
-    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response,
-                                    FilterChain filterChain) throws ServletException, IOException {
+    protected void doFilterInternal(@NonNull HttpServletRequest request, @NonNull HttpServletResponse response, @NonNull FilterChain filterChain) throws ServletException, IOException {
 
         if (loginRequestMatcher.matches(request)) {
             filterChain.doFilter(request, response);
@@ -70,27 +66,32 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         String token = authHeader.substring(7);
 
-        JwtTokenProvider.TokenValidationResult result = jwtTokenProvider.validateTokenWithResult(token);
+        JwtTokenProvider.TokenParseResult parseResult =
+                jwtTokenProvider.parseAccessToken(token);
 
-        if (result == JwtTokenProvider.TokenValidationResult.VALID) {
-            String cacheKey = jwtTokenProvider.getCacheKey(token);
-            if (cacheKey == null || Boolean.FALSE.equals(storageTemplate.hasKey(cacheKey))) {
-                result = JwtTokenProvider.TokenValidationResult.EXPIRED;
+        if (parseResult.result() == JwtTokenProvider.TokenValidationResult.VALID) {
+
+            Jwt jwt = parseResult.jwt();
+            String cacheKey = jwtTokenProvider.getAccessCacheKey(jwt);
+
+            if (cacheKey == null || !jwtStorage.hasToken(cacheKey)) {
+                parseResult = JwtTokenProvider.TokenParseResult.expired();
             } else {
-                Jwt jwt = jwtTokenProvider.getJwt(token);
-                if (jwt == null) {
-                    filterChain.doFilter(request, response);
-                    return;
-                }
 
-                SecurityUser securityUser = jwtTokenProvider.getUserFromClaims(jwt);
+                SecurityUser securityUser =
+                        jwtTokenProvider.getUserFromClaims(jwt);
+                String claimTenant = jwtTokenProvider.getClaimTenant(jwt);
+                TenantContextHolder.setTenantId(claimTenant);
                 UsernamePasswordAuthenticationToken authentication =
-                        new UsernamePasswordAuthenticationToken(securityUser, null, securityUser.getAuthorities());
-
-                SecurityContextHolder.getContext().setAuthentication(authentication);
-
+                        new UsernamePasswordAuthenticationToken(
+                                securityUser,
+                                null,
+                                securityUser.getAuthorities()
+                        );
+                SecurityContextHolder.getContext()
+                        .setAuthentication(authentication);
                 try {
-                    filterChain.doFilter(request, response);
+                    filterChain.doFilter(request,response);
                 } finally {
                     SecurityContextHolder.clearContext();
                 }
@@ -98,57 +99,70 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             }
         }
 
-        if (result == JwtTokenProvider.TokenValidationResult.EXPIRED) {
+        if (parseResult.result() == JwtTokenProvider.TokenValidationResult.EXPIRED) {
             String refreshToken = extractRefreshTokenFromCookie(request);
-            if (StringUtils.hasText(refreshToken) && jwtTokenProvider.validateRefreshToken(refreshToken)) {
-
-                Jwt refreshJwt = jwtTokenProvider.getRefreshJwt(refreshToken);
-                String userId = refreshJwt.getSubject();
-
-                String userCacheKey = jwtTokenProvider.getUserCacheKey(userId);
-                String userInfoJson = storageTemplate.opsForString().get(userCacheKey, String.class);
-
-                if (userInfoJson == null) {
-                    filterChain.doFilter(request, response);
-                    return;
-                }
-
-                SecurityUser securityUser = buildUserFromCache(userInfoJson);
-                if (securityUser == null) {
-                    filterChain.doFilter(request, response);
-                    return;
-                }
-
-                UsernamePasswordAuthenticationToken authentication =
-                        new UsernamePasswordAuthenticationToken(securityUser, null, securityUser.getAuthorities());
-
-                String newAccessToken = jwtTokenProvider.createToken(securityUser);
-
-                String newAccessCacheKey = jwtTokenProvider.getCacheKey(newAccessToken);
-                if (newAccessCacheKey != null) {
-                    storageTemplate.opsForString().set(
-                            newAccessCacheKey,
-                            securityUser.getUsername(),
-                            Duration.ofSeconds(jwtTokenProvider.getExpirationSeconds())
-                    );
-                }
-
-                String oldAccessCacheKey = jwtTokenProvider.getCacheKeyFromExpiredToken(token);
-                if (oldAccessCacheKey != null) {
-                    storageTemplate.delete(oldAccessCacheKey);
-                }
-
-                response.setHeader(newAccessTokenHeader, newAccessToken);
-
-                SecurityContextHolder.getContext().setAuthentication(authentication);
-
-                try {
-                    filterChain.doFilter(request, response);
-                } finally {
-                    SecurityContextHolder.clearContext();
-                }
+            if (!StringUtils.hasText(refreshToken)) {
+                filterChain.doFilter(request, response);
                 return;
             }
+
+            JwtTokenProvider.TokenParseResult refreshResult = jwtTokenProvider.parseRefreshToken(refreshToken);
+            if (refreshResult.result() != JwtTokenProvider.TokenValidationResult.VALID) {
+                filterChain.doFilter(request, response);
+                return;
+            }
+
+            Jwt refreshJwt = refreshResult.jwt();
+            String refreshCacheKey = jwtTokenProvider.getRefreshCacheKey(refreshJwt);
+            if (!jwtStorage.hasToken(refreshCacheKey)) {
+                filterChain.doFilter(request, response);
+                return;
+            }
+
+            String subject = refreshJwt.getSubject();
+            String claimTenant = jwtTokenProvider.getClaimTenant(refreshJwt);
+            TenantContextHolder.setTenantId(claimTenant);
+            SecurityUser securityUser = (SecurityUser) userDetailsService.loadUserByUsername(subject);
+
+            if (securityUser == null) {
+                filterChain.doFilter(request, response);
+                return;
+            }
+
+            String oldCurrentRole = jwtTokenProvider.getCurrentRoleFromExpiredToken(token);
+            if (oldCurrentRole != null && securityUser.getRoles() != null) {
+                boolean found = securityUser.getRoles().stream()
+                        .anyMatch(a -> oldCurrentRole.equalsIgnoreCase(a.getAuthority()));
+                if (found) {
+                    securityUser.setCurrentRole(new SimpleGrantedAuthority(oldCurrentRole));
+                }
+            }
+
+            UsernamePasswordAuthenticationToken authentication =
+                    new UsernamePasswordAuthenticationToken(securityUser, null, securityUser.getAuthorities());
+
+            String newAccessToken = jwtTokenProvider.createToken(securityUser);
+
+            String newAccessCacheKey = jwtTokenProvider.getAccessCacheKey(newAccessToken);
+            if (StringUtils.hasText(newAccessCacheKey)) {
+                jwtStorage.setAccessToken(newAccessCacheKey, securityUser.getUsername());
+            }
+
+            String oldAccessCacheKey = jwtTokenProvider.getCacheKeyFromExpiredToken(token);
+            if (StringUtils.hasText(oldAccessCacheKey)) {
+                jwtStorage.removeToken(oldAccessCacheKey);
+            }
+
+            response.setHeader(newAccessTokenHeader, newAccessToken);
+
+            SecurityContextHolder.getContext().setAuthentication(authentication);
+
+            try {
+                filterChain.doFilter(request, response);
+            } finally {
+                SecurityContextHolder.clearContext();
+            }
+            return;
         }
 
         filterChain.doFilter(request, response);
@@ -164,42 +178,5 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             }
         }
         return null;
-    }
-
-    @SuppressWarnings("unchecked")
-    private SecurityUser buildUserFromCache(String json) {
-        try {
-            Map<String, Object> userInfo = objectMapper.readValue(json, Map.class);
-            String id = (String) userInfo.get("id");
-            String username = (String) userInfo.get("username");
-            String tenant = (String) userInfo.get("tenant");
-            String currentRoleStr = (String) userInfo.get("currentRole");
-            List<String> roles = (List<String>) userInfo.get("roles");
-
-            Set<GrantedAuthority> authorities = roles == null
-                    ? Set.of()
-                    : roles.stream().map(SimpleGrantedAuthority::new).collect(Collectors.toSet());
-
-            return new SecurityUser(
-                    id,
-                    username,
-                    "",
-                    tenant != null && !tenant.isEmpty() ? tenant : null,
-                    null,
-                    null,
-                    true,
-                    true,
-                    true,
-                    true,
-                    authorities,
-                    currentRoleStr != null && !currentRoleStr.isEmpty()
-                            ? new SimpleGrantedAuthority(currentRoleStr)
-                            : null,
-                    null
-            );
-        } catch (Exception e) {
-            logger.warn("Failed to build user from cache", e);
-            return null;
-        }
     }
 }

@@ -1,11 +1,9 @@
 package com.github.zeng.alt.security.jwt;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.zeng.alt.security.api.LoginHelper;
 import com.github.zeng.alt.security.api.LoginResponse;
 import com.github.zeng.alt.security.api.SecurityUser;
 import com.github.zeng.alt.security.api.UserContextHolder;
-import com.github.zeng.alt.storage.StorageTemplate;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -14,8 +12,8 @@ import lombok.extern.apachecommons.CommonsLog;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.util.StringUtils;
 
-import java.time.Duration;
 import java.util.Map;
 
 @CommonsLog
@@ -24,9 +22,8 @@ public class JwtLoginHelper implements LoginHelper {
 
     private final AuthenticationManager authenticationManager;
     private final JwtTokenProvider jwtTokenProvider;
-    private final StorageTemplate storageTemplate;
+    private final JwtStorage jwtStorage;
     private final JwtProperties jwtProperties;
-    private final ObjectMapper objectMapper;
 
     @Override
     public String name() {
@@ -56,11 +53,10 @@ public class JwtLoginHelper implements LoginHelper {
     @Override
     public LoginResponse reset(SecurityUser user, boolean rememberMe) {
         String token = jwtTokenProvider.createToken(user);
-        String cacheKey = jwtTokenProvider.getCacheKey(token);
-        storageTemplate.opsForString().set(
+        String cacheKey = jwtTokenProvider.getAccessCacheKey(token);
+        jwtStorage.setAccessToken(
                 cacheKey,
-                user.getUsername(),
-                Duration.ofSeconds(jwtProperties.getExpiration())
+                user.getUsername()
         );
         LoginResponse loginResponse = LoginResponse.ofUser(user);
         loginResponse.attribute("accessToken", token);
@@ -68,10 +64,9 @@ public class JwtLoginHelper implements LoginHelper {
         if (rememberMe) {
             String refreshToken = jwtTokenProvider.createRefreshToken(user);
             String refreshCacheKey = jwtTokenProvider.getRefreshCacheKey(refreshToken);
-            storageTemplate.opsForString().set(
+            jwtStorage.setRefreshToken(
                     refreshCacheKey,
-                    user.getUsername(),
-                    Duration.ofSeconds(jwtProperties.getRememberMeExpiration())
+                    user.getUsername()
             );
             loginResponse.attribute("refreshToken", refreshToken);
         }
@@ -86,9 +81,9 @@ public class JwtLoginHelper implements LoginHelper {
         SecurityUser user = (SecurityUser) authenticated.getPrincipal();
 
         String jwt = jwtTokenProvider.createToken(user);
-        String cacheKey = jwtTokenProvider.getCacheKey(jwt);
+        String cacheKey = jwtTokenProvider.getAccessCacheKey(jwt);
         if (cacheKey != null) {
-            storageTemplate.opsForString().set(cacheKey, user.getUsername(), Duration.ofSeconds(jwtProperties.getExpiration()));
+            jwtStorage.setAccessToken(cacheKey, user.getUsername());
         }
 
         LoginResponse response = LoginResponse.ofUser(user)
@@ -100,38 +95,16 @@ public class JwtLoginHelper implements LoginHelper {
             String refreshToken = jwtTokenProvider.createRefreshToken(user);
             String refreshCacheKey = jwtTokenProvider.getRefreshCacheKey(refreshToken);
             if (refreshCacheKey != null) {
-                storageTemplate.opsForString().set(
+                jwtStorage.setRefreshToken(
                         refreshCacheKey,
-                        user.getUsername(),
-                        Duration.ofSeconds(jwtProperties.getRememberMeExpiration())
+                        user.getUsername()
                 );
             }
-            storeUserInfo(user);
             response.attribute("refreshToken", refreshToken);
             response.attribute("refreshExpiresIn", jwtProperties.getRememberMeExpiration());
         }
 
         return response;
-    }
-
-    private void storeUserInfo(SecurityUser user) {
-        try {
-            Map<String, Object> userInfo = Map.of(
-                    "id", user.getId(),
-                    "username", user.getUsername(),
-                    "tenant", user.getTenant() != null ? user.getTenant() : "",
-                    "roles", user.getRoles().stream().map(a -> a.getAuthority()).toList(),
-                    "currentRole", user.getCurrentRole() != null ? user.getCurrentRole().getAuthority() : ""
-            );
-            String json = objectMapper.writeValueAsString(userInfo);
-            storageTemplate.opsForString().set(
-                    jwtTokenProvider.getUserCacheKey(user.getId()),
-                    json,
-                    Duration.ofSeconds(jwtProperties.getRememberMeExpiration())
-            );
-        } catch (Exception e) {
-            log.warn("Failed to store user info for refresh", e);
-        }
     }
 
     @Override
@@ -141,23 +114,42 @@ public class JwtLoginHelper implements LoginHelper {
             return;
         }
         String token = authHeader.substring(7);
-        String cacheKey = jwtTokenProvider.getCacheKey(token);
+        String cacheKey = jwtTokenProvider.getAccessCacheKey(token);
         if (cacheKey != null) {
-            storageTemplate.delete(cacheKey);
+            jwtStorage.removeToken(cacheKey);
         }
-        cleanRefreshTokens(token);
+        cleanRefreshTokens(request);
     }
 
-    private void cleanRefreshTokens(String accessToken) {
+    @Override
+    public void logout(String id) {
+        String accessCachePrefix = jwtTokenProvider.getAccessCachePrefix(id);
+        String refreshCachePrefix = jwtTokenProvider.getRefreshCachePrefix(id);
+        jwtStorage.removeAllToken(accessCachePrefix);
+        jwtStorage.removeAllToken(refreshCachePrefix);
+    }
+
+    private void cleanRefreshTokens(HttpServletRequest request) {
         try {
-            String tokenId = jwtTokenProvider.getTokenId(accessToken);
-            if (tokenId != null) {
-                String userId = tokenId.contains(":") ? tokenId.substring(0, tokenId.indexOf(':')) : tokenId;
-                storageTemplate.opsForString().deleteByPattern(JwtTokenProvider.REFRESH_CACHE_KEY_PREFIX + userId + ":*");
-                storageTemplate.delete(jwtTokenProvider.getUserCacheKey(userId));
+            String refreshToken = extractRefreshTokenFromCookie(request);
+            if (StringUtils.hasText(refreshToken)) {
+                String refreshCacheKey = jwtTokenProvider.getRefreshCacheKey(refreshToken);
+                jwtStorage.removeToken(refreshCacheKey);
             }
         } catch (Exception ignored) {
         }
+    }
+
+    private String extractRefreshTokenFromCookie(HttpServletRequest request) {
+        Cookie[] cookies = request.getCookies();
+        if (cookies != null) {
+            for (Cookie cookie : cookies) {
+                if (jwtProperties.getRefreshCookieName().equals(cookie.getName())) {
+                    return cookie.getValue();
+                }
+            }
+        }
+        return null;
     }
 
     @Override

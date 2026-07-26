@@ -1,10 +1,7 @@
 package com.github.zeng.alt.admin.interfaces.rest;
 
 import com.github.zeng.alt.admin.query.api.UserService;
-import com.github.zeng.alt.admin.query.api.dto.CreateUserDto;
-import com.github.zeng.alt.admin.query.api.dto.CurrentUserDto;
-import com.github.zeng.alt.admin.query.api.dto.PatchUserDto;
-import com.github.zeng.alt.admin.query.api.dto.ResetUserPasswordDto;
+import com.github.zeng.alt.admin.query.api.dto.*;
 import com.github.zeng.alt.api.rest.RestResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -48,5 +45,11 @@ public class UserController {
     @PatchMapping("/password/reset/{id}")
     public RestResponse<?> resetPassword(@PathVariable Long id, @Valid @RequestBody ResetUserPasswordDto dto) {
         return userService.resetPassword(id, dto).fold(RestResponse::fail, RestResponse::success);
+    }
+
+    @Operation(summary = "修改自己的用户信息")
+    @PatchMapping("/profile/{id}")
+    public RestResponse<?> patchProfile(@PathVariable Long id, @Valid @RequestBody PatchProfileDto dto) {
+        return userService.patchProfile(id, dto).fold(RestResponse::fail, RestResponse::success);
     }
 }

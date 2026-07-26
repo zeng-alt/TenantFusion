@@ -61,6 +61,7 @@ public class CaptchaAuthenticationFilter extends OncePerRequestFilter {
             return;
         }
 
+        captchaTemplate.deleteCookie(response, captchaKey);
         filterChain.doFilter(request, response);
     }
 

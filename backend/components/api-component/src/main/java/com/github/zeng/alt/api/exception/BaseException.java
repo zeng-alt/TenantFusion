@@ -10,7 +10,7 @@ import lombok.Getter;
 @Getter
 public class BaseException extends RuntimeException {
 
-    private String title;
+    private String title = "业务错误";
     private Integer code = 600;
 
     public BaseException() {}

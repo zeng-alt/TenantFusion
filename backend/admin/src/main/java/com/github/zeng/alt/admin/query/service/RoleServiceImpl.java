@@ -1,10 +1,6 @@
 package com.github.zeng.alt.admin.query.service;
 
-import com.github.zeng.alt.admin.infrastructure.entity.Permission;
-import com.github.zeng.alt.admin.infrastructure.entity.Role;
-import com.github.zeng.alt.admin.infrastructure.entity.RolePermission;
-import com.github.zeng.alt.admin.infrastructure.entity.User;
-import com.github.zeng.alt.admin.infrastructure.entity.UserRole;
+import com.github.zeng.alt.admin.infrastructure.entity.*;
 import com.github.zeng.alt.admin.infrastructure.repository.PermissionRepository;
 import com.github.zeng.alt.admin.infrastructure.repository.RolePermissionRepository;
 import com.github.zeng.alt.admin.infrastructure.repository.RoleRepository;
@@ -17,13 +13,18 @@ import com.github.zeng.alt.admin.query.api.dto.PatchRoleDto;
 import com.github.zeng.alt.admin.query.service.transformation.RoleDtoTransformation;
 import com.github.zeng.alt.api.exception.BaseException;
 import com.github.zeng.alt.security.api.AuthHelper;
+import com.github.zeng.alt.security.api.UserContextHolder;
+import com.github.zeng.alt.security.rbac.serve.repository.RbacResourceService;
+import com.querydsl.jpa.impl.JPAQueryFactory;
 import io.vavr.control.Either;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
+import org.springframework.util.StringUtils;
 
 import java.util.*;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
@@ -42,6 +43,8 @@ public class RoleServiceImpl implements RoleService {
     private final PermissionRepository permissionRepository;
     private final RoleDtoTransformation roleDtoTransformation;
     private final AuthHelper authHelper;
+    private final RbacResourceService rbacResourceService;
+    private final JPAQueryFactory jpaQueryFactory;
 
     @Override
     @Transactional(rollbackOn = Exception.class)
@@ -55,15 +58,20 @@ public class RoleServiceImpl implements RoleService {
     public Either<String, Long> patchRole(Long id, PatchRoleDto dto) {
         return roleRepository.findById(id)
                 .toEither("角色不存在")
+                .filterOrElse(
+                        role -> !authHelper.isAdmin(role.getCode()),
+                        role -> "超级管理员角色不能修改"
+                )
                 .map(role -> {
-                    if (authHelper.isAdmin(role.getCode())) {
-                        throw new BaseException("超级管理员角色不能修改");
-                    }
                     roleDtoTransformation.mergeEntity(dto, role);
                     Optional.ofNullable(dto.getPermissionIds())
                             .ifPresent(
                                     roleIds -> updateRolePermissions(role.getId(), roleIds)
                             );
+                    if (dto.getEnabled() != null) {
+                        rbacResourceService.removeUserRole(role.getUserRoles().stream().map(UserRole::getUser).map(User::getId).map(String::valueOf).toList());
+                    }
+                    rbacResourceService.removeRolePermission(List.of(role.getCode()));
                     return role.getId();
                 });
     }
@@ -89,7 +97,7 @@ public class RoleServiceImpl implements RoleService {
                 }
             }
         }
-
+        rbacResourceService.removeUserRole(userIds.stream().map(String::valueOf).toList());
     }
 
     @Override
@@ -104,6 +112,7 @@ public class RoleServiceImpl implements RoleService {
         for (Long userId : userIds) {
             userRoleRepository.deleteByUserIdAndRoleId(userId, roleId);
         }
+        rbacResourceService.removeUserRole(userIds.stream().map(String::valueOf).toList());
     }
 
     @Override
@@ -141,6 +150,35 @@ public class RoleServiceImpl implements RoleService {
                 )
         );
 
+        rbacResourceService.removeRolePermission(roles.stream().map(Role::getCode).toList());
+
+    }
+
+    @Override
+    @org.springframework.transaction.annotation.Transactional(readOnly = true)
+    public Set<String> getRoleCodes(boolean enabled) {
+        QUser user = QUser.user;
+        QUserRole userRole = QUserRole.userRole;
+        QRole role = QRole.role;
+
+        String id = UserContextHolder.getId();
+        if (!StringUtils.hasText(id)) {
+            throw new BaseException("用户未登录");
+        }
+
+        List<String> rows = jpaQueryFactory
+                .select(role.code)
+                .from(user)
+                .join(user.userRoles, userRole)
+                .join(userRole.role, role)
+                .where(
+                        user.userId.eq(Long.parseLong(id)),
+                        user.enabled.isTrue(),
+                        role.enabled.eq(enabled)
+                )
+                .fetch();
+
+        return new HashSet<>(rows);
     }
 
     private void saveRolePermissions(Role role, List<Long> permissionIds) {

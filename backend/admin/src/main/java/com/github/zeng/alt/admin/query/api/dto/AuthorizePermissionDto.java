@@ -12,7 +12,6 @@ import java.util.List;
  * @version 1.0
  */
 @Data
-@Validated
 public class AuthorizePermissionDto {
 
     @NotEmpty(message = "角色列表不能为空")

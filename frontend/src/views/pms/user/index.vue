@@ -191,7 +191,6 @@ const columns = [
       code: 'sys_gender',
       value: gender,
     }),
-    // render: ({ gender }) => genders.find(item => gender === item.value)?.label ?? '未知',
   },
   {
     title: '状态',
@@ -251,6 +250,20 @@ const columns = [
             icon: () => h('i', { class: 'i-radix-icons:reset text-14' }),
           },
         ),
+        h(
+          NButton,
+          {
+            size: 'small',
+            type: 'warning',
+            style: 'margin-left: 12px;',
+            disabled: isSuperAdmin(row.userId) && !isSuperAdmin(),
+            onClick: () => handleLogoff(row),
+          },
+          {
+            default: () => '强制下线',
+            icon: () => h('i', { class: 'i-mdi:account-remove text-14' }),
+          },
+        ),
 
         h(
           NButton,
@@ -270,6 +283,19 @@ const columns = [
     },
   },
 ]
+
+async function handleLogoff(row) {
+  row.enableLoading = true
+  try {
+    await api.logoff(row.userId)
+    row.enableLoading = false
+    $message.success('操作成功')
+  }
+  catch (error) {
+    console.error(error)
+    row.enableLoading = false
+  }
+}
 
 function handleOpenRolesSet(row) {
   const roleIds = row.userRoles.map(item => item.role?.roleId)

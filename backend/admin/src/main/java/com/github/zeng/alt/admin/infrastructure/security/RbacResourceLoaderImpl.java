@@ -1,6 +1,7 @@
 package com.github.zeng.alt.admin.infrastructure.security;
 
 import com.github.zeng.alt.admin.infrastructure.entity.*;
+import com.github.zeng.alt.security.api.HttpResource;
 import com.github.zeng.alt.security.api.Resource;
 import com.github.zeng.alt.security.rbac.serve.repository.RbacResourceLoader;
 import com.querydsl.core.Tuple;
@@ -10,7 +11,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
-import org.springframework.util.StringUtils;
 
 import java.util.*;
 
@@ -22,100 +22,25 @@ public class RbacResourceLoaderImpl implements RbacResourceLoader {
     private final EntityManager entityManager;
 
     @Override
-    public List<Resource> loadHttpResources(String username, String tenantName, List<String> authorities) {
-        if (!StringUtils.hasText(username)) {
-            log.warn("loadHttpResources called with empty username");
-            return Collections.emptyList();
-        }
-        JPAQueryFactory qf = new JPAQueryFactory(entityManager);
+    public String loadPermissionByResource(String tenantName, Resource resource) {
+        if (resource instanceof HttpResource httpResource) {
+            JPAQueryFactory qf = new JPAQueryFactory(entityManager);
+            QHttpResource http = QHttpResource.httpResource;
 
-        QHttpResource http = QHttpResource.httpResource;
-        QRolePermission rp = QRolePermission.rolePermission;
-        QRole role = QRole.role;
-        QUserRole ur = QUserRole.userRole;
-        QUser user = QUser.user;
-        QUserResource uRes = QUserResource.userResource;
-
-        Set<Long> ids = new HashSet<>();
-
-        ids.addAll(qf
-                .select(http.permissionId)
-                .from(http)
-                .join(http.rolePermissions, rp)
-                .join(rp.role, role)
-                .join(role.userRoles, ur)
-                .join(ur.user, user)
-                .where(user.username.eq(username))
-                .where(http.enabled.isTrue())
-                .fetch());
-
-        List<Long> directPermIds = qf
-                .select(uRes.resource.permissionId)
-                .from(uRes)
-                .join(uRes.user, user)
-                .where(user.username.eq(username))
-                .fetch();
-        if (!CollectionUtils.isEmpty(directPermIds)) {
-            ids.addAll(qf
-                    .select(http.permissionId)
+            String code = qf
+                    .select(http.code)
                     .from(http)
-                    .where(http.permissionId.in(directPermIds))
+                    .where(http.path.eq(httpResource.getUri()))
+                    .where(http.method.eq(httpResource.getMethod()))
                     .where(http.enabled.isTrue())
-                    .fetch());
+                    .fetchOne();
+
+            log.debug("Permission for {}:{} -> {}", httpResource.getMethod(), httpResource.getUri(), code);
+            return code;
         }
 
-        if (ids.isEmpty()) {
-            log.debug("No HTTP resources found for user '{}'", username);
-            return Collections.emptyList();
-        }
+        return null;
 
-        List<com.github.zeng.alt.admin.infrastructure.entity.HttpResource> entities = qf
-                .selectFrom(http)
-                .where(http.permissionId.in(ids))
-                .fetch();
-
-        log.debug("Loaded {} HTTP resources for user '{}'", entities.size(), username);
-        return entities.stream()
-                .map(e -> {
-                    com.github.zeng.alt.security.api.HttpResource r =
-                            new com.github.zeng.alt.security.api.HttpResource();
-                    r.setUri(e.getPath());
-                    r.setMethod(e.getMethod());
-                    return (Resource) r;
-                })
-                .toList();
-    }
-
-    @Override
-    public String loadPermissionByResource(String tenantName, String resourceKey) {
-        if (!StringUtils.hasText(resourceKey)) {
-            return null;
-        }
-        int idx = resourceKey.lastIndexOf(':');
-        if (idx <= 0 || idx == resourceKey.length() - 1) {
-            log.warn("Invalid resource key format: {}", resourceKey);
-            return null;
-        }
-        String uri = resourceKey.substring(0, idx);
-        String method = resourceKey.substring(idx + 1);
-        return loadPermissionByMethodAndPath(tenantName, method, uri);
-    }
-
-    @Override
-    public String loadPermissionByMethodAndPath(String tenantName, String method, String path) {
-        JPAQueryFactory qf = new JPAQueryFactory(entityManager);
-        QHttpResource http = QHttpResource.httpResource;
-
-        String code = qf
-                .select(http.code)
-                .from(http)
-                .where(http.path.eq(path))
-                .where(http.method.eq(method))
-                .where(http.enabled.isTrue())
-                .fetchOne();
-
-        log.debug("Permission for {}:{} -> {}", method, path, code);
-        return code;
     }
 
     @Override
@@ -153,5 +78,28 @@ public class RbacResourceLoaderImpl implements RbacResourceLoader {
         long total = result.values().stream().mapToInt(Set::size).sum();
         log.debug("Loaded {} permissions across {} authorities", total, authorities.size());
         return result;
+    }
+
+    @Override
+    public Set<String> loadUserRole(String userId, String tenantName) {
+        JPAQueryFactory qf = new JPAQueryFactory(entityManager);
+
+        QUser user = QUser.user;
+        QUserRole userRole = QUserRole.userRole;
+        QRole role = QRole.role;
+
+        List<String> rows = qf
+                .select(role.code)
+                .from(user)
+                .join(user.userRoles, userRole)
+                .join(userRole.role, role)
+                .where(
+                        user.userId.eq(Long.parseLong(userId)),
+                        user.enabled.isTrue(),
+                        role.enabled.isTrue()
+                )
+                .fetch();
+
+        return new HashSet<>(rows);
     }
 }

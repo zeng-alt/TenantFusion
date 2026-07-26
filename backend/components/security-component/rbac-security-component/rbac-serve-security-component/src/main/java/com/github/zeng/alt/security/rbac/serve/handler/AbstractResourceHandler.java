@@ -1,6 +1,6 @@
 package com.github.zeng.alt.security.rbac.serve.handler;
 
-import com.github.zeng.alt.security.rbac.serve.manager.ResourceQueryManager;
+//import com.github.zeng.alt.security.rbac.serve.manager.ResourceQueryManager;
 
 /**
  * Servlet 环境资源处理器的抽象基类。
@@ -9,9 +9,9 @@ import com.github.zeng.alt.security.rbac.serve.manager.ResourceQueryManager;
  */
 public abstract class AbstractResourceHandler implements ResourceHandler {
 
-    public final ResourceQueryManager resourceQueryManager;
-
-    protected AbstractResourceHandler(ResourceQueryManager resourceQueryManager) {
-        this.resourceQueryManager = resourceQueryManager;
-    }
+//    public final ResourceQueryManager resourceQueryManager;
+//
+//    protected AbstractResourceHandler(ResourceQueryManager resourceQueryManager) {
+//        this.resourceQueryManager = resourceQueryManager;
+//    }
 }

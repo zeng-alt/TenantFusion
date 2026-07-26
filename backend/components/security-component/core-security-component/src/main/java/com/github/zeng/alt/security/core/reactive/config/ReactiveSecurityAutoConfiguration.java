@@ -50,7 +50,8 @@ public class ReactiveSecurityAutoConfiguration {
 			ObjectProvider<ServerHttpSecurityBuilderCustomizer> customizers,
 			WhiteListService whiteListService,
 			ServerAccessDeniedHandler serverAccessDeniedHandler,
-			ServerAuthenticationEntryPoint serverAuthenticationEntryPoint
+			ServerAuthenticationEntryPoint serverAuthenticationEntryPoint,
+			ObjectProvider<AuthorizeExchangeCustomizer> authorizeExchangeCustomizers
 	) {
 
 		http.httpBasic(ServerHttpSecurity.HttpBasicSpec::disable);
@@ -59,9 +60,10 @@ public class ReactiveSecurityAutoConfiguration {
 		http.logout(ServerHttpSecurity.LogoutSpec::disable);
 		http.exceptionHandling(ex -> ex.authenticationEntryPoint(serverAuthenticationEntryPoint).accessDeniedHandler(serverAccessDeniedHandler));
 		http.authorizeExchange(authorizeExchangeSpec -> {
+			authorizeExchangeCustomizers.orderedStream().forEach(spec -> spec.customize(authorizeExchangeSpec));
 			authorizeExchangeSpec
 					.pathMatchers(HttpMethod.POST, "/login/**").permitAll();
-			if (securityProperties.getEnabledAccess()) {
+			if (Boolean.TRUE.equals(securityProperties.getEnabledAccess())) {
 				authorizeExchangeSpec.anyExchange().access(compositeReactiveAuthorizationManager(reactiveAuthorizationManagerProviders, whiteListService));
 			} else {
 				authorizeExchangeSpec.anyExchange().permitAll();

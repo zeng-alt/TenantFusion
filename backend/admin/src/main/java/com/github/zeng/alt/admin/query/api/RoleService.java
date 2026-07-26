@@ -7,6 +7,7 @@ import io.vavr.control.Either;
 import jakarta.validation.Valid;
 
 import java.util.List;
+import java.util.Set;
 
 /**
  * @author zengJiaJun
@@ -24,5 +25,11 @@ public interface RoleService {
     void removeRoleUsers(Long roleId, List<Long> userIds);
 
     void authorizePermission(AuthorizePermissionDto dto);
+
+    Set<String> getRoleCodes(boolean enabled);
+
+    default Set<String> getRoleCodes() {
+        return getRoleCodes(true);
+    }
 }
 

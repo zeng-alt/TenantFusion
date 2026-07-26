@@ -1,6 +1,7 @@
 package com.github.zeng.alt.admin.infrastructure.entity;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.github.zeng.alt.api.exception.BaseException;
 import com.github.zeng.alt.domain.base.BaseEntity;
 import com.github.zeng.alt.domain.key.SnowflakeId;
 import com.github.zeng.alt.rest.annotation.QueryField;
@@ -13,6 +14,7 @@ import org.hibernate.annotations.SQLRestriction;
 import org.jspecify.annotations.Nullable;
 
 import java.util.HashSet;
+import java.util.Objects;
 import java.util.Set;
 
 @Entity()
@@ -50,6 +52,10 @@ public abstract class Permission extends BaseEntity<Long> {
     @Column(name = "is_deleted")
     private Boolean deleted = false;
 
+    @Transient
+    @JsonIgnore
+    private transient String oldCode;
+
     @JsonIgnore
     @OneToMany(mappedBy = "permission", fetch = FetchType.LAZY, cascade = CascadeType.REMOVE, orphanRemoval = true)
     private Set<RolePermission> rolePermissions = new HashSet<>();
@@ -62,5 +68,17 @@ public abstract class Permission extends BaseEntity<Long> {
     @JsonIgnore
     public @Nullable Long getId() {
         return permissionId;
+    }
+
+    @PostLoad
+    public void postLoad() {
+        this.setOldCode(this.getCode());
+    }
+
+    @PrePersist
+    public void prePersist() {
+        if (Objects.equals(this.code, this.oldCode)) {
+            throw new BaseException("权限不能修改标识code字段");
+        }
     }
 }

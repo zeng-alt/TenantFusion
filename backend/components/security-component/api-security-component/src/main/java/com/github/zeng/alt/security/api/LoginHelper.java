@@ -59,6 +59,14 @@ public interface LoginHelper {
      */
     void logout(HttpServletRequest request);
 
+    default void logout(long id) {
+        logout(String.valueOf(id));
+    }
+
+    default void logout(String id) {
+
+    }
+
     /**
      * 获取当前已登录用户.
      *

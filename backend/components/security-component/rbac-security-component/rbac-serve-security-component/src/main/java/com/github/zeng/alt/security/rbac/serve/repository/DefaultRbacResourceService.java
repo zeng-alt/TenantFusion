@@ -6,6 +6,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
+import java.time.Duration;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -20,6 +21,7 @@ import java.util.Set;
  * <p>存储结构（KV 缓存）：</p>
  * <ul>
  *   <li>用户资源列表：{@code rbac:resources:{tenant}:{username}} → {@code List<Resource>}</li>
+ *   <li>用户角色列表：{@code rbac:user:role:{tenant}:{userId}} → {@code Set<String>}</li>
  *   <li>资源权限映射：{@code rbac:permission:{tenant}:{resourceKey}} → {@code String}</li>
  *   <li>角色权限集合：{@code rbac:role:permissions:{tenant}:{authority}} → {@code Set<String>}</li>
  * </ul>
@@ -27,9 +29,20 @@ import java.util.Set;
 @Slf4j
 public class DefaultRbacResourceService implements RbacResourceService {
 
-    private static final String RESOURCES_KEY_PREFIX = "rbac:resources:";
-    private static final String PERMISSION_KEY_PREFIX = "rbac:permission:";
-    private static final String ROLE_PERMISSIONS_KEY_PREFIX = "rbac:role:permissions:";
+    public static final String RESOURCES_KEY_PREFIX = "rbac:resources:";
+    public static final String PERMISSION_KEY_PREFIX = "rbac:permission:";
+    public static final String ROLE_PERMISSIONS_KEY_PREFIX = "rbac:role:permissions:";
+    public static final String USER_ROLE_KEY_PREFIX = "rbac:user:role:";
+
+    /** rbac:user:role:* — 用户角色列表 */
+    public static final Duration USER_ROLE_TIME = Duration.ofMinutes(10);
+    /** rbac:role:permissions:* — 角色权限集合 */
+    public static final Duration ROLE_PERMISSIONS_TIME = Duration.ofMinutes(15);
+    /** rbac:permission:* — 资源→权限映射 */
+    public static final Duration PERMISSIONS_TIME = Duration.ofMinutes(30);
+    /** rbac:resources:* — 用户资源列表 */
+    public static final Duration RESOURCES_TIME = Duration.ofMinutes(10);
+
 
     private final StorageTemplate storageTemplate;
     private final RbacResourceLoader resourceLoader;
@@ -40,40 +53,8 @@ public class DefaultRbacResourceService implements RbacResourceService {
     }
 
     @Override
-    @SuppressWarnings("unchecked")
-    public List<Resource> findAllHttpResource(String username, String tenantName, List<String> authorities) {
-        String key = RESOURCES_KEY_PREFIX + tenantName + ":" + username;
-        log.debug("Fetching resources for key: {}", key);
-        List<Resource> cached = storageTemplate.opsForString().get(key, List.class);
-        if (cached != null) {
-            log.debug("Cache hit for resources key: {} ({} items)", key, cached.size());
-            return cached;
-        }
-        log.info("Cache miss for resources key: {}, loading from RbacResourceLoader", key);
-        List<Resource> loaded = resourceLoader.loadHttpResources(username, tenantName, authorities);
-        if (!CollectionUtils.isEmpty(loaded)) {
-            log.debug("Caching {} resources for key: {}", loaded.size(), key);
-            storageTemplate.opsForString().set(key, loaded);
-        }
-        return loaded != null ? loaded : Collections.emptyList();
-    }
-
-    @Override
-    public String findPermissionByResource(String tenantName, String resourceKey) {
-        if (!StringUtils.hasText(resourceKey)) {
-            return null;
-        }
-        int idx = resourceKey.lastIndexOf(':');
-        if (idx <= 0 || idx == resourceKey.length() - 1) {
-            log.warn("Invalid resource key format: {}", resourceKey);
-            return null;
-        }
-        return findPermissionByMethodAndPath(tenantName, resourceKey.substring(idx + 1), resourceKey.substring(0, idx));
-    }
-
-    @Override
-    public String findPermissionByMethodAndPath(String tenantName, String method, String path) {
-        String key = PERMISSION_KEY_PREFIX + tenantName + ":" + method + ":" + path;
+    public String findPermission(String tenantName, Resource resource) {
+        String key = PERMISSION_KEY_PREFIX + tenantName + ":" + resource.getKey();
         log.trace("Fetching permission for key: {}", key);
         String cached = storageTemplate.opsForString().get(key, String.class);
         if (cached != null) {
@@ -81,21 +62,31 @@ public class DefaultRbacResourceService implements RbacResourceService {
             return cached;
         }
         log.debug("Cache miss for permission key: {}, loading from RbacResourceLoader", key);
-        String loaded = resourceLoader.loadPermissionByMethodAndPath(tenantName, method, path);
+        String loaded = resourceLoader.loadPermissionByResource(tenantName, resource);
         if (loaded != null) {
             log.debug("Caching permission for key: {} -> {}", key, loaded);
-            storageTemplate.opsForString().set(key, loaded);
+            storageTemplate.opsForString().set(key, loaded, PERMISSIONS_TIME);
         }
         return loaded;
     }
 
     @Override
     @SuppressWarnings("unchecked")
-    public Set<String> findPermission(List<String> authorities, String tenantName) {
+    public Set<String> findRolePermission(List<String> authorities, String userId, String tenantName) {
         if (CollectionUtils.isEmpty(authorities)) {
             log.trace("No authorities provided, returning empty permissions");
             return Collections.emptySet();
         }
+
+        Set<String> userRole = findUserRole(userId, tenantName);
+        authorities = userRole.stream()
+                .filter(authorities::contains)
+                .toList();
+
+        if (CollectionUtils.isEmpty(authorities)) {
+            return Collections.emptySet();
+        }
+
         Set<String> result = new HashSet<>();
         for (String authority : authorities) {
             String key = ROLE_PERMISSIONS_KEY_PREFIX + tenantName + ":" + authority;
@@ -116,28 +107,56 @@ public class DefaultRbacResourceService implements RbacResourceService {
             for (Map.Entry<String, Set<String>> entry : loaded.entrySet()) {
                 String authKey = ROLE_PERMISSIONS_KEY_PREFIX + tenantName + ":" + entry.getKey();
                 log.debug("Caching {} permissions for authority '{}'", entry.getValue().size(), entry.getKey());
-                storageTemplate.opsForString().set(authKey, entry.getValue());
+                storageTemplate.opsForString().set(authKey, entry.getValue(), ROLE_PERMISSIONS_TIME);
                 result.addAll(entry.getValue());
             }
         }
         return result;
     }
 
-    public void setResources(String tenantName, String username, List<Resource> resources) {
-        String key = RESOURCES_KEY_PREFIX + tenantName + ":" + username;
-        log.debug("Setting resources for key: {} ({} items)", key, resources.size());
-        storageTemplate.opsForString().set(key, resources);
+
+    @Override
+    public Set<String> findUserRole(String id, String tenantName) {
+        if (!StringUtils.hasText(id)) {
+            return Set.of();
+        }
+        String key = USER_ROLE_KEY_PREFIX + tenantName + ":" + id;
+        Set<String> roleCodes = storageTemplate.opsForString().get(key, Set.class);
+        if (roleCodes != null) {
+            return roleCodes;
+        }
+        log.info("Cache miss for userRole (tenant '{}', {} authorities), loading from RbacResourceLoader",
+                tenantName, id);
+
+        Set<String> loaded = resourceLoader.loadUserRole(id, tenantName);
+        storageTemplate.opsForString().set(key, loaded, USER_ROLE_TIME);
+        return loaded;
     }
 
-    public void setPermissionForResource(String tenantName, String resourceKey, String permission) {
-        String key = PERMISSION_KEY_PREFIX + tenantName + ":" + resourceKey;
-        log.debug("Setting permission for key: {} -> {}", key, permission);
-        storageTemplate.opsForString().set(key, permission);
+    @Override
+    public void removePermission(List<Resource> resources, String tenantName) {
+        String[] keys = resources
+                .stream()
+                .map(resource -> PERMISSION_KEY_PREFIX + tenantName + ":" + resource.getKey())
+                .toArray(String[]::new);
+        storageTemplate.opsForString().delete(keys);
     }
 
-    public void setPermissionsForRole(String tenantName, String roleAuthority, Set<String> permissions) {
-        String key = ROLE_PERMISSIONS_KEY_PREFIX + tenantName + ":" + roleAuthority;
-        log.debug("Setting role permissions for key: {} ({} items)", key, permissions.size());
-        storageTemplate.opsForString().set(key, permissions);
+    @Override
+    public void removeUserRole(List<String> userIds, String tenantName) {
+        String[] keys = userIds
+                .stream()
+                .map(id -> USER_ROLE_KEY_PREFIX + tenantName + ":" + id)
+                .toArray(String[]::new);
+        storageTemplate.opsForString().delete(keys);
+    }
+
+    @Override
+    public void removeRolePermission(List<String> roleCodes, String tenantName) {
+        String[] keys = roleCodes
+                .stream()
+                .map(authority -> ROLE_PERMISSIONS_KEY_PREFIX + tenantName + ":" + authority)
+                .toArray(String[]::new);
+        storageTemplate.opsForString().delete(keys);
     }
 }

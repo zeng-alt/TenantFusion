@@ -2,7 +2,6 @@ package com.github.zeng.alt.security.jwt;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.zeng.alt.security.core.properties.LoginProperties;
-import com.github.zeng.alt.security.core.properties.LogoutProperties;
 import com.github.zeng.alt.security.core.properties.UsernameLoginProperties;
 import com.github.zeng.alt.security.core.web.SecurityBuilderCustomizer;
 import com.github.zeng.alt.storage.StorageTemplate;
@@ -27,6 +26,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.ImportRuntimeHints;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.web.authentication.logout.LogoutFilter;
 import org.springframework.security.web.servlet.util.matcher.PathPatternRequestMatcher;
@@ -47,16 +47,22 @@ public class JwtAuthAutoConfiguration {
 
     @Bean
     @ConditionalOnMissingBean
+    public JwtStorage jwtStorage(JwtProperties jwtProperties, StorageTemplate storageTemplate) {
+        return new JwtStorage(jwtProperties, storageTemplate);
+    }
+
+    @Bean
+    @ConditionalOnMissingBean
     @ConditionalOnProperty(prefix = "security.jwt-auth", name = "authentication", havingValue = "true")
     public JwtAuthenticationSuccessHandler jwtAuthenticationSuccessHandler(
             JwtTokenProvider jwtTokenProvider,
-            StorageTemplate storageTemplate,
+            JwtStorage jwtStorage,
             ObjectProvider<ObjectMapper> objectMapperProvider,
             JwtProperties jwtProperties)
     {
 
         ObjectMapper objectMapper = objectMapperProvider.getIfAvailable(ObjectMapper::new);
-        return new JwtAuthenticationSuccessHandler(jwtTokenProvider, storageTemplate, objectMapper, jwtProperties);
+        return new JwtAuthenticationSuccessHandler(jwtTokenProvider, jwtStorage, objectMapper, jwtProperties);
     }
 
     @Bean
@@ -70,8 +76,8 @@ public class JwtAuthAutoConfiguration {
     @Bean
     @ConditionalOnMissingBean
     @ConditionalOnProperty(prefix = "security.jwt-auth", name = "authentication", havingValue = "true")
-    public JwtLogoutHandler jwtLogoutHandler(JwtTokenProvider jwtTokenProvider, StorageTemplate storageTemplate) {
-        return new JwtLogoutHandler(jwtTokenProvider, storageTemplate);
+    public JwtLogoutHandler jwtLogoutHandler(JwtLoginHelper loginHelper) {
+        return new JwtLogoutHandler(loginHelper);
     }
 
     @Bean
@@ -87,30 +93,25 @@ public class JwtAuthAutoConfiguration {
     public JwtLoginHelper jwtLoginHelper(
             AuthenticationManager authenticationManager,
             JwtTokenProvider jwtTokenProvider,
-            StorageTemplate storageTemplate,
-            JwtProperties jwtProperties,
-            ObjectProvider<ObjectMapper> objectMapperProvider) {
+            JwtStorage jwtStorage,
+            JwtProperties jwtProperties) {
 
-        ObjectMapper objectMapper = objectMapperProvider.getIfAvailable(ObjectMapper::new);
         return new JwtLoginHelper(
-                authenticationManager, jwtTokenProvider, storageTemplate,
-                jwtProperties, objectMapper);
+                authenticationManager, jwtTokenProvider, jwtStorage, jwtProperties);
     }
 
     @Bean
     @ConditionalOnProperty(prefix = "security.jwt-auth", name = "validation", havingValue = "true")
     public SecurityBuilderCustomizer authCookieSecurityCustomizer(
             JwtTokenProvider jwtTokenProvider,
-            ObjectProvider<StorageTemplate> storageTemplateProvider,
-            ObjectProvider<ObjectMapper> objectMapperProvider,
+            JwtStorage jwtStorage,
+            UserDetailsService userDetailsService,
             JwtProperties jwtProperties) {
         return http -> {
-            StorageTemplate storageTemplate = storageTemplateProvider.getIfAvailable();
-            ObjectMapper objectMapper = objectMapperProvider.getIfAvailable(ObjectMapper::new);
             JwtAuthenticationFilter authFilter = new JwtAuthenticationFilter(
                     jwtTokenProvider,
-                    storageTemplate,
-                    objectMapper,
+                    jwtStorage,
+                    userDetailsService,
                     "Authorization",
                     jwtProperties.getLogin(),
                     jwtProperties.getNewAccessTokenHeader(),

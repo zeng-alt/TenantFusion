@@ -24,6 +24,7 @@
 import api from '@/api'
 import { RoleSelect } from '@/layouts/components'
 import { useAuthStore, usePermissionStore, useUserStore } from '@/store'
+import { isEmpty } from '@/utils'
 
 const router = useRouter()
 const userStore = useUserStore()
@@ -41,7 +42,7 @@ const options = reactive([
     label: '切换角色',
     key: 'toggleRole',
     icon: () => h('i', { class: 'i-basil:exchange-solid text-14' }),
-    show: computed(() => userStore.roles.length > 1),
+    show: computed(() => userStore.roles?.length > 1 || (userStore.roles?.length > 0 && isEmpty(userStore.currentRole))),
   },
   {
     label: '退出登录',

@@ -64,7 +64,8 @@ public class WebSecurityAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean(SecurityFilterChain.class)
-	public SecurityFilterChain filterChain(HttpSecurity http, ObjectProvider<SecurityBuilderCustomizer> customizers,
+	public SecurityFilterChain filterChain(
+			HttpSecurity http, ObjectProvider<SecurityBuilderCustomizer> customizers,
 			ObjectProvider<AuthorizationManagerProvider<RequestAuthorizationContext>> authorizationManagerProviders,
 			ObjectProvider<AbstractLoginConfigurer> configurers,
 			WhiteListService whiteListService,
@@ -74,7 +75,8 @@ public class WebSecurityAutoConfiguration {
 			AuthenticationEntryPoint authenticationEntryPoint, AccessDeniedHandler accessDeniedHandler,
 			ApplicationEventPublisher applicationEventPublisher, ObjectProvider<UserDetailsService> userDetailsService,
 			ObjectProvider<PasswordEncoder> passwordEncoder,
-			UsernameLoginProperties usernameLoginProperties
+			UsernameLoginProperties usernameLoginProperties,
+			ObjectProvider<AuthorizeHttpRequestsCustomizer> requestsCustomizers
 	) throws Exception {
 
         if (Boolean.TRUE.equals(usernameLoginProperties.getEnabled())) {
@@ -90,6 +92,7 @@ public class WebSecurityAutoConfiguration {
 				.httpBasic(AbstractHttpConfigurer::disable)
 				.cors(AbstractHttpConfigurer::disable)
 				.authorizeHttpRequests(author -> {
+					requestsCustomizers.orderedStream().forEach(customizer -> customizer.customize(author));
 					author
 							.requestMatchers(HttpMethod.POST, "/login/**").permitAll()
 							.requestMatchers("/h2-console/**").permitAll()

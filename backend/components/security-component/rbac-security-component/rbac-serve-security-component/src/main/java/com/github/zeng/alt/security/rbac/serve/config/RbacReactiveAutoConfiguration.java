@@ -4,13 +4,11 @@ import com.github.zeng.alt.security.api.ReactiveAuthorizationManagerProvider;
 import com.github.zeng.alt.security.core.properties.SecurityProperties;
 import com.github.zeng.alt.security.rbac.serve.handler.ReactiveHttpResourceHandler;
 import com.github.zeng.alt.security.rbac.serve.handler.ReactiveResourceHandler;
-import com.github.zeng.alt.security.rbac.serve.locator.ReactiveHttpResourceLocator;
+import com.github.zeng.alt.security.rbac.serve.locator.ReactiveHttpResourceSignageLocator;
 import com.github.zeng.alt.security.rbac.serve.locator.ReactivePermissionLocator;
-import com.github.zeng.alt.security.rbac.serve.locator.ReactiveResourceLocator;
 import com.github.zeng.alt.security.rbac.serve.manager.ReactiveAdminAuthorizationManager;
 import com.github.zeng.alt.security.rbac.serve.manager.ReactiveParseManager;
 import com.github.zeng.alt.security.rbac.serve.manager.ReactiveRbacAccessAuthorizationManager;
-import com.github.zeng.alt.security.rbac.serve.manager.ReactiveResourceQueryManager;
 import com.github.zeng.alt.security.rbac.serve.repository.RbacResourceService;
 import com.github.zeng.alt.security.rbac.serve.router.RouteTemplateManager;
 import lombok.extern.slf4j.Slf4j;
@@ -45,21 +43,6 @@ public class RbacReactiveAutoConfiguration {
     }
 
     @Bean
-    @ConditionalOnMissingBean(ReactiveHttpResourceLocator.class)
-    public ReactiveHttpResourceLocator reactiveHttpResourceLocator(RbacResourceService rbacResourceService) {
-        log.debug("Creating ReactiveHttpResourceLocator");
-        return new ReactiveHttpResourceLocator(rbacResourceService);
-    }
-
-    @Bean
-    @ConditionalOnMissingBean(ReactiveResourceQueryManager.class)
-    public ReactiveResourceQueryManager reactiveResourceQueryManager(ObjectProvider<ReactiveResourceLocator> reactiveResourceLocators) {
-        List<ReactiveResourceLocator> locators = reactiveResourceLocators.orderedStream().toList();
-        log.debug("Creating ReactiveResourceQueryManager with {} locators", locators.size());
-        return new ReactiveResourceQueryManager(locators);
-    }
-
-    @Bean
     public ReactiveParseManager reactiveParseManager(
             ObjectProvider<ReactiveResourceHandler> reactiveResourceHandlers,
             RouteTemplateManager routeTemplateManager,
@@ -67,7 +50,7 @@ public class RbacReactiveAutoConfiguration {
             RbacResourceService rbacResourceService) {
         List<ReactiveResourceHandler> list = new ArrayList<>(reactiveResourceHandlers.orderedStream().toList());
         log.debug("Creating ReactiveParseManager with {} custom handlers + ReactiveHttpResourceHandler fallback", list.size());
-        return new ReactiveParseManager(list, new ReactiveHttpResourceHandler(routeTemplateManager, permissionLocator, rbacResourceService));
+        return new ReactiveParseManager(list, new ReactiveHttpResourceHandler(routeTemplateManager, permissionLocator, new ReactiveHttpResourceSignageLocator(rbacResourceService)));
     }
 
     @Bean

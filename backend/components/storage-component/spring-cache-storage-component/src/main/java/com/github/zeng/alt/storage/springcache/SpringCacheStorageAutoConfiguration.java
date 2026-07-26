@@ -10,9 +10,7 @@ import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.cache.CacheManagerCustomizer;
 import org.springframework.boot.autoconfigure.cache.CacheProperties;
 import org.springframework.boot.autoconfigure.cache.CacheType;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
-import org.springframework.cache.CacheManager;
 import org.springframework.cache.caffeine.CaffeineCache;
 import org.springframework.cache.caffeine.CaffeineCacheManager;
 import org.springframework.context.annotation.Bean;
@@ -31,11 +29,15 @@ import java.util.List;
  * @version 1.0
  */
 @AutoConfiguration(before = StorageAutoConfiguration.class)
-@ConditionalOnBean(CacheManager.class)
 @ConditionalOnMissingBean(StorageTemplate.class)
 public class SpringCacheStorageAutoConfiguration {
 
     private static final String SPEC = "initialCapacity=100,maximumSize=500,expireAfterWrite=24h,expireAfterAccess=2h,recordStats";
+
+    @Bean
+    public CacheProperties cacheProperties() {
+        return new CacheProperties();
+    }
 
     @Bean
     @Primary
@@ -95,7 +97,7 @@ public class SpringCacheStorageAutoConfiguration {
                 .initialCapacity(storageProperties.getInitialCapacity())
                 .maximumSize(storageProperties.getMaximumSize())
                 .expireAfterWrite(storageProperties.getExpireTime());
-        if (storageProperties.getRecordStats()) {
+        if (Boolean.TRUE.equals(storageProperties.getRecordStats())) {
             build.recordStats();
         }
         return

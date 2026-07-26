@@ -15,6 +15,7 @@ import com.github.zeng.alt.security.api.AuthHelper;
 import com.github.zeng.alt.security.api.SecurityUser;
 import com.github.zeng.alt.security.api.UserContextHolder;
 import com.github.zeng.alt.security.core.properties.SecurityProperties;
+import com.github.zeng.alt.security.rbac.serve.repository.RbacResourceService;
 import io.vavr.control.Either;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.BooleanUtils;
@@ -43,6 +44,7 @@ public class UserServiceImpl implements UserService {
     private final PasswordEncoder passwordEncoder;
     private final UserDtoTransformation userDtoTransformation;
     private final AuthHelper authHelper;
+    private final RbacResourceService rbacResourceService;
 
     @Override
     @Transactional(readOnly = true)
@@ -96,7 +98,7 @@ public class UserServiceImpl implements UserService {
     @Transactional(rollbackFor = Exception.class)
     public Either<String, Long> patchUser(Long id, PatchUserDto dto) {
         if (authHelper.isSuperAdmin(id)) {
-            throw new BaseException("内置超级用户不能修改");
+            return Either.left("内置超级用户不能修改");
         }
 
         return userRepository.findById(id)
@@ -107,6 +109,7 @@ public class UserServiceImpl implements UserService {
                             .ifPresent(
                                     roleIds -> updateUserRoles(user.getId(), roleIds)
                             );
+                    rbacResourceService.removeUserRole(List.of(String.valueOf(user.getId())));
                     return user.getId();
                 });
     }
@@ -115,7 +118,7 @@ public class UserServiceImpl implements UserService {
     @Transactional(rollbackFor = Exception.class)
     public Either<String, Long> resetPassword(Long id, ResetUserPasswordDto dto) {
         if (authHelper.isSuperAdmin(id)) {
-            throw new BaseException("内置超级用户不能修改密码");
+            return Either.left("内置超级用户不能修改密码");
         }
         return userRepository.findById(id)
                 .toEither("用户不存在")
@@ -125,6 +128,34 @@ public class UserServiceImpl implements UserService {
                     userRepository.save(user);
                     return user.getId();
                 });
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public Either<String, Long> patchProfile(Long id, PatchProfileDto dto) {
+        if (!Objects.equals(String.valueOf(id), UserContextHolder.getId())) {
+            return Either.left("当前用户不能修改【" + id + "】的用户信息");
+        }
+        return userRepository.findById(id)
+                .toEither("用户不存在")
+                .map(user -> {
+                    userDtoTransformation.mergeEntity(dto, user);
+                    userRepository.save(user);
+                    return user.getId();
+                });
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void changePassword(PasswordDto dto) {
+        User user = userRepository.findById(Long.parseLong(Objects.requireNonNull(UserContextHolder.getId()))).getOrNull();
+        if (user == null) {
+            throw new BaseException("当前用户不存在");
+        }
+        if (!passwordEncoder.matches(dto.getOldPassword(), user.getPassword())) {
+            throw new BaseException("原密码不正确!!");
+        }
+        user.setPassword(passwordEncoder.encode(dto.getNewPassword()));
     }
 
     private void updateUserRoles(Long userId, List<Long> roleIds) {
@@ -230,12 +261,18 @@ public class UserServiceImpl implements UserService {
         }
 
 
-        return userRoles.stream()
+        RoleDto roleDto = userRoles.stream()
                 .map(UserRole::getRole)
                 .filter(Objects::nonNull)
                 .filter(role -> roleCode.equals(role.getCode()))
                 .findFirst()
                 .map(role -> BeanHelper.copyToObject(role, RoleDto.class))
-                .orElse(null);
+                .orElseThrow(() -> new BaseException(11008, "当前登录用户没有该角色【" + roleCode + "】"));
+
+        if (BooleanUtils.isFalse(roleDto.getEnabled())) {
+            throw new BaseException(11008, "当前登录用户的角色被禁用【" + roleDto.getName() + "->" + roleCode + "】");
+        }
+
+        return roleDto;
     }
 }

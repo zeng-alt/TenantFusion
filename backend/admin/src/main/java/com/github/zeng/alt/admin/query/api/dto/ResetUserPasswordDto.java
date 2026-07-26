@@ -11,7 +11,6 @@ import org.springframework.validation.annotation.Validated;
  * @version 1.0
  */
 @Data
-@Validated
 @Schema(name = "用户信息")
 public class ResetUserPasswordDto {
 

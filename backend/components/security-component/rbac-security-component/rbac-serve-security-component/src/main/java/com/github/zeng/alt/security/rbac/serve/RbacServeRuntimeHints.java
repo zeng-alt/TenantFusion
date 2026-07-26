@@ -9,22 +9,14 @@ import com.github.zeng.alt.security.rbac.serve.handler.HttpResourceHandler;
 import com.github.zeng.alt.security.rbac.serve.handler.ReactiveHttpResourceHandler;
 import com.github.zeng.alt.security.rbac.serve.handler.ReactiveResourceHandler;
 import com.github.zeng.alt.security.rbac.serve.handler.ResourceHandler;
-import com.github.zeng.alt.security.rbac.serve.locator.AbstractReactiveResourceLocator;
-import com.github.zeng.alt.security.rbac.serve.locator.AbstractResourceLocator;
-import com.github.zeng.alt.security.rbac.serve.locator.HttpResourceLocator;
 import com.github.zeng.alt.security.rbac.serve.locator.PermissionLocator;
-import com.github.zeng.alt.security.rbac.serve.locator.ReactiveHttpResourceLocator;
 import com.github.zeng.alt.security.rbac.serve.locator.ReactivePermissionLocator;
-import com.github.zeng.alt.security.rbac.serve.locator.ReactiveResourceLocator;
-import com.github.zeng.alt.security.rbac.serve.locator.ResourceLocator;
 import com.github.zeng.alt.security.rbac.serve.manager.AdminAuthorizationManager;
 import com.github.zeng.alt.security.rbac.serve.manager.ParseManager;
 import com.github.zeng.alt.security.rbac.serve.manager.RbacAccessAuthorizationManager;
 import com.github.zeng.alt.security.rbac.serve.manager.ReactiveAdminAuthorizationManager;
 import com.github.zeng.alt.security.rbac.serve.manager.ReactiveParseManager;
 import com.github.zeng.alt.security.rbac.serve.manager.ReactiveRbacAccessAuthorizationManager;
-import com.github.zeng.alt.security.rbac.serve.manager.ReactiveResourceQueryManager;
-import com.github.zeng.alt.security.rbac.serve.manager.ResourceQueryManager;
 import com.github.zeng.alt.security.rbac.serve.repository.DefaultRbacResourceService;
 import com.github.zeng.alt.security.rbac.serve.repository.RbacResourceLoader;
 import com.github.zeng.alt.security.rbac.serve.repository.RbacResourceService;
@@ -55,20 +47,12 @@ public class RbacServeRuntimeHints implements RuntimeHintsRegistrar {
                 ReactiveResourceHandler.class,
                 AbstractReactiveResourceHandler.class,
                 ReactiveHttpResourceHandler.class,
-                ResourceLocator.class,
-                AbstractResourceLocator.class,
-                HttpResourceLocator.class,
-                ReactiveResourceLocator.class,
-                AbstractReactiveResourceLocator.class,
-                ReactiveHttpResourceLocator.class,
                 ReactivePermissionLocator.class,
                 PermissionLocator.class,
                 AdminAuthorizationManager.class,
                 ParseManager.class,
-                ResourceQueryManager.class,
                 RbacAccessAuthorizationManager.class,
                 ReactiveParseManager.class,
-                ReactiveResourceQueryManager.class,
                 ReactiveRbacAccessAuthorizationManager.class,
                 ReactiveAdminAuthorizationManager.class
         );

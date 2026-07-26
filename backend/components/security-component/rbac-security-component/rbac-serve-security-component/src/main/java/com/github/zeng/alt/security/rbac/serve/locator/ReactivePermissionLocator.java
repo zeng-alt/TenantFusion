@@ -42,25 +42,19 @@ public class ReactivePermissionLocator {
         if (principal instanceof TenantDetail tenantDetail) {
             tenantName = tenantDetail.getTenantName();
         }
+        String userId = null;
         if (principal instanceof SecurityUser securityUser) {
             if (securityUser.getCurrentRole() != null) {
                 authorities = List.of(securityUser.getCurrentRole().getAuthority());
             } else {
                 authorities = securityUser.getRoles().stream().map(GrantedAuthority::getAuthority).toList();
             }
+            userId = securityUser.getId();
         } else if (principal instanceof UserDetails userDetails) {
             authorities = userDetails.getAuthorities().stream().map(GrantedAuthority::getAuthority).toList();
         }
         log.debug("Finding permissions for tenant '{}' with {} authorities", tenantName, authorities.size());
-        return rbacResourceService.findPermission(authorities, tenantName);
-    }
-
-    private Object getAuthorizationPrincipal(Authentication authentication) {
-        return authentication.getPrincipal();
-    }
-
-    private boolean isNotAnonymous(Authentication authentication) {
-        return authentication.isAuthenticated();
+        return rbacResourceService.findRolePermission(authorities, userId, tenantName);
     }
 
     /**
@@ -69,11 +63,10 @@ public class ReactivePermissionLocator {
      * @param authentication 认证信息 Mono
      * @return 用户拥有的权限标识集合
      */
-    public Mono<Set<String>> load(Mono<Authentication> authentication) {
-        return authentication
-                .filter(this::isNotAnonymous)
-                .map(this::getAuthorizationPrincipal)
-                .map(this::findPermissions)
-                .switchIfEmpty(Mono.empty());
+    public Mono<Set<String>> load(Authentication authentication) {
+        if (!authentication.isAuthenticated()) {
+            return Mono.empty();
+        }
+        return Mono.just(findPermissions(authentication.getPrincipal()));
     }
 }

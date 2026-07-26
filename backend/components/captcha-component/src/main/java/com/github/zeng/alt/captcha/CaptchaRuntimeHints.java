@@ -2,13 +2,13 @@ package com.github.zeng.alt.captcha;
 
 import com.github.zeng.alt.captcha.config.CaptchaAutoConfiguration;
 import com.github.zeng.alt.captcha.config.CaptchaProperties;
+import com.github.zeng.alt.captcha.core.CaptchaRenderer;
 import com.github.zeng.alt.captcha.core.CaptchaTemplate;
 import com.github.zeng.alt.captcha.core.CaptchaTemplateImpl;
 import com.github.zeng.alt.captcha.model.CaptchaChallenge;
 import com.github.zeng.alt.captcha.model.CaptchaInfo;
 import com.github.zeng.alt.captcha.producer.ArithmeticCaptchaProducer;
 import com.github.zeng.alt.captcha.producer.CaptchaProducer;
-import com.github.zeng.alt.captcha.producer.ImageCaptchaProducer;
 import com.github.zeng.alt.captcha.producer.RandomCodeProducer;
 import org.springframework.aot.hint.MemberCategory;
 import org.springframework.aot.hint.RuntimeHints;
@@ -31,11 +31,11 @@ public class CaptchaRuntimeHints implements RuntimeHintsRegistrar {
 
                 CaptchaTemplate.class,
                 CaptchaTemplateImpl.class,
+                CaptchaRenderer.class,
 
                 CaptchaProducer.class,
                 RandomCodeProducer.class,
                 ArithmeticCaptchaProducer.class,
-                ImageCaptchaProducer.class,
 
                 CaptchaInfo.class,
                 CaptchaChallenge.class);

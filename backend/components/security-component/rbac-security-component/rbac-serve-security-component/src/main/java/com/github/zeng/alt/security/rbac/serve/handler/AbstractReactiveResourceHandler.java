@@ -1,6 +1,6 @@
 package com.github.zeng.alt.security.rbac.serve.handler;
 
-import com.github.zeng.alt.security.rbac.serve.manager.ReactiveResourceQueryManager;
+//import com.github.zeng.alt.security.rbac.serve.manager.ReactiveResourceQueryManager;
 
 /**
  * Reactive 环境资源处理器的抽象基类。
@@ -9,9 +9,9 @@ import com.github.zeng.alt.security.rbac.serve.manager.ReactiveResourceQueryMana
  */
 public abstract class AbstractReactiveResourceHandler implements ReactiveResourceHandler {
 
-    public final ReactiveResourceQueryManager reactiveResourceQueryManager;
-
-    protected AbstractReactiveResourceHandler(ReactiveResourceQueryManager reactiveResourceQueryManager) {
-        this.reactiveResourceQueryManager = reactiveResourceQueryManager;
-    }
+//    public final ReactiveResourceQueryManager reactiveResourceQueryManager;
+//
+//    protected AbstractReactiveResourceHandler(ReactiveResourceQueryManager reactiveResourceQueryManager) {
+//        this.reactiveResourceQueryManager = reactiveResourceQueryManager;
+//    }
 }

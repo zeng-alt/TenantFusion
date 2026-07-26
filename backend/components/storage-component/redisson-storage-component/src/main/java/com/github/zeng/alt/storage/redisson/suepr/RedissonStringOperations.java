@@ -99,7 +99,7 @@ public class RedissonStringOperations implements CacheStringOperations {
 
         RKeys keys = redissonClient.getKeys();
 
-        Iterable<String> matchedKeys = keys.getKeysByPattern((pattern));
+        Iterable<String> matchedKeys = keys.getKeysByPattern(pattern);
 
         List<String> keyList = new ArrayList<>();
         matchedKeys.forEach(keyList::add);

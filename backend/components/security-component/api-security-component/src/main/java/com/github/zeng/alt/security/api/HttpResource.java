@@ -9,6 +9,13 @@ public class HttpResource extends AbstractResource {
 
     @Override
     public String getKey() {
-        return getUri() + ":" + getMethod();
+        return "http:" + getMethod() + ":" + getUri();
+    }
+
+    public static HttpResource of(String uri, String method) {
+        HttpResource httpResource = new HttpResource();
+        httpResource.setUri(uri);
+        httpResource.setMethod(method);
+        return httpResource;
     }
 }

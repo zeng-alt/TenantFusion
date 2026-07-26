@@ -1,11 +1,8 @@
 package com.github.zeng.alt.admin.query.api;
 
-import com.github.zeng.alt.admin.infrastructure.entity.User;
-import com.github.zeng.alt.admin.query.api.dto.CreateUserDto;
-import com.github.zeng.alt.admin.query.api.dto.CurrentUserDto;
-import com.github.zeng.alt.admin.query.api.dto.PatchUserDto;
-import com.github.zeng.alt.admin.query.api.dto.ResetUserPasswordDto;
+import com.github.zeng.alt.admin.query.api.dto.*;
 import io.vavr.control.Either;
+import jakarta.validation.Valid;
 
 /**
  * @author zengJiaJun
@@ -14,11 +11,15 @@ import io.vavr.control.Either;
  */
 public interface UserService {
 
-    public CurrentUserDto currentUser();
+    CurrentUserDto currentUser();
 
     void create(CreateUserDto dto);
 
     Either<String, Long> patchUser(Long id, PatchUserDto dto);
 
     Either<String, Long> resetPassword(Long id, ResetUserPasswordDto dto);
+
+    Either<String, Long> patchProfile(Long id, PatchProfileDto dto);
+
+    void changePassword(PasswordDto dto);
 }

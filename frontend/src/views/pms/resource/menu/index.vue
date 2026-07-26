@@ -89,9 +89,10 @@
 </template>
 
 <script setup>
-import { NButton, NSwitch } from 'naive-ui'
+import { NButton } from 'naive-ui'
+import { renderProCopyableText } from 'pro-naive-ui'
 import { h, nextTick, ref, watch } from 'vue'
-import { CommonPage, MeCrud, MeModal } from '@/components'
+import { CommonPage, EnableSwitch, MeCrud, MeModal } from '@/components'
 import { useModal } from '@/composables'
 import HttpResource from '@/views/pms/resource/http/index.vue'
 import httpApi from '../http/api'
@@ -140,33 +141,35 @@ function handleEdit(item = {}) {
 }
 
 const btnsColumns = [
-  { title: '名称', key: 'name' },
-  { title: '编码', key: 'code' },
+  { title: '名称', key: 'name', width: 150, ellipsis: { tooltip: true } },
+  {
+    title: '编码',
+    key: 'code',
+    width: 250,
+    render(row) {
+      return renderProCopyableText(row.code)
+    },
+  },
   {
     title: '状态',
     key: 'enabled',
-    render: row =>
-      h(
-        NSwitch,
-        {
-          size: 'small',
-          rubberBand: false,
-          value: row.enabled,
-          loading: !!row.enableLoading,
-          onUpdateValue: () => handleEnable(row),
-        },
-        { checked: () => '启用', unchecked: () => '停用' },
-      ),
+    width: 80,
+    render: row => h(EnableSwitch, {
+      rubberBand: false,
+      value: row.enabled,
+      loading: !!row.enabledLoading,
+      onUpdateValue: () => handleEnable(row),
+    }),
   },
   {
     title: '操作',
     key: 'actions',
-    width: 320,
+    width: 300,
     align: 'right',
     fixed: 'right',
     render(row) {
       return [
-        h(NButton, { size: 'small', type: 'primary', style: 'margin-left: 12px;', onClick: () => handleEditBtn(row) }, {
+        h(NButton, { size: 'small', type: 'primary', onClick: () => handleEditBtn(row) }, {
           default: () => '编辑',
           icon: () => h('i', { class: 'i-material-symbols:edit-outline text-14' }),
         }),

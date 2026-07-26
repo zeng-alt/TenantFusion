@@ -1,6 +1,7 @@
 package com.github.zeng.alt.admin.infrastructure.entity;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.github.zeng.alt.admin.infrastructure.listener.HttpResourceListener;
 import com.github.zeng.alt.rest.annotation.QueryField;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.persistence.*;
@@ -10,8 +11,8 @@ import lombok.Setter;
 @Entity
 @DiscriminatorValue("HTTP")
 @Getter @Setter
-//@Comment("http资源")
 @Schema(title = "http资源")
+@EntityListeners(HttpResourceListener.class)
 public class HttpResource extends Permission {
 
     @Column(length = 10)
@@ -23,6 +24,14 @@ public class HttpResource extends Permission {
     private String redirect;
     private String buttonName;
 
+    @Transient
+    @JsonIgnore
+    private transient String oldPath;
+
+    @Transient
+    @JsonIgnore
+    private transient String oldMethod;
+
     /**
      * 数据库字段 menu_id
      * 用于查询
@@ -30,11 +39,6 @@ public class HttpResource extends Permission {
     @Column(name = "menu_id")
     @QueryField
     private Long menuId;
-
-//    @JsonIgnore
-//    @ManyToOne(fetch = FetchType.LAZY)
-//    @JoinColumn(name = "menu_id")
-//    private MenuResource menu;          // 所属菜单，可为空
 
     @Transient
     public Long getMenuId() {
@@ -44,10 +48,7 @@ public class HttpResource extends Permission {
     public void setMenuId(Long menuId) {
         if (menuId != null) {
             this.menuId = menuId;
-//            this.menu = new MenuResource();
-//            this.menu.setPermissionId(menuId);
         } else {
-//            this.menu = null;
             this.menuId = null;
         }
     }

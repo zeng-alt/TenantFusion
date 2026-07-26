@@ -2,9 +2,10 @@ plugins {
     id("java-library")
 }
 
-description = "验证码组件（支持图片/算术/随机码三种模式）"
+description = "验证码组件（支持算术/随机码两种模式，均生成图片）"
 
 dependencies {
+    compileOnly("jakarta.servlet:jakarta.servlet-api")
     implementation(project(":backend:components:storage-component:api-storage-component"))
     implementation("org.springframework.boot:spring-boot-autoconfigure")
 

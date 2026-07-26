@@ -8,7 +8,6 @@ import org.springframework.validation.annotation.Validated;
 import java.util.List;
 
 @Data
-@Validated
 @Schema(name = "角色信息")
 public class CreateRoleDto {
 

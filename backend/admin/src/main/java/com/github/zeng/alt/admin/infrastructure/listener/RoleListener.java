@@ -1,7 +1,6 @@
 package com.github.zeng.alt.admin.infrastructure.listener;
 
 import com.github.zeng.alt.admin.infrastructure.entity.Role;
-import com.github.zeng.alt.admin.infrastructure.entity.User;
 import com.github.zeng.alt.api.exception.BaseException;
 import com.github.zeng.alt.bean.ApplicationContextHelper;
 import com.github.zeng.alt.security.api.AuthHelper;

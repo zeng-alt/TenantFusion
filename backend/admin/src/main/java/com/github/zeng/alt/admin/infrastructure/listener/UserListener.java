@@ -27,5 +27,4 @@ public class UserListener {
             throw new BaseException("内置超级用户不能删除");
         }
     }
-
 }

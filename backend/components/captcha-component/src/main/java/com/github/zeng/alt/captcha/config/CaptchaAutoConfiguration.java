@@ -1,11 +1,11 @@
 package com.github.zeng.alt.captcha.config;
 
 import com.github.zeng.alt.captcha.CaptchaRuntimeHints;
+import com.github.zeng.alt.captcha.core.CaptchaRenderer;
 import com.github.zeng.alt.captcha.core.CaptchaTemplate;
 import com.github.zeng.alt.captcha.core.CaptchaTemplateImpl;
 import com.github.zeng.alt.captcha.producer.ArithmeticCaptchaProducer;
 import com.github.zeng.alt.captcha.producer.CaptchaProducer;
-import com.github.zeng.alt.captcha.producer.ImageCaptchaProducer;
 import com.github.zeng.alt.captcha.producer.RandomCodeProducer;
 import com.github.zeng.alt.storage.StorageTemplate;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
@@ -22,22 +22,21 @@ import java.util.List;
 public class CaptchaAutoConfiguration {
 
     @Bean
-    public CaptchaProducer randomCodeProducer(CaptchaProperties properties) {
-        return new RandomCodeProducer(properties.getCode().getLength());
-    }
-
-    @Bean
-    public CaptchaProducer arithmeticCaptchaProducer() {
-        return new ArithmeticCaptchaProducer();
-    }
-
-    @Bean
-    public CaptchaProducer imageCaptchaProducer(CaptchaProperties properties) {
-        return new ImageCaptchaProducer(
+    public CaptchaRenderer captchaRenderer(CaptchaProperties properties) {
+        return new CaptchaRenderer(
                 properties.getImage().getWidth(),
-                properties.getImage().getHeight(),
-                properties.getImage().getLength()
+                properties.getImage().getHeight()
         );
+    }
+
+    @Bean
+    public CaptchaProducer randomCodeProducer(CaptchaRenderer renderer, CaptchaProperties properties) {
+        return new RandomCodeProducer(renderer, properties.getCode().getLength());
+    }
+
+    @Bean
+    public CaptchaProducer arithmeticCaptchaProducer(CaptchaRenderer renderer) {
+        return new ArithmeticCaptchaProducer(renderer);
     }
 
     @Bean

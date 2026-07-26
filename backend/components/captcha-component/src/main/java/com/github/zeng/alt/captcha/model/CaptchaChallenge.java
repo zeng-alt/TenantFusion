@@ -1,18 +1,17 @@
 package com.github.zeng.alt.captcha.model;
 
-public class CaptchaChallenge {
+import java.util.Objects;
 
-    private String code;
-    private String imageBase64;
-    private String expression;
-    private long expireIn;
+public final class CaptchaChallenge {
 
-    public CaptchaChallenge() {
-    }
+    private final String code;
+    private final byte[] imageBytes;
+    private final String expression;
+    private final long expireIn;
 
-    public CaptchaChallenge(String code, String imageBase64, String expression, long expireIn) {
-        this.code = code;
-        this.imageBase64 = imageBase64;
+    public CaptchaChallenge(String code, byte[] imageBytes, String expression, long expireIn) {
+        this.code = Objects.requireNonNull(code, "code must not be null");
+        this.imageBytes = Objects.requireNonNull(imageBytes, "imageBytes must not be null");
         this.expression = expression;
         this.expireIn = expireIn;
     }
@@ -21,31 +20,15 @@ public class CaptchaChallenge {
         return code;
     }
 
-    public void setCode(String code) {
-        this.code = code;
-    }
-
-    public String getImageBase64() {
-        return imageBase64;
-    }
-
-    public void setImageBase64(String imageBase64) {
-        this.imageBase64 = imageBase64;
+    public byte[] getImageBytes() {
+        return imageBytes;
     }
 
     public String getExpression() {
         return expression;
     }
 
-    public void setExpression(String expression) {
-        this.expression = expression;
-    }
-
     public long getExpireIn() {
         return expireIn;
-    }
-
-    public void setExpireIn(long expireIn) {
-        this.expireIn = expireIn;
     }
 }

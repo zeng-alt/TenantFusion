@@ -1,6 +1,8 @@
 package com.github.zeng.alt.captcha.producer;
 
+import com.github.zeng.alt.captcha.core.CaptchaRenderer;
 import com.github.zeng.alt.captcha.model.CaptchaChallenge;
+import com.github.zeng.alt.captcha.model.CaptchaType;
 
 import java.security.SecureRandom;
 
@@ -8,9 +10,15 @@ public class ArithmeticCaptchaProducer implements CaptchaProducer {
 
     private static final SecureRandom RANDOM = new SecureRandom();
 
+    private final CaptchaRenderer renderer;
+
+    public ArithmeticCaptchaProducer(CaptchaRenderer renderer) {
+        this.renderer = renderer;
+    }
+
     @Override
-    public String type() {
-        return "arithmetic";
+    public CaptchaType type() {
+        return CaptchaType.ARITHMETIC;
     }
 
     @Override
@@ -44,6 +52,7 @@ public class ArithmeticCaptchaProducer implements CaptchaProducer {
             }
         }
 
-        return new CaptchaChallenge(String.valueOf(result), null, expression, 300);
+        byte[] imageBytes = renderer.render(expression);
+        return new CaptchaChallenge(String.valueOf(result), imageBytes, expression, 300);
     }
 }

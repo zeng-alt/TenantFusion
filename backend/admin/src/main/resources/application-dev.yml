@@ -30,11 +30,16 @@ spring:
         format_sql: true
         dialect: org.hibernate.dialect.H2Dialect
 
-#  data:
-#    redis:
-#      host: 192.168.56.106
-#      port: 6379
-#      database: 0
+  data:
+    redis:
+      host: 127.0.0.1
+      port: 6379
+      database: 4
+
+#  cache:
+#    type: caffeine
+#    caffeine:
+#      spec: initialCapacity=100,maximumSize=500,expireAfterWrite=24h,expireAfterAccess=2h,recordStats
 
   # 开启 H2 控制台（可选），方便在浏览器查看数据库
   h2:
@@ -71,8 +76,7 @@ security:
 
   filter:
     ignore-url:
-      - "/v1/auth/**"
-      - "/v1/menu/resource/validate"
+      - "/v1/auth/captcha"
       - "/v3/api-docs/**"
       - "/swagger-ui/**"
       - "/swagger-ui.html"

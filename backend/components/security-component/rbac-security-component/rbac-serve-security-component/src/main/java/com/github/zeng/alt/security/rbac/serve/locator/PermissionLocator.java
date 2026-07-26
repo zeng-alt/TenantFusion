@@ -45,17 +45,19 @@ public class PermissionLocator {
         if (principal instanceof TenantDetail tenantDetail) {
             tenantName = tenantDetail.getTenantName();
         }
+        String userId = null;
         if (principal instanceof SecurityUser securityUser) {
             if (securityUser.getCurrentRole() != null) {
                 authorities = List.of(securityUser.getCurrentRole().getAuthority());
             } else {
                 authorities = securityUser.getRoles().stream().map(GrantedAuthority::getAuthority).toList();
             }
+            userId = securityUser.getId();
         } else if (principal instanceof UserDetails userDetails) {
             authorities = userDetails.getAuthorities().stream().map(GrantedAuthority::getAuthority).toList();
         }
         log.debug("Finding permissions for tenant '{}' with {} authorities", tenantName, authorities.size());
-        return rbacResourceService.findPermission(authorities, tenantName);
+        return rbacResourceService.findRolePermission(authorities, userId, tenantName);
     }
 
     private Object getAuthorizationPrincipal(Authentication authentication) {

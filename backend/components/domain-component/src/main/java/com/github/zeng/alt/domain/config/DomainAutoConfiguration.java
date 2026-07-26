@@ -9,6 +9,7 @@ import com.github.zeng.alt.domain.validation.EntityManagerUniqueCheckRepository;
 import com.github.zeng.alt.domain.validation.IUniqueCheckRepository;
 import com.github.zeng.alt.domain.validation.ValidationRuntimeHints;
 import com.github.zeng.alt.domain.validation.UniqueCheckServiceHolder;
+import com.querydsl.jpa.impl.JPAQueryFactory;
 import jakarta.persistence.EntityManager;
 import org.hibernate.cfg.MultiTenancySettings;
 import org.hibernate.context.spi.CurrentTenantIdentifierResolver;
@@ -56,6 +57,11 @@ public class DomainAutoConfiguration {
     @Bean
     public IdGenerator idGenerator(IdGeneratorProperties idGeneratorProperties) {
         return new IdGenerator(idGeneratorProperties);
+    }
+
+    @Bean
+    public JPAQueryFactory jpaQueryFactory(EntityManager entityManager) {
+        return new JPAQueryFactory(entityManager);
     }
 
     @Bean

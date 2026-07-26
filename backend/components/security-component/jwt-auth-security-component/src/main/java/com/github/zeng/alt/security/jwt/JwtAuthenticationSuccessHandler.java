@@ -3,7 +3,6 @@ package com.github.zeng.alt.security.jwt;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.zeng.alt.api.rest.RestResponse;
 import com.github.zeng.alt.security.api.SecurityUser;
-import com.github.zeng.alt.storage.StorageTemplate;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -16,7 +15,6 @@ import org.springframework.security.web.authentication.AuthenticationSuccessHand
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.time.Duration;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -25,7 +23,7 @@ import java.util.Map;
 public class JwtAuthenticationSuccessHandler implements AuthenticationSuccessHandler {
 
     private final JwtTokenProvider jwtTokenProvider;
-    private final StorageTemplate storageTemplate;
+    private final JwtStorage jwtStorage;
     private final ObjectMapper objectMapper;
     private final JwtProperties jwtProperties;
 
@@ -34,14 +32,10 @@ public class JwtAuthenticationSuccessHandler implements AuthenticationSuccessHan
                                         Authentication authentication) throws IOException {
         SecurityUser securityUser = (SecurityUser) authentication.getPrincipal();
         String token = jwtTokenProvider.createToken(securityUser);
-        String cacheKey = jwtTokenProvider.getCacheKey(token);
+        String cacheKey = jwtTokenProvider.getAccessCacheKey(token);
 
         if (cacheKey != null) {
-            storageTemplate.opsForString().set(
-                    cacheKey,
-                    securityUser.getUsername(),
-                    Duration.ofSeconds(jwtProperties.getExpiration())
-            );
+            jwtStorage.setAccessToken(cacheKey, securityUser.getUsername());
         }
 
         Map<String, Object> tokenData = new LinkedHashMap<>();
@@ -54,11 +48,7 @@ public class JwtAuthenticationSuccessHandler implements AuthenticationSuccessHan
 
             String refreshCacheKey = jwtTokenProvider.getRefreshCacheKey(refreshToken);
             if (refreshCacheKey != null) {
-                storageTemplate.opsForString().set(
-                        refreshCacheKey,
-                        securityUser.getUsername(),
-                        Duration.ofSeconds(jwtProperties.getRememberMeExpiration())
-                );
+                jwtStorage.setRefreshToken(refreshCacheKey, securityUser.getUsername());
             }
 
             Cookie cookie = new Cookie(jwtProperties.getRefreshCookieName(), refreshToken);

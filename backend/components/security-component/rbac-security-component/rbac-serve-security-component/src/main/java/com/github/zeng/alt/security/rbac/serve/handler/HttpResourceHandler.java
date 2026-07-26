@@ -1,14 +1,17 @@
 package com.github.zeng.alt.security.rbac.serve.handler;
 
+import com.github.zeng.alt.security.api.HttpResource;
 import com.github.zeng.alt.security.rbac.serve.locator.PermissionLocator;
-import com.github.zeng.alt.security.rbac.serve.repository.RbacResourceService;
+import com.github.zeng.alt.security.rbac.serve.locator.ResourceSignageLocator;
 import com.github.zeng.alt.security.rbac.serve.router.RouteTemplateManager;
-import com.github.zeng.alt.tenant.api.TenantDetail;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.web.access.intercept.RequestAuthorizationContext;
+import org.springframework.util.CollectionUtils;
+import org.springframework.util.StringUtils;
 
+import java.util.Collections;
 import java.util.Set;
 
 /**
@@ -23,12 +26,12 @@ public class HttpResourceHandler implements ResourceHandler {
 
     private final RouteTemplateManager routeTemplateManager;
     private final PermissionLocator permissionLocator;
-    private final RbacResourceService rbacResourceService;
+    private final ResourceSignageLocator resourceSignageLocator;
 
-    public HttpResourceHandler(RouteTemplateManager routeTemplateManager, PermissionLocator permissionLocator, RbacResourceService rbacResourceService) {
+    public HttpResourceHandler(RouteTemplateManager routeTemplateManager, PermissionLocator permissionLocator, ResourceSignageLocator resourceSignageLocator) {
         this.routeTemplateManager = routeTemplateManager;
         this.permissionLocator = permissionLocator;
-        this.rbacResourceService = rbacResourceService;
+        this.resourceSignageLocator = resourceSignageLocator;
     }
 
     @Override
@@ -41,21 +44,13 @@ public class HttpResourceHandler implements ResourceHandler {
         String uri = object.getRequest().getRequestURI();
         String method = object.getRequest().getMethod();
         String template = this.routeTemplateManager.match(method, uri);
-
         Set<String> userPermissions = permissionLocator.load(authentication);
-        String requiredPermission = rbacResourceService.findPermissionByMethodAndPath(
-                resolveTenant(authentication), method, template);
-
-        boolean granted = requiredPermission != null && userPermissions.contains(requiredPermission);
+        if (CollectionUtils.isEmpty(userPermissions)) {
+            return false;
+        }
+        String requiredPermission = resourceSignageLocator.load(HttpResource.of(template, method), authentication);
+        boolean granted = StringUtils.hasText(requiredPermission) && userPermissions.contains(requiredPermission);
         log.debug("{} {} {} to user '{}'", granted ? "GRANT" : "DENY", method, uri, authentication.getName());
         return granted;
-    }
-
-    private static String resolveTenant(Authentication authentication) {
-        Object principal = authentication.getPrincipal();
-        if (principal instanceof TenantDetail tenantDetail) {
-            return tenantDetail.getTenantName();
-        }
-        return "";
     }
 }
