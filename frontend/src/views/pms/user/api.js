@@ -16,4 +16,5 @@ export default {
   resetPwd: (id, data) => request.patch(`/user/password/reset/${id}`, data),
   logoff: id => request.get(`/auth/logoff/${id}`),
   getAllRoles: () => request.get('/role/all?enabled=true'),
+  getAllDepts: () => request.get('/dept/tree'),
 }

@@ -48,6 +48,9 @@ public class User extends BaseEntity<Long> {
     private String gender;
 
     @QueryField
+    private Long deptId;
+
+    @QueryField
     @Column(name = "is_enabled")
     private Boolean enabled = true;
 

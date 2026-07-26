@@ -120,6 +120,11 @@ public final class HandlerGenerator {
         // 生成 sort 构建方法（始终生成，支持前端动态排序）
         handlerBuilder.addMethod(buildSortMethod(meta));
 
+        // 如果开启了 tree 且指定了 treeType，生成递归 DTO 转换方法
+        if (meta.getEnabledMethods().contains(MethodMeta.TREE) && meta.getTreeType() != null) {
+            handlerBuilder.addMethod(buildTreeDtoConversionMethod(meta, useMapStruct));
+        }
+
         return JavaFile.builder(meta.getGeneratedPackageName(), handlerBuilder.build())
                 .indent("    ")
                 .skipJavaLangImports(true)
@@ -175,6 +180,7 @@ public final class HandlerGenerator {
             case SORT -> buildSortBatchMethod(meta, methodBuilder, useMapStruct);
             case SEARCH -> buildSearchMethod(meta, methodBuilder, useMapStruct, elements);
             case SEARCH_BODY -> buildSearchBodyMethod(meta, methodBuilder, useMapStruct, elements);
+            case TREE -> buildTreeMethod(meta, methodBuilder, useMapStruct);
         }
 
         return methodBuilder.build();
@@ -1436,6 +1442,100 @@ public final class HandlerGenerator {
                         SERVER_RESPONSE, MediaType.class)
                 .addException(ServletException.class)
                 .addException(IOException.class);
+    }
+
+    // ========================================================================
+    //  TREE（构建树形结构）
+    // ========================================================================
+
+    private static void buildTreeMethod(RepositoryMeta meta, MethodSpec.Builder builder, boolean useMapStruct) {
+        TypeName entityType = meta.getEntityType();
+        TypeName idType = meta.getIdType();
+        TypeName entityList = ParameterizedTypeName.get(ClassName.get(List.class), entityType);
+        TypeName entityMap = ParameterizedTypeName.get(ClassName.get(Map.class), idType, entityType);
+        ClassName treeType = meta.getTreeType();
+
+        builder.addAnnotation(
+                AnnotationSpec.builder(TRANSACTIONAL)
+                        .addMember("rollbackFor", "$T.class", Exception.class)
+                        .build());
+
+        // List<Entity> all = repository.findAll();
+        builder.addStatement("$T all = repository.findAll()", entityList);
+
+        // Map<Long, Entity> entityMap = new LinkedHashMap<>();
+        builder.addStatement("$T entityMap = new $T<>()", entityMap, ClassName.get(LinkedHashMap.class));
+
+        // for (Entity item : all) { entityMap.put(item.getId(), item); }
+        builder.beginControlFlow("for ($T item : all)", entityType)
+                .addStatement("entityMap.put(item.getId(), item)")
+                .endControlFlow();
+
+        // List<Entity> roots = new ArrayList<>();
+        builder.addStatement("$T roots = new $T<>()", entityList, ClassName.get(ArrayList.class));
+
+        // for (Entity item : all) { ... }
+        builder.beginControlFlow("for ($T item : all)", entityType);
+
+        builder.addStatement("$T parent = item.getParent()", entityType);
+        builder.beginControlFlow("if (parent != null && parent.getId() != null)")
+                .addStatement("$T p = entityMap.get(parent.getId())", entityType)
+                .beginControlFlow("if (p != null)")
+                .addStatement("p.getChildren().add(item)")
+                .endControlFlow()
+                .beginControlFlow("else")
+                .addStatement("roots.add(item)")
+                .endControlFlow()
+                .endControlFlow()
+                .beginControlFlow("else")
+                .addStatement("roots.add(item)")
+                .endControlFlow();
+
+        builder.endControlFlow();
+
+        if (treeType != null) {
+            // DTO conversion
+            TypeName dtoList = ParameterizedTypeName.get(ClassName.get(List.class), treeType);
+            builder.addStatement("$T dtoRoots = new $T<>()", dtoList, ClassName.get(ArrayList.class));
+            builder.beginControlFlow("for ($T root : roots)", entityType)
+                    .addStatement("dtoRoots.add(toTreeDto(root))")
+                    .endControlFlow();
+            builder.addStatement("return $T.ok().contentType($T.APPLICATION_JSON).body($T.success(dtoRoots))",
+                    SERVER_RESPONSE, MediaType.class, REST_RESPONSE);
+        } else {
+            builder.addStatement("return $T.ok().contentType($T.APPLICATION_JSON).body($T.success(roots))",
+                    SERVER_RESPONSE, MediaType.class, REST_RESPONSE);
+        }
+    }
+
+    /**
+     * 生成树形 DTO 转换的递归辅助方法
+     */
+    private static MethodSpec buildTreeDtoConversionMethod(RepositoryMeta meta, boolean useMapStruct) {
+        ClassName treeType = meta.getTreeType();
+        TypeName entityType = meta.getEntityType();
+        if (treeType == null) return null;
+
+        MethodSpec.Builder builder = MethodSpec.methodBuilder("toTreeDto")
+                .addModifiers(Modifier.PRIVATE)
+                .returns(treeType)
+                .addParameter(entityType, "entity");
+
+        if (useMapStruct) {
+            builder.addStatement("$T dto = $L.toTreeDto(entity)", treeType, getMapperFieldName(meta));
+        } else {
+            builder.addStatement("$T dto = new $T()", treeType, treeType)
+                    .addStatement("$T.copyProperties(entity, dto)", BEAN_UTILS);
+        }
+
+        TypeName dtoList = ParameterizedTypeName.get(ClassName.get(List.class), treeType);
+        builder.addStatement("$T children = new $T<>()", dtoList, ClassName.get(ArrayList.class));
+        builder.beginControlFlow("for ($T child : entity.getChildren())", entityType)
+                .addStatement("children.add(toTreeDto(child))")
+                .endControlFlow();
+        builder.addStatement("dto.setChildren(children)");
+        builder.addStatement("return dto");
+        return builder.build();
     }
 
     // ========================================================================

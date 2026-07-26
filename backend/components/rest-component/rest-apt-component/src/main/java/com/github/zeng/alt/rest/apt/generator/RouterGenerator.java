@@ -513,6 +513,7 @@ public final class RouterGenerator {
             case SORT -> "批量重排序" + entityName;
             case SEARCH -> "搜索" + entityName + "（GET）";
             case SEARCH_BODY -> "搜索" + entityName + "（POST）";
+            case TREE -> "获取" + entityName + "树";
         };
     }
 
@@ -528,6 +529,7 @@ public final class RouterGenerator {
             case SORT -> "批量更新" + entityName + "的排序值，请求体为 BaseSortReq 数组";
             case SEARCH -> "使用 jpa-search-helper 搜索" + entityName + "，查询参数通过 URL query params 传递";
             case SEARCH_BODY -> "使用 jpa-search-helper 搜索" + entityName + "，查询条件通过请求体传递";
+            case TREE -> "以树形结构返回" + entityName + "数据";
         };
     }
 }

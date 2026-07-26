@@ -29,6 +29,7 @@ public class UserDto {
     private String gender;
     private String status;           // ACTIVE, LOCKED
     private Boolean enabled;
+    private Long deptId;
     private List<UserRoleDto> userRoles = new LinkedList<>();
 
     @Data

@@ -23,6 +23,9 @@ public class PatchUserDto {
     @Schema(name = "状态")
     private Boolean enabled;
 
+    @Schema(name = "部门ID")
+    private Long deptId;
+
     @Schema(name = "角色id列表")
     private List<Long> roleIds;
 }

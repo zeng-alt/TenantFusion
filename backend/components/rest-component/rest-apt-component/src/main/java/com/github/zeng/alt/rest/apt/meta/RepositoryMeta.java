@@ -34,6 +34,7 @@ public class RepositoryMeta {
     private final ClassName detailType;
     private final ClassName listType;
     private final ClassName searchType;
+    private final ClassName treeType;
     private final List<QueryFieldMeta> queryFields;
     private final boolean hasQueryFields;
     private final boolean hasSpringDoc;
@@ -64,6 +65,7 @@ public class RepositoryMeta {
         this.detailType = builder.detailType;
         this.listType = builder.listType;
         this.searchType = builder.searchType;
+        this.treeType = builder.treeType;
         this.queryFields = Collections.unmodifiableList(new ArrayList<>(builder.queryFields));
         this.hasQueryFields = !builder.queryFields.isEmpty();
         this.hasSpringDoc = builder.hasSpringDoc;
@@ -185,6 +187,10 @@ public class RepositoryMeta {
         return searchType;
     }
 
+    public ClassName getTreeType() {
+        return treeType;
+    }
+
     public List<SchemaFieldMeta> getSearchTypeFields() {
         return searchTypeFields;
     }
@@ -234,6 +240,7 @@ public class RepositoryMeta {
         private ClassName detailType;
         private ClassName listType;
         private ClassName searchType;
+        private ClassName treeType;
         private boolean hasSpringDoc;
         private final List<QueryFieldMeta> queryFields = new ArrayList<>();
         private final List<SchemaFieldMeta> entityFields = new ArrayList<>();
@@ -423,6 +430,11 @@ public class RepositoryMeta {
 
         public Builder searchType(ClassName searchType) {
             this.searchType = searchType;
+            return this;
+        }
+
+        public Builder treeType(ClassName treeType) {
+            this.treeType = treeType;
             return this;
         }
 

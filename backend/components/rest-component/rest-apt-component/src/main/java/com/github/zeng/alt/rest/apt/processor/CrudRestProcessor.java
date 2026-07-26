@@ -159,6 +159,7 @@ public class CrudRestProcessor extends AbstractProcessor {
         if (annotation.update()) metaBuilder.addEnabledMethod(MethodMeta.UPDATE);
         if (annotation.patch()) metaBuilder.addEnabledMethod(MethodMeta.PATCH);
         if (annotation.delete()) metaBuilder.addEnabledMethod(MethodMeta.DELETE);
+        if (annotation.tree()) metaBuilder.addEnabledMethod(MethodMeta.TREE);
 
         // 查询字段扫描
         fieldScanner.parseQueryType(metaBuilder, annotation, entityMirror);
@@ -180,12 +181,14 @@ public class CrudRestProcessor extends AbstractProcessor {
         ClassName detailType = fieldScanner.parseOperationType(annotation::detailType);
         ClassName listType = fieldScanner.parseOperationType(annotation::listType);
         ClassName searchType = fieldScanner.parseOperationType(annotation::searchType);
+        ClassName treeType = fieldScanner.parseOperationType(annotation::treeType);
         if (createType != null) metaBuilder.createType(createType);
         if (updateType != null) metaBuilder.updateType(updateType);
         if (patchType != null) metaBuilder.patchType(patchType);
         if (detailType != null) metaBuilder.detailType(detailType);
         if (listType != null) metaBuilder.listType(listType);
         if (searchType != null) metaBuilder.searchType(searchType);
+        if (treeType != null) metaBuilder.treeType(treeType);
 
         // 实体字段扫描（含 @JsonIgnore 的全量字段用于 DTO 转换，过滤后的用于 OpenAPI Schema）
         TypeElement entityElement = (TypeElement) typeUtils.asElement(entityMirror);

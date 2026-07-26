@@ -18,7 +18,8 @@
     <MeCrud
       ref="$table"
       v-model:query-items="queryItems"
-      :scroll-x="1500"
+      :scroll-x="1600"
+      expand
       :columns="columns"
       :get-data="api.read"
     >
@@ -33,6 +34,18 @@
 
       <MeQueryItem label="性别" :label-width="50">
         <n-select v-model:value="queryItems.gender" clearable :options="genders" />
+      </MeQueryItem>
+
+      <MeQueryItem label="部门" :label-width="50">
+        <NTreeSelect
+          v-model:value="queryItems.deptId"
+          :options="deptTree"
+          key-field="deptId"
+          label-field="deptName"
+          clearable
+          filterable
+          placeholder="请选择部门"
+        />
       </MeQueryItem>
 
       <MeQueryItem label="状态" :label-width="50">
@@ -91,6 +104,17 @@
             multiple
           />
         </n-form-item>
+        <n-form-item v-if="['add', 'edit'].includes(modalAction)" label="部门" path="deptId">
+          <NTreeSelect
+            v-model:value="modalForm.deptId"
+            :options="deptTree"
+            key-field="deptId"
+            label-field="deptName"
+            clearable
+            filterable
+            placeholder="请选择部门"
+          />
+        </n-form-item>
         <n-form-item v-if="modalAction === 'add'" label="状态" path="enabled">
           <NSwitch v-model:value="modalForm.enabled">
             <template #checked>
@@ -110,7 +134,7 @@
 </template>
 
 <script setup>
-import { NAvatar, NButton, NSwitch, NTag } from 'naive-ui'
+import { NAvatar, NButton, NSwitch, NTag, NTreeSelect } from 'naive-ui'
 import { h, onMounted, ref } from 'vue'
 import { DictTag, EnableSwitch, MeCrud, MeModal, MeQueryItem } from '@/components'
 import { useCrud } from '@/composables'
@@ -133,6 +157,38 @@ const genders = [
 ]
 const roles = ref([])
 api.getAllRoles().then(({ data = [] }) => (roles.value = data))
+
+const deptTree = ref([])
+// eslint-disable-next-line style/max-statements-per-line
+api.getAllDepts().then(({ data = [] }) => { deptTree.value = data || [] })
+
+const editingDeptIds = ref(new Set())
+
+function findDeptName(nodes, deptId) {
+  if (!nodes)
+    return null
+  for (const node of nodes) {
+    if (node.deptId === deptId)
+      return node.deptName
+    const found = findDeptName(node.children, deptId)
+    if (found)
+      return found
+  }
+  return null
+}
+
+function startEditDept(row) {
+  if (isSuperAdmin(row.userId))
+    return
+  editingDeptIds.value.add(row.userId)
+}
+
+async function onDeptChange(row, val) {
+  await api.update({ userId: row.userId, deptId: val })
+  editingDeptIds.value.delete(row.userId)
+  $message.success('更新成功')
+  $table.value?.handleSearch()
+}
 
 const {
   modalRef,
@@ -165,6 +221,31 @@ const columns = [
       }),
   },
   { title: '用户名', key: 'username', width: 150, ellipsis: { tooltip: true } },
+  {
+    title: '部门',
+    key: 'deptId',
+    width: 220,
+    render(row) {
+      if (editingDeptIds.value.has(row.userId)) {
+        return h(NTreeSelect, {
+          value: row.deptId,
+          options: deptTree.value,
+          keyField: 'deptId',
+          labelField: 'deptName',
+          filterable: true,
+          placeholder: '请选择部门',
+          style: 'width: 100%',
+          onBlur: () => { editingDeptIds.value.delete(row.userId) },
+          onUpdateValue: (val) => { onDeptChange(row, val) },
+        })
+      }
+      const name = findDeptName(deptTree.value, row.deptId) || '-'
+      return h('span', {
+        style: 'cursor: pointer; color: #18a058;',
+        onClick: () => startEditDept(row),
+      }, name)
+    },
+  },
   {
     title: '角色',
     key: 'roles',
@@ -215,7 +296,7 @@ const columns = [
   {
     title: '操作',
     key: 'actions',
-    width: 420,
+    width: 450,
     align: 'right',
     fixed: 'right',
     hideInExcel: true,

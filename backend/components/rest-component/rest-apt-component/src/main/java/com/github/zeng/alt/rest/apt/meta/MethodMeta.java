@@ -19,6 +19,7 @@ public enum MethodMeta {
     PATCH("patch", "PATCH", "/{id:\\d+}", true),
     DELETE("delete", "DELETE", "/{ids}", false),
     SORT("sort", "PUT", "/sort", true),
+    TREE("tree", "GET", "/tree", false),
     ;
 
 

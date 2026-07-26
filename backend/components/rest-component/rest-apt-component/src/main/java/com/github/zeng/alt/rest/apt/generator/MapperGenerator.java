@@ -90,6 +90,15 @@ public final class MapperGenerator {
                     .build());
         }
 
+        // Entity -> TreeDTO
+        if (meta.getTreeType() != null && !meta.getTreeType().equals(entity)) {
+            builder.addMethod(MethodSpec.methodBuilder("toTreeDto")
+                    .addModifiers(Modifier.PUBLIC, Modifier.ABSTRACT)
+                    .returns(meta.getTreeType())
+                    .addParameter(entity, "entity")
+                    .build());
+        }
+
         // Search DTO -> Entity
         if (meta.getSearchType() != null && !meta.getSearchType().equals(entity)) {
             builder.addMethod(MethodSpec.methodBuilder("toSearchDto")
