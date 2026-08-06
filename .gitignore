@@ -1,11 +1,13 @@
 HELP.md
 .gradle
 build/
+data/
 !gradle/wrapper/gradle-wrapper.jar
 !**/src/main/**/build/
 !**/src/test/**/build/
 
 ### STS ###
+**/rebel.xml
 .apt_generated
 .classpath
 .factorypath
@@ -16,6 +18,10 @@ build/
 bin/
 !**/src/main/**/bin/
 !**/src/test/**/bin/
+AGENTS.md
+CLAUDE.md
+.claude/*
+.cline/*
 
 ### IntelliJ IDEA ###
 .idea

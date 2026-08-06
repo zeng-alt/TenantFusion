@@ -9,12 +9,12 @@
 import { request } from '@/utils'
 
 export default {
-  create: data => request.post('/user', data),
-  read: (params = {}) => request.get('/user', { params }),
-  update: data => request.patch(`/user/${data.userId}`, data),
-  delete: id => request.delete(`/user/${id}`),
-  resetPwd: (id, data) => request.patch(`/user/password/reset/${id}`, data),
-  logoff: id => request.get(`/auth/logoff/${id}`),
-  getAllRoles: () => request.get('/role/all?enabled=true'),
-  getAllDepts: () => request.get('/dept/tree'),
+  create: data => request.post('/admin/v1/user', data),
+  read: (params = {}) => request.get('/admin/v1/user', { params }),
+  update: data => request.patch(`/admin/v1/user/${data.userId}`, data),
+  delete: id => request.delete(`/admin/v1/user/${id}`),
+  resetPwd: (id, data) => request.patch(`/admin/v1/user/password/reset/${id}`, data),
+  logoff: id => request.get(`/admin/v1/auth/logoff/${id}`),
+  getAllRoles: () => request.get('/admin/v1/role/all?enabled=true'),
+  getAllDepts: () => request.get('/admin/v1/dept/tree'),
 }

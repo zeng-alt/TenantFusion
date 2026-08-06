@@ -5,6 +5,9 @@ plugins {
 description = "工作流应用模块"
 
 dependencies {
+    api(project(":backend:components:api-component"))
+    api(project(":backend:components:json-component"))
+    api(project(":backend:components:domain-component"))
     api(project(":backend:components:camunda-component"))
     api(project(":backend:components:doc-component"))
     api("org.springframework.boot:spring-boot-starter-web")
@@ -14,7 +17,22 @@ dependencies {
     api("org.springdoc:springdoc-openapi-starter-webmvc-ui")
     api("org.springframework.boot:spring-boot-starter-actuator")
 
-    compileOnly(libs.lombok)
+
 
     annotationProcessor(libs.spring.boot.configuration.processor)
+    annotationProcessor(rootProject.libs.querydsl.apt) {
+        artifact {
+            classifier = "jakarta"
+        }
+    }
+
+    compileOnly(libs.lombok)
+    compileOnly(libs.mapstruct)
+    annotationProcessor(libs.mapstruct.processor)
+    // 解决 Lombok 与 MapStruct 注解处理顺序问题
+    annotationProcessor(libs.lombok.mapstruct.binding)
+}
+
+tasks.withType<JavaCompile> {
+    options.compilerArgs.add("-parameters")
 }

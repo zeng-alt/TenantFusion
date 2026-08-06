@@ -7,7 +7,7 @@ description = "流程引擎"
 
 dependencies {
 
-    api(project(":backend:components:security-component:core-security-component"))
+//    api(project(":backend:components:security-component:core-security-component"))
 
     // 流程引擎
     api("org.camunda.bpm.springboot:camunda-bpm-spring-boot-starter:7.24.0")
@@ -26,18 +26,24 @@ dependencies {
 
     api("org.graalvm.polyglot:polyglot:24.2.1")
     api("org.graalvm.polyglot:js:24.2.1")
+    api("org.graalvm.js:js-scriptengine:24.2.1")
 
+
+
+    api("dev.bpm-crafters.process-engine-api:process-engine-api:1.7")
     // Source: https://mvnrepository.com/artifact/dev.bpm-crafters.process-engine-adapters/process-engine-adapter-camunda-platform-c7-embedded-spring-boot-starter
-    api("dev.bpm-crafters.process-engine-adapters:process-engine-adapter-camunda-platform-c7-embedded-spring-boot-starter:2026.06.2")
+// 本地使用
+//    api("dev.bpm-crafters.process-engine-adapters:process-engine-adapter-camunda-platform-c7-embedded-spring-boot-starter:2026.06.2")
 
     // =================================================================================
     // 其他服务使用
 //    // implementation("org.camunda.bpm:camunda-external-task-client:7.24.0")
-//
+
 ////    implementation("dev.bpm-crafters.process-engine-worker:process-engine-worker-spring-boot-starter:0.8.5")
 
 
 //    // Source: https://mvnrepository.com/artifact/dev.bpm-crafters.process-engine-adapters/process-engine-adapter-camunda-platform-c7-remote-spring-boot-starter
+// 远程调用
 // implementation("dev.bpm-crafters.process-engine-adapters:process-engine-adapter-camunda-platform-c7-remote-spring-boot-starter:2026.06.2")
 //    implementation("io.holunda.c7:c7-rest-client-spring-boot-starter-feign:2026.04.2")
 //    implementation("org.camunda.bpm.springboot:camunda-bpm-spring-boot-starter-external-task-client:7.24.0")

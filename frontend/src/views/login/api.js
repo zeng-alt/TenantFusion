@@ -9,7 +9,7 @@
 import { request } from '@/utils'
 
 export default {
-  captcha: () => request.get('/auth/captcha', { needToken: false }),
-  login: (data, config) => request.post('/login/jwt', data, { needToken: false, ...config }),
-  getUser: () => request.get('/user/detail'),
+  captcha: () => request.get('/v1/admin/auth/captcha', { needToken: false }),
+  login: (data, config) => request.post('/v1/admin/login/jwt', data, { needToken: false, ...config }),
+  getUser: () => request.get('/v1/admin/user/detail'),
 }

@@ -16,6 +16,7 @@ tasks.named<org.springframework.boot.gradle.tasks.bundling.BootJar>("bootJar") {
 dependencies {
 //    implementation(project(":backend:components:security-component:jwt-auth-security-component"))
     implementation(project(":backend:module:workflow-module"))
+    implementation("dev.bpm-crafters.process-engine-adapters:process-engine-adapter-camunda-platform-c7-embedded-spring-boot-starter:2026.06.2")
     // Camunda REST API 的 OpenAPI 定义
 //    implementation("org.camunda.bpm:camunda-engine-rest-openapi:7.24.0")
     runtimeOnly(libs.h2)

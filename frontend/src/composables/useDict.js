@@ -15,7 +15,7 @@ const TAG_TYPE_MAP = {
 const fetchDictByCode = dedupeAsync(async (code) => {
   const res = await request.get('/dict/data/all', { params: { dictCode: code } })
   return res?.data || []
-}, (code) => code)
+}, code => code)
 
 export function useDict(code) {
   const dictStore = useDictStore()

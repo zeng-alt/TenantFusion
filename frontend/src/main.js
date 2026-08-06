@@ -8,13 +8,18 @@
  * Copyright © 2023 Ronnie Zhang(大脸怪) | https://isme.top
  **********************************/
 
+import { plugin } from '@formkit/vue'
+import { formkitConfig } from '@zeng-alt/formkit-form-builder'
 import { createApp } from 'vue'
+
 import App from './App.vue'
 import { setupDirectives } from './directives'
-
 import { setupRouter } from './router'
 import { setupStore } from './store'
 import { setupNaiveDiscreteApi } from './utils'
+import '@zeng-alt/formkit-form-builder/builder.css'
+import '@zeng-alt/camunda7-ui/style.css'
+
 import '@/styles/reset.css'
 import '@/styles/global.css'
 import 'uno.css'
@@ -26,6 +31,7 @@ async function bootstrap() {
   await setupRouter(app)
   app.mount('#app')
   setupNaiveDiscreteApi()
+  app.use(plugin, formkitConfig())
 }
 
 bootstrap()

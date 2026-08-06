@@ -37,4 +37,51 @@ export const basicRoutes = [
       layout: 'empty',
     },
   },
+
+  {
+    name: 'FormDesignPage',
+    path: '/template/form/design',
+    component: () => import('@/views/template/form/design.vue'),
+    meta: {
+      title: '表单设计',
+      layout: 'empty',
+    },
+  },
+
+  {
+    name: 'FormTemplateDetailPage',
+    path: '/template/form/detail',
+    component: () => import('@/views/template/form/detail.vue'),
+    meta: {
+      title: '表单详情',
+    },
+  },
+
+  {
+    name: 'FormDataPage',
+    path: '/template/form-data',
+    component: () => import('@/views/template/form-data/index.vue'),
+    meta: {
+      title: '表单数据',
+    },
+  },
+
+  {
+    name: 'ProcessDesignPage',
+    path: '/template/process/design',
+    component: () => import('@/views/template/process/design.vue'),
+    meta: {
+      title: '流程设计',
+      layout: 'empty',
+    },
+  },
+
+  {
+    name: 'ProcessDetailPage',
+    path: '/template/process/detail',
+    component: () => import('@/views/template/process/detail.vue'),
+    meta: {
+      title: '流程详情',
+    },
+  },
 ]

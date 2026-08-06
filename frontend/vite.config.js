@@ -28,7 +28,7 @@ function ProNaiveUiResolver() {
 
 export default defineConfig(({ mode }) => {
   const viteEnv = loadEnv(mode, process.cwd())
-  const { VITE_PUBLIC_PATH, VITE_PROXY_TARGET } = viteEnv
+  const { VITE_PUBLIC_PATH, VITE_PROXY_TARGET, VITE_PROXY_CAMUNDA_TARGET } = viteEnv
 
   return {
     base: VITE_PUBLIC_PATH || '/',
@@ -75,10 +75,24 @@ export default defineConfig(({ mode }) => {
       port: 3200,
       open: false,
       proxy: {
-        '/api': {
+        // 8080：/api/v1/admin/* 及后续内容
+        '/api/admin': {
           target: VITE_PROXY_TARGET,
           changeOrigin: true,
-          rewrite: path => path.replace(/^\/api/, '/v1'),
+          rewrite: path => path.replace(/^\/api\/admin/, ''),
+          secure: false,
+          configure: (proxy, options) => {
+            // 配置此项可在响应头中看到请求的真实地址
+            proxy.on('proxyRes', (proxyRes, req) => {
+              proxyRes.headers['x-real-url'] = new URL(req.url || '', options.target)?.href || ''
+            })
+          },
+        },
+        // 8081：/api/camunda/* 及后续内容
+        '/api/camunda': {
+          target: VITE_PROXY_CAMUNDA_TARGET,
+          changeOrigin: true,
+          rewrite: path => path.replace(/^\/api\/camunda/, ''),
           secure: false,
           configure: (proxy, options) => {
             // 配置此项可在响应头中看到请求的真实地址

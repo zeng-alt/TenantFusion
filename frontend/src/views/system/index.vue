@@ -21,7 +21,7 @@
           </div>
 
           <!-- 响应式网格 -->
-          <div class="sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 grid grid-cols-1 gap-20 pb-24 3xl:grid-cols-6">
+          <div class="3xl:grid-cols-6 grid grid-cols-1 gap-20 pb-24 2xl:grid-cols-5 lg:grid-cols-3 sm:grid-cols-2 xl:grid-cols-4">
             <div
               v-for="item in filteredMenuItems"
               :key="item.code"
@@ -37,16 +37,16 @@
                     <i
                       :class="`${item.icon}?mask`"
                       :style="{ color: themeVars.primaryColor }"
-                      class="sm:text-28 text-24 transition-all duration-300"
+                      class="text-24 transition-all duration-300 sm:text-28"
                     />
                   </div>
 
                   <!-- 文字区域 -->
                   <div class="flex flex-col flex-1 justify-center gap-2">
-                    <div class="menu-title sm:text-14 text-13 font-600 leading-1.4">
+                    <div class="menu-title text-13 font-600 leading-1.4 sm:text-14">
                       {{ item.name }}
                     </div>
-                    <div v-if="item.description" class="menu-description sm:text-12 line-clamp-2 text-11 leading-1.3 opacity-80">
+                    <div v-if="item.description" class="menu-description line-clamp-2 text-11 leading-1.3 opacity-80 sm:text-12">
                       {{ item.description }}
                     </div>
                   </div>

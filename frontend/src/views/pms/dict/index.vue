@@ -151,7 +151,7 @@ const columns = [
       onUpdateValue: () => handleEnable(row, 'dictTypeId', 'isDefault'),
     }),
   },
-  { title: '备注', key: 'remark', ellipsis: { tooltip: true }, },
+  { title: '备注', key: 'remark', ellipsis: { tooltip: true } },
   {
     title: '操作',
     key: 'actions',

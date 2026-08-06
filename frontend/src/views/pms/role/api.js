@@ -9,15 +9,15 @@
 import { request } from '@/utils'
 
 export default {
-  create: data => request.post('/role', data),
-  read: (params = {}) => request.get('/role', { params }),
-  update: data => request.patch(`/role/${data.roleId}`, data),
-  delete: id => request.delete(`/role/${id}`),
-  sortData: data => request.put('/role/sort', data),
-  authorizePermission: data => request.post('/role/authorizePermission', data),
+  create: data => request.post('/admin/v1/role', data),
+  read: (params = {}) => request.get('/admin/v1/role', { params }),
+  update: data => request.patch(`/admin/v1/role/${data.roleId}`, data),
+  delete: id => request.delete(`/admin/v1/role/${id}`),
+  sortData: data => request.put('/admin/v1/role/sort', data),
+  authorizePermission: data => request.post('/admin/v1/role/authorizePermission', data),
 
-  getAllPermissionTree: () => request.get('/menu/resource/tree/all'),
-  getAllUsers: (params = {}) => request.get('/user', { params }),
-  addRoleUsers: (roleId, data) => request.patch(`/role/users/add/${roleId}`, data),
-  removeRoleUsers: (roleId, data) => request.patch(`/role/users/remove/${roleId}`, data),
+  getAllPermissionTree: () => request.get('/admin/v1/menu/resource/tree/all'),
+  getAllUsers: (params = {}) => request.get('/admin/v1/user', { params }),
+  addRoleUsers: (roleId, data) => request.patch(`/admin/v1/role/users/add/${roleId}`, data),
+  removeRoleUsers: (roleId, data) => request.patch(`/admin/v1/role/users/remove/${roleId}`, data),
 }

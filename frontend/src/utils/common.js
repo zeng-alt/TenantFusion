@@ -124,3 +124,21 @@ export function dedupeAsync(fn, keyFn = (...args) => JSON.stringify(args)) {
     return promise
   }
 }
+
+export function randomInt(min = 5, max = 8) {
+  return Math.floor(Math.random() * (max - min + 1)) + min
+}
+
+/**
+ * 生成随机小写字母+数字组合的key，常用于模板编码
+ * @param {string} prefix 可选前缀，如 'Process' / 'form'
+ * @returns {string} 生成的随机 key
+ */
+export function randomKey(prefix = '') {
+  const chars = 'abcdefghijklmnopqrstuvwxyz0123456789'
+  const length = randomInt(6, 10)
+  let text = ''
+  for (let i = 0; i < length; i++)
+    text += chars.charAt(Math.floor(Math.random() * chars.length))
+  return prefix ? `${prefix}_${text}` : text
+}
