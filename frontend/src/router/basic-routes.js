@@ -58,11 +58,21 @@ export const basicRoutes = [
   },
 
   {
-    name: 'FormDataPage',
-    path: '/template/form-data',
-    component: () => import('@/views/template/form-data/index.vue'),
+    name: 'FormConfigDesignPage',
+    path: '/template/form-config/design',
+    component: () => import('@/views/template/form-config/design.vue'),
     meta: {
-      title: '表单数据',
+      title: '配置表单设计',
+      layout: 'empty',
+    },
+  },
+
+  {
+    name: 'FormConfigDetailPage',
+    path: '/template/form-config/detail',
+    component: () => import('@/views/template/form-config/detail.vue'),
+    meta: {
+      title: '配置表单详情',
     },
   },
 

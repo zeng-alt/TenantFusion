@@ -10,8 +10,10 @@ import { FileSystemIconLoader } from '@iconify/utils/lib/loader/node-loaders'
 import presetRemToPx from '@unocss/preset-rem-to-px'
 import { defineConfig, presetAttributify, presetIcons, presetWind3 } from 'unocss'
 import { getIcons } from './build/index.js'
+import { FIELD_TYPE_META } from './src/views/template/form-config/constants.js'
 
 const icons = getIcons()
+const fieldTypeIcons = Object.values(FIELD_TYPE_META).map(meta => meta.icon)
 export default defineConfig({
   presets: [
     presetWind3(),
@@ -35,7 +37,7 @@ export default defineConfig({
     }),
     presetRemToPx({ baseFontSize: 4 }),
   ],
-  safelist: icons.map(icon => `${icon} ${icon}?mask`.split(' ')).flat(),
+  safelist: [...icons.map(icon => `${icon} ${icon}?mask`.split(' ')).flat(), ...fieldTypeIcons],
   shortcuts: [
     ['wh-full', 'w-full h-full'],
     ['f-c-c', 'flex justify-center items-center'],
