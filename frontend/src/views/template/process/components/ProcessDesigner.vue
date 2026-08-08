@@ -228,8 +228,16 @@ async function handleSave() {
 async function handleSaveAndPublish() {
   if (saving.value)
     return
+  const result = await $bpmnRef.value?.validate()
+  if (result?.errors > 0) {
+    $message.error(`流程校验未通过：${result.errors} 个错误，${result.warnings} 个警告，请先修复后再发布`)
+    return
+  }
   saving.value = true
   try {
+    const { xml } = await $bpmnRef.value?.getProcessInfo() || {}
+    if (!xml)
+      throw new Error('未能获取当前流程 XML')
     await api.saveAndPublish(workflow.value?.workflowId, { bpmnXml: xml })
     $message.success('保存并发布成功')
     emit('saved')

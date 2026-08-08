@@ -2,12 +2,7 @@ package com.github.zeng.alt.workflow.controller;
 
 import com.github.zeng.alt.api.rest.PageRestResponse;
 import com.github.zeng.alt.api.rest.RestResponse;
-import com.github.zeng.alt.workflow.model.WorkflowCreateCmd;
-import com.github.zeng.alt.workflow.model.WorkflowQuery;
-import com.github.zeng.alt.workflow.model.WorkflowSaveDraftCmd;
-import com.github.zeng.alt.workflow.model.WorkflowUpdateCmd;
-import com.github.zeng.alt.workflow.model.WorkflowVO;
-import com.github.zeng.alt.workflow.model.WorkflowVersionVO;
+import com.github.zeng.alt.workflow.model.*;
 import com.github.zeng.alt.workflow.service.WorkflowService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -83,6 +78,12 @@ public class WorkflowController {
     @GetMapping("/versions/{versionId}")
     public RestResponse<WorkflowVersionVO> versionDetail(@PathVariable Long versionId) throws IOException {
         return RestResponse.success(workflowService.getVersion(versionId));
+    }
+
+    @Operation(summary = "获取流程模板版本详情")
+    @GetMapping("/versions/{templateId}/{version}")
+    public RestResponse<WorkflowVersionVO> versionDetail(@PathVariable Long templateId, @PathVariable Integer version) {
+        return RestResponse.success(workflowService.getVersion(templateId, version));
     }
 
     @Operation(summary = "保存流程草稿")

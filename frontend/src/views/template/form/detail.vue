@@ -53,35 +53,23 @@
       <NEmpty v-else-if="!loading" class="py-40" description="表单模板不存在或已被删除" />
     </NSpin>
 
-    <NModal
+    <FormDefinitionPreview
       v-model:show="previewShow"
-      preset="card"
+      :form-definition="previewDefinition"
       :title="previewDescription"
-      style="width: 720px"
-      class="preview-modal"
-    >
-      <NScrollbar style="max-height: 65vh">
-        <BuilderProvider :config="formBuilderConfig">
-          <FormSchemaRenderer
-            :schema="previewSchema"
-            :actions="false"
-            form-class="p-24"
-          />
-        </BuilderProvider>
-      </NScrollbar>
-    </NModal>
+      :show-data-panel="false"
+    />
   </CommonPage>
 </template>
 
 <script setup>
-import { BuilderProvider, dslToSchema, FormSchemaRenderer } from '@zeng-alt/formkit-form-builder'
+import { FormDefinitionPreview } from '@zeng-alt/formkit-form-builder'
 import { NButton, NCard, NDataTable, NDescriptions, NDescriptionsItem, NEmpty, NSpin, NTag } from 'naive-ui'
 import { h, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { AppCard, CommonPage } from '@/components'
 import { formatDateTime } from '@/utils'
 import api from './api'
-import { createFormBuilderConfig } from './formBuilderConfig'
 
 defineOptions({ name: 'FormTemplateDetail' })
 
@@ -92,10 +80,8 @@ const loading = ref(true)
 const template = ref(null)
 const versions = ref([])
 const previewShow = ref(false)
-const previewSchema = ref([])
+const previewDefinition = ref(null)
 const previewDescription = ref('')
-
-const formBuilderConfig = createFormBuilderConfig()
 
 const VERSION_STATUS_MAP = {
   DRAFT: { text: '草稿', type: 'warning' },
@@ -159,7 +145,7 @@ async function handlePreview(row) {
       $message.warning('该版本暂无表单定义')
       return
     }
-    previewSchema.value = dslToSchema(data.definition)
+    previewDefinition.value = data.definition
     previewDescription.value = `${template.value?.name || '表单'} - v${row.version}`
     previewShow.value = true
   }

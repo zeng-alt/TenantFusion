@@ -162,10 +162,14 @@ async function persist(id, publish) {
 }
 
 function onPersisted(publish) {
-  emit('saved')
-  $message.success(publish ? '保存并发布成功' : '保存成功')
-  if (publish)
+  if (publish) {
+    emit('saved')
     emit('close')
+    $message.success('保存并发布成功')
+  }
+  else {
+    $message.success('保存成功')
+  }
 }
 
 function handleSave() {

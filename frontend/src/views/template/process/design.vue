@@ -32,11 +32,11 @@ onMounted(async () => {
   }
   try {
     template.value = {
-      id: route.query.versionId,
+      id: route.query.id,
       workflowId: route.query.workflowId,
       workflowKey: route.query.workflowKey,
       workflowName: route.query.workflowName,
-      version: route.query.latestVersion,
+      version: route.query.version,
     }
   }
   catch (error) {

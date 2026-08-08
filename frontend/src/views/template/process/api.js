@@ -12,7 +12,7 @@ export function newProcessKey() {
 export function defaultBpmnXml(key = newProcessKey(), name = '未命名流程', version = '1.0', historyTimeToLive = 180) {
   return `<?xml version="1.0" encoding="UTF-8"?>
 <bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn">
-  <bpmn:process id="${key}" name="${name}" isExecutable="true" camunda:versionTag="$${version}" camunda:historyTimeToLive="${historyTimeToLive}">
+  <bpmn:process id="${key}" name="${name}" isExecutable="true" camunda:versionTag="${version}" camunda:historyTimeToLive="${historyTimeToLive}">
     <bpmn:startEvent id="StartEvent_1" name="开始" />
     <bpmn:userTask id="Task_1" name="审批" />
     <bpmn:endEvent id="EndEvent_1" name="结束" />

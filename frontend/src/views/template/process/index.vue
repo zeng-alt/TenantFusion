@@ -103,9 +103,10 @@ async function openDesigner(row) {
     path: '/template/process/design',
     query: {
       id: data.versionId,
-      name: row.name,
-      code: row.code,
-      formTemplateId: row.formTemplateId,
+      workflowId: row.workflowId,
+      workflowKey: row.workflowKey,
+      workflowName: row.workflowName,
+      version: data.version,
     },
   })
   window.open(href, '_blank')

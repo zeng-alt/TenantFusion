@@ -53,27 +53,17 @@
       <NEmpty v-else-if="!loading" class="py-40" description="流程不存在或已被删除" />
     </NSpin>
 
-    <MeModal ref="previewRef" width="900px" :show-footer="false" title="流程预览">
-      <NSpin v-if="previewLoading" class="flex items-center justify-center py-40">
-        <template #description>
-          加载流程定义中...
-        </template>
-      </NSpin>
-      <div v-else-if="previewXml" class="h-[70vh]">
-        <BpmnProcessViewer :process-xml="previewXml" :theme="isDark ? 'dark' : 'light'" />
-      </div>
-      <NEmpty v-else description="该版本暂无流程定义" />
-    </MeModal>
+    <BpmnPreviewModal ref="previewModalRef" title="流程预览" :theme="isDark ? 'dark' : 'light'" />
   </CommonPage>
 </template>
 
 <script setup>
 import { useDark } from '@vueuse/core'
-import { BpmnProcessViewer } from '@zeng-alt/camunda7-ui'
+import { BpmnPreviewModal } from '@zeng-alt/camunda7-ui'
 import { NButton, NCard, NDataTable, NDescriptions, NDescriptionsItem, NEmpty, NSpin, NTag } from 'naive-ui'
 import { h, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { AppCard, CommonPage, MeModal } from '@/components'
+import { AppCard, CommonPage } from '@/components'
 import { formatDateTime } from '@/utils'
 import api from './api'
 
@@ -86,9 +76,7 @@ const isDark = useDark()
 const loading = ref(true)
 const workflow = ref(null)
 const versions = ref([])
-const previewRef = ref(null)
-const previewLoading = ref(false)
-const previewXml = ref('')
+const previewModalRef = ref(null)
 
 const VERSION_STATUS_MAP = {
   DRAFT: { text: '草稿', type: 'warning' },
@@ -146,20 +134,13 @@ async function handleOffline(row) {
 }
 
 async function handlePreview(row) {
-  previewLoading.value = true
-  previewXml.value = ''
-  previewRef.value?.open()
   try {
     const { data } = await api.versionDetail(row.versionId)
-    previewXml.value = data?.bpmnXml || ''
+    previewModalRef.value?.open(data?.bpmnXml || '')
   }
   catch (error) {
     console.error(error)
     $message.error('加载流程预览失败')
-    previewRef.value?.close()
-  }
-  finally {
-    previewLoading.value = false
   }
 }
 
@@ -171,7 +152,7 @@ function openDesigner(row) {
       workflowId: row.workflowId,
       workflowKey: workflow.value?.workflowKey,
       workflowName: workflow.value?.workflowName,
-      version: workflow.value?.latestVersion,
+      version: row.version,
     },
   })
   window.open(href, '_blank')
