@@ -65,7 +65,15 @@
           </NInputGroup>
         </n-form-item>
         <n-form-item path="category" label="分类">
-          <NInput v-model:value="modalForm.category" placeholder="如：人事 / 财务" />
+          <NTreeSelect
+            v-model:value="categoryKey"
+            :options="categoryTree"
+            :loading="categoryLoading"
+            clearable
+            filterable
+            placeholder="请选择业务分类"
+            @update:value="handleCategorySelect"
+          />
         </n-form-item>
         <n-form-item path="description" label="描述">
           <NInput v-model:value="modalForm.description" type="textarea" />
@@ -79,8 +87,8 @@
 </template>
 
 <script setup>
-import { NButton, NInput, NInputGroup, NTag } from 'naive-ui'
-import { h, onMounted, ref } from 'vue'
+import { NButton, NInput, NInputGroup, NTag, NTreeSelect } from 'naive-ui'
+import { h, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { CommonPage, MeCrud, MeModal, MeQueryItem } from '@/components'
 import { useCrud } from '@/composables'
@@ -93,9 +101,63 @@ const router = useRouter()
 const $table = ref(null)
 const queryItems = ref({})
 
+const categoryTree = ref([])
+const categoryLoading = ref(false)
+const categoryKey = ref(null)
+
 onMounted(() => {
   $table.value?.handleSearch()
+  loadBusinessTree()
 })
+
+async function loadBusinessTree() {
+  categoryLoading.value = true
+  try {
+    const { data } = await api.businessTree()
+    categoryTree.value = mapBusinessTree(data || [])
+  }
+  catch (error) {
+    console.error(error)
+    $message.error(error?.message || '加载业务分类失败')
+  }
+  finally {
+    categoryLoading.value = false
+  }
+}
+
+function mapBusinessTree(nodes) {
+  return (nodes || []).map(node => ({
+    key: node.businessId,
+    label: node.name + (node.code ? `（${node.code}）` : ''),
+    name: node.name,
+    code: node.code,
+    children: mapBusinessTree(node.children),
+  }))
+}
+
+function findNode(nodes, key) {
+  for (const node of nodes || []) {
+    if (node.key === key)
+      return node
+    const found = findNode(node.children, key)
+    if (found)
+      return found
+  }
+  return null
+}
+
+function findNodeKey(nodes, code) {
+  if (!code)
+    return null
+  for (const node of nodes || []) {
+    if (node.code === code || node.name === code || node.label === code)
+      return node.key
+    const found = findNodeKey(node.children, code)
+    if (found)
+      return found
+  }
+  return null
+}
 
 async function openDesigner(row) {
   const { data } = await api.versionDetailByVersion(row.workflowId, row.latestVersion)
@@ -143,6 +205,22 @@ function generateKey() {
   modalForm.value.workflowKey = randomKey('Process')
   modalFormRef.value?.restoreValidation()
 }
+
+function handleCategorySelect(key) {
+  if (key == null) {
+    modalForm.value.category = ''
+    return
+  }
+  const node = findNode(categoryTree.value, key)
+  modalForm.value.category = node?.code || node?.name || ''
+}
+
+// 编辑时按已存的分类编码回显树节点
+watch(modalAction, (action) => {
+  if (!action)
+    return
+  categoryKey.value = findNodeKey(categoryTree.value, modalForm.value.category)
+})
 
 const columns = [
   {

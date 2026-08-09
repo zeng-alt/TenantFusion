@@ -6,6 +6,7 @@ import com.github.zeng.alt.workflow.model.StartProcessCmd;
 import com.github.zeng.alt.workflow.service.ProcessInstanceService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.apachecommons.CommonsLog;
+import org.camunda.bpm.engine.IdentityService;
 import org.camunda.bpm.engine.RepositoryService;
 import org.camunda.bpm.engine.RuntimeService;
 import org.camunda.bpm.engine.repository.ProcessDefinition;
@@ -30,6 +31,7 @@ public class ProcessInstanceServiceImpl implements ProcessInstanceService {
 
     private final RuntimeService runtimeService;
     private final RepositoryService repositoryService;
+    private final IdentityService identityService;
 
     @Override
     public PageRestResponse<ProcessInstanceVO> queryInstances(
@@ -76,17 +78,28 @@ public class ProcessInstanceServiceImpl implements ProcessInstanceService {
     @Override
     public ProcessInstanceVO startProcess(StartProcessCmd cmd) {
         ProcessInstance pi;
-        if (cmd.getBusinessKey() != null && !cmd.getBusinessKey().isBlank()) {
-            pi = runtimeService.startProcessInstanceByKey(
-                    cmd.getProcessDefinitionKey(),
-                    cmd.getBusinessKey(),
-                    cmd.getVariables());
-        } else {
-            pi = runtimeService.startProcessInstanceByKey(
-                    cmd.getProcessDefinitionKey(),
-                    cmd.getVariables());
+        boolean authenticated = cmd.getStartUserId() != null && !cmd.getStartUserId().isBlank();
+        if (authenticated) {
+            identityService.setAuthenticatedUserId(cmd.getStartUserId());
         }
-        log.info("启动流程实例: " + pi.getId() + ", 定义: " + cmd.getProcessDefinitionKey());
+        try {
+            if (cmd.getBusinessKey() != null && !cmd.getBusinessKey().isBlank()) {
+                pi = runtimeService.startProcessInstanceByKey(
+                        cmd.getProcessDefinitionKey(),
+                        cmd.getBusinessKey(),
+                        cmd.getVariables());
+            } else {
+                pi = runtimeService.startProcessInstanceByKey(
+                        cmd.getProcessDefinitionKey(),
+                        cmd.getVariables());
+            }
+        } finally {
+            if (authenticated) {
+                identityService.clearAuthentication();
+            }
+        }
+        log.info("启动流程实例: " + pi.getId() + ", 定义: " + cmd.getProcessDefinitionKey()
+                + ", 发起人: " + cmd.getStartUserId());
         return toVO(pi);
     }
 

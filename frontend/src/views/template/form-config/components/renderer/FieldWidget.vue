@@ -1,10 +1,37 @@
 <template>
+  <!-- 预览态：仅渲染控件，标签由外层 n-form-item-gi 负责 -->
+  <div v-if="controlOnly" class="w-full">
+    <component
+      :is="widget"
+      :field="field"
+      :model-value="fieldValue"
+      :disabled="widgetDisabled"
+      :size="size"
+      @update:model-value="value => emit('update:fieldValue', { field, value })"
+    />
+    <div
+      v-if="errorMessage"
+      class="mt-4 flex items-center gap-2 text-11 text-red-500"
+    >
+      <i class="i-material-symbols:error-outline text-12" />
+      {{ errorMessage }}
+    </div>
+    <div
+      v-else-if="field.helpText"
+      class="mt-4 text-11 text-gray-400 dark:text-gray-500"
+    >
+      {{ field.helpText }}
+    </div>
+  </div>
+
+  <!-- 设计态：标签 + 控件 + 选中/悬浮操作条 -->
   <div
+    v-else
     class="group relative min-h-0 rounded-6 transition-all duration-150"
     :class="[
       selectedField === field
-        ? 'bg-primary/5 ring-2 ring-primary/40'
-        : mode === 'design' ? 'hover:bg-primary/5 hover:ring-1 hover:ring-primary/30' : '',
+        ? 'ring-2 ring-primary/70 shadow-md shadow-primary/15'
+        : mode === 'design' ? 'hover:ring-1 hover:ring-primary/30' : '',
       hiddenDimmed ? 'opacity-50' : '',
       isInvalid ? 'bg-red-50/60 ring-2 ring-red-500/60 dark:bg-red-500/10' : '',
     ]"
@@ -13,10 +40,10 @@
     <!-- labelPlacement=left：标签与控件左右排列 -->
     <div
       v-if="labelPlacement === 'left'"
-      class="flex items-start gap-8 px-4 py-6"
+      class="flex items-center gap-8 px-4 py-6"
     >
       <div
-        class="flex flex-col shrink-0 items-start pt-4"
+        class="flex flex-col shrink-0 items-start"
         :style="{ width: `${labelWidth}px`, alignItems: labelAlign === 'right' ? 'flex-end' : 'flex-start' }"
       >
         <span class="max-w-full truncate text-12 text-gray-600 font-500 dark:text-gray-300">
@@ -132,62 +159,61 @@
     <!-- 设计态悬浮操作条 -->
     <div
       v-if="mode === 'design'"
-      class="absolute right-6 top-6 z-10 flex items-center gap-2 rounded-4 bg-white/95 px-4 py-2 opacity-0 shadow-sm transition-opacity dark:bg-[#2a2a2f] group-hover:opacity-100"
+      class="absolute right-6 top-6 z-10 flex items-center rounded-4 px-4 py-2 opacity-0 transition-opacity group-hover:opacity-100"
     >
-      <NTooltip>
-        <template #trigger>
-          <NButton
-            size="tiny"
-            quaternary
-            circle
-            :disabled="index === 0"
-            @click.stop="emit('move', field, -1)"
-          >
-            <template #icon>
-              <i class="i-material-symbols:arrow-upward text-12" />
-            </template>
-          </NButton>
-        </template>
-        上移
-      </NTooltip>
-      <NTooltip>
-        <template #trigger>
-          <NButton
-            size="tiny"
-            quaternary
-            circle
-            :disabled="index === total - 1"
-            @click.stop="emit('move', field, 1)"
-          >
-            <template #icon>
-              <i class="i-material-symbols:arrow-downward text-12" />
-            </template>
-          </NButton>
-        </template>
-        下移
-      </NTooltip>
-      <NTooltip>
-        <template #trigger>
-          <NButton
-            size="tiny"
-            quaternary
-            type="error"
-            circle
-            @click.stop="emit('delete', field)"
-          >
-            <template #icon>
-              <i class="i-material-symbols:delete-outline text-12" />
-            </template>
-          </NButton>
-        </template>
-        删除
-      </NTooltip>
+      <NButtonGroup size="small" class="gap-2">
+        <NTooltip>
+          <template #trigger>
+            <NButton
+              text
+              ghost
+              :disabled="index === 0"
+              @click.stop="emit('move', field, -1)"
+            >
+              <template #icon>
+                <i class="i-material-symbols:arrow-upward text-14" />
+              </template>
+            </NButton>
+          </template>
+          上移
+        </NTooltip>
+        <NTooltip>
+          <template #trigger>
+            <NButton
+              text
+              ghost
+              :disabled="index === total - 1"
+              @click.stop="emit('move', field, 1)"
+            >
+              <template #icon>
+                <i class="i-material-symbols:arrow-downward text-14" />
+              </template>
+            </NButton>
+          </template>
+          下移
+        </NTooltip>
+        <NTooltip>
+          <template #trigger>
+            <NButton
+              text
+              ghost
+              type="error"
+              @click.stop="emit('delete', field)"
+            >
+              <template #icon>
+                <i class="i-material-symbols:delete-outline text-14" />
+              </template>
+            </NButton>
+          </template>
+          删除
+        </NTooltip>
+      </NButtonGroup>
     </div>
   </div>
 </template>
 
 <script setup>
-import { NButton, NTag, NTooltip } from 'naive-ui'
+import { NButton, NButtonGroup, NTag, NTooltip } from 'naive-ui'
 import { computed } from 'vue'
 import { fieldValueKey } from './helpers'
 import { getFieldWidget } from './widgets'
@@ -197,6 +223,8 @@ defineOptions({ name: 'FieldWidget' })
 const props = defineProps({
   field: { type: Object, required: true },
   mode: { type: String, default: 'design' },
+  /** 仅渲染控件（预览态由 n-form-item-gi 提供标签） */
+  controlOnly: { type: Boolean, default: false },
   selectedField: { type: Object, default: null },
   values: { type: Object, default: null },
   disabled: { type: Boolean, default: false },

@@ -3,6 +3,7 @@ package com.github.zeng.alt.workflow.controller;
 import com.github.zeng.alt.api.rest.PageRestResponse;
 import com.github.zeng.alt.api.rest.RestResponse;
 import com.github.zeng.alt.workflow.model.FormConfigCreateCmd;
+import com.github.zeng.alt.workflow.model.FormConfigOptionVO;
 import com.github.zeng.alt.workflow.model.FormConfigQuery;
 import com.github.zeng.alt.workflow.model.FormConfigSaveDraftCmd;
 import com.github.zeng.alt.workflow.model.FormConfigUpdateCmd;
@@ -45,6 +46,12 @@ public class FormConfigController {
     @GetMapping
     public PageRestResponse<FormConfigVO> page(FormConfigQuery query) {
         return formConfigService.page(query);
+    }
+
+    @Operation(summary = "查询配置表单下拉选项（供关联选择）")
+    @GetMapping("/options")
+    public RestResponse<List<FormConfigOptionVO>> options() {
+        return RestResponse.success(formConfigService.options());
     }
 
     @Operation(summary = "获取配置表单详情")

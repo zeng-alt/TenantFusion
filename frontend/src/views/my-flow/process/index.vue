@@ -2,7 +2,7 @@
   <CommonPage back>
     <template #title-suffix>
       <NTag v-if="task" class="ml-12" type="processing" size="small" bordered>
-        {{ task.taskName }}
+        {{ task.name }}
       </NTag>
     </template>
 
@@ -29,10 +29,10 @@
               {{ formatDateTime(task.createTime) }}
             </NDescriptionsItem>
             <NDescriptionsItem label="截止时间">
-              {{ task.dueTime ? formatDateTime(task.dueTime) : '—' }}
+              {{ task.dueDate ? formatDateTime(task.dueDate) : '—' }}
             </NDescriptionsItem>
             <NDescriptionsItem label="当前处理人">
-              {{ task.assignee || (task.candidateUsers ? '候选任务（可认领）' : '未分配') }}
+              {{ task.assignee || '未分配' }}
             </NDescriptionsItem>
           </NDescriptions>
         </AppCard>
@@ -43,7 +43,7 @@
           </div>
           <NTimeline class="px-16 pb-16">
             <NTimelineItem
-              v-for="(item, index) in task.history"
+              v-for="(item, index) in history"
               :key="index"
               :type="timelineType(item)"
               :title="item.nodeName"
@@ -129,6 +129,7 @@ const router = useRouter()
 const loading = ref(true)
 const submitting = ref(false)
 const task = ref(null)
+const history = ref([])
 const comment = ref('')
 
 function actionCfg(action) {
@@ -146,6 +147,18 @@ onMounted(async () => {
   try {
     const { data } = await api.process(taskId)
     task.value = data
+    if (data?.processInstanceId) {
+      const { data: acts } = await api.activities(data.processInstanceId)
+      history.value = (acts || []).map(act => ({
+        nodeName: act.activityName,
+        assignee: act.assignee,
+        startTime: act.startTime,
+        endTime: act.endTime,
+        status: act.endTime ? 'completed' : 'running',
+        result: '',
+        comment: '',
+      }))
+    }
   }
   catch (error) {
     console.error(error)
@@ -162,7 +175,7 @@ async function handleComplete(action) {
     return $message.warning('驳回时请填写处理意见')
   submitting.value = true
   try {
-    await api.complete(task.value.taskId, { action, comment: comment.value.trim() })
+    await api.complete(task.value.id, { action, comment: comment.value.trim() })
     $message.success(action === 'approve' ? '已同意，流程继续流转' : '已驳回')
     router.push({ path: '/my-flow/todo' })
   }

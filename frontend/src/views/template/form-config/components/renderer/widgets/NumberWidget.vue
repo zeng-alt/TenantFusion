@@ -8,6 +8,7 @@
     :placeholder="field.placeholder || '请输入数字'"
     :disabled="disabled"
     :size="size"
+    v-bind="bindProps"
     class="w-full!"
     @update:value="value => emit('update:modelValue', value)"
   />
@@ -16,7 +17,7 @@
 <script setup>
 import { NInputNumber } from 'naive-ui'
 import { computed } from 'vue'
-import { parseFieldProps } from '../helpers'
+import { buildBindProps, parseFieldProps } from '../helpers'
 
 defineOptions({ name: 'NumberWidget' })
 
@@ -30,4 +31,6 @@ const props = defineProps({
 const emit = defineEmits(['update:modelValue'])
 
 const fieldProps = computed(() => parseFieldProps(props.field))
+
+const bindProps = computed(() => buildBindProps(props.field))
 </script>

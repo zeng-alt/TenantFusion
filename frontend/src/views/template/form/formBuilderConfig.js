@@ -17,12 +17,13 @@ const treeDictionaries = [
 
 export function createFormBuilderConfig() {
   return {
+    http: request,
     locale: 'zh-CN',
     localeFallback: 'zh-CN',
     availableLocales: ['zh-CN', 'en'],
     fetchDictionary: async (code) => {
       try {
-        const { data = [] } = await request.get('/dict/data/all', { params: { dictCode: code, enabled: true } })
+        const { data = [] } = await request.get('/admin/v1/dict/data/all', { params: { dictCode: code, enabled: true } })
         return (data || []).map(item => ({ label: item.dictLabel, value: item.dictValue }))
       }
       catch {
@@ -31,7 +32,7 @@ export function createFormBuilderConfig() {
     },
     fetchDictionaryPage: async ({ code, label, pageNum, pageSize }) => {
       try {
-        const { data } = await request.get('/dict/type', {
+        const { data } = await request.get('/admin/v1/dict/type', {
           params: { dictCode: code, dictName: label, pageNo: pageNum, pageSize },
         })
         return {

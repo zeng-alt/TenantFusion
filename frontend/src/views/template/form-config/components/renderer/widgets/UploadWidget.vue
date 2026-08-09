@@ -4,6 +4,7 @@
     :max="fieldProps.maxCount"
     :disabled="disabled"
     :list-type="field.fieldType === 'IMAGE' ? 'image-card' : 'text'"
+    v-bind="bindProps"
     accept=""
   >
     <NButton
@@ -21,7 +22,7 @@
 <script setup>
 import { NButton, NUpload } from 'naive-ui'
 import { computed } from 'vue'
-import { parseFieldProps } from '../helpers'
+import { buildBindProps, parseFieldProps } from '../helpers'
 
 defineOptions({ name: 'UploadWidget' })
 
@@ -33,6 +34,8 @@ const props = defineProps({
 })
 
 const fieldProps = computed(() => parseFieldProps(props.field))
+
+const bindProps = computed(() => buildBindProps(props.field, ['default-file-list', 'defaultFileList', 'list-type', 'listType']))
 
 /** 文件列表：modelValue 为 URL 数组或 file 数组 */
 const fileList = computed(() => {

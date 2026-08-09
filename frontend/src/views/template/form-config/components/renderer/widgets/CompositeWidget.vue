@@ -3,8 +3,8 @@
     class="group relative min-h-0 rounded-6 transition-all duration-150"
     :class="[
       selectedField === field
-        ? 'bg-primary/5 ring-2 ring-primary/40'
-        : mode === 'design' ? 'hover:bg-primary/5 hover:ring-1 hover:ring-primary/30' : '',
+        ? 'ring-2 ring-primary/70 shadow-md shadow-primary/15'
+        : mode === 'design' ? 'hover:ring-1 hover:ring-primary/30' : '',
       isInvalid ? 'bg-red-50/60 ring-2 ring-red-500/60 dark:bg-red-500/10' : '',
     ]"
     @click.stop="handleSelect"
@@ -159,62 +159,60 @@
     <!-- 设计态悬浮操作条 -->
     <div
       v-if="mode === 'design'"
-      class="absolute right-6 top-6 z-10 flex items-center gap-2 rounded-4 bg-white/95 px-4 py-2 opacity-0 shadow-sm transition-opacity dark:bg-[#2a2a2f] group-hover:opacity-100"
     >
-      <NTooltip>
-        <template #trigger>
-          <NButton
-            size="tiny"
-            quaternary
-            circle
-            :disabled="index === 0"
-            @click.stop="emit('move', field, -1)"
-          >
-            <template #icon>
-              <i class="i-material-symbols:arrow-upward text-12" />
-            </template>
-          </NButton>
-        </template>
-        上移
-      </NTooltip>
-      <NTooltip>
-        <template #trigger>
-          <NButton
-            size="tiny"
-            quaternary
-            circle
-            :disabled="index === total - 1"
-            @click.stop="emit('move', field, 1)"
-          >
-            <template #icon>
-              <i class="i-material-symbols:arrow-downward text-12" />
-            </template>
-          </NButton>
-        </template>
-        下移
-      </NTooltip>
-      <NTooltip>
-        <template #trigger>
-          <NButton
-            size="tiny"
-            quaternary
-            type="error"
-            circle
-            @click.stop="emit('delete', field)"
-          >
-            <template #icon>
-              <i class="i-material-symbols:delete-outline text-12" />
-            </template>
-          </NButton>
-        </template>
-        删除
-      </NTooltip>
+      <NButtonGroup size="small" class="gap-2">
+        <NTooltip>
+          <template #trigger>
+            <NButton
+              text
+              ghost
+              :disabled="index === 0"
+              @click.stop="emit('move', field, -1)"
+            >
+              <template #icon>
+                <i class="i-material-symbols:arrow-upward text-14" />
+              </template>
+            </NButton>
+          </template>
+          上移
+        </NTooltip>
+        <NTooltip>
+          <template #trigger>
+            <NButton
+              text
+              ghost
+              :disabled="index === total - 1"
+              @click.stop="emit('move', field, 1)"
+            >
+              <template #icon>
+                <i class="i-material-symbols:arrow-downward text-14" />
+              </template>
+            </NButton>
+          </template>
+          下移
+        </NTooltip>
+        <NTooltip>
+          <template #trigger>
+            <NButton
+              text
+              ghost
+              type="error"
+              @click.stop="emit('delete', field)"
+            >
+              <template #icon>
+                <i class="i-material-symbols:delete-outline text-14" />
+              </template>
+            </NButton>
+          </template>
+          删除
+        </NTooltip>
+      </NButtonGroup>
     </div>
   </div>
 </template>
 
 <script setup>
-import { NButton, NEmpty, NTag, NTooltip } from 'naive-ui'
+import { NButton, NButtonGroup, NEmpty, NTag, NTooltip } from 'naive-ui'
 import { computed } from 'vue'
 import { FIELD_TYPE_META } from '../../../constants'
 import FormRenderer from '../FormRenderer.vue'

@@ -420,26 +420,20 @@ function normalizeFields(list) {
   }))
 }
 
-/** 收集去重后的顶层字段 key（用于条件渲染引用） */
-function collectFieldKeys(list) {
-  const keys = []
-  function walk(arr) {
-    for (const f of arr) {
+function siblingFields(field) {
+  if (!field)
+    return []
+  const map = new Map()
+  function walk(list) {
+    for (const f of list || []) {
       if (f.fieldKey)
-        keys.push(f.fieldKey)
+        map.set(f.fieldKey, { fieldKey: f.fieldKey, fieldLabel: f.fieldLabel || f.fieldKey })
       if (f.children?.length)
         walk(f.children)
     }
   }
-  walk(list)
-  return [...new Set(keys)]
-}
-
-function siblingFields(field) {
-  if (!field)
-    return []
-  const all = collectFieldKeys(fields.value)
-  return all.map(key => ({ fieldKey: key, fieldLabel: key }))
+  walk(fields.value)
+  return [...map.values()]
 }
 
 /** 点击字段库添加字段：若选中了复合字段则加入其内部，否则加入顶层 */
@@ -606,12 +600,20 @@ function sanitizeFields(list) {
 
 <style scoped>
 .type-collapse :deep(.n-collapse-item__header) {
-  padding: 8px 10px;
+  min-height: 34px;
+  display: flex;
+  align-items: center;
+  padding: 0 10px;
   border-radius: 8px;
+  transition: background-color 0.2s;
+}
+
+.type-collapse :deep(.n-collapse-item__header:hover) {
+  background-color: rgba(var(--primary-color), 0.06);
 }
 
 .type-collapse :deep(.n-collapse-item__content-inner) {
-  padding: 2px 10px 10px;
+  padding: 8px 10px 10px;
 }
 
 /* 分组卡片内展开态圆角调整 */

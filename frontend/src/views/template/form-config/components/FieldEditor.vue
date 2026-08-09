@@ -324,6 +324,28 @@
               @update:model-value="val => (field.visibilityCondition = val ? JSON.stringify(val) : null)"
             />
           </NCard>
+
+          <!-- 自定义属性（v-bind 到 naive-ui 组件） -->
+          <NCard
+            v-if="!isComposite(field.fieldType)"
+            size="small"
+            :bordered="false"
+            class="border border-gray-200 rounded-8 auto-bg-highlight dark:border-dark_border"
+          >
+            <template #header>
+              <div class="w-full flex items-center">
+                <span class="text-12 text-gray-600 font-600 dark:text-gray-300">自定义属性</span>
+                <div class="flex-1" />
+                <NTooltip trigger="hover">
+                  <template #trigger>
+                    <i class="i-material-symbols:info-outline text-13 text-gray-400" />
+                  </template>
+                  属性将 v-bind 到渲染的 naive-ui 组件上，属性名需与 naive-ui props 一致
+                </NTooltip>
+              </div>
+            </template>
+            <CustomAttrsEditor v-model="customAttrsRows" />
+          </NCard>
         </div>
       </NScrollbar>
     </div>
@@ -355,10 +377,12 @@ import {
   NSlider,
   NSwitch,
   NTag,
+  NTooltip,
 } from 'naive-ui'
 import { computed, ref, watch } from 'vue'
 import { FIELD_TYPE_META, hasOptions, isComposite } from '../constants'
 import ConditionalRenderEditor from './ConditionalRenderEditor.vue'
+import CustomAttrsEditor from './CustomAttrsEditor.vue'
 import ValidationRuleEditor from './ValidationRuleEditor.vue'
 
 defineOptions({ name: 'FieldEditor' })
@@ -395,6 +419,9 @@ const fieldKeyError = computed(() => props.errors?.find(e => e.includes('字段�
 /** 类型特定属性（同步回 field.fieldProps JSON） */
 const fieldPropsModel = ref({})
 
+/** 自定义属性行（fieldProps.customAttrs 的文本 key-value 映射） */
+const customAttrsRows = ref([])
+
 watch(
   () => [field.value?.fieldId, field.value?.fieldType],
   () => loadFieldProps(),
@@ -408,12 +435,33 @@ function loadFieldProps() {
   catch {
     fieldPropsModel.value = {}
   }
+  customAttrsRows.value = toAttrRows(fieldPropsModel.value.customAttrs)
+}
+
+/** 对象映射 {key: value} -> 行数组 [{key, value}] */
+function toAttrRows(map) {
+  if (!map || typeof map !== 'object' || Array.isArray(map))
+    return []
+  return Object.entries(map).map(([key, value]) => ({ key, value }))
 }
 
 watch(fieldPropsModel, (val) => {
   if (field.value) {
     field.value.fieldProps = val && Object.keys(val).length ? JSON.stringify(val) : null
   }
+}, { deep: true })
+
+/** 行数组 -> 对象映射，写回 fieldPropsModel.customAttrs（空时移除） */
+watch(customAttrsRows, (rows) => {
+  const map = {}
+  for (const { key, value } of rows || []) {
+    if (key)
+      map[key] = value
+  }
+  if (Object.keys(map).length)
+    fieldPropsModel.value.customAttrs = map
+  else
+    delete fieldPropsModel.value.customAttrs
 }, { deep: true })
 
 const typeOptions = computed(() =>
@@ -476,7 +524,9 @@ const typeSpecificFields = computed(() => {
 const hasCondition = computed({
   get: () => !!field.value?.visibilityCondition,
   set: (val) => {
-    if (!val)
+    if (val)
+      field.value.visibilityCondition = JSON.stringify({ logic: 'and', conditions: [] })
+    else
       field.value.visibilityCondition = null
   },
 })

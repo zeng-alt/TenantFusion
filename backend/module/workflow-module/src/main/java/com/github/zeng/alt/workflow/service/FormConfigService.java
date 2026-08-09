@@ -2,6 +2,7 @@ package com.github.zeng.alt.workflow.service;
 
 import com.github.zeng.alt.api.rest.PageRestResponse;
 import com.github.zeng.alt.workflow.model.FormConfigCreateCmd;
+import com.github.zeng.alt.workflow.model.FormConfigOptionVO;
 import com.github.zeng.alt.workflow.model.FormConfigQuery;
 import com.github.zeng.alt.workflow.model.FormConfigSaveDraftCmd;
 import com.github.zeng.alt.workflow.model.FormConfigUpdateCmd;
@@ -18,6 +19,8 @@ import java.util.List;
 public interface FormConfigService {
 
     PageRestResponse<FormConfigVO> page(FormConfigQuery query);
+
+    List<FormConfigOptionVO> options();
 
     FormConfigVO getDetail(Long id);
 

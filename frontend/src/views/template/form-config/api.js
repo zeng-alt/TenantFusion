@@ -13,6 +13,11 @@ export default {
     })
   },
 
+  /** 配置表单下拉选项（供业务关联选择） */
+  options() {
+    return request.get('/camunda/v1/form-config/options')
+  },
+
   /** 配置表单详情 */
   detail: id => request.get(`/camunda/v1/form-config/${id}`),
 

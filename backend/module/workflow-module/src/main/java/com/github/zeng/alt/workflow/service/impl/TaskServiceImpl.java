@@ -11,6 +11,7 @@ import lombok.extern.apachecommons.CommonsLog;
 import org.camunda.bpm.engine.HistoryService;
 import org.camunda.bpm.engine.RepositoryService;
 import org.camunda.bpm.engine.RuntimeService;
+import org.camunda.bpm.engine.history.HistoricProcessInstance;
 import org.camunda.bpm.engine.history.HistoricTaskInstance;
 import org.camunda.bpm.engine.repository.ProcessDefinition;
 import org.camunda.bpm.engine.runtime.ProcessInstance;
@@ -20,8 +21,10 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * 用户任务服务实现
@@ -44,6 +47,24 @@ public class TaskServiceImpl implements TaskService {
 
         if (query.getName() != null && !query.getName().isBlank()) {
             camundaQuery.taskNameLike("%" + query.getName() + "%");
+        }
+        if (query.getProcessDefinitionName() != null && !query.getProcessDefinitionName().isBlank()) {
+            camundaQuery.processDefinitionNameLike("%" + query.getProcessDefinitionName() + "%");
+        }
+        if (query.getUserId() != null && !query.getUserId().isBlank()) {
+            camundaQuery.or()
+                    .taskAssignee(query.getUserId())
+                    .taskCandidateUser(query.getUserId())
+                    .endOr();
+        }
+        if (query.getInitiator() != null && !query.getInitiator().isBlank()) {
+            List<String> instanceIds = historyService.createHistoricProcessInstanceQuery()
+                    .startedBy(query.getInitiator()).list()
+                    .stream().map(HistoricProcessInstance::getId).toList();
+            if (instanceIds.isEmpty()) {
+                return PageRestResponse.of(List.<TaskVO>of(), 0L, query.getPageSize(), query.getPage());
+            }
+            camundaQuery.processInstanceIdIn(instanceIds.toArray(new String[0]));
         }
         if (query.getTaskDefinitionKey() != null && !query.getTaskDefinitionKey().isBlank()) {
             camundaQuery.taskDefinitionKey(query.getTaskDefinitionKey());
@@ -85,22 +106,33 @@ public class TaskServiceImpl implements TaskService {
         List<Task> list = camundaQuery.listPage(firstResult, query.getPageSize());
         List<TaskVO> vos = list.stream().map(this::toVO).toList();
 
+        Map<String, String> initiators = loadInitiatorMap(
+                list.stream().map(Task::getProcessInstanceId).filter(Objects::nonNull).distinct().toList());
+        vos.forEach(vo -> vo.setInitiator(initiators.get(vo.getProcessInstanceId())));
+
         return PageRestResponse.of(vos, total, query.getPageSize(), query.getPage());
     }
 
     @Override
     public TaskVO getTask(String id) {
         Task task = camundaTaskService.createTaskQuery().taskId(id).singleResult();
+        TaskVO vo;
         if (task == null) {
             // 尝试从历史中查询
             HistoricTaskInstance historicTask = historyService.createHistoricTaskInstanceQuery()
                     .taskId(id).singleResult();
             if (historicTask != null) {
-                return toHistoricVO(historicTask);
+                vo = toHistoricVO(historicTask);
+            } else {
+                throw new RuntimeException("任务不存在: " + id);
             }
-            throw new RuntimeException("任务不存在: " + id);
+        } else {
+            vo = toVO(task);
         }
-        return toVO(task);
+        if (vo.getProcessInstanceId() != null) {
+            vo.setInitiator(loadInitiatorMap(List.of(vo.getProcessInstanceId())).get(vo.getProcessInstanceId()));
+        }
+        return vo;
     }
 
     @Override
@@ -265,5 +297,20 @@ public class TaskServiceImpl implements TaskService {
                         ? LocalDateTime.ofInstant(comment.getTime().toInstant(), ZoneId.systemDefault())
                         : null)
                 .build();
+    }
+
+    private Map<String, String> loadInitiatorMap(List<String> processInstanceIds) {
+        if (processInstanceIds == null || processInstanceIds.isEmpty()) {
+            return Map.of();
+        }
+        Map<String, String> map = new HashMap<>();
+        for (String id : processInstanceIds) {
+            HistoricProcessInstance hpi = historyService.createHistoricProcessInstanceQuery()
+                    .processInstanceId(id).singleResult();
+            if (hpi != null) {
+                map.put(id, hpi.getStartUserId());
+            }
+        }
+        return map;
     }
 }

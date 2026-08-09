@@ -9,6 +9,7 @@ import com.github.zeng.alt.workflow.entity.FormFieldOptionEntity;
 import com.github.zeng.alt.workflow.mapper.FormConfigMapper;
 import com.github.zeng.alt.workflow.mapper.FormConfigVersionMapper;
 import com.github.zeng.alt.workflow.model.FormConfigCreateCmd;
+import com.github.zeng.alt.workflow.model.FormConfigOptionVO;
 import com.github.zeng.alt.workflow.model.FormConfigQuery;
 import com.github.zeng.alt.workflow.model.FormConfigSaveDraftCmd;
 import com.github.zeng.alt.workflow.model.FormConfigUpdateCmd;
@@ -63,6 +64,21 @@ public class FormConfigServiceImpl implements FormConfigService {
         Page<FormConfigEntity> pageResult = formConfigRepository.findAll(predicate, query.toPage());
         List<FormConfigVO> vos = pageResult.getContent().stream().map(formConfigMapper::toVO).toList();
         return PageRestResponse.of(vos, pageResult.getTotalElements(), query.getPageSize(), query.getPage());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<FormConfigOptionVO> options() {
+        return formConfigRepository.findAll().stream()
+                .sorted(java.util.Comparator.comparing(FormConfigEntity::getCode))
+                .map(entity -> {
+                    FormConfigOptionVO vo = new FormConfigOptionVO();
+                    vo.setFormConfigId(entity.getFormConfigId());
+                    vo.setName(entity.getName());
+                    vo.setCode(entity.getCode());
+                    return vo;
+                })
+                .toList();
     }
 
     @Override

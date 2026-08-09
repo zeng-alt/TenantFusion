@@ -18,16 +18,17 @@ public interface WorkflowHistoryService {
     /**
      * 分页查询历史流程实例
      *
-     * @param processDefinitionKey 流程定义Key（可选）
-     * @param businessKey          业务键（可选）
-     * @param finished             是否已结束（可选）
-     * @param startUserId          启动用户ID（可选）
-     * @param pageNum              页码
-     * @param pageSize             每页条数
+     * @param processDefinitionKey  流程定义Key（可选）
+     * @param processDefinitionName 流程定义名称（可选，模糊匹配）
+     * @param businessKey           业务键（可选）
+     * @param state                 流程状态（可选）：running-进行中，completed-已完成，terminated-已终止，suspended-已挂起
+     * @param startUserId           启动用户ID（可选）
+     * @param pageNum               页码
+     * @param pageSize              每页条数
      */
     PageRestResponse<HistoricProcessInstanceVO> queryHistoricInstances(
-            String processDefinitionKey, String businessKey, Boolean finished,
-            String startUserId, int pageNum, int pageSize);
+            String processDefinitionKey, String processDefinitionName, String businessKey,
+            String state, String startUserId, int pageNum, int pageSize);
 
     /**
      * 获取历史流程实例详情

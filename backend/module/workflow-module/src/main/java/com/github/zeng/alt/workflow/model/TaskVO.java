@@ -63,6 +63,9 @@ public class TaskVO implements Serializable {
     @Schema(name = "流程定义名称")
     private String processDefinitionName;
 
+    @Schema(name = "发起人用户ID")
+    private String initiator;
+
     @Schema(name = "业务键")
     private String businessKey;
 

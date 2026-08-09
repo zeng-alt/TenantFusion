@@ -41,8 +41,8 @@ import { NButton, NInput } from 'naive-ui'
 import { h, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { CommonPage, MeCrud, MeQueryItem } from '@/components'
+import { formatDateTime } from '@/utils'
 import api from '../api'
-import { renderDueTimeTag } from '../renderers'
 
 defineOptions({ name: 'MyFlowTodo' })
 
@@ -85,22 +85,24 @@ const columns = [
     title: '发起人',
     key: 'initiator',
     width: 100,
+    render: row => row.initiator || '—',
   },
   {
     title: '当前节点',
-    key: 'taskName',
+    key: 'name',
     width: 140,
   },
   {
     title: '创建时间',
     key: 'createTime',
     width: 160,
+    render: row => (row.createTime ? formatDateTime(row.createTime) : '—'),
   },
   {
     title: '截止时间',
-    key: 'dueTime',
+    key: 'dueDate',
     width: 160,
-    render: ({ dueTime }) => renderDueTimeTag(dueTime),
+    render: row => (row.dueDate ? formatDateTime(row.dueDate) : '—'),
   },
   {
     title: '操作',

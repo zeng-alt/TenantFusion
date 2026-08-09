@@ -105,7 +105,6 @@
             <span class="text-highlight">扁平化路由</span>
             设计，每一个组件都可以是一个页面，告别多级路由 KeepAlive 难实现问题
           </li>
-
           <li class="py-4">
             🍒
             <span class="text-highlight">基于权限动态生成路由</span>
@@ -133,7 +132,6 @@
             组件，减少大量重复性工作
           </li>
         </ul>
-
         <n-divider class="mb-0! mt-12!">
           <p class="text-14 opacity-60">
             👉点击

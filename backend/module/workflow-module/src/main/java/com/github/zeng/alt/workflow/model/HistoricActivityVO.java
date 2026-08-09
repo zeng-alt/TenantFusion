@@ -20,6 +20,9 @@ public class HistoricActivityVO implements Serializable {
     @Schema(name = "活动实例ID")
     private String id;
 
+    @Schema(name = "BPMN活动ID")
+    private String activityId;
+
     @Schema(name = "活动名称")
     private String activityName;
 

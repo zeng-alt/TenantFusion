@@ -34,13 +34,14 @@ public class WorkflowHistoryController {
     @GetMapping("/process-instances")
     public PageRestResponse<HistoricProcessInstanceVO> listHistoricInstances(
             @Parameter(description = "流程定义Key") @RequestParam(required = false) String processDefinitionKey,
+            @Parameter(description = "流程定义名称（模糊匹配）") @RequestParam(required = false) String processDefinitionName,
             @Parameter(description = "业务键") @RequestParam(required = false) String businessKey,
-            @Parameter(description = "是否已结束") @RequestParam(required = false) Boolean finished,
+            @Parameter(description = "流程状态：running-进行中，completed-已完成，terminated-已终止，suspended-已挂起") @RequestParam(required = false) String state,
             @Parameter(description = "启动用户ID") @RequestParam(required = false) String startUserId,
             @Parameter(description = "页码") @RequestParam(defaultValue = "1") int pageNum,
             @Parameter(description = "每页条数") @RequestParam(defaultValue = "20") int pageSize) {
         return workflowHistoryService.queryHistoricInstances(
-                processDefinitionKey, businessKey, finished, startUserId, pageNum, pageSize);
+                processDefinitionKey, processDefinitionName, businessKey, state, startUserId, pageNum, pageSize);
     }
 
     @Operation(summary = "获取历史流程实例详情")

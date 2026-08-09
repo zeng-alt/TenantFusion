@@ -22,6 +22,15 @@ public class TaskQuery extends WorkflowPageQuery {
     @Schema(name = "任务名称（模糊匹配）")
     private String name;
 
+    @Schema(name = "流程定义名称（模糊匹配）")
+    private String processDefinitionName;
+
+    @Schema(name = "待办用户ID（办理人或候选人）")
+    private String userId;
+
+    @Schema(name = "发起人用户ID")
+    private String initiator;
+
     @Schema(name = "任务定义Key")
     private String taskDefinitionKey;
 

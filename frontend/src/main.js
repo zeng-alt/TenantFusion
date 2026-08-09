@@ -17,12 +17,13 @@ import { setupDirectives } from './directives'
 import { setupRouter } from './router'
 import { setupStore } from './store'
 import { setupNaiveDiscreteApi } from './utils'
-import '@zeng-alt/formkit-form-builder/builder.css'
+
 import '@zeng-alt/camunda7-ui/style.css'
 
 import '@/styles/reset.css'
 import '@/styles/global.css'
 import 'uno.css'
+import '@zeng-alt/formkit-form-builder/builder.css'
 
 async function bootstrap() {
   const app = createApp(App)

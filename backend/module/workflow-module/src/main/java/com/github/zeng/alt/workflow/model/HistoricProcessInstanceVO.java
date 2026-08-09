@@ -44,8 +44,20 @@ public class HistoricProcessInstanceVO implements Serializable {
     @Schema(name = "启动用户ID")
     private String startUserId;
 
-    @Schema(name = "结束状态：completed-正常完成，deleted-已删除，suspended-已挂起")
+    @Schema(name = "启动用户名称")
+    private String startUserName;
+
+    @Schema(name = "结束状态：active-进行中，completed-正常完成，deleted-已删除，suspended-已挂起")
     private String state;
+
+    @Schema(name = "流程状态：running-进行中，completed-已完成，terminated-已终止，suspended-已挂起")
+    private String status;
+
+    @Schema(name = "当前节点名称")
+    private String currentTaskName;
+
+    @Schema(name = "当前处理人")
+    private String currentAssignee;
 
     @Schema(name = "删除原因")
     private String deleteReason;

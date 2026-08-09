@@ -6,6 +6,7 @@
     :placeholder="field.placeholder || '请选择日期'"
     :disabled="disabled"
     :size="size"
+    v-bind="bindProps"
     clearable
     class="w-full!"
     @update:value="value => emit('update:modelValue', value)"
@@ -15,7 +16,7 @@
 <script setup>
 import { NDatePicker } from 'naive-ui'
 import { computed } from 'vue'
-import { parseFieldProps } from '../helpers'
+import { buildBindProps, parseFieldProps } from '../helpers'
 
 defineOptions({ name: 'DateWidget' })
 
@@ -29,4 +30,6 @@ const props = defineProps({
 const emit = defineEmits(['update:modelValue'])
 
 const fieldProps = computed(() => parseFieldProps(props.field))
+
+const bindProps = computed(() => buildBindProps(props.field, ['type']))
 </script>

@@ -6,6 +6,7 @@
     :placeholder="field.placeholder || '请选择'"
     :disabled="disabled"
     :size="size"
+    v-bind="bindProps"
     clearable
     filterable
     @update:value="value => emit('update:modelValue', value)"
@@ -15,6 +16,7 @@
 <script setup>
 import { NSelect } from 'naive-ui'
 import { computed } from 'vue'
+import { buildBindProps } from '../helpers'
 
 defineOptions({ name: 'SelectWidget' })
 
@@ -26,6 +28,8 @@ const props = defineProps({
 })
 
 const emit = defineEmits(['update:modelValue'])
+
+const bindProps = computed(() => buildBindProps(props.field, ['multiple']))
 
 const options = computed(() =>
   (props.field.options || []).map(opt => ({

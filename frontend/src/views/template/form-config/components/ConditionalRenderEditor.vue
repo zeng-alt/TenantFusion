@@ -19,43 +19,50 @@
     <div
       v-for="(cond, index) in model.conditions"
       :key="index"
-      class="mb-6 flex flex-wrap items-center gap-6 border border-light_border rounded-6 border-dashed px-8 py-6 transition-colors dark:border-dark_border"
+      class="mb-6 flex gap-6 border border-light_border rounded-6 border-dashed px-8 py-6 transition-colors dark:border-dark_border"
     >
-      <span class="w-16 shrink-0 text-center text-11 text-gray-400">
+      <span class="w-16 flex shrink-0 items-center justify-center text-11 text-gray-400">
         {{ index + 1 }}
       </span>
-      <NSelect
-        v-model:value="cond.fieldKey"
-        :options="fieldKeyOptions"
-        size="small"
-        placeholder="选择字段"
-        class="w-150!"
-        filterable
-      />
-      <NSelect
-        v-model:value="cond.operator"
-        :options="operatorOptions"
-        size="small"
-        class="w-110!"
-      />
-      <NInput
-        v-if="needsValue(cond.operator)"
-        v-model:value="cond.value"
-        size="small"
-        placeholder="比较值"
-        class="w-130!"
-      />
-      <NButton
-        size="tiny"
-        type="error"
-        quaternary
-        circle
-        @click="removeCondition(index)"
-      >
-        <template #icon>
-          <i class="i-material-symbols:delete-outline text-14" />
-        </template>
-      </NButton>
+      <div class="min-w-0 flex-1">
+        <div class="flex items-center gap-6">
+          <NSelect
+            v-model:value="cond.fieldKey"
+            :options="fieldKeyOptions"
+            size="small"
+            placeholder="选择字段"
+            class="flex-1!"
+            filterable
+          />
+          <NSelect
+            v-model:value="cond.operator"
+            :options="operatorOptions"
+            size="small"
+            class="w-110!"
+          />
+        </div>
+        <div class="mt-6 flex items-center gap-6">
+          <NInput
+            v-if="needsValue(cond.operator)"
+            v-model:value="cond.value"
+            size="small"
+            placeholder="比较值"
+            class="flex-1!"
+          />
+          <div v-else class="flex-1" />
+          <NButton
+            size="tiny"
+            type="error"
+            quaternary
+            circle
+            @click="removeCondition(index)"
+          >
+            <template #icon>
+              <i class="i-material-symbols:delete-outline text-14" />
+            </template>
+          </NButton>
+        </div>
+      </div>
     </div>
 
     <NButton

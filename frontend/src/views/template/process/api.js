@@ -50,6 +50,9 @@ export default {
   /** 流程详情 */
   detail: id => request.get(`/camunda/v1/workflow/${id}`),
 
+  /** 业务树（用于流程分类选择） */
+  businessTree: () => request.get('/camunda/v1/business/tree'),
+
   /** 创建流程 */
   create: data => request.post('/camunda/v1/workflow', data),
 

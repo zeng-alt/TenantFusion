@@ -29,6 +29,51 @@ export function parseValidationRules(field) {
   return Array.isArray(rules) ? rules : []
 }
 
+/** 始终受保护、不允许被自定义属性覆盖的核心绑定键 */
+const PROTECTED_BIND_PROPS = new Set([
+  'value',
+  'modelValue',
+  'placeholder',
+  'disabled',
+  'size',
+  'options',
+  'onUpdate:value',
+  'update:value',
+  'on-update:value',
+  'onUpdate:modelValue',
+  'update:modelValue',
+  'on-update:modelValue',
+])
+
+/** 文本值轻量类型推导：'true'/'false' -> 布尔，纯数字字符串 -> 数字，其余保持文本 */
+function coerceBindValue(value) {
+  if (value === 'true')
+    return true
+  if (value === 'false')
+    return false
+  if (value !== '' && !Number.isNaN(Number(value)))
+    return Number(value)
+  return value
+}
+
+/**
+ * 构建可 v-bind 到 naive-ui 组件的自定义属性对象。
+ * 读取 fieldProps.customAttrs（{key: value} 文本映射），
+ * 剔除受保护的核心绑定键（value/placeholder/disabled/size/update 等），
+ * 其余属性按存储类型推导后透传给组件。
+ */
+export function buildBindProps(field, extraReserved = []) {
+  const props = parseFieldProps(field)
+  const map = props.customAttrs && typeof props.customAttrs === 'object' ? props.customAttrs : {}
+  const blocked = new Set([...PROTECTED_BIND_PROPS, ...extraReserved])
+  const out = {}
+  for (const [key, value] of Object.entries(map)) {
+    if (key && !blocked.has(key))
+      out[key] = coerceBindValue(value)
+  }
+  return out
+}
+
 /** 解析字段条件渲染表达式（JSON 字符串 -> 对象） */
 export function parseVisibilityCondition(field) {
   return parseJson(field?.visibilityCondition, null)

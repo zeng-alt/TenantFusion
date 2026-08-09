@@ -23,6 +23,9 @@ public class StartProcessCmd implements Serializable {
     @Schema(name = "业务键", example = "LEAVE:20240001")
     private String businessKey;
 
+    @Schema(name = "发起人用户ID", example = "admin")
+    private String startUserId;
+
     @Schema(name = "流程变量")
     private Map<String, Object> variables;
 }
