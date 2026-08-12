@@ -39,6 +39,11 @@ public class LoginInfoEvent implements Serializable {
     private String message;
 
     /**
+     * 登录IP地址
+     */
+    private String ip;
+
+    /**
      * 其他参数
      */
     private Object[] args;

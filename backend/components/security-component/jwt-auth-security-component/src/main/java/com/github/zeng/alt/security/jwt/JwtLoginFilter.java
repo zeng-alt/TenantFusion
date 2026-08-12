@@ -27,6 +27,11 @@ import java.util.Map;
  */
 public class JwtLoginFilter extends UsernamePasswordAuthenticationFilter {
 
+    /**
+     * 存放本次尝试登录的用户名，供登录失败处理器记录日志使用。
+     */
+    public static final String LOGIN_USERNAME_ATTRIBUTE = "loginUsername";
+
     private final ObjectMapper objectMapper;
 
     public JwtLoginFilter(ObjectMapper objectMapper) {
@@ -49,6 +54,7 @@ public class JwtLoginFilter extends UsernamePasswordAuthenticationFilter {
                 if (rememberMe != null) {
                     request.setAttribute("rememberMe", "true".equals(String.valueOf(rememberMe)) || Boolean.TRUE.equals(rememberMe));
                 }
+                request.setAttribute(LOGIN_USERNAME_ATTRIBUTE, username);
                 UsernamePasswordAuthenticationToken authRequest =
                         UsernamePasswordAuthenticationToken.unauthenticated(username, password);
                 setDetails(request, authRequest);
@@ -62,6 +68,7 @@ public class JwtLoginFilter extends UsernamePasswordAuthenticationFilter {
         if (rememberMe != null) {
             request.setAttribute("rememberMe", "true".equals(rememberMe) || "on".equals(rememberMe));
         }
+        request.setAttribute(LOGIN_USERNAME_ATTRIBUTE, request.getParameter(getUsernameParameter()));
         return super.attemptAuthentication(request, response);
     }
 }

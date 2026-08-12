@@ -76,6 +76,7 @@ security:
 
   filter:
     ignore-url:
+      - "/v1/test/**"
       - "/v1/auth/captcha"
       - "/v3/api-docs/**"
       - "/swagger-ui/**"

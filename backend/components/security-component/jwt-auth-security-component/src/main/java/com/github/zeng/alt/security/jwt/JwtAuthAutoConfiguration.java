@@ -20,6 +20,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.annotation.Bean;
 
 import org.springframework.context.annotation.Configuration;
@@ -58,19 +59,22 @@ public class JwtAuthAutoConfiguration {
             JwtTokenProvider jwtTokenProvider,
             JwtStorage jwtStorage,
             ObjectProvider<ObjectMapper> objectMapperProvider,
-            JwtProperties jwtProperties)
+            JwtProperties jwtProperties,
+            ApplicationEventPublisher eventPublisher)
     {
 
         ObjectMapper objectMapper = objectMapperProvider.getIfAvailable(ObjectMapper::new);
-        return new JwtAuthenticationSuccessHandler(jwtTokenProvider, jwtStorage, objectMapper, jwtProperties);
+        return new JwtAuthenticationSuccessHandler(jwtTokenProvider, jwtStorage, objectMapper, jwtProperties, eventPublisher);
     }
 
     @Bean
     @ConditionalOnMissingBean
     @ConditionalOnProperty(prefix = "security.jwt-auth", name = "authentication", havingValue = "true")
-    public JwtAuthenticationFailureHandler jwtAuthenticationFailureHandler(ObjectProvider<ObjectMapper> objectMapperProvider) {
+    public JwtAuthenticationFailureHandler jwtAuthenticationFailureHandler(
+            ObjectProvider<ObjectMapper> objectMapperProvider,
+            ApplicationEventPublisher eventPublisher) {
         ObjectMapper objectMapper = objectMapperProvider.getIfAvailable(ObjectMapper::new);
-        return new JwtAuthenticationFailureHandler(objectMapper);
+        return new JwtAuthenticationFailureHandler(objectMapper, eventPublisher);
     }
 
     @Bean

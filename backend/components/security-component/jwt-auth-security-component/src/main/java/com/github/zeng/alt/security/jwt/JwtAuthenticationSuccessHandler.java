@@ -2,12 +2,14 @@ package com.github.zeng.alt.security.jwt;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.zeng.alt.api.rest.RestResponse;
+import com.github.zeng.alt.log.LoginInfoEvent;
 import com.github.zeng.alt.security.api.SecurityUser;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.apachecommons.CommonsLog;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.security.core.Authentication;
@@ -26,11 +28,20 @@ public class JwtAuthenticationSuccessHandler implements AuthenticationSuccessHan
     private final JwtStorage jwtStorage;
     private final ObjectMapper objectMapper;
     private final JwtProperties jwtProperties;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Override
     public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response,
                                         Authentication authentication) throws IOException {
         SecurityUser securityUser = (SecurityUser) authentication.getPrincipal();
+
+        LoginInfoEvent event = new LoginInfoEvent();
+        event.setUsername(securityUser.getUsername());
+        event.setStatus("0");
+        event.setMessage("登录成功");
+        event.setIp(request.getRemoteAddr());
+        eventPublisher.publishEvent(event);
+
         String token = jwtTokenProvider.createToken(securityUser);
         String cacheKey = jwtTokenProvider.getAccessCacheKey(token);
 

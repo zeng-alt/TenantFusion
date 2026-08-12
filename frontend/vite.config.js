@@ -76,10 +76,10 @@ export default defineConfig(({ mode }) => {
       open: false,
       proxy: {
         // 8080：/api/v1/admin/* 及后续内容
-        '/api/admin': {
+        '/admin': {
           target: VITE_PROXY_TARGET,
           changeOrigin: true,
-          rewrite: path => path.replace(/^\/api\/admin/, ''),
+          rewrite: path => path.replace(/^\/admin/, ''),
           secure: false,
           configure: (proxy, options) => {
             // 配置此项可在响应头中看到请求的真实地址
@@ -89,10 +89,10 @@ export default defineConfig(({ mode }) => {
           },
         },
         // 8081：/api/camunda/* 及后续内容
-        '/api/camunda': {
+        '/camunda': {
           target: VITE_PROXY_CAMUNDA_TARGET,
           changeOrigin: true,
-          rewrite: path => path.replace(/^\/api\/camunda/, ''),
+          rewrite: path => path.replace(/^\/camunda/, ''),
           secure: false,
           configure: (proxy, options) => {
             // 配置此项可在响应头中看到请求的真实地址

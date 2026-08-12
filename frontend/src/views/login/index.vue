@@ -11,13 +11,13 @@
     <div
       class="m-auto max-w-700 min-w-345 f-c-c rounded-8 auto-bg bg-opacity-20 bg-cover p-12 card-shadow"
     >
-      <div class="hidden w-380 px-20 py-35 md:block">
+      <div class="w-380 px-20 py-35 md:block max-md:hidden">
         <img src="@/assets/images/login_banner.webp" class="w-full" alt="login_banner">
       </div>
 
       <div class="w-320 flex-col px-20 py-32">
         <h2 class="f-c-c text-24 text-#6a6a6a font-normal">
-          <img src="@/assets/images/logo.png" class="mr-12 h-50">
+          <img src="@/assets/images/logo.png" class="mr-12 h-50" alt="logo">
           {{ title }}
         </h2>
         <n-input
@@ -109,7 +109,7 @@ const loginInfo = ref({
 
 const captchaUrl = ref('')
 const initCaptcha = throttle(() => {
-  captchaUrl.value = `/api/auth/captcha?t=${Date.now()}`
+  captchaUrl.value = `/admin/v1/auth/captcha?t=${Date.now()}`
 }, 500)
 
 const localLoginInfo = lStorage.get('loginInfo')

@@ -14,6 +14,8 @@
   "dependencies": {
     "@arco-design/color": "^0.4.0",
     "@formkit/vue": "^2.0.0",
+    "@zeng-alt/formkit-form-builder": "^1.1.0",
+    "@zeng-alt/camunda7-ui": "^1.0.3",
     "@vueuse/core": "^14.2.1",
     "axios": "^1.13.5",
     "dayjs": "^1.11.19",

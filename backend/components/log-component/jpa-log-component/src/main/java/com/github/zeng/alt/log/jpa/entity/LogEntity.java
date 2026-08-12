@@ -1,7 +1,10 @@
 package com.github.zeng.alt.log.jpa.entity;
 
+import com.github.zeng.alt.domain.key.SnowflakeId;
 import jakarta.persistence.*;
 import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
 
 import java.io.Serial;
 import java.io.Serializable;
@@ -16,7 +19,8 @@ import java.time.LocalDateTime;
  * @since 2026-07-01
  * @version 1.0
  */
-@Data
+@Getter
+@Setter
 @Entity
 @Table(name = "sys_oper_log")
 public class LogEntity implements Serializable {
@@ -24,9 +28,8 @@ public class LogEntity implements Serializable {
     @Serial
     private static final long serialVersionUID = 1L;
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long operId;
+    @Id @SnowflakeId
+    private Long id;
 
     /** 租户ID */
     private String tenantId;
