@@ -9,6 +9,7 @@ dependencies {
     api(project(":backend:components:api-component"))
     api(project(":backend:components:json-component"))
     api(project(":backend:components:domain-component"))
+    api(project(":backend:components:form-schema-component"))
     api(project(":backend:components:camunda-component:api-engine-component"))
     api(project(":backend:components:doc-component"))
     api("org.springframework.boot:spring-boot-starter-web")
@@ -34,6 +35,9 @@ dependencies {
     annotationProcessor(libs.mapstruct.processor)
     // 解决 Lombok 与 MapStruct 注解处理顺序问题
     annotationProcessor(libs.lombok.mapstruct.binding)
+
+    testImplementation("org.junit.jupiter:junit-jupiter")
+    testImplementation("org.assertj:assertj-core")
 }
 
 tasks.withType<JavaCompile> {

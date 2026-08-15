@@ -52,6 +52,7 @@ include("backend:components:message-component:redis-message-component")
 include("backend:components:message-component:rabbit-message-component")
 include("backend:components:message-component:kafka-message-component")
 include("backend:components:log-component:message-log-component")
+include("backend:components:form-schema-component")
 
 
 dependencyResolutionManagement {
