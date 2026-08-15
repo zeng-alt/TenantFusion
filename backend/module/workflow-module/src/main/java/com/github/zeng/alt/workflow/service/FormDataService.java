@@ -4,7 +4,10 @@ import com.github.zeng.alt.api.rest.PageRestResponse;
 import com.github.zeng.alt.workflow.model.FormDataCreateCmd;
 import com.github.zeng.alt.workflow.model.FormDataQuery;
 import com.github.zeng.alt.workflow.model.FormDataUpdateCmd;
+import com.github.zeng.alt.workflow.model.FormDataValidateCmd;
 import com.github.zeng.alt.workflow.model.FormDataVO;
+
+import java.util.Map;
 
 /**
  * 动态表单数据服务接口
@@ -54,4 +57,12 @@ public interface FormDataService {
      * @param id 数据ID
      */
     void delete(Long id);
+
+    /**
+     * 校验表单数据（按已发布定义的校验规则 + 条件显示，不落库）
+     *
+     * @param cmd 校验命令
+     * @return 字段名 → 错误文案；合法时为空表
+     */
+    Map<String, String> validate(FormDataValidateCmd cmd);
 }

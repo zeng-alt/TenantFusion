@@ -2,11 +2,13 @@ package com.github.zeng.alt.workflow.service;
 
 import com.github.zeng.alt.api.rest.PageRestResponse;
 import com.github.zeng.alt.workflow.model.FormTemplateCreateCmd;
+import com.github.zeng.alt.workflow.model.FormTemplatePublishedVO;
 import com.github.zeng.alt.workflow.model.FormTemplateQuery;
 import com.github.zeng.alt.workflow.model.FormTemplateSaveDraftCmd;
 import com.github.zeng.alt.workflow.model.FormTemplateUpdateCmd;
 import com.github.zeng.alt.workflow.model.FormTemplateVO;
 import com.github.zeng.alt.workflow.model.FormTemplateVersionVO;
+import com.fasterxml.jackson.databind.JsonNode;
 
 import java.util.List;
 
@@ -35,6 +37,30 @@ public interface FormTemplateService {
      * @return 表单模板
      */
     FormTemplateVO getDetail(Long id);
+
+    /**
+     * 按模板编码获取运行态表单定义（当前已发布版本，未发布时抛业务异常）
+     *
+     * @param code 模板编码
+     * @return 运行态表单定义
+     */
+    FormTemplatePublishedVO getPublishedByCode(String code);
+
+    /**
+     * 按模板编码获取表单数据结构（当前已发布版本的 FormSchemaField[]）
+     *
+     * @param code 模板编码
+     * @return 表单数据结构（FormSchemaField[] 数组）
+     */
+    JsonNode getSchemaByCode(String code);
+
+    /**
+     * 按版本ID获取表单数据结构（任意版本，供历史版本结构预览）
+     *
+     * @param versionId 版本ID
+     * @return 表单数据结构（FormSchemaField[] 数组）
+     */
+    JsonNode getSchemaByVersion(Long versionId);
 
     /**
      * 创建表单模板（自动创建版本 1 草稿）

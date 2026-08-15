@@ -1,9 +1,11 @@
 package com.github.zeng.alt.workflow.service.impl;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.zeng.alt.api.exception.BaseException;
 import com.github.zeng.alt.api.rest.PageRestResponse;
+import com.github.zeng.alt.form.schema.DslFormSchemaConverter;
 import com.github.zeng.alt.workflow.entity.FormTemplateEntity;
 import com.github.zeng.alt.workflow.entity.FormTemplateVersionEntity;
 import com.github.zeng.alt.workflow.model.FormTemplateCreateCmd;
@@ -12,6 +14,7 @@ import com.github.zeng.alt.workflow.model.FormTemplateSaveDraftCmd;
 import com.github.zeng.alt.workflow.model.FormTemplateUpdateCmd;
 import com.github.zeng.alt.workflow.mapper.FormTemplateMapper;
 import com.github.zeng.alt.workflow.mapper.FormTemplateVersionMapper;
+import com.github.zeng.alt.workflow.model.FormTemplatePublishedVO;
 import com.github.zeng.alt.workflow.model.FormTemplateVO;
 import com.github.zeng.alt.workflow.model.FormTemplateVersionStatus;
 import com.github.zeng.alt.workflow.model.FormTemplateVersionVO;
@@ -46,8 +49,8 @@ public class FormTemplateServiceImpl implements FormTemplateService {
     private final FormTemplateVersionRepository formTemplateVersionRepository;
     private final FormTemplateMapper formTemplateMapper;
     private final FormTemplateVersionMapper formTemplateVersionMapper;
+    private final DslFormSchemaConverter dslFormSchemaConverter;
     private final ObjectMapper objectMapper;
-
     @Override
     @Transactional(readOnly = true)
     public PageRestResponse<FormTemplateVO> page(FormTemplateQuery query) {
@@ -61,6 +64,41 @@ public class FormTemplateServiceImpl implements FormTemplateService {
     @Transactional(readOnly = true)
     public FormTemplateVO getDetail(Long id) {
         return formTemplateMapper.toVO(getRequiredEntity(id));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public FormTemplatePublishedVO getPublishedByCode(String code) {
+        FormTemplateEntity template = formTemplateRepository.findByCode(code)
+                .orElseThrow(() -> new BaseException("表单模板不存在: " + code));
+        FormTemplateVersionEntity current = formTemplateVersionRepository
+                .findFirstByFormTemplateIdAndCurrentTrue(template.getFormTemplateId())
+                .orElseGet(() -> formTemplateVersionRepository
+                        .findFirstByFormTemplateIdAndStatusOrderByVersionDesc(
+                                template.getFormTemplateId(), FormTemplateVersionStatus.PUBLISHED)
+                        .orElseThrow(() -> new BaseException("表单模板未发布: " + code)));
+        FormTemplatePublishedVO vo = new FormTemplatePublishedVO();
+        vo.setFormTemplateId(template.getFormTemplateId());
+        vo.setName(template.getName());
+        vo.setCode(template.getCode());
+        vo.setCurrentVersion(template.getCurrentVersion());
+        vo.setVersion(current.getVersion());
+        vo.setDefinition(parseDefinition(current.getDefinition()));
+        return vo;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public JsonNode getSchemaByCode(String code) {
+        return dslFormSchemaConverter.convert(getPublishedByCode(code).getDefinition());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public JsonNode getSchemaByVersion(Long versionId) {
+        FormTemplateVersionEntity version = formTemplateVersionRepository.findById(versionId)
+                .getOrElseThrow(() -> new BaseException("表单模板版本不存在: " + versionId));
+        return dslFormSchemaConverter.convert(parseDefinition(version.getDefinition()));
     }
 
     @Override
@@ -271,6 +309,23 @@ public class FormTemplateServiceImpl implements FormTemplateService {
     private FormTemplateVersionEntity getRequiredVersion(Long versionId) {
         return formTemplateVersionRepository.findById(versionId)
                 .getOrElseThrow(() -> new BaseException("表单模板版本不存在: " + versionId));
+    }
+
+    /**
+     * 将定义 JSON 字符串解析为 JsonNode；空或非法 JSON 返回 null
+     *
+     * @param definition 定义（JSON 字符串）
+     * @return 定义对象
+     */
+    private JsonNode parseDefinition(String definition) {
+        if (definition == null || definition.isBlank()) {
+            return null;
+        }
+        try {
+            return objectMapper.readTree(definition);
+        } catch (JsonProcessingException e) {
+            return null;
+        }
     }
 
     /**

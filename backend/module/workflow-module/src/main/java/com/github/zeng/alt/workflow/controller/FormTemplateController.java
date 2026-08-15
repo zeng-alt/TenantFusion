@@ -1,8 +1,10 @@
 package com.github.zeng.alt.workflow.controller;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.github.zeng.alt.api.rest.PageRestResponse;
 import com.github.zeng.alt.api.rest.RestResponse;
 import com.github.zeng.alt.workflow.model.FormTemplateCreateCmd;
+import com.github.zeng.alt.workflow.model.FormTemplatePublishedVO;
 import com.github.zeng.alt.workflow.model.FormTemplateQuery;
 import com.github.zeng.alt.workflow.model.FormTemplateSaveDraftCmd;
 import com.github.zeng.alt.workflow.model.FormTemplateUpdateCmd;
@@ -52,6 +54,24 @@ public class FormTemplateController {
     @GetMapping("/{id}")
     public RestResponse<FormTemplateVO> detail(@PathVariable Long id) {
         return RestResponse.success(formTemplateService.getDetail(id));
+    }
+
+    @Operation(summary = "按模板编码获取运行态表单定义（当前已发布版本，供填表组件使用）")
+    @GetMapping("/code/{code}")
+    public RestResponse<FormTemplatePublishedVO> publishedByCode(@PathVariable String code) {
+        return RestResponse.success(formTemplateService.getPublishedByCode(code));
+    }
+
+    @Operation(summary = "按模板编码获取表单数据结构（FormSchemaField[]，当前已发布版本）")
+    @GetMapping("/code/{code}/schema")
+    public RestResponse<JsonNode> schemaByCode(@PathVariable String code) {
+        return RestResponse.success(formTemplateService.getSchemaByCode(code));
+    }
+
+    @Operation(summary = "按版本ID获取表单数据结构（FormSchemaField[]，任意版本）")
+    @GetMapping("/versions/{versionId}/schema")
+    public RestResponse<JsonNode> schemaByVersion(@PathVariable Long versionId) {
+        return RestResponse.success(formTemplateService.getSchemaByVersion(versionId));
     }
 
     @Operation(summary = "创建表单模板")

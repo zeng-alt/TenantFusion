@@ -5,6 +5,7 @@ import com.github.zeng.alt.api.rest.RestResponse;
 import com.github.zeng.alt.workflow.model.FormDataCreateCmd;
 import com.github.zeng.alt.workflow.model.FormDataQuery;
 import com.github.zeng.alt.workflow.model.FormDataUpdateCmd;
+import com.github.zeng.alt.workflow.model.FormDataValidateCmd;
 import com.github.zeng.alt.workflow.model.FormDataVO;
 import com.github.zeng.alt.workflow.service.FormDataService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -20,6 +21,8 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.util.Map;
 
 /**
  * 动态表单数据控制器
@@ -53,6 +56,12 @@ public class FormDataController {
     @PostMapping
     public RestResponse<FormDataVO> create(@Valid @RequestBody FormDataCreateCmd cmd) {
         return RestResponse.success(formDataService.create(cmd));
+    }
+
+    @Operation(summary = "校验表单数据（按已发布定义的校验规则 + 条件显示，不落库）")
+    @PostMapping("/validate")
+    public RestResponse<Map<String, String>> validate(@Valid @RequestBody FormDataValidateCmd cmd) {
+        return RestResponse.success(formDataService.validate(cmd));
     }
 
     @Operation(summary = "更新表单数据")
