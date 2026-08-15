@@ -19,6 +19,15 @@ public interface FormTemplateVersionRepository extends BaseRepository<FormTempla
     Option<FormTemplateVersionListProjection> findByFormTemplateIdAndVersion(Long formTemplateId, Integer version);
 
     /**
+     * 查询表单模板指定版本号
+     *
+     * @param formTemplateId 表单模板ID
+     * @param version        版本号
+     * @return 版本记录
+     */
+    Optional<FormTemplateVersionEntity> findFirstByFormTemplateIdAndVersion(Long formTemplateId, Integer version);
+
+    /**
      * 查询表单模板的全部版本，按版本号倒序
      *
      * @param formTemplateId 表单模板ID

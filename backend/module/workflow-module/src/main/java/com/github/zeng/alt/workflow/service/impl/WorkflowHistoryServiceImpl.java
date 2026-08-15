@@ -1,21 +1,37 @@
 package com.github.zeng.alt.workflow.service.impl;
 
+import com.github.zeng.alt.api.exception.BaseException;
 import com.github.zeng.alt.api.rest.PageRestResponse;
+import com.github.zeng.alt.camunda.engine.api.history.HistoricActivityInfo;
+import com.github.zeng.alt.camunda.engine.api.history.HistoricProcessInstanceInfo;
+import com.github.zeng.alt.camunda.engine.api.history.HistoricProcessInstanceQuery;
+import com.github.zeng.alt.camunda.engine.api.history.HistoricTaskInfo;
+import com.github.zeng.alt.camunda.engine.api.history.HistoricVariableInfo;
+import com.github.zeng.alt.camunda.engine.api.history.HistoryApi;
+import com.github.zeng.alt.camunda.engine.api.repository.ProcessDefinitionApi;
+import com.github.zeng.alt.camunda.engine.api.task.TaskApi;
+import com.github.zeng.alt.camunda.engine.api.task.TaskInfo;
+import com.github.zeng.alt.workflow.mapper.WorkflowHistoryMapper;
+import com.github.zeng.alt.workflow.model.ExecutionStatus;
+import com.github.zeng.alt.workflow.model.FlowExecutionState;
 import com.github.zeng.alt.workflow.model.HistoricActivityVO;
 import com.github.zeng.alt.workflow.model.HistoricProcessInstanceVO;
 import com.github.zeng.alt.workflow.model.HistoricVariableVO;
+import com.github.zeng.alt.workflow.model.NodeExecutionState;
+import com.github.zeng.alt.workflow.model.ProcessExecutionState;
 import com.github.zeng.alt.workflow.model.TaskVO;
+import com.github.zeng.alt.workflow.service.TaskFormResolver;
 import com.github.zeng.alt.workflow.service.WorkflowHistoryService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.apachecommons.CommonsLog;
-import org.camunda.bpm.engine.HistoryService;
-import org.camunda.bpm.engine.history.*;
-import org.camunda.bpm.engine.task.Task;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
-import java.time.ZoneId;
-import java.util.Date;
+import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -31,44 +47,29 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class WorkflowHistoryServiceImpl implements WorkflowHistoryService {
 
-    private final HistoryService historyService;
-    private final org.camunda.bpm.engine.TaskService camundaTaskService;
+    private final HistoryApi historyApi;
+    private final TaskApi taskApi;
+    private final ProcessDefinitionApi processDefinitionApi;
+    private final WorkflowHistoryMapper workflowHistoryMapper;
+    private final TaskFormResolver taskFormResolver;
 
     @Override
     public PageRestResponse<HistoricProcessInstanceVO> queryHistoricInstances(
-            String processDefinitionKey, String processDefinitionName, String businessKey,
-            String state, String startUserId, int pageNum, int pageSize) {
+            com.github.zeng.alt.workflow.model.HistoricProcessInstanceQuery query) {
 
-        HistoricProcessInstanceQuery camundaQuery = historyService.createHistoricProcessInstanceQuery();
+        PageRestResponse<HistoricProcessInstanceInfo> page = historyApi.queryProcessInstances(
+                HistoricProcessInstanceQuery.builder()
+                        .processDefinitionKey(query.getProcessDefinitionKey())
+                        .processDefinitionName(query.getProcessDefinitionName())
+                        .businessKey(query.getBusinessKey())
+                        .state(query.getState())
+                        .startUserId(query.getStartUserId())
+                        .pageNo(query.getPageNo())
+                        .pageSize(query.getPageSize())
+                        .build());
 
-        if (processDefinitionKey != null && !processDefinitionKey.isBlank()) {
-            camundaQuery.processDefinitionKey(processDefinitionKey);
-        }
-        if (processDefinitionName != null && !processDefinitionName.isBlank()) {
-            camundaQuery.processDefinitionNameLike("%" + processDefinitionName + "%");
-        }
-        if (businessKey != null && !businessKey.isBlank()) {
-            camundaQuery.processInstanceBusinessKey(businessKey);
-        }
-        if (state != null && !state.isBlank()) {
-            switch (state) {
-                case "running" -> camundaQuery.unfinished();
-                case "completed", "terminated" -> camundaQuery.finished();
-                case "suspended" -> camundaQuery.suspended();
-                default -> {
-                }
-            }
-        }
-        if (startUserId != null && !startUserId.isBlank()) {
-            camundaQuery.startedBy(startUserId);
-        }
-
-        camundaQuery.orderByProcessInstanceStartTime().desc();
-
-        long total = camundaQuery.count();
-        int firstResult = (pageNum - 1) * pageSize;
-        List<HistoricProcessInstance> list = camundaQuery.listPage(firstResult, pageSize);
-        List<HistoricProcessInstanceVO> vos = list.stream().map(this::toVO).toList();
+        List<HistoricProcessInstanceVO> vos = page.getData().getPageData().stream()
+                .map(workflowHistoryMapper::toProcessInstanceVO).toList();
 
         Map<String, String[]> currentTasks = loadCurrentTasks(vos);
         vos.forEach(vo -> {
@@ -79,7 +80,7 @@ public class WorkflowHistoryServiceImpl implements WorkflowHistoryService {
             }
         });
 
-        return PageRestResponse.of(vos, total, pageSize, pageNum);
+        return PageRestResponse.of(vos, page.getData().getTotal(), query.getPageSize(), query.getPageNo());
     }
 
     /**
@@ -93,21 +94,20 @@ public class WorkflowHistoryServiceImpl implements WorkflowHistoryService {
         if (runningIds.isEmpty()) {
             return Map.of();
         }
-        Map<String, List<Task>> tasksByPi = camundaTaskService.createTaskQuery()
-                .active()
-                .processInstanceIdIn(runningIds.toArray(new String[0]))
-                .list()
-                .stream()
-                .collect(Collectors.groupingBy(Task::getProcessInstanceId));
+        Map<String, List<TaskInfo>> tasksByPi = runningIds.stream().collect(Collectors.toMap(
+                id -> id,
+                id -> taskApi.getActiveTasks(id),
+                (a, b) -> a,
+                LinkedHashMap::new));
 
         return tasksByPi.entrySet().stream().collect(Collectors.toMap(
                 Map.Entry::getKey,
                 entry -> {
                     String names = entry.getValue().stream()
-                            .map(Task::getName).filter(Objects::nonNull).distinct()
+                            .map(TaskInfo::getName).filter(Objects::nonNull).distinct()
                             .collect(Collectors.joining("、"));
                     String assignees = entry.getValue().stream()
-                            .map(Task::getAssignee).filter(Objects::nonNull).distinct()
+                            .map(TaskInfo::getAssignee).filter(Objects::nonNull).distinct()
                             .collect(Collectors.joining("、"));
                     return new String[]{names, assignees};
                 }));
@@ -115,13 +115,100 @@ public class WorkflowHistoryServiceImpl implements WorkflowHistoryService {
 
     @Override
     public HistoricProcessInstanceVO getHistoricInstance(String id) {
-        HistoricProcessInstance hpi = historyService.createHistoricProcessInstanceQuery()
-                .processInstanceId(id)
-                .singleResult();
-        if (hpi == null) {
-            throw new RuntimeException("历史流程实例不存在: " + id);
+        HistoricProcessInstanceInfo info = historyApi.getProcessInstance(id);
+        HistoricProcessInstanceVO vo = workflowHistoryMapper.toProcessInstanceVO(info);
+        vo.setBpmnXml(loadBpmnXml(info.getProcessDefinitionKey(), info.getProcessDefinitionId()));
+        vo.setProcessForm(loadProcessForm(id));
+        vo.setCurrentTaskForms(taskFormResolver.resolveByProcessInstanceId(id));
+        vo.setConfigForm(taskFormResolver.resolveConfigForm(id));
+        vo.setExecutionState(buildExecutionState(id));
+        String[] current = loadCurrentTask(id);
+        if (current != null) {
+            vo.setCurrentTaskName(current[0]);
+            vo.setCurrentAssignee(current[1]);
         }
-        return toVO(hpi);
+        return vo;
+    }
+
+    /**
+     * 加载单个流程实例当前活动节点与处理人
+     */
+    private String[] loadCurrentTask(String processInstanceId) {
+        List<TaskInfo> activeTasks = taskApi.getActiveTasks(processInstanceId);
+        if (activeTasks.isEmpty()) {
+            return null;
+        }
+        String names = activeTasks.stream()
+                .map(TaskInfo::getName).filter(Objects::nonNull).distinct()
+                .collect(Collectors.joining("、"));
+        String assignees = activeTasks.stream()
+                .map(TaskInfo::getAssignee).filter(Objects::nonNull).distinct()
+                .collect(Collectors.joining("、"));
+        return new String[]{names, assignees};
+    }
+
+    /**
+     * 由历史活动构建 BPMN 执行状态（供 BpmnProcessViewer 高亮/时间线使用）
+     */
+    private ProcessExecutionState buildExecutionState(String processInstanceId) {
+        List<HistoricActivityInfo> activities = historyApi.activities(processInstanceId);
+        Map<String, NodeExecutionState> elements = new LinkedHashMap<>();
+        List<String> executionOrder = new ArrayList<>();
+        List<String> timestamps = new ArrayList<>();
+        for (HistoricActivityInfo act : activities) {
+            String id = act.getActivityId();
+            if (id == null || id.isBlank()) {
+                continue;
+            }
+            boolean done = act.getEndTime() != null;
+            NodeExecutionState prev = elements.get(id);
+            elements.put(id, NodeExecutionState.builder()
+                    .status(done ? ExecutionStatus.completed : ExecutionStatus.active)
+                    .visitCount((prev == null ? 0 : prev.getVisitCount()) + 1)
+                    .rejectCount(prev == null ? 0 : prev.getRejectCount())
+                    .assignee(act.getAssignee() != null ? act.getAssignee() : (prev == null ? null : prev.getAssignee()))
+                    .build());
+            executionOrder.add(id);
+            timestamps.add(formatDateTime(done ? act.getEndTime() : act.getStartTime()));
+        }
+        return ProcessExecutionState.builder()
+                .processInstanceId(processInstanceId)
+                .elements(elements)
+                .executionOrder(executionOrder)
+                .timestamps(timestamps)
+                .build();
+    }
+
+    private static final DateTimeFormatter EXECUTION_TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+
+    private String formatDateTime(LocalDateTime time) {
+        return time == null ? null : EXECUTION_TIME_FORMATTER.format(time);
+    }
+
+    /**
+     * 加载流程定义部署的原始 BPMN XML
+     */
+    private String loadBpmnXml(String processDefinitionKey, String processDefinitionId) {
+        if (!StringUtils.hasText(processDefinitionId)) {
+            return null;
+        }
+        try {
+            return new String(processDefinitionApi.getBpmnXml(processDefinitionId), StandardCharsets.UTF_8);
+        } catch (Exception e) {
+            log.warn("加载BPMN XML失败: " + processDefinitionId + "(" + processDefinitionKey + ")", e);
+            return null;
+        }
+    }
+
+    /**
+     * 加载流程启动时注入的表单数据（processForm 流程变量）
+     */
+    private Object loadProcessForm(String processInstanceId) {
+        return historyApi.variables(processInstanceId).stream()
+                .filter(v -> "processForm".equals(v.getName()))
+                .findFirst()
+                .map(HistoricVariableInfo::getValue)
+                .orElse(null);
     }
 
     @Override
@@ -129,133 +216,29 @@ public class WorkflowHistoryServiceImpl implements WorkflowHistoryService {
             String assignee, String processInstanceId, Boolean finished,
             int pageNum, int pageSize) {
 
-        HistoricTaskInstanceQuery camundaQuery = historyService.createHistoricTaskInstanceQuery();
+        PageRestResponse<HistoricTaskInfo> page = historyApi.queryTasks(
+                assignee, processInstanceId, finished, pageNum, pageSize);
+        List<TaskVO> vos = page.getData().getPageData().stream()
+                .map(workflowHistoryMapper::toTaskVO).toList();
 
-        if (assignee != null && !assignee.isBlank()) {
-            camundaQuery.taskAssignee(assignee);
-        }
-        if (processInstanceId != null && !processInstanceId.isBlank()) {
-            camundaQuery.processInstanceId(processInstanceId);
-        }
-        if (finished != null && finished) {
-            camundaQuery.finished();
-        } else if (finished != null && !finished) {
-            camundaQuery.unfinished();
-        }
-
-        camundaQuery.orderByHistoricTaskInstanceEndTime().desc();
-
-        long total = camundaQuery.count();
-        int firstResult = (pageNum - 1) * pageSize;
-        List<HistoricTaskInstance> list = camundaQuery.listPage(firstResult, pageSize);
-        List<TaskVO> vos = list.stream().map(this::toTaskVO).toList();
-
-        return PageRestResponse.of(vos, total, pageSize, pageNum);
+        return PageRestResponse.of(vos, page.getData().getTotal(), pageSize, pageNum);
     }
 
     @Override
     public List<HistoricActivityVO> queryHistoricActivities(String processInstanceId) {
-        List<HistoricActivityInstance> activities = historyService.createHistoricActivityInstanceQuery()
-                .processInstanceId(processInstanceId)
-                .orderByHistoricActivityInstanceStartTime().asc()
-                .list();
-
-        return activities.stream().map(act -> HistoricActivityVO.builder()
-                .id(act.getId())
-                .activityId(act.getActivityId())
-                .activityName(act.getActivityName())
-                .activityType(act.getActivityType())
-                .startTime(toLocalDateTime(act.getStartTime()))
-                .endTime(toLocalDateTime(act.getEndTime()))
-                .durationInMillis(act.getDurationInMillis())
-                .assignee(act.getAssignee())
-                .taskId(act.getTaskId())
-                .processInstanceId(act.getProcessInstanceId())
-                .processDefinitionId(act.getProcessDefinitionId())
-                .build()).toList();
+        return historyApi.activities(processInstanceId).stream()
+                .map(workflowHistoryMapper::toActivityVO).toList();
     }
 
     @Override
     public PageRestResponse<HistoricVariableVO> queryHistoricVariables(
             String processInstanceId, String variableName, int pageNum, int pageSize) {
 
-        HistoricVariableInstanceQuery camundaQuery = historyService.createHistoricVariableInstanceQuery()
-                .processInstanceId(processInstanceId);
+        PageRestResponse<HistoricVariableInfo> page = historyApi.queryVariables(
+                processInstanceId, variableName, pageNum, pageSize);
+        List<HistoricVariableVO> vos = page.getData().getPageData().stream()
+                .map(workflowHistoryMapper::toVariableVO).toList();
 
-        if (variableName != null && !variableName.isBlank()) {
-            camundaQuery.variableName(variableName);
-        }
-
-        long total = camundaQuery.count();
-        int firstResult = (pageNum - 1) * pageSize;
-        List<HistoricVariableInstance> list = camundaQuery.listPage(firstResult, pageSize);
-        List<HistoricVariableVO> vos = list.stream().map(v -> HistoricVariableVO.builder()
-                .name(v.getName())
-                .value(v.getValue())
-                .typeName(v.getTypeName())
-                .processInstanceId(v.getProcessInstanceId())
-                .taskId(v.getTaskId())
-                .activityInstanceId(v.getActivityInstanceId())
-                .createTime(toLocalDateTime(v.getCreateTime()))
-//                .lastUpdatedTime(toLocalDateTime(v.getLastUpdatedTime()))
-                .build()).toList();
-
-        return PageRestResponse.of(vos, total, pageSize, pageNum);
-    }
-
-    private HistoricProcessInstanceVO toVO(HistoricProcessInstance hpi) {
-        HistoricProcessInstanceVO.HistoricProcessInstanceVOBuilder builder = HistoricProcessInstanceVO.builder()
-                .id(hpi.getId())
-                .businessKey(hpi.getBusinessKey())
-                .processDefinitionKey(hpi.getProcessDefinitionKey())
-                .processDefinitionName(hpi.getProcessDefinitionName())
-                .startTime(toLocalDateTime(hpi.getStartTime()))
-                .endTime(toLocalDateTime(hpi.getEndTime()))
-                .durationInMillis(hpi.getDurationInMillis())
-                .startUserId(hpi.getStartUserId())
-                .startUserName(hpi.getStartUserId())
-                .deleteReason(hpi.getDeleteReason())
-                .tenantId(hpi.getTenantId());
-
-        if (hpi.getEndTime() != null) {
-            if (hpi.getDeleteReason() != null) {
-                builder.state("deleted").status("terminated");
-            } else {
-                builder.state("completed").status("completed");
-            }
-        } else {
-            builder.state("active").status("running");
-        }
-
-        return builder.build();
-    }
-
-    private TaskVO toTaskVO(HistoricTaskInstance task) {
-        TaskVO.TaskVOBuilder builder = TaskVO.builder()
-                .id(task.getId())
-                .name(task.getName())
-                .description(task.getDescription())
-                .taskDefinitionKey(task.getTaskDefinitionKey())
-                .assignee(task.getAssignee())
-                .owner(task.getOwner())
-                .processInstanceId(task.getProcessInstanceId())
-                .executionId(task.getExecutionId())
-                .processDefinitionId(task.getProcessDefinitionId())
-                .tenantId(task.getTenantId())
-                .createTime(toLocalDateTime(task.getStartTime()))
-                .dueDate(toLocalDateTime(task.getDueDate()));
-
-        if (task.getPriority() > 0) {
-            builder.priority(task.getPriority());
-        }
-
-        return builder.build();
-    }
-
-    private LocalDateTime toLocalDateTime(Date date) {
-        if (date == null) {
-            return null;
-        }
-        return LocalDateTime.ofInstant(date.toInstant(), ZoneId.systemDefault());
+        return PageRestResponse.of(vos, page.getData().getTotal(), pageSize, pageNum);
     }
 }

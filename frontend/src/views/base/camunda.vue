@@ -142,12 +142,11 @@ async function handlePublish(modeler) {
     formData.append('deployment-source', 'camunda7-ui')
     formData.append('diagram.bpmn', new Blob([xml], { type: 'text/xml' }), 'diagram.bpmn')
     // await request.post('/deployment/create', formData)
-    alert('发布成功')
+    window.$message.success('发布成功')
   }
   catch (e) {
     console.log(`发布失败: ${e?.response?.data?.message || e.message}`)
-
-    alert(`发布失败: ${e?.response?.data?.message || e.message}`)
+    window.$message.error(`发布失败: ${e?.response?.data?.message || e.message}`)
   }
 }
 
@@ -265,6 +264,14 @@ async function onSearchDelegateExpressions(name) {
       :on-search-form-keys="onSearchFormKeys"
       :locale-messages="localeMessages"
       :available-locales="availableLocales"
-    />
+    >
+      <template #buttons="{ modeler }">
+        <NButton ghost @click="handlePublish(modeler)">
+          <template #icon>
+            <span class="i-ic-baseline-publish text-[#409eff]" />
+          </template>
+        </NButton>
+      </template>
+    </BpmnModelerProcess>
   </div>
 </template>

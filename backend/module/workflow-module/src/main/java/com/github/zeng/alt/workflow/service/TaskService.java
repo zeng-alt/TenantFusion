@@ -3,6 +3,7 @@ package com.github.zeng.alt.workflow.service;
 import com.github.zeng.alt.api.rest.PageRestResponse;
 import com.github.zeng.alt.workflow.model.*;
 
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -21,6 +22,11 @@ public interface TaskService {
      * 获取任务详情
      */
     TaskVO getTask(String id);
+
+    /**
+     * 获取任务表单定义
+     */
+    List<TaskFormDefinitionVO> getTaskForms(String id);
 
     /**
      * 签收/认领任务

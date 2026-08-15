@@ -27,7 +27,7 @@ public class BasePage implements Serializable {
     private String order = "desc";
 
     @Schema(name = "当前页", example = "1")
-    private int page = 1;
+    private int pageNo = 1;
 
     @Schema(name = "每页条数", example = "20")
     private int pageSize = 20;
@@ -36,7 +36,7 @@ public class BasePage implements Serializable {
 
     public Pageable toPage() {
         return PageRequest.of(
-                page - 1,
+                pageNo - 1,
                 pageSize,
                 Sort.by(Sort.Direction.fromOptionalString(order).orElse(Sort.Direction.DESC), sort)
         );
@@ -45,7 +45,7 @@ public class BasePage implements Serializable {
 
     public Pageable toPage(Sort sort) {
         return PageRequest.of(
-                page - 1,
+                pageNo - 1,
                 pageSize,
                 sort
         );

@@ -2,8 +2,8 @@
   <CommonPage>
     <MeCrud
       ref="$table"
-      expand
       v-model:query-items="queryItems"
+      expand
       :scroll-x="1600"
       :columns="columns"
       :get-data="api.read"

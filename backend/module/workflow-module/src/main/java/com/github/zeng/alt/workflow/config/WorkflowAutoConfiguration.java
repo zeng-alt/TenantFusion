@@ -12,4 +12,5 @@ import org.springframework.context.annotation.ComponentScan;
 @ComponentScan(basePackages = "com.github.zeng.alt.workflow")
 public class WorkflowAutoConfiguration {
 
+
 }

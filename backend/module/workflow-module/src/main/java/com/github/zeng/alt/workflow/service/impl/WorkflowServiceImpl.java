@@ -2,8 +2,14 @@ package com.github.zeng.alt.workflow.service.impl;
 
 import com.github.zeng.alt.api.exception.BaseException;
 import com.github.zeng.alt.api.rest.PageRestResponse;
-import com.github.zeng.alt.workflow.entity.FormTemplateEntity;
-import com.github.zeng.alt.workflow.entity.FormTemplateVersionEntity;
+import com.github.zeng.alt.camunda.engine.api.deploy.DeployBundleCommand;
+import com.github.zeng.alt.camunda.engine.api.deploy.DeploymentApi;
+import com.github.zeng.alt.camunda.engine.api.deploy.DeploymentInformation;
+import com.github.zeng.alt.camunda.engine.api.deploy.NamedResource;
+import com.github.zeng.alt.camunda.engine.api.process.ProcessInstanceApi;
+import com.github.zeng.alt.camunda.engine.api.process.ProcessInstanceQuery;
+import com.github.zeng.alt.camunda.engine.api.repository.ProcessDefinitionApi;
+import com.github.zeng.alt.tenant.api.TenantContextHolder;
 import com.github.zeng.alt.workflow.entity.WorkflowEntity;
 import com.github.zeng.alt.workflow.entity.WorkflowVersionEntity;
 import com.github.zeng.alt.workflow.mapper.WorkflowMapper;
@@ -16,23 +22,15 @@ import com.querydsl.core.BooleanBuilder;
 import com.querydsl.core.types.Predicate;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.apachecommons.CommonsLog;
-import org.apache.commons.io.IOUtils;
-import org.camunda.bpm.engine.RepositoryService;
-import org.camunda.bpm.engine.RuntimeService;
-import org.camunda.bpm.engine.repository.Deployment;
-import org.camunda.bpm.engine.repository.DeploymentBuilder;
-import org.camunda.bpm.engine.repository.ProcessDefinition;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
-import java.io.IOException;
-import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * 流程管理服务实现
@@ -48,8 +46,9 @@ public class WorkflowServiceImpl implements WorkflowService {
     private final WorkflowVersionRepository workflowVersionRepository;
     private final WorkflowMapper workflowMapper;
     private final WorkflowVersionMapper workflowVersionMapper;
-    private final RepositoryService repositoryService;
-    private final RuntimeService runtimeService;
+    private final DeploymentApi deploymentApi;
+    private final ProcessDefinitionApi processDefinitionApi;
+    private final ProcessInstanceApi processInstanceApi;
 
     @Override
     @Transactional(readOnly = true)
@@ -57,7 +56,7 @@ public class WorkflowServiceImpl implements WorkflowService {
         Predicate predicate = buildPredicate(query);
         Page<WorkflowEntity> pageResult = workflowRepository.findAll(predicate, query.toPage());
         List<WorkflowVO> vos = pageResult.getContent().stream().map(workflowMapper::toVO).toList();
-        return PageRestResponse.of(vos, pageResult.getTotalElements(), query.getPageSize(), query.getPage());
+        return PageRestResponse.of(vos, pageResult.getTotalElements(), query.getPageSize(), query.getPageNo());
     }
 
     @Override
@@ -105,15 +104,16 @@ public class WorkflowServiceImpl implements WorkflowService {
         List<WorkflowVersionEntity> versions = workflowVersionRepository.findByWorkflowIdOrderByVersionDesc(id);
         boolean hasPublished = versions.stream().anyMatch(v -> v.getStatus() == WorkflowVersionStatus.PUBLISHED);
         if (hasPublished) {
-            boolean hasInstances = runtimeService.createProcessInstanceQuery()
-                    .processDefinitionKey(entity.getWorkflowKey())
-                    .count() > 0;
-            if (hasInstances) {
+            long running = processInstanceApi.query(ProcessInstanceQuery.builder()
+                            .processDefinitionKey(entity.getWorkflowKey())
+                            .pageNo(1).pageSize(1).build())
+                    .getData().getTotal();
+            if (running > 0) {
                 throw new BaseException("流程 [ " + entity.getWorkflowKey() + " ] 存在运行中的实例，无法删除");
             }
             for (WorkflowVersionEntity version : versions) {
                 if (StringUtils.hasText(version.getProcessDefinitionId())) {
-                    repositoryService.deleteProcessDefinition(version.getProcessDefinitionId(), false);
+                    processDefinitionApi.delete(version.getProcessDefinitionId(), false);
                 }
             }
         }
@@ -144,7 +144,7 @@ public class WorkflowServiceImpl implements WorkflowService {
 
     @Override
     @Transactional(readOnly = true)
-    public WorkflowVersionVO getVersion(Long versionId) throws IOException {
+    public WorkflowVersionVO getVersion(Long versionId) {
         WorkflowVersionVO vo = workflowVersionRepository
                 .findById(versionId)
                 .map(workflowVersionMapper::toVO)
@@ -156,7 +156,7 @@ public class WorkflowServiceImpl implements WorkflowService {
 
         if (vo.getStatus() != WorkflowVersionStatus.DRAFT
                 && StringUtils.hasText(vo.getProcessDefinitionId())) {
-            vo.setBpmnXml(IOUtils.toString(repositoryService.getProcessModel(vo.getProcessDefinitionId()), Charset.defaultCharset()));
+            vo.setBpmnXml(new String(processDefinitionApi.getBpmnXml(vo.getProcessDefinitionId()), StandardCharsets.UTF_8));
         }
         return vo;
     }
@@ -221,44 +221,38 @@ public class WorkflowServiceImpl implements WorkflowService {
         WorkflowEntity workflow = getRequiredEntity(version.getWorkflowId());
         String bpmnXml = version.getBpmnXml();
         if (!StringUtils.hasText(bpmnXml) && StringUtils.hasText(version.getProcessDefinitionId())) {
-            try {
-                bpmnXml = IOUtils.toString(
-                        repositoryService.getProcessModel(version.getProcessDefinitionId()), Charset.defaultCharset());
-            } catch (IOException e) {
-                throw new BaseException("读取已下线版本 BPMN 失败: " + e.getMessage(), e);
-            }
+            bpmnXml = new String(processDefinitionApi.getBpmnXml(version.getProcessDefinitionId()), StandardCharsets.UTF_8);
         }
         if (!StringUtils.hasText(bpmnXml)) {
             throw new BaseException("版本内容为空，请先保存流程设计");
         }
 
-        DeploymentBuilder builder = repositoryService.createDeployment()
-                .name(workflow.getWorkflowName())
-                .addString(workflow.getWorkflowKey() + ".bpmn", bpmnXml);
-        Deployment deployment;
-        try {
-            deployment = builder.deploy();
-        } catch (RuntimeException e) {
-            throw new BaseException("流程部署失败: " + e.getMessage(), e);
-        }
-        ProcessDefinition pd = repositoryService.createProcessDefinitionQuery()
-                .deploymentId(deployment.getId())
-                .singleResult();
+        NamedResource namedResource = new NamedResource(
+                Objects.requireNonNull(workflow.getWorkflowKey() + ".bpmn"),
+                bpmnXml.getBytes(StandardCharsets.UTF_8)
+        );
+        DeployBundleCommand command = DeployBundleCommand.builder()
+                .resources(List.of(namedResource))
+                .tenantId(TenantContextHolder.getTenantId())
+                .build();
+
+        DeploymentInformation deployment = deploymentApi.deploy(command);
+        var pd = processDefinitionApi.getByDeploymentId(deployment.getDeploymentId());
         if (pd == null) {
-            repositoryService.deleteDeployment(deployment.getId(), true);
+            processDefinitionApi.deleteDeployment(deployment.getDeploymentId(), true);
             throw new BaseException("部署成功但未找到流程定义");
         }
 
         version.setStatus(WorkflowVersionStatus.PUBLISHED);
         version.setCurrent(true);
         version.setBpmnXml(null);
-        version.setDeploymentId(deployment.getId());
+        version.setDeploymentId(deployment.getDeploymentId());
         version.setProcessDefinitionId(pd.getId());
         version.setPublishedDate(LocalDateTime.now());
         WorkflowVersionEntity saved = workflowVersionRepository.save(version);
         syncCurrentVersion(workflow);
         log.info("上线流程版本: workflowId=" + workflow.getWorkflowId() + ", version=" + saved.getVersion()
-                + ", deploymentId=" + deployment.getId());
+                + ", deploymentId=" + deployment.getDeploymentId());
         return saved;
     }
 
@@ -271,7 +265,7 @@ public class WorkflowServiceImpl implements WorkflowService {
         }
         boolean wasCurrent = Boolean.TRUE.equals(version.getCurrent());
         if (wasCurrent && StringUtils.hasText(version.getProcessDefinitionId())) {
-            repositoryService.suspendProcessDefinitionById(version.getProcessDefinitionId(), true, null);
+            processDefinitionApi.suspend(version.getProcessDefinitionId());
         }
         version.setStatus(WorkflowVersionStatus.OFFLINE);
         version.setCurrent(false);
@@ -316,9 +310,9 @@ public class WorkflowServiceImpl implements WorkflowService {
             throw new BaseException("当前版本未关联 Camunda 流程定义");
         }
         if (suspend) {
-            repositoryService.suspendProcessDefinitionById(current.getProcessDefinitionId(), true, null);
+            processDefinitionApi.suspend(current.getProcessDefinitionId());
         } else {
-            repositoryService.activateProcessDefinitionById(current.getProcessDefinitionId(), true, null);
+            processDefinitionApi.activate(current.getProcessDefinitionId());
         }
         log.info((suspend ? "挂起" : "激活") + "流程: " + workflow.getWorkflowKey() + ", id=" + workflow.getWorkflowId());
     }

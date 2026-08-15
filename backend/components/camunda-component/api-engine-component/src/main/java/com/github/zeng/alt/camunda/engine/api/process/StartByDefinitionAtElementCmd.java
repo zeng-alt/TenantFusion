@@ -1,0 +1,52 @@
+package com.github.zeng.alt.camunda.engine.api.process;
+
+import lombok.Builder;
+import lombok.Data;
+
+import java.io.Serializable;
+import java.util.Map;
+
+/**
+ * 按流程定义Key在指定节点启动流程命令
+ *
+ * @author zengAlt
+ */
+@Data
+@Builder
+public class StartByDefinitionAtElementCmd implements Serializable {
+
+    /**
+     * 流程定义Key
+     */
+    private String processDefinitionKey;
+
+    /**
+     * 目标节点ID
+     */
+    private String elementId;
+
+    /**
+     * 业务Key
+     */
+    private String businessKey;
+
+    /**
+     * 流程变量
+     */
+    private Map<String, Object> variables;
+
+    /**
+     * 发起人
+     */
+    private String initiator;
+
+    /**
+     * 流程定义ID（可选限定）
+     */
+    private String processDefinitionId;
+
+    /**
+     * 租户ID
+     */
+    private String tenantId;
+}

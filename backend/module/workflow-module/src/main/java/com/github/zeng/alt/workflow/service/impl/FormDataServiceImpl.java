@@ -56,13 +56,13 @@ public class FormDataServiceImpl implements FormDataService {
         Sort sort = Sort.by(Sort.Direction.fromOptionalString(query.getOrder()).orElse(Sort.Direction.DESC),
                 query.getSort());
         Page<FormDataEntity> pageResult = formDataRepository.findAll(predicate,
-                PageRequest.of(query.getPage() - 1, query.getPageSize(), sort));
+                PageRequest.of(query.getPageNo() - 1, query.getPageSize(), sort));
         List<FormDataEntity> entities = pageResult.getContent();
         Map<Long, String> templateNames = resolveTemplateNames(entities);
         List<FormDataVO> vos = entities.stream()
                 .map(entity -> FormDataVO.from(entity, objectMapper,
                         templateNames.get(entity.getFormTemplateId()))).toList();
-        return PageRestResponse.of(vos, pageResult.getTotalElements(), query.getPageSize(), query.getPage());
+        return PageRestResponse.of(vos, pageResult.getTotalElements(), query.getPageSize(), query.getPageNo());
     }
 
     @Override

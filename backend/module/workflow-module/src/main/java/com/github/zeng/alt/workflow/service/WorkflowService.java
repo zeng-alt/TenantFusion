@@ -8,7 +8,6 @@ import com.github.zeng.alt.workflow.model.WorkflowUpdateCmd;
 import com.github.zeng.alt.workflow.model.WorkflowVO;
 import com.github.zeng.alt.workflow.model.WorkflowVersionVO;
 
-import java.io.IOException;
 import java.util.List;
 
 /**
@@ -74,7 +73,7 @@ public interface WorkflowService {
      * @param versionId 版本ID
      * @return 版本
      */
-    WorkflowVersionVO getVersion(Long versionId) throws IOException;
+    WorkflowVersionVO getVersion(Long versionId);
 
     /**
      * 获取版本详情（不含 BPMN XML）

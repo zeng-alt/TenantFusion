@@ -1,138 +1,88 @@
-<!--------------------------------
- - @Author: Ronnie Zhang
- - @LastEditor: Ronnie Zhang
- - @LastEditTime: 2023/12/04 22:46:57
- - @Email: zclzone@outlook.com
- - Copyright © 2023 Ronnie Zhang(大脸怪) | https://isme.top
- --------------------------------->
+<script setup lang="js">
+import { BpmnProcessViewer } from '@zeng-alt/camunda7-ui'
+import { ref } from 'vue'
+
+const bpmnXml = '<?xml version="1.0" encoding="UTF-8"?>\n<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn">\n  <bpmn:process id="Process_uye82uqzs" name="test1" isExecutable="true" camunda:versionTag="1" camunda:historyTimeToLive="180">\n    <bpmn:startEvent id="StartEvent_1" name="开始">\n      <bpmn:outgoing>Flow_18s9qhg</bpmn:outgoing>\n    </bpmn:startEvent>\n    <bpmn:endEvent id="EndEvent_1" name="结束">\n      <bpmn:incoming>Flow_11n216k</bpmn:incoming>\n    </bpmn:endEvent>\n    <bpmn:userTask id="Activity_0awh700" name="审批" camunda:candidateUsers="admin">\n      <bpmn:extensionElements>\n        <camunda:formData>\n          <camunda:formField id="agree" label="同意" type="boolean" defaultValue="true" />\n        </camunda:formData>\n        <camunda:taskListener delegateExpression="${taskLoggingListener}" event="create" />\n      </bpmn:extensionElements>\n      <bpmn:incoming>Flow_18s9qhg</bpmn:incoming>\n      <bpmn:outgoing>Flow_1bbke3j</bpmn:outgoing>\n    </bpmn:userTask>\n    <bpmn:sequenceFlow id="Flow_1bbke3j" sourceRef="Activity_0awh700" targetRef="Activity_08ftj2s" />\n    <bpmn:sequenceFlow id="Flow_18s9qhg" sourceRef="StartEvent_1" targetRef="Activity_0awh700" />\n    <bpmn:userTask id="Activity_08ftj2s" name="审批1" camunda:candidateUsers="admin">\n      <bpmn:extensionElements>\n        <camunda:formData>\n          <camunda:formField id="agree" label="同意" type="boolean" defaultValue="true" />\n        </camunda:formData>\n        <camunda:taskListener class="${taskLoggingListener}" event="assignment" />\n      </bpmn:extensionElements>\n      <bpmn:incoming>Flow_1bbke3j</bpmn:incoming>\n      <bpmn:outgoing>Flow_11n216k</bpmn:outgoing>\n    </bpmn:userTask>\n    <bpmn:sequenceFlow id="Flow_11n216k" sourceRef="Activity_08ftj2s" targetRef="EndEvent_1" />\n  </bpmn:process>\n  <bpmndi:BPMNDiagram id="BPMNDiagram_1">\n    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="Process_uye82uqzs">\n      <bpmndi:BPMNShape id="StartEvent_1_di" bpmnElement="StartEvent_1">\n        <dc:Bounds x="156" y="102" width="36" height="36" />\n      </bpmndi:BPMNShape>\n      <bpmndi:BPMNShape id="EndEvent_1_di" bpmnElement="EndEvent_1">\n        <dc:Bounds x="692" y="102" width="36" height="36" />\n        <bpmndi:BPMNLabel>\n          <dc:Bounds x="699" y="138" width="23" height="14" />\n        </bpmndi:BPMNLabel>\n      </bpmndi:BPMNShape>\n      <bpmndi:BPMNShape id="Activity_0awh700_di" bpmnElement="Activity_0awh700">\n        <dc:Bounds x="260" y="80" width="100" height="80" />\n        <bpmndi:BPMNLabel />\n      </bpmndi:BPMNShape>\n      <bpmndi:BPMNShape id="Activity_08ftj2s_di" bpmnElement="Activity_08ftj2s">\n        <dc:Bounds x="430" y="80" width="100" height="80" />\n        <bpmndi:BPMNLabel />\n      </bpmndi:BPMNShape>\n      <bpmndi:BPMNEdge id="Flow_1bbke3j_di" bpmnElement="Flow_1bbke3j">\n        <di:waypoint x="360" y="120" />\n        <di:waypoint x="430" y="120" />\n      </bpmndi:BPMNEdge>\n      <bpmndi:BPMNEdge id="Flow_18s9qhg_di" bpmnElement="Flow_18s9qhg">\n        <di:waypoint x="192" y="120" />\n        <di:waypoint x="260" y="120" />\n      </bpmndi:BPMNEdge>\n      <bpmndi:BPMNEdge id="Flow_11n216k_di" bpmnElement="Flow_11n216k">\n        <di:waypoint x="530" y="120" />\n        <di:waypoint x="692" y="120" />\n      </bpmndi:BPMNEdge>\n    </bpmndi:BPMNPlane>\n  </bpmndi:BPMNDiagram>\n</bpmn:definitions>\n'
+
+const mockUsers = [
+  { label: '张三', value: 'zhangsan' },
+  { label: '李四', value: 'lisi' },
+  { label: '王五', value: 'wangwu' },
+]
+
+const mockGroups = [
+  { label: '管理层', value: 'management' },
+  { label: '工程部', value: 'engineering' },
+]
+
+async function onSearchUsers(name) {
+  if (!name)
+    return mockUsers
+  return mockUsers.filter(
+    u => u.label.includes(name) || u.value.includes(name.toLowerCase()),
+  )
+}
+
+async function onSearchUserGroups(name) {
+  if (!name)
+    return mockGroups
+  return mockGroups.filter(
+    g => g.label.includes(name) || g.value.includes(name.toLowerCase()),
+  )
+}
+
+const executionState = {
+  processInstanceId: '4f7e2be5-96e2-11f1-a88a-0a002700000f',
+  elements: {
+    StartEvent_1: {
+      status: 'completed',
+      visitCount: 1,
+      rejectCount: 0,
+      assignee: null,
+      candidateUsers: null,
+      candidateGroups: null,
+    },
+    Activity_0awh700: {
+      status: 'completed',
+      visitCount: 1,
+      rejectCount: 0,
+      assignee: null,
+      candidateUsers: null,
+      candidateGroups: null,
+    },
+    Activity_08ftj2s: {
+      status: 'active',
+      visitCount: 1,
+      rejectCount: 0,
+      assignee: null,
+      candidateUsers: null,
+      candidateGroups: null,
+    },
+  },
+  executionOrder: [
+    'StartEvent_1',
+    'Activity_0awh700',
+    'Activity_08ftj2s',
+  ],
+  timestamps: [
+    '2026-08-13 14:43:36',
+    '2026-08-13 15:01:46',
+    '2026-08-13 15:01:46',
+  ],
+  results: null,
+}
+</script>
 
 <template>
   <CommonPage show-footer>
-    <n-space size="large">
-      <n-card title="按钮 Button">
-        <n-space>
-          <n-button>Default</n-button>
-          <n-button type="tertiary">
-            Tertiary
-          </n-button>
-          <n-button type="primary">
-            Primary
-          </n-button>
-          <n-button type="info">
-            Info
-          </n-button>
-          <n-button type="success">
-            Success
-          </n-button>
-          <n-button type="warning">
-            Warning
-          </n-button>
-          <n-button type="error">
-            Error
-          </n-button>
-        </n-space>
-      </n-card>
-
-      <n-card title="带 Icon 的按钮">
-        <n-space>
-          <n-button type="info">
-            <i class="i-material-symbols:add mr-4 text-18" />
-            新增
-          </n-button>
-          <n-button type="error">
-            <i class="i-material-symbols:delete-outline mr-4 text-18" />
-            删除
-          </n-button>
-          <n-button type="warning">
-            <i class="i-material-symbols:edit-outline mr-4 text-18" />
-            编辑
-          </n-button>
-          <n-button type="primary">
-            <i class="i-majesticons:eye-line mr-4 text-18" />
-            查看
-          </n-button>
-        </n-space>
-      </n-card>
-    </n-space>
-
-    <n-space size="large" mt-30>
-      <n-card min-w-340 title="通知 Notification">
-        <n-space>
-          <n-button @click="notify('info')">
-            信息
-          </n-button>
-          <n-button @click="notify('success')">
-            成功
-          </n-button>
-          <n-button @click="notify('warning')">
-            警告
-          </n-button>
-          <n-button @click="notify('error')">
-            错误
-          </n-button>
-        </n-space>
-      </n-card>
-
-      <n-card min-w-340 title="确认弹窗 Dialog">
-        <n-button type="error" @click="handleDelete">
-          <i class="i-mi:delete mr-4" />
-          删除
-        </n-button>
-      </n-card>
-
-      <n-card min-w-340 title="消息提醒 Message">
-        <n-space>
-          <n-button :loading="loading" type="primary" @click="handleLogin">
-            <i v-show="!loading" class="i-mdi:login mr-4" />
-            登录
-          </n-button>
-          <n-button type="error" @click="handleMultiMessage">
-            多个错误提醒
-          </n-button>
-        </n-space>
-      </n-card>
-    </n-space>
+    <div class="h-screen w-screen bg-#f5f5f5">
+      <BpmnProcessViewer
+        :process-xml="bpmnXml"
+        :execution-state="executionState"
+        :on-search-users="onSearchUsers"
+        :on-search-user-groups="onSearchUserGroups"
+        show-timeline
+      />
+    </div>
   </CommonPage>
 </template>
-
-<script setup>
-import { sleep } from '@/utils'
-
-function handleDelete() {
-  $dialog.confirm({
-    content: '确认删除？',
-    confirm() {
-      $message.success('删除成功')
-    },
-    cancel() {
-      $message.warning('已取消')
-    },
-  })
-}
-
-const loading = ref(false)
-async function handleLogin() {
-  loading.value = true
-  $message.loading('登录中...', { key: 'login' })
-  await sleep(2000)
-  $message.error('登录失败', { key: 'login' })
-  await sleep(500)
-  $message.loading('正在尝试重新登录...', { key: 'login' })
-  await sleep(2000)
-  $message.success('登录成功', { key: 'login' })
-  loading.value = false
-}
-
-function handleMultiMessage() {
-  $message.error(['用户名不能为空！', '密码不能为空！', '密码必须大于6位！'])
-}
-
-function notify(type) {
-  $notification[type]({
-    content: '说点啥呢',
-    meta: '想不出来',
-    duration: 2500,
-    keepAliveOnHover: true,
-  })
-}
-</script>

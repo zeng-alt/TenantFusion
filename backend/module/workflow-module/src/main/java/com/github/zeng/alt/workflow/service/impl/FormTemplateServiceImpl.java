@@ -54,7 +54,7 @@ public class FormTemplateServiceImpl implements FormTemplateService {
         Predicate predicate = buildPredicate(query);
         Page<FormTemplateEntity> pageResult = formTemplateRepository.findAll(predicate, query.toPage());
         List<FormTemplateVO> vos = pageResult.getContent().stream().map(formTemplateMapper::toVO).toList();
-        return PageRestResponse.of(vos, pageResult.getTotalElements(), query.getPageSize(), query.getPage());
+        return PageRestResponse.of(vos, pageResult.getTotalElements(), query.getPageSize(), query.getPageNo());
     }
 
     @Override

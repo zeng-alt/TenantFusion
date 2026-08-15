@@ -92,7 +92,7 @@ public class WorkflowController {
         return RestResponse.success(workflowService.saveDraft(id, cmd));
     }
 
-    @Operation(summary = "保存流程草稿")
+    @Operation(summary = "保存并发布流程")
     @PostMapping("/{id}/publish")
     public RestResponse<WorkflowVersionVO> saveDraftAndPublish(@PathVariable Long id, @Valid @RequestBody WorkflowSaveDraftCmd cmd) {
         return RestResponse.success(workflowService.saveDraftAndPublish(id, cmd));

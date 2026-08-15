@@ -89,7 +89,21 @@
               placeholder="请输入处理意见（驳回时必填）"
             />
             <div class="mt-16 flex justify-end">
-              <NButton type="error" :loading="submitting" @click="handleComplete('reject')">
+              <NButton
+                v-if="canUnclaim"
+                type="warning"
+                :loading="submitting"
+                @click="handleUnclaim"
+              >
+                <i class="i-carbon:close mr-4 text-14" />
+                取消认领
+              </NButton>
+              <NButton
+                type="error"
+                :loading="submitting"
+                class="ml-12"
+                @click="handleComplete('reject')"
+              >
                 <i class="i-carbon:close mr-4 text-14" />
                 驳回
               </NButton>
@@ -114,10 +128,12 @@
 
 <script setup>
 import { NButton, NDescriptions, NDescriptionsItem, NEmpty, NInput, NSpin, NTag, NTimeline, NTimelineItem } from 'naive-ui'
-import { onMounted, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { AppCard, CommonPage } from '@/components'
+import { useUserStore } from '@/store'
 import { formatDateTime } from '@/utils'
+import { isAdmin, isSuperAdmin } from '@/utils/auth'
 import api from '../api'
 import { ACTION_MAP } from '../renderers'
 
@@ -131,6 +147,12 @@ const submitting = ref(false)
 const task = ref(null)
 const history = ref([])
 const comment = ref('')
+
+const userStore = useUserStore()
+const canUnclaim = computed(() => {
+  const assignee = task.value?.assignee
+  return !!assignee && (userStore?.username === assignee || isAdmin() || isSuperAdmin())
+})
 
 function actionCfg(action) {
   return ACTION_MAP[action] || { type: 'default', text: action || '—' }
@@ -170,12 +192,28 @@ onMounted(async () => {
   }
 })
 
+async function handleUnclaim() {
+  if (!task.value?.id)
+    return
+  submitting.value = true
+  try {
+    await api.unclaim(task.value.id)
+    $message.success('已取消认领')
+    router.push({ path: '/my-flow/todo' })
+  }
+  catch (error) {
+    console.error(error)
+    $message.error(error?.message || '取消认领失败')
+    submitting.value = false
+  }
+}
+
 async function handleComplete(action) {
   if (action === 'reject' && !comment.value.trim())
     return $message.warning('驳回时请填写处理意见')
   submitting.value = true
   try {
-    await api.complete(task.value.id, { action, comment: comment.value.trim() })
+    await api.complete({ variables: { action }, taskId: task.value.id, comment: comment.value.trim() })
     $message.success(action === 'approve' ? '已同意，流程继续流转' : '已驳回')
     router.push({ path: '/my-flow/todo' })
   }

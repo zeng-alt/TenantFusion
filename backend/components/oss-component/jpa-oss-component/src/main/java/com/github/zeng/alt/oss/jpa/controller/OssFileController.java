@@ -50,7 +50,7 @@ public class OssFileController {
                 pageResult.getContent(),
                 pageResult.getTotalElements(),
                 query.getPageSize(),
-                query.getPage()
+                query.getPageNo()
         );
     }
 

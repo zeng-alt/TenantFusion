@@ -46,6 +46,14 @@ public interface WorkflowVersionRepository extends BaseRepository<WorkflowVersio
     Optional<WorkflowVersionEntity> findFirstByWorkflowIdAndCurrentTrue(Long workflowId);
 
     /**
+     * 按流程定义ID查询版本记录（用于按 processDefinitionId 回溯 BPMN XML）
+     *
+     * @param processDefinitionId 流程定义ID
+     * @return 版本记录
+     */
+    Optional<WorkflowVersionEntity> findFirstByProcessDefinitionId(String processDefinitionId);
+
+    /**
      * 查询流程中指定状态的版本列表
      *
      * @param workflowId 流程ID

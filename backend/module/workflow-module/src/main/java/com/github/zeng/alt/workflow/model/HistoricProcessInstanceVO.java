@@ -6,6 +6,7 @@ import lombok.Data;
 
 import java.io.Serializable;
 import java.time.LocalDateTime;
+import java.util.List;
 
 /**
  * 历史流程实例视图对象
@@ -64,4 +65,19 @@ public class HistoricProcessInstanceVO implements Serializable {
 
     @Schema(name = "租户ID")
     private String tenantId;
+
+    @Schema(name = "流程定义原始 BPMN XML")
+    private String bpmnXml;
+
+    @Schema(name = "发起时提交的表单数据（processForm）")
+    private Object processForm;
+
+    @Schema(name = "当前任务节点表单定义列表")
+    private List<TaskFormDefinitionVO> currentTaskForms;
+
+    @Schema(name = "配置表单定义（流程绑定业务关联的配置表单版本）")
+    private FormConfigVersionVO configForm;
+
+    @Schema(name = "流程执行状态（供 BpmnProcessViewer 高亮/时间线使用）")
+    private ProcessExecutionState executionState;
 }

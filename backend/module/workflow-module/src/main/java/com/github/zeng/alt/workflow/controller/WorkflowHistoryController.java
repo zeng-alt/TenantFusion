@@ -3,6 +3,7 @@ package com.github.zeng.alt.workflow.controller;
 import com.github.zeng.alt.api.rest.PageRestResponse;
 import com.github.zeng.alt.api.rest.RestResponse;
 import com.github.zeng.alt.workflow.model.HistoricActivityVO;
+import com.github.zeng.alt.workflow.model.HistoricProcessInstanceQuery;
 import com.github.zeng.alt.workflow.model.HistoricProcessInstanceVO;
 import com.github.zeng.alt.workflow.model.HistoricVariableVO;
 import com.github.zeng.alt.workflow.model.TaskVO;
@@ -32,16 +33,8 @@ public class WorkflowHistoryController {
 
     @Operation(summary = "分页查询历史流程实例")
     @GetMapping("/process-instances")
-    public PageRestResponse<HistoricProcessInstanceVO> listHistoricInstances(
-            @Parameter(description = "流程定义Key") @RequestParam(required = false) String processDefinitionKey,
-            @Parameter(description = "流程定义名称（模糊匹配）") @RequestParam(required = false) String processDefinitionName,
-            @Parameter(description = "业务键") @RequestParam(required = false) String businessKey,
-            @Parameter(description = "流程状态：running-进行中，completed-已完成，terminated-已终止，suspended-已挂起") @RequestParam(required = false) String state,
-            @Parameter(description = "启动用户ID") @RequestParam(required = false) String startUserId,
-            @Parameter(description = "页码") @RequestParam(defaultValue = "1") int pageNum,
-            @Parameter(description = "每页条数") @RequestParam(defaultValue = "20") int pageSize) {
-        return workflowHistoryService.queryHistoricInstances(
-                processDefinitionKey, processDefinitionName, businessKey, state, startUserId, pageNum, pageSize);
+    public PageRestResponse<HistoricProcessInstanceVO> listHistoricInstances(HistoricProcessInstanceQuery query) {
+        return workflowHistoryService.queryHistoricInstances(query);
     }
 
     @Operation(summary = "获取历史流程实例详情")

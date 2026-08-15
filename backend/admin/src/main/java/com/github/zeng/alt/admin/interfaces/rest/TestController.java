@@ -92,10 +92,10 @@ public class TestController {
 				.filter(d -> query.getBirthday() == null || query.getBirthday().equals(d.getBirthday()))
 				.sorted(Comparator.comparing(TestData::getId).reversed())
 				.toList();
-		int start = (query.getPage() - 1) * query.getPageSize();
+		int start = (query.getPageNo() - 1) * query.getPageSize();
 		start = Math.min(start, all.size());
 		int end = Math.min(start + query.getPageSize(), all.size());
-		return PageRestResponse.of(all.subList(start, end), all.size(), query.getPageSize(), query.getPage());
+		return PageRestResponse.of(all.subList(start, end), all.size(), query.getPageSize(), query.getPageNo());
 	}
 
 	/**

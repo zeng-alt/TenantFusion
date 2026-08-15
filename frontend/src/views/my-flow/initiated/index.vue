@@ -13,7 +13,8 @@
       :columns="columns"
       :get-data="api.initiated"
       row-key="id"
-      :scroll-x="1200"
+      expand
+      :scroll-x="1600"
     >
       <MeQueryItem label="流程名称" :label-width="70">
         <NInput
@@ -49,18 +50,22 @@
           :label-width="90"
           :model="startForm"
         >
-          <n-form-item path="processDefinitionKey" :rule="required">
+          <n-form-item path="workflow" :rule="required">
             <template #label>
               发起流程
             </template>
-            <NSelect
-              v-model:value="startForm.processDefinitionKey"
-              :loading="definitionLoading"
-              :options="definitionOptions"
-              filterable
-              clearable
+            <WorkflowSelect
+              v-model:value="startForm.workflow"
               placeholder="请选择要发起的流程"
-              @update:value="handleProcessDefinitionChange"
+              @change="handleProcessDefinitionChange"
+            />
+          </n-form-item>
+          <n-form-item v-if="workflowVersionList.length" path="workflowVersionId" label="流程版本">
+            <NSelect
+              v-model:value="selectedWorkflowVersionId"
+              :options="workflowVersionOptions"
+              filterable
+              placeholder="请选择流程版本"
             />
           </n-form-item>
           <n-form-item path="businessKey" label="业务Key">
@@ -135,7 +140,7 @@
 import { NAlert, NButton, NCard, NDivider, NInput, NInputGroup, NSelect, NSpin } from 'naive-ui'
 import { computed, h, onMounted, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { CommonPage, MeCrud, MeModal, MeQueryItem } from '@/components'
+import { CommonPage, MeCrud, MeModal, MeQueryItem, WorkflowSelect } from '@/components'
 import { formatDate, formatDateTime, randomKey } from '@/utils'
 import formConfigApi from '@/views/template/form-config/api'
 import FormRenderer from '@/views/template/form-config/components/renderer/FormRenderer.vue'
@@ -163,18 +168,16 @@ onMounted(() => {
 const required = {
   required: true,
   message: '此为必填项',
-  trigger: ['blur', 'change'],
 }
 
 const startModalRef = ref(null)
 const startFormRef = ref(null)
-const startForm = ref({ processDefinitionKey: null, businessKey: '' })
+const startForm = ref({ workflow: null, businessKey: '' })
 const customAttrs = ref([])
-const businessLoading = ref(false)
 const businessListCache = ref([])
-const definitionOptions = ref([])
-const definitionLoading = ref(false)
 const selectedBusiness = ref(null)
+const workflowVersionList = ref([])
+const selectedWorkflowVersionId = ref(null)
 const formLoading = ref(false)
 const formFields = ref([])
 const formVersions = ref([])
@@ -194,26 +197,18 @@ const formVersionOptions = computed(() =>
   })),
 )
 
-async function loadDefinitions() {
-  definitionLoading.value = true
-  try {
-    const res = await api.definitions()
-    definitionOptions.value = (res.data?.pageData || []).map(item => ({
-      label: `${item.name || item.key}（v${item.version}）`,
-      value: item.key,
-    }))
-  }
-  catch (error) {
-    console.error(error)
-    $message.error(error?.message || '加载流程列表失败')
-  }
-  finally {
-    definitionLoading.value = false
-  }
-}
+const WORKFLOW_VERSION_STATUS_TEXT = { DRAFT: '草稿', PUBLISHED: '已发布', OFFLINE: '已下线' }
+
+/** 流程版本下拉选项（未发布状态禁用） */
+const workflowVersionOptions = computed(() =>
+  workflowVersionList.value.map(v => ({
+    label: `v${v.version}${v.current ? '（当前）' : ''}${v.status === 'PUBLISHED' ? '' : `（${WORKFLOW_VERSION_STATUS_TEXT[v.status] || v.status}）`}`,
+    value: v.versionId,
+    disabled: v.status !== 'PUBLISHED',
+  })),
+)
 
 async function loadBusinesses() {
-  businessLoading.value = true
   try {
     const res = await api.businessList()
     businessListCache.value = res.data || []
@@ -222,47 +217,66 @@ async function loadBusinesses() {
     console.error(error)
     $message.error(error?.message || '加载业务列表失败')
   }
-  finally {
-    businessLoading.value = false
-  }
+}
+
+/** 清空配置表单填写值与校验错误 */
+function clearFormValues() {
+  Object.keys(formValues).forEach((key) => {
+    delete formValues[key]
+  })
+  formErrors.value = {}
 }
 
 function resetFormConfig() {
   selectedBusiness.value = null
+  workflowVersionList.value = []
+  selectedWorkflowVersionId.value = null
   formFields.value = []
-  formErrors.value = {}
   formVersions.value = []
   selectedVersionId.value = null
-  Object.keys(formValues).forEach((key) => {
-    delete formValues[key]
-  })
+  clearFormValues()
 }
 
-/** 选择流程后：根据流程模板绑定的业务分类，加载其关联配置表单 */
-async function handleProcessDefinitionChange(key) {
-  resetFormConfig()
-  if (!key)
+/** 加载流程版本（非已发布状态禁用，默认选中当前/最新已发布版本） */
+async function loadWorkflowVersions(workflowId) {
+  workflowVersionList.value = []
+  selectedWorkflowVersionId.value = null
+  if (!workflowId)
     return
-  if (!businessListCache.value.length) {
-    await loadBusinesses()
-  }
   try {
-    const res = await api.workflowByKey(key)
-    const workflow = (res.data?.pageData || []).find(item => item.workflowKey === key)
-    const category = workflow?.category || ''
-    const business = businessListCache.value.find(item => item.code === category || item.name === category)
-    if (!business) {
-      $message.warning(category
-        ? `未找到分类「${category}」对应的业务，可直接发起但无配置表单`
-        : '该流程未绑定业务分类，可直接发起但无配置表单')
-      return
-    }
-    await loadBusinessForm(business)
+    const { data } = await api.versions(workflowId)
+    const list = (data || []).slice().sort((a, b) => a.version - b.version)
+    workflowVersionList.value = list
+    const published = list.filter(v => v.status === 'PUBLISHED')
+    const picked = published.find(v => v.current) || published[published.length - 1]
+    if (picked)
+      selectedWorkflowVersionId.value = picked.versionId
   }
   catch (error) {
     console.error(error)
-    $message.error(error?.message || '加载流程绑定业务失败')
+    $message.error(error?.message || '加载流程版本失败')
   }
+}
+
+/** 选择流程后：根据流程模板绑定的业务分类，加载其关联配置表单 */
+async function handleProcessDefinitionChange(workflow) {
+  resetFormConfig()
+  startFormRef.value?.restoreValidation()
+  if (!workflow)
+    return
+  loadWorkflowVersions(workflow.workflowId)
+  if (!businessListCache.value.length) {
+    await loadBusinesses()
+  }
+  const category = workflow.category || ''
+  const business = businessListCache.value.find(item => item.code === category || item.name === category)
+  if (!business) {
+    $message.warning(category
+      ? `未找到分类「${category}」对应的业务，可直接发起但无配置表单`
+      : '该流程未绑定业务分类，可直接发起但无配置表单')
+    return
+  }
+  await loadBusinessForm(business)
 }
 
 /** 加载业务关联的配置表单（仅已发布版本可选，默认最新） */
@@ -308,10 +322,7 @@ async function applyVersionById(versionId) {
   formLoading.value = true
   try {
     const { data } = await formConfigApi.versionDetail(versionId)
-    Object.keys(formValues).forEach((key) => {
-      delete formValues[key]
-    })
-    formErrors.value = {}
+    clearFormValues()
     applyVersion(data)
   }
   catch (error) {
@@ -326,6 +337,7 @@ async function applyVersionById(versionId) {
 function handleVersionChange(versionId) {
   if (versionId == null) {
     formFields.value = []
+    clearFormValues()
     return
   }
   applyVersionById(versionId)
@@ -409,11 +421,10 @@ function generateBusinessKey() {
 }
 
 function handleStart() {
-  startForm.value = { processDefinitionKey: null, businessKey: '' }
+  startForm.value = { workflow: null, businessKey: '' }
   customAttrs.value = []
   resetFormConfig()
   startFormRef.value?.restoreValidation()
-  loadDefinitions()
   loadBusinesses()
   startModalRef.value?.open({
     title: '发起流程',
@@ -422,31 +433,42 @@ function handleStart() {
 }
 
 async function handleSubmit() {
+  startModalRef.value.okLoading = true
   try {
     await startFormRef.value?.validate()
   }
   catch {
+    startModalRef.value.okLoading = false
     return false
   }
   const errors = collectErrors(formFields.value, formValues)
   if (Object.keys(errors).length) {
     formErrors.value = errors
     $message.warning('请完善配置表单中的必填项')
+    startModalRef.value.okLoading = false
     return false
   }
   try {
+    const selectedVersion = workflowVersionList.value.find(
+      v => v.versionId === selectedWorkflowVersionId.value,
+    )
+    const configFormVersion = formVersions.value.find(v => v.versionId === selectedVersionId.value)?.version
+    const variables = {
+      businessId: selectedBusiness.value?.businessId,
+      businessCode: selectedBusiness.value?.code,
+      businessName: selectedBusiness.value?.name,
+      formConfigVersion: configFormVersion,
+      ...normalizeCustomAttrs(),
+    }
+    if (formFields.value.length)
+      variables.processForm = { ...formValues }
     await api.startProcess({
-      processDefinitionKey: startForm.value.processDefinitionKey,
+      processDefinitionKey: startForm.value.workflow?.workflowKey,
+      processDefinitionId: selectedVersion?.processDefinitionId || undefined,
       businessKey: startForm.value.businessKey?.trim()
         || selectedBusiness.value?.code
         || undefined,
-      variables: {
-        businessId: selectedBusiness.value?.businessId,
-        businessCode: selectedBusiness.value?.code,
-        businessName: selectedBusiness.value?.name,
-        ...formValues,
-        ...normalizeCustomAttrs(),
-      },
+      variables,
     })
     $message.success('流程发起成功')
     $table.value?.handleSearch()
@@ -455,6 +477,9 @@ async function handleSubmit() {
     console.error(error)
     $message.error(error?.message || '发起失败')
     throw error
+  }
+  finally {
+    startModalRef.value.okLoading = false
   }
 }
 
@@ -539,8 +564,8 @@ const columns = [
   {
     title: '操作',
     key: 'actions',
-    width: 140,
-    align: 'center',
+    width: 180,
+    align: 'left',
     fixed: 'right',
     render({ id, processInstanceId, status }) {
       const instanceId = processInstanceId || id

@@ -74,36 +74,31 @@ function applyFilters(data, params = {}) {
   })
 }
 
-/** 由历史活动构建 BPMN 执行状态（供 BpmnProcessViewer 高亮/时间线使用） */
-function buildExecutionState(processInstanceId, activities = []) {
-  const elements = {}
-  const sequenceFlows = {}
-  const executionOrder = []
-  const timestamps = []
-  for (const act of activities) {
-    const id = act.activityId
-    if (!id)
-      continue
-    const done = !!act.endTime
-    if (act.activityType === 'sequenceFlow') {
-      const prev = sequenceFlows[id] || { status: 'pending', visitCount: 0 }
-      sequenceFlows[id] = {
-        status: done ? 'completed' : 'active',
-        visitCount: prev.visitCount + 1,
-      }
-      continue
-    }
-    const prev = elements[id] || { status: 'pending', visitCount: 0, rejectCount: 0 }
-    elements[id] = {
-      status: done ? 'completed' : 'active',
-      visitCount: prev.visitCount + 1,
-      rejectCount: prev.rejectCount,
-      assignee: act.assignee || prev.assignee,
-    }
-    executionOrder.push(id)
-    timestamps.push(done ? act.endTime : act.startTime)
-  }
-  return { processInstanceId, elements, sequenceFlows, executionOrder, timestamps }
+/**
+ * 从 BPMN XML 提取所有元素ID（含 bpmn 节点与连线、BPMNShape/BPMNEdge 等 DI 元素）。
+ * 用于过滤执行状态，仅保留图中存在的元素，避免 BpmnProcessViewer 对不存在的 id
+ * 调用 addMarker 时 elementRegistry.get 返回 undefined 而崩溃。
+ */
+function extractElementIds(processXml) {
+  const ids = new Set()
+  if (!processXml)
+    return ids
+  const doc = new DOMParser().parseFromString(processXml, 'application/xml')
+  doc.querySelectorAll('[id]').forEach(node => ids.add(node.getAttribute('id')))
+  return ids
+}
+
+/** 过滤执行状态：仅保留 BPMN 图中存在的元素/连线，并按序过滤 executionOrder/timestamps */
+function filterExecutionState(state, processXml) {
+  if (!state)
+    return state
+  const validIds = extractElementIds(processXml)
+  if (!validIds.size)
+    return state
+  const pick = obj => Object.fromEntries(Object.entries(obj || {}).filter(([id]) => validIds.has(id)))
+  const executionOrder = (state.executionOrder || []).filter(id => validIds.has(id))
+  const timestamps = (state.timestamps || []).filter((_, index) => validIds.has(state.executionOrder?.[index]))
+  return { ...state, elements: pick(state.elements), sequenceFlows: pick(state.sequenceFlows), executionOrder, timestamps }
 }
 
 /** 当前登录用户（作为 Camunda 用户标识） */
@@ -117,7 +112,7 @@ export default {
     const { pageNo, pageSize, name, businessKey, initiator } = params
     return request.get('/camunda/v1/workflow/tasks', {
       params: {
-        page: pageNo || 1,
+        pageNo: pageNo || 1,
         pageSize: pageSize || 10,
         userId: currentUserId(),
         processDefinitionName: name || undefined,
@@ -130,12 +125,22 @@ export default {
   /** 任务详情 */
   process: taskId => request.get(`/camunda/v1/workflow/tasks/${taskId}`),
 
+  /** 获取任务表单定义 */
+  taskForms: taskId => request.get(`/camunda/v1/workflow/tasks/${taskId}/forms`),
+
   /** 完成任务 */
-  complete(taskId, { action = 'approve', comment = '' } = {}) {
-    return request.post(`/camunda/v1/workflow/tasks/${taskId}/complete`, {
-      comment,
-      variables: { action },
-    })
+  complete(data) {
+    return request.post(`/camunda/v1/workflow/tasks/complete`, data)
+  },
+
+  /** 认领任务 */
+  claim(taskId, userId) {
+    return request.post(`/camunda/v1/workflow/tasks/${taskId}/claim`, { userId })
+  },
+
+  /** 取消认领任务 */
+  unclaim(taskId) {
+    return request.post(`/camunda/v1/workflow/tasks/${taskId}/unclaim`)
   },
 
   /** 流程实例流转记录（审批链） */
@@ -143,49 +148,22 @@ export default {
     params: { processInstanceId },
   }),
 
-  /** 流程实例详情（实例信息 + 流转记录 + BPMN XML + 执行状态） */
+  /** 流程实例详情（实例信息 + 流转记录 + BPMN XML + 执行状态，均由后端返回） */
   async detail(processInstanceId) {
-    const [hpiRes, actRes] = await Promise.all([
-      request.get(`/camunda/v1/workflow/history/process-instances/${processInstanceId}`),
-      request.get('/camunda/v1/workflow/history/activities', {
-        params: { processInstanceId },
-      }),
-    ])
+    const hpiRes = await request.get(`/camunda/v1/workflow/history/process-instances/${processInstanceId}`)
     const hpi = hpiRes.data || {}
-    const activities = actRes.data || []
-    const runningAct = activities.find(act => !act.endTime)
     const STATUS_MAP = { active: 'running', completed: 'completed', deleted: 'terminated', suspended: 'suspended' }
 
-    let processXml = ''
-    const definitionId = activities.find(act => act.processDefinitionId)?.processDefinitionId
-    if (definitionId) {
-      try {
-        const xmlRes = await request.get(`/camunda/v1/workflow/definitions/${definitionId}/bpmn-xml`)
-        processXml = xmlRes.data || ''
-      }
-      catch (error) {
-        console.error('加载BPMN XML失败', error)
-      }
-    }
+    const processXml = hpi.bpmnXml || ''
 
     return {
       data: {
         ...hpi,
         initiator: hpi.startUserId,
         status: hpi.status || STATUS_MAP[hpi.state] || 'running',
-        currentTaskName: hpi.currentTaskName || runningAct?.activityName || '',
-        currentAssignee: hpi.currentAssignee || runningAct?.assignee || '',
         processXml,
-        executionState: buildExecutionState(processInstanceId, activities),
-        history: activities.map(act => ({
-          nodeName: act.activityName,
-          assignee: act.assignee,
-          startTime: act.startTime,
-          endTime: act.endTime,
-          status: act.endTime ? 'completed' : 'running',
-          result: '',
-          comment: '',
-        })),
+        executionState: filterExecutionState(hpi.executionState, processXml),
+        history: hpi.history || [],
       },
     }
   },
@@ -211,16 +189,18 @@ export default {
   /** 按编码查询流程模板（用于取绑定的业务分类） */
   workflowByKey(key) {
     return request.get('/camunda/v1/workflow', {
-      params: { workflowKey: key, page: 1, pageSize: 20 },
+      params: { workflowKey: key, pageNo: 1, pageSize: 20 },
     })
   },
 
-  /** 发起流程 */
+  /** 查询流程版本列表 */
+  versions(workflowId) {
+    return request.get(`/camunda/v1/workflow/${workflowId}/versions`)
+  },
+
+  /** 发起流程（按流程定义Key启动，对应 WorkflowStarterController#startByProcessDefinition） */
   startProcess(payload) {
-    return request.post('/camunda/v1/workflow/instances', {
-      ...payload,
-      startUserId: currentUserId(),
-    })
+    return request.post('/camunda/v1/workflow/starter/definition', payload)
   },
 
   /** 我发起的流程实例：分页查询当前用户发起的实例 */
@@ -228,9 +208,8 @@ export default {
     const { pageNo, pageSize, name, businessKey, status } = params
     return request.get('/camunda/v1/workflow/history/process-instances', {
       params: {
-        pageNum: pageNo || 1,
+        pageNo: pageNo || 1,
         pageSize: pageSize || 10,
-        startUserId: currentUserId(),
         processDefinitionName: name || undefined,
         businessKey: businessKey || undefined,
         state: status || undefined,

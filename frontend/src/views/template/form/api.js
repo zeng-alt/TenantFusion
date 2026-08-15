@@ -6,10 +6,10 @@
 import { request } from '@/utils'
 
 export default {
-  /** 分页查询表单模板（MeCrud 传 pageNo，后端约定 page/pageSize，这里做映射） */
+  /** 分页查询表单模板（MeCrud 传 pageNo，后端约定 pageNo/pageSize，这里兼容 page 写法） */
   read(params = {}) {
     return request.get('/camunda/v1/form', {
-      params: { ...params, page: params.pageNo ?? params.page, pageSize: params.pageSize },
+      params: { ...params, pageNo: params.pageNo ?? params.page, pageSize: params.pageSize },
     })
   },
 

@@ -69,6 +69,9 @@ export default defineConfig(({ mode }) => {
         '@': path.resolve(process.cwd(), 'src'),
         '~': path.resolve(process.cwd()),
       },
+      // 本地 linked 的 @zeng-alt/camunda7-ui 带有自己的依赖副本（vue/naive-ui 等），
+      // 通过 dedupe 强制其共享依赖解析到本项目单份实例，避免多份 Vue/Naive 实例导致的异常
+      // dedupe: ['vue', 'naive-ui', '@vueuse/core', '@codemirror/autocomplete', '@codemirror/commands', '@codemirror/lang-javascript', '@codemirror/language', '@codemirror/lint', '@codemirror/state', '@codemirror/theme-one-dark', '@codemirror/view'],
     },
     server: {
       host: '0.0.0.0',

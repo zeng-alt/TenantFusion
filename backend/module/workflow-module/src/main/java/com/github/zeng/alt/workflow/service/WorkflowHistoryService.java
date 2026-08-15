@@ -2,6 +2,7 @@ package com.github.zeng.alt.workflow.service;
 
 import com.github.zeng.alt.api.rest.PageRestResponse;
 import com.github.zeng.alt.workflow.model.HistoricActivityVO;
+import com.github.zeng.alt.workflow.model.HistoricProcessInstanceQuery;
 import com.github.zeng.alt.workflow.model.HistoricProcessInstanceVO;
 import com.github.zeng.alt.workflow.model.HistoricVariableVO;
 import com.github.zeng.alt.workflow.model.TaskVO;
@@ -18,17 +19,9 @@ public interface WorkflowHistoryService {
     /**
      * 分页查询历史流程实例
      *
-     * @param processDefinitionKey  流程定义Key（可选）
-     * @param processDefinitionName 流程定义名称（可选，模糊匹配）
-     * @param businessKey           业务键（可选）
-     * @param state                 流程状态（可选）：running-进行中，completed-已完成，terminated-已终止，suspended-已挂起
-     * @param startUserId           启动用户ID（可选）
-     * @param pageNum               页码
-     * @param pageSize              每页条数
+     * @param query 查询参数（流程定义Key/名称、业务键、流程状态、启动用户ID、分页）
      */
-    PageRestResponse<HistoricProcessInstanceVO> queryHistoricInstances(
-            String processDefinitionKey, String processDefinitionName, String businessKey,
-            String state, String startUserId, int pageNum, int pageSize);
+    PageRestResponse<HistoricProcessInstanceVO> queryHistoricInstances(HistoricProcessInstanceQuery query);
 
     /**
      * 获取历史流程实例详情

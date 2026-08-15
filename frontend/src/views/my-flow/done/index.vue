@@ -6,7 +6,7 @@
       :columns="columns"
       :get-data="api.done"
       row-key="id"
-      :scroll-x="1200"
+      :scroll-x="1400"
     >
       <MeQueryItem label="流程名称" :label-width="70">
         <NInput
@@ -115,7 +115,7 @@ const columns = [
   {
     title: '完成时间',
     key: 'endTime',
-    width: 160,
+    width: 200,
   },
   {
     title: '操作',

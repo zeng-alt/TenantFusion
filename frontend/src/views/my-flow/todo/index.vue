@@ -6,7 +6,8 @@
       :columns="columns"
       :get-data="api.todo"
       row-key="id"
-      :scroll-x="1200"
+      expand
+      :scroll-x="1600"
     >
       <MeQueryItem label="流程名称" :label-width="70">
         <NInput
@@ -33,6 +34,13 @@
         />
       </MeQueryItem>
     </MeCrud>
+
+    <TaskFormModal
+      v-model:visible="modalVisible"
+      :task-id="selectedTask?.id"
+      :process-instance-id="selectedTask?.processInstanceId"
+      @success="handleSuccess"
+    />
   </CommonPage>
 </template>
 
@@ -41,25 +49,54 @@ import { NButton, NInput } from 'naive-ui'
 import { h, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { CommonPage, MeCrud, MeQueryItem } from '@/components'
+import { useUserStore } from '@/store'
 import { formatDateTime } from '@/utils'
+import { isAdmin, isSuperAdmin } from '@/utils/auth'
 import api from '../api'
+import TaskFormModal from '../components/TaskFormModal.vue'
 
 defineOptions({ name: 'MyFlowTodo' })
 
 const router = useRouter()
 const $table = ref(null)
 const queryItems = ref({})
+const modalVisible = ref(false)
+const selectedTask = ref(null)
 
 onMounted(() => {
   $table.value?.handleSearch()
 })
 
-function handleProcess(taskId) {
-  router.push({ path: `/my-flow/process/${taskId}` })
+function handleProcess(row) {
+  selectedTask.value = row
+  modalVisible.value = true
 }
 
 function handleDetail(processInstanceId) {
   router.push({ path: `/my-flow/detail/${processInstanceId}` })
+}
+
+function handleSuccess() {
+  $table.value?.handleSearch()
+}
+
+async function handleClaim(row) {
+  const userStore = useUserStore()
+  const userId = userStore?.username || ''
+  await api.claim(row.id, userId)
+  $message?.success('认领成功')
+  $table.value?.handleSearch()
+}
+
+async function handleUnclaim(row) {
+  await api.unclaim(row.id)
+  $message?.success('已取消认领')
+  $table.value?.handleSearch()
+}
+
+function canUnclaim(assignee) {
+  const userStore = useUserStore()
+  return !!assignee && (userStore?.username === assignee || isAdmin() || isSuperAdmin())
 }
 
 const columns = [
@@ -93,6 +130,48 @@ const columns = [
     width: 140,
   },
   {
+    title: '审核人',
+    key: 'assignee',
+    width: 160,
+    align: 'center',
+    render(row) {
+      if (row.assignee) {
+        const children = [h('span', null, row.assignee)]
+        if (canUnclaim(row.assignee)) {
+          children.push(
+            h(
+              NButton,
+              {
+                size: 'small',
+                text: true,
+                type: 'warning',
+                onClick: () => handleUnclaim(row),
+              },
+              {
+                default: () => '取消认领',
+                icon: () => h('i', { class: 'i-carbon:close text-14' }),
+              },
+            ),
+          )
+        }
+        return h('div', { class: 'flex items-center justify-center gap-8' }, children)
+      }
+      return h(
+        NButton,
+        {
+          size: 'small',
+          text: true,
+          type: 'primary',
+          onClick: () => handleClaim(row),
+        },
+        {
+          default: () => '认领',
+          icon: () => h('i', { class: 'i-carbon:checkmark-outline text-14' }),
+        },
+      )
+    },
+  },
+  {
     title: '创建时间',
     key: 'createTime',
     width: 160,
@@ -107,17 +186,18 @@ const columns = [
   {
     title: '操作',
     key: 'actions',
-    width: 170,
+    width: 200,
     align: 'center',
     fixed: 'right',
-    render({ id, processInstanceId }) {
+    render(row) {
+      const { processInstanceId } = row
       return [
         h(
           NButton,
           {
             size: 'small',
             type: 'primary',
-            onClick: () => handleProcess(id),
+            onClick: () => handleProcess(row),
           },
           {
             default: () => '办理',

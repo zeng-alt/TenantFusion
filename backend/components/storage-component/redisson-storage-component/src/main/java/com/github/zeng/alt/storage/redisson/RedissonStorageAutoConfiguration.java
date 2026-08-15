@@ -36,10 +36,9 @@ import java.util.Objects;
  */
 @CommonsLog
 @RequiredArgsConstructor
-@AutoConfiguration(before = StorageAutoConfiguration.class)
+@AutoConfiguration(before = {StorageAutoConfiguration.class})
 @EnableConfigurationProperties({RedissonProperties.class})
 @ConditionalOnClass(RedissonClient.class)
-@ConditionalOnMissingBean(StorageTemplate.class)
 public class RedissonStorageAutoConfiguration {
 
     private final RedissonProperties redissonProperties;
@@ -130,22 +129,22 @@ public class RedissonStorageAutoConfiguration {
     }
 
     @Bean
-    public CacheStringOperations noOpCacheStringOperations(RedissonClient redissonClient) {
+    public CacheStringOperations redissonStringOperations(RedissonClient redissonClient) {
         return new RedissonStringOperations(redissonClient);
     }
 
     @Bean
-    public CacheListOperations noOpCacheListOperations(RedissonClient redissonClient) {
+    public CacheListOperations redissonListOperations(RedissonClient redissonClient) {
         return new RedissonListOperations(redissonClient);
     }
 
     @Bean
-    public CacheHashOperations noOpCacheHashOperations(RedissonClient redissonClient) {
+    public CacheHashOperations redissonHashOperations(RedissonClient redissonClient) {
         return new RedissonHashOperations(redissonClient);
     }
 
     @Bean
-    public CacheZSetOperations noOpCacheZSetOperations(RedissonClient redissonClient) {
+    public CacheZSetOperations redissonZSetOperations(RedissonClient redissonClient) {
         return new RedissonZSetOperations(redissonClient);
     }
 }

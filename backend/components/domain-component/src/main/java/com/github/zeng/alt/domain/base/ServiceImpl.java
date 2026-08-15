@@ -133,7 +133,7 @@ public abstract class ServiceImpl<M extends BaseRepository<T, Long>, T extends B
                 .withStringMatcher(ExampleMatcher.StringMatcher.CONTAINING);
         Example<T> example = Example.of(BeanHelper.copyToObject(page, entityClass), matcher);
         Page<T> all = repository.findAll(example, page.toPage());
-        return PageRestResponse.of(all.getContent(), all.getTotalElements(), page.getPageSize(), page.getPage());
+        return PageRestResponse.of(all.getContent(), all.getTotalElements(), page.getPageSize(), page.getPageNo());
     }
 
     @Override
@@ -144,7 +144,7 @@ public abstract class ServiceImpl<M extends BaseRepository<T, Long>, T extends B
                 .withStringMatcher(ExampleMatcher.StringMatcher.CONTAINING);
         Example<T> example = Example.of(entity, matcher);
         Page<T> all = repository.findAll(example, page.toPage());
-        return PageRestResponse.of(all.getContent(), all.getTotalElements(), page.getPageSize(), page.getPage());
+        return PageRestResponse.of(all.getContent(), all.getTotalElements(), page.getPageSize(), page.getPageNo());
     }
 
 

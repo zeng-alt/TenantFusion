@@ -14,6 +14,11 @@ spring:
       hibernate:
         format_sql: true
         dialect: org.hibernate.dialect.H2Dialect
+  data:
+    redis:
+      host: 127.0.0.1
+      port: 6379
+      database: 4
 
   # 开启 H2 控制台（可选），方便在浏览器查看数据库
   h2:
@@ -33,39 +38,29 @@ springdoc:
       url: https://example.com
 
 security:
+  jwt-auth:
+    base64-secret: "aGRzaGRnYWhkampydXV1dWtkZGRkamZzc2ZqamlrZHNzZGdkZ2RzamdrLGIvY24yNTQ0Ly4tPT1bXTIzOTQ0NzUwLWpmZHNzZ2htdGtqanR0dGV0NGJhZGFocG9laW9uYmlqcGRpYW9oamo0MzA4MDUzMGhnanl5aW9wc29vcGRvZmZqbm1rbW1tbWdoMFtbWzQ4M3FodTMyMm9yNjY0NDY0OHd3YWhzandiYWRoYWhkYWFhYWZlcmhhd2VlYzNmZGpzZGRzaA=="
+    base64-secret-refresh: "c1cyMmxvbmdoYXc1cyMmxvbmdoYXNoNTEyc2VjcmV0a2V5dGhhdGlzNjRicnl0ZXNmb3J0aGVuZXdyZWZyZXNodG9rZW5hc1cyMmxvbmdoYXc1cyMmxvbmdoYXNoNTEyc2VjcmV0a2V5c1cyMmxvbmdoYXc1cyMmxvbmdoYXNoNTEyc2VjcmV0a2V5dGhhdGlzNjRicnl0ZXNmb3J0aGVuZXdyZWZyZXNodG9rZW5hbmRpdHdvcmtzZdGhhdGlzNjRicnl0ZXNmb3J0aGVuZXdyZWZyZXNodG9rZW5hbmRpdHdvcmtzZbmRpdHdvcmtzZm9yaHNpZ25hdHVyZXlvdXRoZWxwYmFzZTY0ZW5jb2RlZGFuZHN0dWZmbGlrZXlvdXJ0ZXh0dGhhdHNob3VsZGJlZWNoNTEyc2VjcmV0a2V5dGhhdGlzNjRicnl0ZXNmb3J0aGVuZXdyZWZyZXNodG9rZW5hbmRpdHdvcmtzZm9yaHNpZ25hdHVyZXlvdXRoZWxwYmFzZTY0ZW5jb2RlZGFuZHN0dWZmbGlrZXlvdXJ0ZXh0dGhhdHNob3VsZGJlZW5vdXRoZXJ0Zg=="
+    validation: true
   context:
-    enabled-access: false
+    enabled-access: true
+
 
 camunda:
   bpm:
     authorization:
       enabled: false
+      tenant-check-enabled: false
     job-execution:
       enabled: true
       deployment-aware: true
       core-pool-size: 4
       max-pool-size: 10
       queue-capacity: 3
-    admin-user:
-      id: admin
-      password: 123456
 
-dev:
-  bpm-crafters:
-    process-api:
-      adapter:
-        c7embedded:
-          enabled: true
-          service-tasks:
-            delivery-strategy: embedded_scheduled
-            worker-id: embedded-worker
-            max-task-count: 100
-            lock-time-in-seconds: 10
-            retry-timeout-in-seconds: 30
-            retries: 3
-            execute-initial-pull-on-startup: true
-            schedule-delivery-fixed-rate-in-seconds: 10
-          user-tasks:
-            delivery-strategy: embedded_scheduled
-            execute-initial-pull-on-startup: true
-            schedule-delivery-fixed-rate-in-seconds: 10
+alt:
+  camunda:
+    identity:
+      admin:
+        enabled: true
+        base-url: http://127.0.0.1:8080

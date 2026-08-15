@@ -63,7 +63,7 @@ public class FormConfigServiceImpl implements FormConfigService {
         Predicate predicate = buildPredicate(query);
         Page<FormConfigEntity> pageResult = formConfigRepository.findAll(predicate, query.toPage());
         List<FormConfigVO> vos = pageResult.getContent().stream().map(formConfigMapper::toVO).toList();
-        return PageRestResponse.of(vos, pageResult.getTotalElements(), query.getPageSize(), query.getPage());
+        return PageRestResponse.of(vos, pageResult.getTotalElements(), query.getPageSize(), query.getPageNo());
     }
 
     @Override

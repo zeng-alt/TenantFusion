@@ -65,6 +65,12 @@ dependencyResolutionManagement {
     }
 }
 include("backend:components:camunda-component")
+include("backend:components:camunda-component:api-camunda-component")
+include("backend:components:camunda-component:jpa-camunda-component")
+include("backend:components:camunda-component:remote-camunda-component")
+include("backend:components:camunda-component:api-engine-component")
+include("backend:components:camunda-component:embedded-engine-component")
+include("backend:components:camunda-component:remote-engine-component")
 include("backend:components:config-component")
 include("backend:components:config-component:api-config-component")
 include("backend:components:config-component:client-config-component")

@@ -1,0 +1,2 @@
+com.github.zeng.alt.camunda.identity.api.config.CamundaIdentityAutoConfiguration
+com.github.zeng.alt.camunda.identity.api.security.CamundaIdentitySecurityAutoConfiguration

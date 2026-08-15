@@ -1,9 +1,12 @@
 package com.github.zeng.alt.workflow.service;
 
 import com.github.zeng.alt.api.rest.PageRestResponse;
+import com.github.zeng.alt.camunda.engine.api.deploy.DeploymentInformation;
+import com.github.zeng.alt.camunda.engine.api.repository.ProcessDefinitionInfo;
 import com.github.zeng.alt.workflow.model.ProcessDefinitionVO;
-import org.camunda.bpm.engine.repository.ProcessDefinition;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.util.List;
 
 /**
@@ -43,7 +46,16 @@ public interface ProcessDefinitionService {
      * @param tenantId   租户ID（可选）
      * @return 部署的流程定义
      */
+    @Deprecated
     ProcessDefinitionVO deploy(String name, String bpmnXml, String tenantId);
+
+    /**
+     * 部署流程定义文件
+     *
+     * @param bpmnXml BPMN XML 文件
+     * @return 部署信息
+     */
+    DeploymentInformation deploy(MultipartFile bpmnXml) throws IOException;
 
     /**
      * 删除流程定义（同时删除级联实例）
@@ -84,7 +96,7 @@ public interface ProcessDefinitionService {
     String getBpmnXml(String id);
 
     /**
-     * 将Camunda ProcessDefinition转换为VO
+     * 将引擎流程定义信息转换为VO
      */
-    ProcessDefinitionVO toVO(ProcessDefinition pd);
+    ProcessDefinitionVO toVO(ProcessDefinitionInfo info);
 }

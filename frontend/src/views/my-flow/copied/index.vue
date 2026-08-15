@@ -6,7 +6,7 @@
       :columns="columns"
       :get-data="api.copied"
       row-key="id"
-      :scroll-x="1200"
+      :scroll-x="1600"
     >
       <MeQueryItem label="流程名称" :label-width="70">
         <NInput

@@ -12,6 +12,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.apachecommons.CommonsLog;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -24,7 +25,7 @@ import java.util.Map;
 @RestController
 @RequestMapping("/v1/workflow/tasks")
 @RequiredArgsConstructor
-public class TaskController {
+public class WorkflowTaskController {
 
     private final TaskService taskService;
 
@@ -38,6 +39,12 @@ public class TaskController {
     @GetMapping("/{id}")
     public RestResponse<TaskVO> detail(@PathVariable String id) {
         return RestResponse.success(taskService.getTask(id));
+    }
+
+    @Operation(summary = "获取任务表单定义")
+    @GetMapping("/{id}/forms")
+    public RestResponse<List<TaskFormDefinitionVO>> forms(@PathVariable String id) {
+        return RestResponse.success(taskService.getTaskForms(id));
     }
 
     @Operation(summary = "签收/认领任务")
@@ -58,11 +65,8 @@ public class TaskController {
     }
 
     @Operation(summary = "完成任务")
-    @PostMapping("/{id}/complete")
-    public RestResponse<Void> complete(
-            @PathVariable String id,
-            @Valid @RequestBody CompleteTaskCmd cmd) {
-        cmd.setTaskId(id);
+    @PostMapping("/complete")
+    public RestResponse<Void> complete(@Valid @RequestBody CompleteTaskCmd cmd) {
         taskService.completeTask(cmd);
         return RestResponse.success();
     }
