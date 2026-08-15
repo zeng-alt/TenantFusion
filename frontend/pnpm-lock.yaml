@@ -21,8 +21,8 @@ importers:
         specifier: ^1.0.6
         version: 1.0.6(zidzops5upmmqupr2gr42mfalq)
       '@zeng-alt/formkit-form-builder':
-        specifier: ^1.1.0
-        version: 1.1.0(@codemirror/autocomplete@6.20.3)(@codemirror/commands@6.10.4)(@codemirror/lang-javascript@6.2.5)(@codemirror/language@6.12.4)(@codemirror/lint@6.9.7)(@codemirror/state@6.7.1)(@codemirror/theme-one-dark@6.1.3)(@codemirror/view@6.43.8)(@vueuse/core@14.2.1(vue@3.5.29(typescript@5.5.4)))(naive-ui@2.43.2(vue@3.5.29(typescript@5.5.4)))(vue@3.5.29(typescript@5.5.4))
+        specifier: ^1.2.0
+        version: 1.2.0(@codemirror/autocomplete@6.20.3)(@codemirror/commands@6.10.4)(@codemirror/lang-javascript@6.2.5)(@codemirror/language@6.12.4)(@codemirror/lint@6.9.7)(@codemirror/state@6.7.1)(@codemirror/theme-one-dark@6.1.3)(@codemirror/view@6.43.8)(@vueuse/core@14.2.1(vue@3.5.29(typescript@5.5.4)))(naive-ui@2.43.2(vue@3.5.29(typescript@5.5.4)))(vue@3.5.29(typescript@5.5.4))
       axios:
         specifier: ^1.13.5
         version: 1.13.5
@@ -1933,8 +1933,8 @@ packages:
       naive-ui: '>=2.44.1'
       vue: '>=3.5.13'
 
-  '@zeng-alt/formkit-form-builder@1.1.0':
-    resolution: {integrity: sha512-SNd/VFgNrjB9+eExknKVdNZWN6qyglWpv7AJpBHExpSUjpK3WMrXxF2KT2Fo93rtAKFq2bhN3ldBh+H4sxc4Dw==}
+  '@zeng-alt/formkit-form-builder@1.2.0':
+    resolution: {integrity: sha512-DoJRUwcV5bb6zBg3Q0nYF0Xqqo8dbmbVYrW5yjKJrHQ6ETGTUoyeSczHQBTsN1B+Cn2keLcEt80NkHYRoSzMIQ==}
     engines: {node: ^20.19.0 || >=22.12.0}
     peerDependencies:
       '@codemirror/autocomplete': ^6.20.1
@@ -3444,26 +3444,6 @@ packages:
   open@11.0.0:
     resolution: {integrity: sha512-smsWv2LzFjP03xmvFoJ331ss6h+jixfA4UUV/Bsiyuu4YJPfN+FIQGOIiv4w9/+MoHkfkJ22UIaQWRVFRfH6Vw==}
     engines: {node: '>=20'}
-
-  openai@6.49.0:
-    resolution: {integrity: sha512-aYCc0C6L864eR6WSYIwQGyXriw/nIyZx0ObvhzOEVuk0zoBDpynjSbrionWI7q65B5H8jJX0DXR9snEzM6bfPg==}
-    peerDependencies:
-      '@aws-sdk/credential-provider-node': '>=3.972.0 <4'
-      '@smithy/hash-node': '>=4.3.0 <5'
-      '@smithy/signature-v4': '>=5.4.0 <6'
-      ws: ^8.18.0
-      zod: ^3.25 || ^4.0
-    peerDependenciesMeta:
-      '@aws-sdk/credential-provider-node':
-        optional: true
-      '@smithy/hash-node':
-        optional: true
-      '@smithy/signature-v4':
-        optional: true
-      ws:
-        optional: true
-      zod:
-        optional: true
 
   opencollective-postinstall@2.0.3:
     resolution: {integrity: sha512-8AV/sCtuzUeTo8gQK5qDZzARrulB3egtLzFgteqB2tcT4Mw7B8Kt7JcDHmltjz6FOAHsvTevk70gZEbhM4ZS9Q==}
@@ -6349,7 +6329,7 @@ snapshots:
       - preact-render-to-string
       - supports-color
 
-  '@zeng-alt/formkit-form-builder@1.1.0(@codemirror/autocomplete@6.20.3)(@codemirror/commands@6.10.4)(@codemirror/lang-javascript@6.2.5)(@codemirror/language@6.12.4)(@codemirror/lint@6.9.7)(@codemirror/state@6.7.1)(@codemirror/theme-one-dark@6.1.3)(@codemirror/view@6.43.8)(@vueuse/core@14.2.1(vue@3.5.29(typescript@5.5.4)))(naive-ui@2.43.2(vue@3.5.29(typescript@5.5.4)))(vue@3.5.29(typescript@5.5.4))':
+  '@zeng-alt/formkit-form-builder@1.2.0(@codemirror/autocomplete@6.20.3)(@codemirror/commands@6.10.4)(@codemirror/lang-javascript@6.2.5)(@codemirror/language@6.12.4)(@codemirror/lint@6.9.7)(@codemirror/state@6.7.1)(@codemirror/theme-one-dark@6.1.3)(@codemirror/view@6.43.8)(@vueuse/core@14.2.1(vue@3.5.29(typescript@5.5.4)))(naive-ui@2.43.2(vue@3.5.29(typescript@5.5.4)))(vue@3.5.29(typescript@5.5.4))':
     dependencies:
       '@codemirror/autocomplete': 6.20.3
       '@codemirror/commands': 6.10.4
@@ -6365,23 +6345,18 @@ snapshots:
       '@formkit/vue': 2.1.2(vue@3.5.29(typescript@5.5.4))
       '@internationalized/date': 3.12.3
       '@vueuse/core': 14.2.1(vue@3.5.29(typescript@5.5.4))
-      axios: 1.13.5
+      axios: 1.19.0
       class-variance-authority: 0.7.1
       clsx: 2.1.1
       naive-ui: 2.43.2(vue@3.5.29(typescript@5.5.4))
-      openai: 6.49.0
       vue: 3.5.29(typescript@5.5.4)
       vue-sonner: 2.0.9
     transitivePeerDependencies:
-      - '@aws-sdk/credential-provider-node'
       - '@nuxt/kit'
       - '@nuxt/schema'
-      - '@smithy/hash-node'
-      - '@smithy/signature-v4'
       - debug
       - nuxt
-      - ws
-      - zod
+      - supports-color
 
   acorn-jsx@5.3.2(acorn@8.16.0):
     dependencies:
@@ -8269,8 +8244,6 @@ snapshots:
       is-inside-container: 1.0.0
       powershell-utils: 0.1.0
       wsl-utils: 0.3.1
-
-  openai@6.49.0: {}
 
   opencollective-postinstall@2.0.3: {}
 

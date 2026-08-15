@@ -182,22 +182,52 @@
             class="h-full min-h-0"
           >
             <NScrollbar class="h-full">
-              <div class="px-8 pb-8">
-                <FormSchemaRenderer
-                  v-if="formDefinition || formSchema"
-                  v-model="formValues"
-                  :http="request"
-                  :definition="formDefinition"
-                  :schema="formSchema"
-                  :actions="false"
-                  label-position="top"
-                />
-                <div v-else class="flex items-center justify-center py-32">
-                  <NEmpty
-                    size="large"
-                    description="暂无全局表单"
+              <div class="flex flex-col gap-12 px-8 pb-8">
+                <div class="min-h-0 flex-1">
+                  <BuilderProvider
+                    v-if="globalForm?.type === 'CAMUNDA' && globalForm.definition"
+                    :config="formBuilderConfig"
+                  >
+                    <FormSchemaRenderer
+                      v-model="globalFormValues"
+                      :http="request"
+                      :definition="globalForm.definition"
+                      :actions="false"
+                      label-position="top"
+                    />
+                  </BuilderProvider>
+                  <component
+                    :is="getFormKeyComponent(globalForm?.formKey)"
+                    v-else-if="globalForm?.type === 'EXTERNAL' && globalForm.formKey"
+                    ref="externalFormRef"
                   />
+                  <pre
+                    v-else-if="globalForm?.type === 'GENERATED'"
+                    class="whitespace-pre-wrap break-all text-12 text-gray-500"
+                  >{{ JSON.stringify(globalForm.fields, null, 2) }}</pre>
+                  <div v-else class="flex items-center justify-center py-32">
+                    <NEmpty
+                      size="large"
+                      description="暂无全局表单"
+                    />
+                  </div>
                 </div>
+                <template v-if="globalForm">
+                  <div v-if="globalFormData" class="text-12 text-gray-400">
+                    上次提交：{{ formatDateTime(globalFormData.submittedDate || globalFormData.lastModifiedDate) }}
+                    <template v-if="globalFormData.lastModifiedBy || globalFormData.createdBy">
+                      （{{ globalFormData.lastModifiedBy || globalFormData.createdBy }}）
+                    </template>
+                  </div>
+                  <NButton
+                    type="primary"
+                    block
+                    :loading="submittingGlobalForm"
+                    @click="handleSubmitGlobalForm"
+                  >
+                    提交全局表单
+                  </NButton>
+                </template>
               </div>
             </NScrollbar>
           </NTabPane>
@@ -212,7 +242,7 @@ import { useDark } from '@vueuse/core'
 import { BpmnProcessViewer } from '@zeng-alt/camunda7-ui'
 import { BuilderProvider, FormSchemaRenderer } from '@zeng-alt/formkit-form-builder'
 import { NButton, NCard, NEllipsis, NEmpty, NIcon, NLayout, NLayoutContent, NLayoutHeader, NLayoutSider, NScrollbar, NSpin, NTabPane, NTabs } from 'naive-ui'
-import { computed, ref, watch } from 'vue'
+import { computed, defineAsyncComponent, markRaw, ref, watch } from 'vue'
 import { useUserStore } from '@/store'
 import { formatDateTime, request } from '@/utils'
 import { isAdmin, isSuperAdmin } from '@/utils/auth'
@@ -233,25 +263,13 @@ const props = defineProps({
     type: Boolean,
     default: false,
   },
-  formDefinition: {
-    type: Object,
-    default: null,
-  },
-  formSchema: {
-    type: Array,
-    default: null,
-  },
-  formValues: {
-    type: Object,
-    default: () => ({}),
-  },
   approvalCollapsed: {
     type: Boolean,
     default: false,
   },
 })
 
-const emit = defineEmits(['update:formValues', 'update:approvalCollapsed', 'status'])
+const emit = defineEmits(['update:approvalCollapsed', 'status'])
 
 const isDark = useDark()
 const formBuilderConfig = createFormBuilderConfig()
@@ -261,15 +279,17 @@ const loadError = ref('')
 const claiming = ref(false)
 const unclaiming = ref(false)
 const completing = ref(false)
+const submittingGlobalForm = ref(false)
 /** TaskFormPanel 实例引用，用于收集表单数据 */
 const formPanelRef = ref(null)
+/** EXTERNAL 类型全局表单组件实例引用（若组件暴露 getData 用于收集数据） */
+const externalFormRef = ref(null)
 /** 由 api.detail 返回的详情数据 */
 const loadedDetail = ref(null)
-
-const formValues = computed({
-  get: () => props.formValues,
-  set: value => emit('update:formValues', value),
-})
+/** 兜底任务ID：当前节点未定义表单时，按流程实例ID查询出的活动任务ID */
+const fallbackTaskId = ref('')
+/** 全局表单填写值（初始化自已提交数据，key = 字段名） */
+const globalFormValues = ref({})
 
 /** 流程信息（详情数据） */
 const processInfo = computed(() => loadedDetail.value)
@@ -292,7 +312,7 @@ const currentTaskForms = computed(() => {
 })
 
 /** 当前活动任务ID（用于认领/取消认领/完成） */
-const currentTaskId = computed(() => currentTaskForms.value?.[0]?.taskId || '')
+const currentTaskId = computed(() => currentTaskForms.value?.[0]?.taskId || fallbackTaskId.value || '')
 
 /** 当前活动任务ID（用于认领） */
 const claimableTaskId = computed(() => currentTaskId.value)
@@ -304,6 +324,26 @@ const processXml = computed(() => loadedDetail.value?.processXml || '')
 const executionState = computed(() => loadedDetail.value?.executionState || null)
 const configForm = computed(() => loadedDetail.value?.configForm || null)
 const processForm = computed(() => loadedDetail.value?.processForm || {})
+const globalForm = computed(() => loadedDetail.value?.globalForm || null)
+const globalFormData = computed(() => loadedDetail.value?.globalFormData || null)
+
+/** 动态加载 EXTERNAL 类型对应的外部表单组件（路径以 /src/views/ 开头） */
+const viewModules = import.meta.glob('/src/views/**/*.vue')
+const formKeyComponentCache = new Map()
+
+function getFormKeyComponent(formKey) {
+  if (!formKey)
+    return null
+  const key = formKey.startsWith('/') ? formKey : `/src/views/${formKey}`
+  if (formKeyComponentCache.has(key))
+    return formKeyComponentCache.get(key)
+  const loader = viewModules[key]
+  if (!loader)
+    return null
+  const component = markRaw(defineAsyncComponent(loader))
+  formKeyComponentCache.set(key, component)
+  return component
+}
 
 async function loadDetail() {
   if (!props.processInstanceId)
@@ -313,6 +353,8 @@ async function loadDetail() {
   try {
     const { data } = await api.detail(props.processInstanceId)
     loadedDetail.value = data
+    globalFormValues.value = toPlainObject(data?.globalFormData?.data)
+    await loadFallbackTaskId()
   }
   catch (error) {
     console.error(error)
@@ -323,7 +365,61 @@ async function loadDetail() {
   }
 }
 
+/** 当前节点未定义表单时（currentTaskForms 为空），按流程实例ID查询活动任务兜底获取任务ID */
+async function loadFallbackTaskId() {
+  fallbackTaskId.value = ''
+  if (isEnded.value || currentTaskForms.value.length)
+    return
+  try {
+    const res = await api.taskByProcessInstance(props.processInstanceId)
+    fallbackTaskId.value = res?.data?.pageData?.[0]?.id || ''
+  }
+  catch (error) {
+    console.error(error)
+  }
+}
+
 watch(() => props.processInstanceId, loadDetail, { immediate: true })
+
+/** 将后端返回的 JsonNode 数据转成普通对象（非对象时返回空对象） */
+function toPlainObject(data) {
+  return data && typeof data === 'object' && !Array.isArray(data) ? { ...data } : {}
+}
+
+/** 收集全局表单填写值：EXTERNAL 组件暴露 getData 时优先使用，否则取本地填写值 */
+function collectGlobalFormValues() {
+  const externalGetData = externalFormRef.value?.getData
+  if (typeof externalGetData === 'function') {
+    const data = externalGetData.call(externalFormRef.value)
+    return data && typeof data === 'object' ? data : {}
+  }
+  return globalFormValues.value || {}
+}
+
+/** 提交全局表单数据 */
+async function handleSubmitGlobalForm() {
+  const processInstanceId = processInfo.value?.id
+  const workflowCode = processInfo.value?.processDefinitionKey
+  if (!processInstanceId || !workflowCode || submittingGlobalForm.value)
+    return
+  submittingGlobalForm.value = true
+  try {
+    await api.submitGlobalForm({
+      processInstanceId,
+      workflowCode,
+      data: JSON.stringify(collectGlobalFormValues()),
+    })
+    $message.success('提交成功')
+    await loadDetail()
+  }
+  catch (error) {
+    console.error(error)
+    $message.error(error?.message || '提交失败')
+  }
+  finally {
+    submittingGlobalForm.value = false
+  }
+}
 
 function canUnclaim(assignee) {
   const userStore = useUserStore()

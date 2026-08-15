@@ -1,4 +1,5 @@
 export * from './common'
 export * from './dict'
+export * from './dynamic-form'
 export * from './me'
 export * from './workflow'

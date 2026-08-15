@@ -16,7 +16,7 @@
     "@formkit/vue": "^2.0.0",
     "@vueuse/core": "^14.2.1",
     "@zeng-alt/camunda7-ui": "^1.0.6",
-    "@zeng-alt/formkit-form-builder": "^1.1.0",
+    "@zeng-alt/formkit-form-builder": "^1.2.0",
     "axios": "^1.13.5",
     "dayjs": "^1.11.19",
     "echarts": "^6.0.0",

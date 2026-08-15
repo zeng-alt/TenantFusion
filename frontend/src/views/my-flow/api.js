@@ -128,6 +128,18 @@ export default {
   /** 获取任务表单定义 */
   taskForms: taskId => request.get(`/camunda/v1/workflow/tasks/${taskId}/forms`),
 
+  /** 按流程实例ID查询活动任务（当前节点未定义表单时兜底获取任务ID） */
+  taskByProcessInstance(processInstanceId) {
+    return request.get('/camunda/v1/workflow/tasks', {
+      params: { processInstanceId, pageNo: 1, pageSize: 10 },
+    })
+  },
+
+  /** 提交全局表单数据（同一流程实例重复提交时覆盖） */
+  submitGlobalForm(payload) {
+    return request.post('/camunda/v1/global-form-data', payload)
+  },
+
   /** 完成任务 */
   complete(data) {
     return request.post(`/camunda/v1/workflow/tasks/complete`, data)
