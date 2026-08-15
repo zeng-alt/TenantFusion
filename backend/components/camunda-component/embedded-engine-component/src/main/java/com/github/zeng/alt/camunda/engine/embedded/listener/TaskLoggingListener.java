@@ -30,15 +30,15 @@ public class TaskLoggingListener implements TaskListener {
     public void notify(DelegateTask delegateTask) {
         String eventName = delegateTask.getEventName();
         log.info("任务事件 [{}] taskId={}, taskDefinitionKey={}, taskName={}, assignee={}, processInstanceId={}, processDefinitionId={}, executionId={}", eventName, delegateTask.getId(), delegateTask.getTaskDefinitionKey(), delegateTask.getName(), delegateTask.getAssignee(), delegateTask.getProcessInstanceId(), delegateTask.getProcessDefinitionId(), delegateTask.getExecutionId());
-        String businessCode = BUSINESS_KEY.from(delegateTask).get();
-        log.debug("businessKey={}", businessCode);
-        switch (eventName) {
-            case EVENTNAME_CREATE -> onCreate(delegateTask);
-            case EVENTNAME_ASSIGNMENT -> onAssignment(delegateTask);
-            case EVENTNAME_COMPLETE -> onComplete(delegateTask);
-            case EVENTNAME_DELETE -> onDelete(delegateTask);
-            default -> log.debug("未处理的任务事件: {}", eventName);
-        }
+//        String businessCode = BUSINESS_KEY.from(delegateTask).get();
+//        log.debug("businessKey={}", businessCode);
+//        switch (eventName) {
+//            case EVENTNAME_CREATE -> onCreate(delegateTask);
+//            case EVENTNAME_ASSIGNMENT -> onAssignment(delegateTask);
+//            case EVENTNAME_COMPLETE -> onComplete(delegateTask);
+//            case EVENTNAME_DELETE -> onDelete(delegateTask);
+//            default -> log.debug("未处理的任务事件: {}", eventName);
+//        }
     }
 
     /**

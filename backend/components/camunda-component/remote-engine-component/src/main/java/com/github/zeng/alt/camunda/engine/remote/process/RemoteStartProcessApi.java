@@ -122,6 +122,17 @@ public class RemoteStartProcessApi implements StartProcessApi {
         return map;
     }
 
+    /**
+     * 从流程定义ID（格式：key:version:generatedId）中提取流程定义Key
+     */
+    private String extractKey(String definitionId) {
+        if (!StringUtils.hasText(definitionId)) {
+            return null;
+        }
+        int idx = definitionId.indexOf(':');
+        return idx > 0 ? definitionId.substring(0, idx) : definitionId;
+    }
+
     private ProcessInformation toProcessInformation(ProcessInstanceWithVariablesDto pi) {
         return toProcessInformation(pi.getId(), pi.getDefinitionId(), pi.getBusinessKey(), pi.getTenantId());
     }
@@ -136,7 +147,7 @@ public class RemoteStartProcessApi implements StartProcessApi {
             throw new IllegalStateException("流程启动返回为空");
         }
         Map<String, String> meta = new HashMap<>();
-        meta.put(ProcessInformation.META_PROCESS_DEFINITION_KEY, definitionId);
+        meta.put(ProcessInformation.META_PROCESS_DEFINITION_KEY, extractKey(definitionId));
         meta.put(ProcessInformation.META_PROCESS_DEFINITION_ID, definitionId);
         if (StringUtils.hasText(businessKey)) {
             meta.put(ProcessInformation.META_BUSINESS_KEY, businessKey);

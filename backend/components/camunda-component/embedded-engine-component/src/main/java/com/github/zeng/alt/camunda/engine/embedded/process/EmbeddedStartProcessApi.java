@@ -150,7 +150,7 @@ public class EmbeddedStartProcessApi implements StartProcessApi {
 
     private ProcessInformation toProcessInformation(ProcessInstance pi) {
         Map<String, String> meta = new HashMap<>();
-        meta.put(ProcessInformation.META_PROCESS_DEFINITION_KEY, pi.getProcessDefinitionId());
+        meta.put(ProcessInformation.META_PROCESS_DEFINITION_KEY, pi.getProcessDefinitionKey());
         meta.put(ProcessInformation.META_PROCESS_DEFINITION_ID, pi.getProcessDefinitionId());
         if (StringUtils.hasText(pi.getBusinessKey())) {
             meta.put(ProcessInformation.META_BUSINESS_KEY, pi.getBusinessKey());

@@ -5,13 +5,13 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.zeng.alt.camunda.engine.api.history.HistoricVariableInfo;
 import com.github.zeng.alt.camunda.engine.api.history.HistoryApi;
+import com.github.zeng.alt.camunda.engine.api.repository.ProcessDefinitionApi;
 import com.github.zeng.alt.camunda.engine.api.task.TaskApi;
 import com.github.zeng.alt.camunda.engine.api.task.TaskInfo;
 import com.github.zeng.alt.workflow.entity.BusinessEntity;
 import com.github.zeng.alt.workflow.entity.FormConfigVersionEntity;
 import com.github.zeng.alt.workflow.entity.FormTemplateEntity;
 import com.github.zeng.alt.workflow.entity.FormTemplateVersionEntity;
-import com.github.zeng.alt.workflow.entity.WorkflowVersionEntity;
 import com.github.zeng.alt.workflow.model.CamundaFormFieldOptionVO;
 import com.github.zeng.alt.workflow.model.CamundaFormFieldVO;
 import com.github.zeng.alt.workflow.model.FormConfigVersionVO;
@@ -21,7 +21,6 @@ import com.github.zeng.alt.workflow.repository.BusinessRepository;
 import com.github.zeng.alt.workflow.repository.FormConfigVersionRepository;
 import com.github.zeng.alt.workflow.repository.FormTemplateRepository;
 import com.github.zeng.alt.workflow.repository.FormTemplateVersionRepository;
-import com.github.zeng.alt.workflow.repository.WorkflowVersionRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.apachecommons.CommonsLog;
 import org.camunda.bpm.model.bpmn.Bpmn;
@@ -34,7 +33,6 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
 import java.io.ByteArrayInputStream;
-import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -54,8 +52,8 @@ import java.util.Optional;
  * 业务关联的 {@code formConfigId} 确定配置表单，版本号取自流程变量 {@code formConfigVersion}
  * （缺失时取当前生效版本）。
  * <p>
- * 表单元数据从存储的流程版本 BPMN XML 解析（camunda-bpmn-model），不依赖运行中的引擎，
- * 本地/远程模式通用。
+ * 表单元数据从 Camunda 部署的流程定义 BPMN XML 解析（经引擎 SPI 的 {@link ProcessDefinitionApi}，
+ * camunda-bpmn-model 解析），本地/远程模式通用。
  *
  * @author zengAlt
  */
@@ -66,7 +64,7 @@ public class TaskFormResolver {
 
     private final TaskApi taskApi;
     private final HistoryApi historyApi;
-    private final WorkflowVersionRepository workflowVersionRepository;
+    private final ProcessDefinitionApi processDefinitionApi;
     private final BusinessRepository businessRepository;
     private final FormTemplateRepository formTemplateRepository;
     private final FormTemplateVersionRepository formTemplateVersionRepository;
@@ -121,20 +119,18 @@ public class TaskFormResolver {
     }
 
     /**
-     * 从存储的流程版本 BPMN XML 解析模型（无引擎依赖）
+     * 从 Camunda 部署的流程定义获取 BPMN 模型（本地/远程模式通用，经引擎 SPI）
      */
     private BpmnModelInstance loadModel(String processDefinitionId) {
         if (!StringUtils.hasText(processDefinitionId)) {
             return null;
         }
         try {
-            Optional<WorkflowVersionEntity> version = workflowVersionRepository
-                    .findFirstByProcessDefinitionId(processDefinitionId);
-            if (version.isEmpty() || !StringUtils.hasText(version.get().getBpmnXml())) {
+            byte[] xml = processDefinitionApi.getBpmnXml(processDefinitionId);
+            if (xml == null || xml.length == 0) {
                 return null;
             }
-            return Bpmn.readModelFromStream(new ByteArrayInputStream(
-                    version.get().getBpmnXml().getBytes(StandardCharsets.UTF_8)));
+            return Bpmn.readModelFromStream(new ByteArrayInputStream(xml));
         } catch (Exception e) {
             log.warn("解析BPMN模型失败: " + processDefinitionId, e);
             return null;
