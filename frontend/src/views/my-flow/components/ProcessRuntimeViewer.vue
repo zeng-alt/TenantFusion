@@ -124,10 +124,9 @@
                 type="primary"
                 block
                 :loading="completing"
-                :disabled="!completeTaskId"
                 @click="handleComplete"
               >
-                确定
+                提交
               </NButton>
             </div>
           </div>
@@ -214,7 +213,6 @@ import { BpmnProcessViewer } from '@zeng-alt/camunda7-ui'
 import { BuilderProvider, FormSchemaRenderer } from '@zeng-alt/formkit-form-builder'
 import { NButton, NCard, NEllipsis, NEmpty, NIcon, NLayout, NLayoutContent, NLayoutHeader, NLayoutSider, NScrollbar, NSpin, NTabPane, NTabs } from 'naive-ui'
 import { computed, ref, watch } from 'vue'
-import CommonPage from '@/components/common/CommonPage.vue'
 import { useUserStore } from '@/store'
 import { formatDateTime, request } from '@/utils'
 import { isAdmin, isSuperAdmin } from '@/utils/auth'

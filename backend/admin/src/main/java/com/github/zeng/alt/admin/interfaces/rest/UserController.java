@@ -28,6 +28,13 @@ public class UserController {
         return RestResponse.success(userService.currentUser());
     }
 
+    @Operation(summary = "获取用户基础信息（按userId或username）")
+    @GetMapping("/info")
+    public RestResponse<UserInfoDto> userInfo(@RequestParam(required = false) Long userId,
+                                              @RequestParam(required = false) String username) {
+        return RestResponse.success(userService.userInfo(userId, username));
+    }
+
     @Operation(summary = "新增后台用户")
     @PostMapping
     public RestResponse<Void> create(@Valid @RequestBody CreateUserDto dto) {

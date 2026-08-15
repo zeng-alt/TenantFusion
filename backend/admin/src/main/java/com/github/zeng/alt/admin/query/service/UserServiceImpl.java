@@ -1,8 +1,10 @@
 package com.github.zeng.alt.admin.query.service;
 
+import com.github.zeng.alt.admin.infrastructure.entity.Department;
 import com.github.zeng.alt.admin.infrastructure.entity.Role;
 import com.github.zeng.alt.admin.infrastructure.entity.User;
 import com.github.zeng.alt.admin.infrastructure.entity.UserRole;
+import com.github.zeng.alt.admin.infrastructure.repository.DepartmentRepository;
 import com.github.zeng.alt.admin.infrastructure.repository.RoleRepository;
 import com.github.zeng.alt.admin.infrastructure.repository.UserRepository;
 import com.github.zeng.alt.admin.infrastructure.repository.UserRoleRepository;
@@ -40,6 +42,7 @@ public class UserServiceImpl implements UserService {
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
     private final UserRoleRepository userRoleRepository;
+    private final DepartmentRepository departmentRepository;
     private final SecurityProperties securityProperties;
     private final PasswordEncoder passwordEncoder;
     private final UserDtoTransformation userDtoTransformation;
@@ -156,6 +159,29 @@ public class UserServiceImpl implements UserService {
             throw new BaseException("原密码不正确!!");
         }
         user.setPassword(passwordEncoder.encode(dto.getNewPassword()));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public UserInfoDto userInfo(Long userId, String username) {
+        if (userId == null && !StringUtils.hasText(username)) {
+            throw new BaseException("userId或username至少提供一个");
+        }
+
+        User user = userId != null
+                ? userRepository.findById(userId)
+                        .getOrElseThrow(() -> new BaseException("用户不存在"))
+                : userRepository.findByUsername(username)
+                        .orElseThrow(() -> new BaseException("用户不存在"));
+
+        UserInfoDto dto = BeanHelper.copyToObject(user, UserInfoDto.class);
+        if (user.getDeptId() != null) {
+            Department dept = departmentRepository.findById(user.getDeptId()).getOrNull();
+            if (dept != null) {
+                dto.setDeptName(dept.getDeptName());
+            }
+        }
+        return dto;
     }
 
     private void updateUserRoles(Long userId, List<Long> roleIds) {

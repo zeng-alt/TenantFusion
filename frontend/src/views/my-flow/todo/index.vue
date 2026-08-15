@@ -48,7 +48,7 @@
 import { NButton, NInput } from 'naive-ui'
 import { h, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { CommonPage, MeCrud, MeQueryItem } from '@/components'
+import { CommonPage, MeCrud, MeQueryItem, UserPopover } from '@/components'
 import { useUserStore } from '@/store'
 import { formatDateTime } from '@/utils'
 import { isAdmin, isSuperAdmin } from '@/utils/auth'
@@ -121,8 +121,12 @@ const columns = [
   {
     title: '发起人',
     key: 'initiator',
-    width: 100,
-    render: row => row.initiator || '—',
+    width: 120,
+    render: row => row.initiator
+      ? h(UserPopover, { username: row.initiator }, {
+          default: () => h('span', { class: 'cursor-pointer text-13 text-primary' }, row.initiator),
+        })
+      : '—',
   },
   {
     title: '当前节点',

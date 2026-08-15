@@ -19,10 +19,9 @@
         <NButton
           type="primary"
           :loading="completing"
-          :disabled="!taskForms.length"
           @click="handleSubmit"
         >
-          确定
+          提交
         </NButton>
       </div>
     </template>

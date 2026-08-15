@@ -22,4 +22,6 @@ public interface UserService {
     Either<String, Long> patchProfile(Long id, PatchProfileDto dto);
 
     void changePassword(PasswordDto dto);
+
+    UserInfoDto userInfo(Long userId, String username);
 }
