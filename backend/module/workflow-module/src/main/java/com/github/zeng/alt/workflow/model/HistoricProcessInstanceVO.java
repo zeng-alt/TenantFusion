@@ -78,6 +78,12 @@ public class HistoricProcessInstanceVO implements Serializable {
     @Schema(name = "配置表单定义（流程绑定业务关联的配置表单版本）")
     private FormConfigVersionVO configForm;
 
+    @Schema(name = "流程全局表单定义（由流程级 camunda:property globalForm.* 解析）")
+    private GlobalFormDefinitionVO globalForm;
+
+    @Schema(name = "流程全局表单提交数据（按流程实例ID关联）")
+    private GlobalFormDataVO globalFormData;
+
     @Schema(name = "流程执行状态（供 BpmnProcessViewer 高亮/时间线使用）")
     private ProcessExecutionState executionState;
 }

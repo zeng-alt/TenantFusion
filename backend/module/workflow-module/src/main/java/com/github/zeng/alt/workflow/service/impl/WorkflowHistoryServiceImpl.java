@@ -20,6 +20,8 @@ import com.github.zeng.alt.workflow.model.HistoricVariableVO;
 import com.github.zeng.alt.workflow.model.NodeExecutionState;
 import com.github.zeng.alt.workflow.model.ProcessExecutionState;
 import com.github.zeng.alt.workflow.model.TaskVO;
+import com.github.zeng.alt.workflow.service.GlobalFormDataService;
+import com.github.zeng.alt.workflow.service.GlobalFormResolver;
 import com.github.zeng.alt.workflow.service.TaskFormResolver;
 import com.github.zeng.alt.workflow.service.WorkflowHistoryService;
 import lombok.RequiredArgsConstructor;
@@ -52,6 +54,8 @@ public class WorkflowHistoryServiceImpl implements WorkflowHistoryService {
     private final ProcessDefinitionApi processDefinitionApi;
     private final WorkflowHistoryMapper workflowHistoryMapper;
     private final TaskFormResolver taskFormResolver;
+    private final GlobalFormResolver globalFormResolver;
+    private final GlobalFormDataService globalFormDataService;
 
     @Override
     public PageRestResponse<HistoricProcessInstanceVO> queryHistoricInstances(
@@ -121,6 +125,8 @@ public class WorkflowHistoryServiceImpl implements WorkflowHistoryService {
         vo.setProcessForm(loadProcessForm(id));
         vo.setCurrentTaskForms(taskFormResolver.resolveByProcessInstanceId(id));
         vo.setConfigForm(taskFormResolver.resolveConfigForm(id));
+        vo.setGlobalForm(globalFormResolver.resolve(vo.getBpmnXml()));
+        vo.setGlobalFormData(globalFormDataService.getByProcessInstanceId(id));
         vo.setExecutionState(buildExecutionState(id));
         String[] current = loadCurrentTask(id);
         if (current != null) {
