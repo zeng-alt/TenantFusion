@@ -23,6 +23,7 @@ CLAUDE.md
 .claude/*
 .cline/*
 .opencode/*
+.playwright-cli/*
 
 ### IntelliJ IDEA ###
 .idea
