@@ -17,11 +17,13 @@ public class TenantAwareTaskDecorator implements TaskDecorator {
         String tenantId = TenantContextHolder.getTenantId();
         String database = TenantContextHolder.getDatabase();
         String schema = TenantContextHolder.getSchema();
+        TenantRouting routing = TenantContextHolder.getRouting();
         return () -> {
             try {
                 TenantContextHolder.setTenantId(tenantId);
                 TenantContextHolder.setDatabase(database);
                 TenantContextHolder.setSchema(schema);
+                TenantContextHolder.setRouting(routing);
                 runnable.run();
             } finally {
                 TenantContextHolder.clear();

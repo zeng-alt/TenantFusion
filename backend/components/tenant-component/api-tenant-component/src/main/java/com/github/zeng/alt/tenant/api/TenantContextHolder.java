@@ -17,6 +17,7 @@ public final class TenantContextHolder {
     private static final InheritableThreadLocal<String> currentTenant = new InheritableThreadLocal<>();
     private static final InheritableThreadLocal<String> currentDatabase = new InheritableThreadLocal<>();
     private static final InheritableThreadLocal<String> currentSchema = new InheritableThreadLocal<>();
+    private static final InheritableThreadLocal<TenantRouting> currentRouting = new InheritableThreadLocal<>();
 
     public static void setTenantId(String tenantId) {
         if (log.isDebugEnabled()) {
@@ -51,10 +52,29 @@ public final class TenantContextHolder {
         return currentSchema.get();
     }
 
+    /**
+     * 缓存本次请求解析出的完整路由，避免每次取连接都重新解析。
+     *
+     * @param routing 租户路由，可为 null
+     */
+    public static void setRouting(TenantRouting routing) {
+        currentRouting.set(routing);
+    }
+
+    /**
+     * 取本次请求已解析的路由。
+     *
+     * @return 路由，未解析时返回 null
+     */
+    public static TenantRouting getRouting() {
+        return currentRouting.get();
+    }
+
     public static void clear(){
         currentTenant.remove();
         currentDatabase.remove();
         currentSchema.remove();
+        currentRouting.remove();
     }
 
     public static void switchTenant(String tenant) {
