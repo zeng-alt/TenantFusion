@@ -52,3 +52,8 @@ out/
 node_modules
 dist
 **/static/
+
+### 本地凭据与构建日志 ###
+backend/admin/.env
+build_log.txt
+*.log

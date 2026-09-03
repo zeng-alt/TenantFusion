@@ -6,10 +6,10 @@ spring:
 
   # 生产环境数据库配置
   datasource:
-    # 生产环境推荐替换为真实数据库的 URL
-    url: jdbc:postgresql://127.0.0.1:5432/admin_db
-    username: root
-    password: 123456
+    # 全部由环境变量注入；未设置时启动即失败，避免误用默认凭据
+    url: ${DB_URL:jdbc:postgresql://127.0.0.1:5432/admin_db}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
     driver-class-name: org.postgresql.Driver
 
   jpa:
@@ -24,12 +24,21 @@ spring:
   data:
     redis:
       # 生产环境 Redis 配置
-      host: 127.0.0.1
-      port: 6379
-      database: 0
+      host: ${REDIS_HOST:127.0.0.1}
+      port: ${REDIS_PORT:6379}
+      database: ${REDIS_DATABASE:0}
 
   liquibase:
     enabled: false
   h2:
     console:
       enabled: false # 生产环境关闭 H2 控制台
+
+security:
+  jwt-auth:
+    # 无默认值：缺少环境变量时由 JwtProperties 的 @NotBlank 校验在启动阶段失败
+    # 必须与 workflow 应用使用同一对密钥
+    base64-secret: ${JWT_SECRET}
+    base64-secret-refresh: ${JWT_SECRET_REFRESH}
+    # 注意：生产环境其余安全配置（authentication / login 路径 / filter.ignore-url 等）仍缺失，
+    # 见项目待办，此处只负责把密钥外置。

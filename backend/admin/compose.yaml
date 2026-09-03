@@ -3,9 +3,11 @@ services:
     image: docker.io/library/postgres:16-alpine
     container_name: admin-postgres
     environment:
-      POSTGRES_DB: admin_db
-      POSTGRES_USER: root
-      POSTGRES_PASSWORD: 123456
+      # 与应用侧 DB_USERNAME / DB_PASSWORD 使用同一对变量，避免两边不一致
+      # 未设置 DB_PASSWORD 时 docker compose 直接报错，不再落地默认口令
+      POSTGRES_DB: ${DB_NAME:-admin_db}
+      POSTGRES_USER: ${DB_USERNAME:-admin}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD 未设置，请先 export 或写入 backend/admin/.env}
     ports:
       - "15432:5432"
     volumes:
