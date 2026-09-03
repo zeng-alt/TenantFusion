@@ -38,6 +38,14 @@ subprojects {
     }
 
     plugins.withType<JavaPlugin>().configureEach {
+        // 显式声明 JDK 21：代码用到了 21 的 API（如 SequencedCollection.getLast），
+        // 不声明的话会退化成"用环境里的任意 JDK 编译"，在 JDK 17 上报的是找不到符号这类误导性错误。
+        // settings.gradle.kts 里的 foojay-resolver 会在本机缺少 21 时自动下载。
+        extensions.configure<JavaPluginExtension> {
+            toolchain {
+                languageVersion.set(JavaLanguageVersion.of(21))
+            }
+        }
         dependencies {
             "testRuntimeOnly"("org.junit.platform:junit-platform-launcher")
         }

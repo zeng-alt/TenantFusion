@@ -1,3 +1,8 @@
+// 本机缺少 toolchain 声明的 JDK 时自动下载（见 build.gradle.kts 的 languageVersion）
+plugins {
+    id("org.gradle.toolchains.foojay-resolver-convention") version "1.0.0"
+}
+
 rootProject.name = "app-native"
 
 include("backend")
