@@ -59,6 +59,9 @@ dependencies {
 //    implementation(project(":backend:components:storage-component:spring-cache-storage-component"))
     implementation(project(":backend:components:storage-component:redisson-storage-component"))
     implementation(project(":backend:components:lock-component:database-lock-component"))
+    // 多租户：接 row 模块即可，core 与 api 由它以 api(...) 传递进来。
+    // 需要模式级/库级/表级隔离时，再各自加对应模块（schema/database/table + h2/pg 方言）。
+    implementation(project(":backend:components:tenant-component:row-tenant-component"))
     implementation(project(":backend:components:security-component:jwt-auth-security-component"))
     implementation(project(":backend:components:security-component:captcha-auth-security-component"))
     // RBAC 服务端（鉴权）

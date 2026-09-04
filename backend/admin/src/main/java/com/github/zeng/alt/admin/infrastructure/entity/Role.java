@@ -2,7 +2,7 @@ package com.github.zeng.alt.admin.infrastructure.entity;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.github.zeng.alt.admin.infrastructure.listener.RoleListener;
-import com.github.zeng.alt.domain.base.BaseEntity;
+import com.github.zeng.alt.tenant.row.TenantBaseEntity;
 import com.github.zeng.alt.domain.key.SnowflakeId;
 import com.github.zeng.alt.domain.validation.UniqueCheck;
 import com.github.zeng.alt.rest.annotation.QueryField;
@@ -21,7 +21,7 @@ import java.util.Set;
 @Getter @Setter
 @UniqueCheck(field = "code", ignoreCase = true)
 @EntityListeners(RoleListener.class)
-public class Role extends BaseEntity<Long> {
+public class Role extends TenantBaseEntity<Long> {
 
     @Id @SnowflakeId
     private Long roleId;

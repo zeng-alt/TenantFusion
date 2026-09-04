@@ -2,7 +2,6 @@ package com.github.zeng.alt.domain.base;
 
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.github.zeng.alt.api.tenant.TenantAuditable;
 import com.querydsl.core.annotations.QueryTransient;
 import jakarta.persistence.Column;
 import jakarta.persistence.EntityListeners;
@@ -31,7 +30,12 @@ import java.util.Optional;
 @Getter
 @MappedSuperclass
 @EntityListeners({AuditingEntityListener.class})
-public abstract class BaseEntity<PK extends Serializable> implements Auditable<String, PK, LocalDateTime>, TenantAuditable, Serializable {
+/*
+ * 有意不再实现 TenantAuditable：租户列只属于确实参与行级隔离的实体。
+ * 让全部实体都带上它，只能靠恒返回 "master" 的假默认实现兜着，反而掩盖问题。
+ * 需要行级隔离的实体请继承 TenantBaseEntity（row-tenant-component）。
+ */
+public abstract class BaseEntity<PK extends Serializable> implements Auditable<String, PK, LocalDateTime>, Serializable {
 
     @Serial
     private static final long serialVersionUID = 1L;

@@ -1,0 +1,3 @@
+databaseChangeLog:
+  - include:
+      file: db/tenant-test/V001-create-doc.sql

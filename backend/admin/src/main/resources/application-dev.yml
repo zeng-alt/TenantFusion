@@ -49,14 +49,32 @@ spring:
 
   liquibase:
     enabled: true
+    # 显式声明 contexts：未指定时 Liquibase 会执行所有 changeset，
+    # 标了 context:dev 的演示数据也照跑，起不到限制作用
+    contexts: dev
     parameters:
       tenantName: master
+      changelogDir: h2
 
 # 国际化-数据库模式配置（取消注释以启用数据库模式）
 # alt:
 #   i18n:
 #     mode: database
 
+
+# 多租户。当前只接了 row 模块，故只有行级隔离可用。
+# 四档隔离由「引入哪个模块」决定，不在这里开关：
+#   模式级 -> schema-tenant-component + h2/pg 方言模块
+#   库级   -> database-tenant-component + alt.tenant.datasources.*
+#   表级   -> table-tenant-component，且实体需标 @TenantScope(table = true)
+#   混合   -> hybrid-tenant-component（改为逐租户读 main_tenant.isolation_mode）
+alt:
+  tenant:
+    enabled: true
+    mode: ROW
+    default-tenant-id: master
+    # master 为超管租户，其请求绕过行级判别条件，可跨租户查看
+    root-tenant-id: master
 
 security:
   jwt-auth:
@@ -146,7 +164,12 @@ springdoc:
 oss:
   s3:
     enabled: true
-    endpoint: file:///d:/data/oss
+    # 本地文件存储要求绝对 file:// URI（FileSystemOssTemplate 用 Paths.get(URI) 解析，
+    # 相对路径会被拒），而绝对路径无法跨平台共用一个默认值：
+    #   Windows  file:///d:/data/oss
+    #   mac/Linux  file:///Users/<你>/data/oss
+    # 因此默认值保留 Windows 形态，非 Windows 上用 OSS_ENDPOINT 覆盖。
+    endpoint: ${OSS_ENDPOINT:file:///d:/data/oss}
     storageType: file
 
   thumbnail:

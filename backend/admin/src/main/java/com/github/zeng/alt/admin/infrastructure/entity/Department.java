@@ -2,7 +2,7 @@ package com.github.zeng.alt.admin.infrastructure.entity;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.github.zeng.alt.api.base.BaseTreeEntity;
-import com.github.zeng.alt.domain.base.BaseEntity;
+import com.github.zeng.alt.tenant.row.TenantBaseEntity;
 import com.github.zeng.alt.domain.key.SnowflakeId;
 import com.github.zeng.alt.domain.validation.UniqueCheck;
 import com.github.zeng.alt.rest.annotation.QueryField;
@@ -25,7 +25,7 @@ import java.util.Objects;
 @SQLRestriction("is_deleted=false")
 @Getter
 @Setter
-public class Department extends BaseEntity<Long> implements BaseTreeEntity<Department> {
+public class Department extends TenantBaseEntity<Long> implements BaseTreeEntity<Department> {
 
     @Id
     @SnowflakeId

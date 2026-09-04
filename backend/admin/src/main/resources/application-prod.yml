@@ -30,6 +30,10 @@ spring:
 
   liquibase:
     enabled: false
+    parameters:
+      tenantName: master
+      # 生产用 PostgreSQL 版本的 changelog
+      changelogDir: pg
   h2:
     console:
       enabled: false # 生产环境关闭 H2 控制台

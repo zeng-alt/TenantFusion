@@ -1,11 +1,10 @@
 databaseChangeLog:
 
-
-#  - includeAll:
-#      path: pg/
-#      relativeToChangelogFile: true
-
-  # 后面更改为读取 /h2 目录下的 sql 时，可以注释上面的 pg 配置，并放开下面的 h2 配置
-   - includeAll:
-       path: h2/
-       relativeToChangelogFile: true
+  # 目录由 spring.liquibase.parameters.changelogDir 决定：
+  #   dev  -> h2
+  #   prod -> pg
+  # 以前是靠手工注释/放开两段 includeAll 来切换，容易漏改，
+  # 也没法让同一份构建产物在两种库上跑。
+  - includeAll:
+      path: ${changelogDir}/
+      relativeToChangelogFile: true

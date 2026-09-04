@@ -13,6 +13,13 @@ dependencies {
     implementation("org.springframework.data:spring-data-commons")
     compileOnly(rootProject.libs.lombok)
     annotationProcessor(rootProject.libs.lombok)
+    // TenantBaseEntity 是 @MappedSuperclass，下游实体生成的 Q 类会引用 QTenantBaseEntity，
+    // 因此本模块必须自己跑 querydsl-apt，否则 admin 编译时找不到该符号
+    annotationProcessor(rootProject.libs.querydsl.apt) {
+        artifact {
+            classifier = "jakarta"
+        }
+    }
 
     testImplementation("org.springframework.boot:spring-boot-starter-test")
     testImplementation("org.springframework.boot:spring-boot-starter-data-jpa")

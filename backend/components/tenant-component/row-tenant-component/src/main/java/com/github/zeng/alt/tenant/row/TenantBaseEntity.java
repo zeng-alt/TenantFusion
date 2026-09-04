@@ -1,5 +1,6 @@
 package com.github.zeng.alt.tenant.row;
 
+import com.github.zeng.alt.api.tenant.TenantAuditable;
 import com.github.zeng.alt.domain.base.BaseEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.MappedSuperclass;
@@ -28,7 +29,8 @@ import java.io.Serializable;
 @Getter
 @Setter
 @MappedSuperclass
-public abstract class TenantBaseEntity<PK extends Serializable> extends BaseEntity<PK> {
+public abstract class TenantBaseEntity<PK extends Serializable>
+        extends BaseEntity<PK> implements TenantAuditable {
 
     @Serial
     private static final long serialVersionUID = 1L;

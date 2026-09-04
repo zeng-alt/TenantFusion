@@ -3,7 +3,7 @@ package com.github.zeng.alt.admin.infrastructure.entity;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.github.zeng.alt.admin.infrastructure.listener.UserListener;
-import com.github.zeng.alt.domain.base.BaseEntity;
+import com.github.zeng.alt.tenant.row.TenantBaseEntity;
 import com.github.zeng.alt.domain.key.SnowflakeId;
 import com.github.zeng.alt.domain.validation.UniqueCheck;
 import com.github.zeng.alt.rest.annotation.QueryField;
@@ -30,7 +30,7 @@ import java.util.List;
 @SQLRestriction("is_deleted=false")
 @EntityListeners(UserListener.class)
 @UniqueCheck(field = "username")
-public class User extends BaseEntity<Long> {
+public class User extends TenantBaseEntity<Long> {
 
     @Id @SnowflakeId
     private Long userId;

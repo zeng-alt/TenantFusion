@@ -42,6 +42,19 @@ public interface TenantDialect {
     String getName();
 
     /**
+     * 建 schema 的语句，供多租户迁移在首次上线新租户时使用。
+     * <p>
+     * H2 与 PostgreSQL 都支持 {@code CREATE SCHEMA IF NOT EXISTS}，故给出默认实现；
+     * 不支持该语法的数据库自行覆盖。
+     *
+     * @param schema schema 名
+     * @return 可直接执行的 SQL
+     */
+    default String createSchemaSql(String schema) {
+        return "CREATE SCHEMA IF NOT EXISTS " + requireSafeIdentifier(schema);
+    }
+
+    /**
      * 切换当前会话 schema 的语句。
      *
      * @param schema schema 名，调用方保证非空
