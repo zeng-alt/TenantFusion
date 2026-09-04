@@ -2,6 +2,7 @@ package com.github.zeng.alt.oss.jpa;
 
 import com.github.zeng.alt.oss.OssFileInfo;
 import com.github.zeng.alt.oss.jpa.entity.OssFileEntity;
+import com.github.zeng.alt.oss.jpa.testapp.OssJpaTestApplication;
 import com.github.zeng.alt.oss.jpa.repository.OssFileRepository;
 import com.github.zeng.alt.oss.jpa.service.JpaOssFileRecordService;
 import io.vavr.control.Option;
@@ -11,7 +12,6 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Bean;
 import org.springframework.data.domain.AuditorAware;
-import org.springframework.data.jpa.repository.config.EnableJpaAuditing;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 
@@ -44,7 +44,7 @@ interface OssJpaRepositoryTestHelper {
  * @since 2026-07-02
  * @version 1.0
  */
-@SpringBootTest(classes = JpaOssFileRecordServiceTest.TestApplication.class, properties = {
+@SpringBootTest(classes = OssJpaTestApplication.class, properties = {
         "spring.datasource.url=jdbc:h2:mem:oss_record_test;DB_CLOSE_DELAY=-1",
         "spring.datasource.driver-class-name=org.h2.Driver",
         "spring.datasource.username=sa",
@@ -57,15 +57,6 @@ interface OssJpaRepositoryTestHelper {
 })
 class JpaOssFileRecordServiceTest implements OssJpaRepositoryTestHelper {
 
-    @SpringBootApplication
-    @EnableJpaAuditing
-    static class TestApplication {
-
-        @Bean
-        public AuditorAware<String> auditorAware() {
-            return () -> Optional.of("test-user");
-        }
-    }
 
     private static Path tempDir;
 

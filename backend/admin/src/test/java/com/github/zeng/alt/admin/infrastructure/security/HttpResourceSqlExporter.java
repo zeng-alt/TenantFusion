@@ -31,7 +31,12 @@ import java.util.regex.Pattern;
                 "spring.jpa.show-sql=false",
                 "spring.datasource.url=jdbc:h2:mem:sql_exporter;DB_CLOSE_DELAY=-1",
                 "spring.datasource.driver-class-name=org.h2.Driver",
-                "security.context.enabled-access=false",
+                // RBAC 必须开启：UserServiceImpl 依赖 RbacResourceService，
+                // 原先设为 false 会让 RbacAutoConfiguration 不生效，上下文直接起不来
+                "security.context.enabled-access=true",
+                // 本工具只枚举路由，不需要对象存储；关掉可避开 application-dev.yml 里
+                // 那个 Windows 形态的 oss.s3.endpoint 在非 Windows 上解析成 /d: 的问题
+                "oss.s3.enabled=false",
                 "server.port=0",
                 "spring.aot.enabled=false",
                 "spring.autoconfigure.exclude=com.github.zeng.alt.security.rbac.client.config.RbacClientAutoConfiguration"

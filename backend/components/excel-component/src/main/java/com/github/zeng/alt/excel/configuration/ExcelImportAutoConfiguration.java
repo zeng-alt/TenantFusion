@@ -1,6 +1,6 @@
 package com.github.zeng.alt.excel.configuration;
 
-import com.zjj.excel.component.processor.mvc.HttpExcelMethodProcessor;
+import com.github.zeng.alt.excel.mvc.HttpExcelMethodProcessor;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication;

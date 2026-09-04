@@ -1,7 +1,7 @@
 package com.github.zeng.alt.excel.listener;
 
-import cn.idev.excel.converters.Converter;
-import cn.idev.excel.metadata.property.ExcelContentProperty;
+import org.apache.fesod.sheet.converters.Converter;
+import org.apache.fesod.sheet.metadata.property.ExcelContentProperty;
 import lombok.Data;
 import org.springframework.lang.NonNull;
 

@@ -1,6 +1,6 @@
 package com.github.zeng.alt.excel.utils;
 
-import com.zjj.excel.component.domain.ExcelHandlerManger;
+import com.github.zeng.alt.excel.domain.ExcelHandlerManger;
 
 import java.io.InputStream;
 

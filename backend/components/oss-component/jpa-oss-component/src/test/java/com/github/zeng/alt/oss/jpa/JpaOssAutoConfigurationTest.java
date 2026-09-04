@@ -3,6 +3,7 @@ package com.github.zeng.alt.oss.jpa;
 import com.github.zeng.alt.oss.OssTemplate;
 import com.github.zeng.alt.oss.UserIdProvider;
 import com.github.zeng.alt.oss.jpa.service.JpaOssFileRecordService;
+import com.github.zeng.alt.oss.jpa.testapp.OssJpaTestApplication;
 import org.junit.jupiter.api.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -28,7 +29,10 @@ import static org.junit.jupiter.api.Assertions.*;
  * @since 2026-07-02
  * @version 1.0
  */
-@SpringBootTest(classes = JpaOssAutoConfigurationTest.TestApplication.class, properties = {
+@SpringBootTest(classes = OssJpaTestApplication.class, properties = {
+        // OssCoreAutoConfiguration 以 oss.s3.enabled 为开关且 matchIfMissing=false，
+        // 不设这一条则 OssTemplate 根本不会被创建
+        "oss.s3.enabled=true",
         "spring.datasource.url=jdbc:h2:mem:oss_auto_config_test;DB_CLOSE_DELAY=-1",
         "spring.datasource.driver-class-name=org.h2.Driver",
         "spring.datasource.username=sa",
@@ -41,9 +45,6 @@ import static org.junit.jupiter.api.Assertions.*;
 })
 class JpaOssAutoConfigurationTest {
 
-    @SpringBootApplication
-    static class TestApplication {
-    }
 
     private static Path tempDir;
 

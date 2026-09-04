@@ -10,7 +10,9 @@ import java.util.function.Consumer;
  */
 public class ExcelHandlerManger<T> {
 
-	public ExcelHandlerManger<T> invoke(InvokeFunction<TestHandler> invokeFunction) {
+	// 原签名引用的 TestHandler 全仓不存在（包重命名遗留的占位类型），
+	// 且本方法体是空壳。这里改用本类自身的泛型参数，消除悬空引用。
+	public ExcelHandlerManger<T> invoke(InvokeFunction<T> invokeFunction) {
 		return this;
 	}
 

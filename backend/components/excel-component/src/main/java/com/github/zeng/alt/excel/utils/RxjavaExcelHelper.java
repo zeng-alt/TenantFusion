@@ -1,7 +1,7 @@
 package com.github.zeng.alt.excel.utils;
 
-import com.zjj.excel.component.builder.ExcelTemplate;
-import com.zjj.excel.component.rxjava.RxjavaListenerUtils;
+import com.github.zeng.alt.excel.builder.ExcelTemplate;
+import com.github.zeng.alt.excel.rxjava.RxjavaListenerUtils;
 import io.reactivex.rxjava3.core.BackpressureStrategy;
 import io.reactivex.rxjava3.core.Flowable;
 import org.springframework.beans.BeansException;

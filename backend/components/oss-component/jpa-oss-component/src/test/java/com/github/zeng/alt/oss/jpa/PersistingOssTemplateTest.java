@@ -2,15 +2,16 @@ package com.github.zeng.alt.oss.jpa;
 
 import com.github.zeng.alt.oss.*;
 import com.github.zeng.alt.oss.jpa.entity.OssFileEntity;
+import com.github.zeng.alt.oss.jpa.testapp.OssJpaTestApplication;
 import com.github.zeng.alt.oss.jpa.service.JpaOssFileRecordService;
 import org.junit.jupiter.api.*;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Import;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.domain.AuditorAware;
-import org.springframework.data.jpa.repository.config.EnableJpaAuditing;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 
@@ -35,7 +36,10 @@ import static org.junit.jupiter.api.Assertions.*;
  * @since 2026-07-02
  * @version 1.0
  */
-@SpringBootTest(classes = PersistingOssTemplateTest.TestApplication.class, properties = {
+@SpringBootTest(classes = OssJpaTestApplication.class, properties = {
+        // OssCoreAutoConfiguration 以 oss.s3.enabled 为开关且 matchIfMissing=false，
+        // 不设这一条则 OssTemplate 根本不会被创建
+        "oss.s3.enabled=true",
         "spring.datasource.url=jdbc:h2:mem:oss_persist_test;DB_CLOSE_DELAY=-1",
         "spring.datasource.driver-class-name=org.h2.Driver",
         "spring.datasource.username=sa",
@@ -46,27 +50,27 @@ import static org.junit.jupiter.api.Assertions.*;
         "oss.thumbnail.enabled=false",
         "spring.main.web-application-type=none"
 })
+// 显式 Import：启动类已挪出本包，仅靠嵌套 @TestConfiguration 无法覆盖
+// JpaOssAutoConfiguration 里那个 @ConditionalOnMissingBean 的默认 UserIdProvider，
+// 实测注入到的仍是默认实现（getUserId() 返回 null），MD5 去重会被整段跳过。
+@Import(PersistingOssTemplateTest.TestConfig.class)
 class PersistingOssTemplateTest {
 
-    @SpringBootApplication
-    @EnableJpaAuditing
-    static class TestApplication {
-    }
 
     /**
-     * 测试配置：提供用户 ID 提供者（用于 MD5 去重测试）、AuditorAware 和临时 OSS 存储路径。
+     * 本测试私有的配置：MD5 去重用到的用户 ID 提供者。
+     * <p>
+     * 用 {@code @TestConfiguration} 而非 {@code @Configuration}：后者会被同包其他测试的
+     * 组件扫描捞走，前者由 {@code TypeExcludeFilter} 排除，只对本测试生效。
+     * <p>
+     * {@code AuditorAware} 已由 {@link OssJpaTestApplication} 提供，此处不再重复声明。
      */
-    @Configuration
+    @TestConfiguration
     static class TestConfig {
 
         @Bean
         public UserIdProvider testUserIdProvider() {
             return () -> "test-user";
-        }
-
-        @Bean
-        public AuditorAware<String> auditorAware() {
-            return () -> Optional.of("test-user");
         }
     }
 

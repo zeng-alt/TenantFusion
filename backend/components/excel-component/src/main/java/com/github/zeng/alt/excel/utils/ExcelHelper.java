@@ -3,6 +3,7 @@ package com.github.zeng.alt.excel.utils;
 
 
 import com.github.zeng.alt.excel.builder.ExcelTemplate;
+import com.github.zeng.alt.excel.domain.ExcelSuccessListener;
 import com.github.zeng.alt.excel.domain.DefaultExcelListenerSuccess;
 import com.github.zeng.alt.excel.dynamic.DynamicEntity;
 import com.github.zeng.alt.excel.dynamic.InterfaceDynamicColumn;
@@ -25,6 +26,8 @@ import java.io.OutputStream;
 import java.io.UnsupportedEncodingException;
 import java.util.Collection;
 import java.util.List;
+import org.apache.fesod.sheet.FastExcelFactory;
+import org.apache.fesod.sheet.write.metadata.WriteSheet;
 
 /**
  * @author zengJiaJun

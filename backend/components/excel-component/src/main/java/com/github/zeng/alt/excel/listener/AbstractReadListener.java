@@ -1,7 +1,8 @@
 package com.github.zeng.alt.excel.listener;
 
 import org.apache.fesod.shaded.cglib.beans.BeanMap;
-import org.apache.fesod.shaded.cglib.core.Converter;
+// 这里要的是 sheet 的泛型 Converter<T>，不是 cglib 那个非泛型同名类
+import org.apache.fesod.sheet.converters.Converter;
 import org.apache.fesod.sheet.context.AnalysisContext;
 import org.apache.fesod.sheet.converters.ConverterKeyBuild;
 import org.apache.fesod.sheet.converters.ReadConverterContext;
@@ -21,6 +22,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import org.apache.fesod.common.util.MapUtils;
 
 /**
  * @author zengJiaJun

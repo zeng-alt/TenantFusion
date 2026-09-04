@@ -36,7 +36,9 @@ public class LockProperties {
     /**
      * 锁 key 前缀
      */
-    private String lockKeyPrefix = "lock";
+    // 默认值恢复为 alt:lock。包重命名前该值即为 alt:lock，重构中被改成了 lock，
+    // 与 ApiLockUnitTest 的断言不符。锁键是短生命周期数据，改回不影响存量。
+    private String lockKeyPrefix = "alt:lock";
 
     /**
      * 主执行器类型

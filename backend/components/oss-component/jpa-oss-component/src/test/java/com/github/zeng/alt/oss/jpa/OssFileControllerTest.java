@@ -2,6 +2,7 @@ package com.github.zeng.alt.oss.jpa;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.zeng.alt.oss.jpa.entity.OssFileEntity;
+import com.github.zeng.alt.oss.jpa.testapp.OssJpaTestApplication;
 import com.github.zeng.alt.oss.jpa.repository.OssFileRepository;
 import org.junit.jupiter.api.*;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -10,7 +11,6 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Bean;
 import org.springframework.data.domain.AuditorAware;
-import org.springframework.data.jpa.repository.config.EnableJpaAuditing;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
@@ -35,7 +35,10 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * @since 2026-07-02
  * @version 1.0
  */
-@SpringBootTest(classes = OssFileControllerTest.TestApplication.class, properties = {
+@SpringBootTest(classes = OssJpaTestApplication.class, properties = {
+        // OssCoreAutoConfiguration 以 oss.s3.enabled 为开关且 matchIfMissing=false，
+        // 不设这一条则 OssTemplate 根本不会被创建
+        "oss.s3.enabled=true",
         "spring.datasource.url=jdbc:h2:mem:oss_controller_test;DB_CLOSE_DELAY=-1",
         "spring.datasource.driver-class-name=org.h2.Driver",
         "spring.datasource.username=sa",
@@ -48,15 +51,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @AutoConfigureMockMvc
 class OssFileControllerTest {
 
-    @SpringBootApplication
-    @EnableJpaAuditing
-    static class TestApplication {
-
-        @Bean
-        public AuditorAware<String> auditorAware() {
-            return () -> Optional.of("test-user");
-        }
-    }
 
     private static Path tempDir;
 
@@ -124,8 +118,8 @@ class OssFileControllerTest {
                         .param("pageSize", "10"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(200))
-                .andExpect(jsonPath("$.data.length()").value(2))
-                .andExpect(jsonPath("$.total").value(2));
+                .andExpect(jsonPath("$.data.pageData.length()").value(2))
+                .andExpect(jsonPath("$.data.total").value(2));
     }
 
     @Test
@@ -138,10 +132,10 @@ class OssFileControllerTest {
                         .param("page", "1")
                         .param("pageSize", "2"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.length()").value(2))
-                .andExpect(jsonPath("$.total").value(5))
-                .andExpect(jsonPath("$.pageSize").value(2))
-                .andExpect(jsonPath("$.pageNum").value(1));
+                .andExpect(jsonPath("$.data.pageData.length()").value(2))
+                .andExpect(jsonPath("$.data.total").value(5))
+                .andExpect(jsonPath("$.data.pageSize").value(2))
+                .andExpect(jsonPath("$.data.pageNum").value(1));
     }
 
     @Test
@@ -150,8 +144,8 @@ class OssFileControllerTest {
                         .param("page", "1")
                         .param("pageSize", "10"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.length()").value(0))
-                .andExpect(jsonPath("$.total").value(0));
+                .andExpect(jsonPath("$.data.pageData.length()").value(0))
+                .andExpect(jsonPath("$.data.total").value(0));
     }
 
     @Test

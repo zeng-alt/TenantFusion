@@ -1,6 +1,6 @@
 package com.github.zeng.alt.excel.dynamic;
 
-import com.zjj.core.component.type.TypeEntity;
+import com.github.zeng.alt.core.validation.TypeEntity;
 
 /**
  * @author zengJiaJun

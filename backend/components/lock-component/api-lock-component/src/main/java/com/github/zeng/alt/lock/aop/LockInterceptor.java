@@ -15,7 +15,6 @@ import org.aopalliance.intercept.MethodInvocation;
 import org.springframework.aop.framework.AopProxyUtils;
 import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.BeanFactoryAware;
-import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.core.annotation.AnnotatedElementUtils;
 import org.springframework.core.annotation.AnnotationAwareOrderComparator;
@@ -55,7 +54,11 @@ public class LockInterceptor implements MethodInterceptor, BeanFactoryAware {
     private final ObjectProvider<MethodBasedExpressionEvaluator> expressionEvaluatorProvider;
 
 
-    private LockOperation defaultLockOperation;
+    /**
+     * 默认的键构造器与失败策略。惰性初始化：本拦截器作为 AOP 通知会被很早创建，
+     * 在 {@code afterPropertiesSet} 阶段解析其他 Bean 容易踩到初始化顺序问题。
+     */
+    private volatile LockOperation defaultLockOperation;
 
     private BeanFactory beanFactory;
 
@@ -218,7 +221,7 @@ public class LockInterceptor implements MethodInterceptor, BeanFactoryAware {
         Class<? extends LockKeyBuilder> keyBuilderClass = lock.keyBuilderStrategy();
 
         if (keyBuilderClass == null || keyBuilderClass == LockKeyBuilder.class) {
-            keyBuilder = defaultLockOperation.lockKeyBuilder;
+            keyBuilder = defaultLockOperation().lockKeyBuilder;
         } else {
             keyBuilder = keyBuilderMap.get(keyBuilderClass);
             if (keyBuilder == null) {
@@ -228,7 +231,7 @@ public class LockInterceptor implements MethodInterceptor, BeanFactoryAware {
         }
 
         if (failStrategyClass == null || failStrategyClass == LockFailureStrategy.class) {
-            failureStrategy = defaultLockOperation.lockFailureStrategy;
+            failureStrategy = defaultLockOperation().lockFailureStrategy;
         } else {
             failureStrategy = failureStrategyMap.get(failStrategyClass);
             if (failureStrategy == null) {
@@ -238,6 +241,37 @@ public class LockInterceptor implements MethodInterceptor, BeanFactoryAware {
         }
 
         return new LockOperation(keyBuilder, failureStrategy);
+    }
+
+    /**
+     * 解析并缓存默认的键构造器与失败策略。
+     * <p>
+     * 原实现只声明了 {@code defaultLockOperation} 字段和 {@link #resolvePrimaryComponent} 方法，
+     * 却没有任何地方给该字段赋值——只要 {@code @Lock} 没显式指定 keyBuilderStrategy /
+     * failStrategy，{@link #buildLockOperation} 就会抛空指针。这里补上缺失的初始化。
+     *
+     * @return 默认锁操作，非空
+     */
+    private LockOperation defaultLockOperation() {
+        LockOperation current = defaultLockOperation;
+        if (current != null) {
+            return current;
+        }
+        synchronized (this) {
+            if (defaultLockOperation == null) {
+                LockProperties properties = lockPropertiesProvider.getObject();
+                List<LockKeyBuilder> keyBuilders =
+                        keyBuildersProvider.getIfAvailable(List::of);
+                List<LockFailureStrategy> failureStrategies =
+                        failureStrategiesProvider.getIfAvailable(List::of);
+                defaultLockOperation = new LockOperation(
+                        resolvePrimaryComponent(properties.getPrimaryKeyBuilder(),
+                                keyBuilderMap, keyBuilders, LockKeyBuilder.class),
+                        resolvePrimaryComponent(properties.getPrimaryFailStrategy(),
+                                failureStrategyMap, failureStrategies, LockFailureStrategy.class));
+            }
+            return defaultLockOperation;
+        }
     }
 
     @SuppressWarnings("unchecked")

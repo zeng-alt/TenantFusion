@@ -44,5 +44,54 @@ security:
     # 必须与 workflow 应用使用同一对密钥
     base64-secret: ${JWT_SECRET}
     base64-secret-refresh: ${JWT_SECRET_REFRESH}
-    # 注意：生产环境其余安全配置（authentication / login 路径 / filter.ignore-url 等）仍缺失，
-    # 见项目待办，此处只负责把密钥外置。
+    authentication: true
+    validation: true
+    login:
+      loginPath: "/v1/login/jwt"
+    logout:
+      logoutPath: "/v1/logout/jwt"
+
+  username-login:
+    enabled: true
+
+  captcha-auth:
+    validation: true
+    login-path: /v1/login/**
+
+  filter:
+    # 免鉴权路径在生产环境刻意收窄，只放开登录前必须可达的取验证码接口。
+    # 相比 dev 有意省略以下几项，不是漏配：
+    #   /v1/test/**              测试接口，不应暴露
+    #   /v3/api-docs/** 等        接口文档，需要鉴权后才能看
+    #   /v1/camunda-identity/**  见下方说明，照搬会开一个密码爆破口
+    ignore-url:
+      - "/v1/auth/captcha"
+
+  # RbacAutoConfiguration 由本开关控制。缺了它 RbacResourceService 不会注册，
+  # UserServiceImpl 注入失败，整个应用起不来。
+  context:
+    enabled-access: true
+    admin:
+      id: 1
+      code: admin
+
+  rbac:
+    client:
+      enabled: true
+
+# 警告：workflow 应用通过 AdminIdentityClient 调用 /v1/camunda-identity/**，
+# 其中 POST /users/{username}/password 会返回口令是否正确的布尔值。
+# dev 把该路径整段加入 ignore-url，生产环境照搬等于对外开放一个密码校验接口，
+# 可被用来爆破口令，同时 /users/{username} 与 /groups 还会泄露用户与组织结构。
+# 这里刻意不放行；上线前需要为这条服务间调用配置真正的认证方式
+# （固定 token、mTLS，或让 workflow 用服务账号走正常登录）。
+
+# 多租户与 dev 保持一致。生产数据的 tenant_by 全为 master，
+# 而 master 是超管租户会绕过判别条件，因此开与不开的实际行为一致；
+# 保持一致是为了避免两个环境的隔离语义出现分叉。
+alt:
+  tenant:
+    enabled: true
+    mode: ROW
+    default-tenant-id: master
+    root-tenant-id: master
