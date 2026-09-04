@@ -2,6 +2,7 @@ package com.github.zeng.alt.excel;
 
 import com.github.zeng.alt.excel.config.ExcelAutoConfiguration;
 import com.github.zeng.alt.excel.config.ExcelWebAutoConfiguration;
+import com.github.zeng.alt.excel.config.ExcelWebMvcAutoConfiguration;
 import com.github.zeng.alt.excel.exception.ExcelException;
 import com.github.zeng.alt.excel.read.ExcelReadResult;
 import com.github.zeng.alt.excel.web.ExcelReactiveSupport;
@@ -45,6 +46,7 @@ class ExcelWithoutRxJavaTest {
             .withConfiguration(AutoConfigurations.of(
                     ExcelAutoConfiguration.class,
                     ExcelWebAutoConfiguration.class,
+                    ExcelWebMvcAutoConfiguration.class,
                     ValidationAutoConfiguration.class,
                     WebMvcAutoConfiguration.class));
 
@@ -135,7 +137,7 @@ class ExcelWithoutRxJavaTest {
             assertThatThrownBy(support::emptyStream)
                     .isInstanceOf(ExcelException.class)
                     .hasMessageContaining("io.reactivex.rxjava3:rxjava");
-            assertThat(support.write(null, null).isFailure()).isTrue();
+            assertThat(support.iterator(null).isFailure()).isTrue();
         });
     }
 }

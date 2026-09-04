@@ -8,6 +8,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import com.github.zeng.alt.excel.config.ExcelAutoConfiguration;
 import com.github.zeng.alt.excel.config.ExcelWebAutoConfiguration;
+import com.github.zeng.alt.excel.config.ExcelWebMvcAutoConfiguration;
 import org.springframework.boot.autoconfigure.ImportAutoConfiguration;
 import org.springframework.boot.autoconfigure.http.HttpMessageConvertersAutoConfiguration;
 import org.springframework.boot.autoconfigure.jackson.JacksonAutoConfiguration;
@@ -45,9 +46,11 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * @since 2026年09月04日
  * @version 1.0
  */
+// 同上：显式钉死 Servlet 栈，不依赖 classpath 推断
 @SpringBootTest(
         classes = ExcelWebIntegrationTest.TestApplication.class,
-        webEnvironment = SpringBootTest.WebEnvironment.MOCK)
+        webEnvironment = SpringBootTest.WebEnvironment.MOCK,
+        properties = "spring.main.web-application-type=servlet")
 class ExcelWebIntegrationTest {
 
     @Autowired
@@ -154,7 +157,8 @@ class ExcelWebIntegrationTest {
             JacksonAutoConfiguration.class,
             ValidationAutoConfiguration.class,
             ExcelAutoConfiguration.class,
-            ExcelWebAutoConfiguration.class})
+            ExcelWebAutoConfiguration.class,
+            ExcelWebMvcAutoConfiguration.class})
     static class TestApplication {
 
         @PostMapping("/excel/import-list")

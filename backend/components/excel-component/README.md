@@ -67,8 +67,7 @@ excelTemplate.write(UserVO.class).to(outputStream).write(userService.cursorAll()
 
 ### Web 集成
 
-`@ExcelImport` 把上传文件直接解析成方法参数，支持 `List<T>`、`ExcelReadResult<T>`、
-`Flowable<T>` 三种形状：
+`@ExcelImport` 把上传文件直接解析成方法参数：
 
 ```java
 @PostMapping("/import")
@@ -86,6 +85,9 @@ public List<UserVO> exportUsers(UserQry qry) {
     return userService.list(qry);
 }
 ```
+
+两个注解在 **Servlet(WebMVC)** 与 **WebFlux** 两种栈上都生效，非 Web 应用里自然不生效
+（`ExcelTemplate` 照常可用）。支持的形状按栈略有差别，见下方「三种 Web 形态」。
 
 ### 模板填充
 
@@ -116,6 +118,50 @@ excelTemplate.writeHead(rows.getFirst().dynamicHead())
         .write(rows.stream().map(DynamicColumn::dynamicRow).toList());
 ```
 
+## 三种 Web 形态
+
+组件按运行形态自动装配，使用方不需要做任何选择：
+
+| 形态 | 生效的自动配置 | `@ExcelImport` / `@ExcelExport` |
+| --- | --- | --- |
+| 非 Web 应用 | 只有 `ExcelAutoConfiguration` | 不生效（`ExcelTemplate` 照常可用） |
+| Servlet / WebMVC | `+ ExcelWebAutoConfiguration`、`ExcelWebMvcAutoConfiguration` | 生效 |
+| WebFlux | `+ ExcelWebAutoConfiguration`、`ExcelWebFluxAutoConfiguration` | 生效 |
+
+`spring-webmvc`、`spring-webflux`、`jakarta.servlet-api` 全都是 `compileOnly`，
+一个都不会被本模块拖进你的应用。整套集成可用 `alt.excel.web.enabled=false` 关掉。
+
+### 支持的形状
+
+| | Servlet | WebFlux |
+| --- | --- | --- |
+| `@ExcelImport List<T>` | ✅ | ✅ |
+| `@ExcelImport ExcelReadResult<T>` | ✅ | ✅ |
+| `@ExcelImport Flux<T>` | — | ✅ |
+| `@ExcelImport Flowable<T>` | ✅（需 rxjava） | ✅（需 rxjava） |
+| `@ExcelExport Collection<T>` / `Iterator<T>` | ✅ | ✅ |
+| `@ExcelExport Flux<T>` / `Mono<Collection<T>>` | — | ✅ |
+| `@ExcelExport Flowable<T>` | ✅（需 rxjava） | ✅（需 rxjava） |
+
+### 两栈的实现差别
+
+- **返回值抢占**。MVC 里 `List<T>` 会被 `RequestResponseBodyMethodProcessor` 先接走，
+  所以 `ExcelExportReturnValueHandler` 必须被插到 `RequestMappingHandlerAdapter`
+  处理器列表的 0 号位（`WebMvcConfigurer#addReturnValueHandlers` 是追加到内置之后的，
+  拿不到）。WebFlux 里 `ExcelExportResultHandler` 实现 `Ordered` 取 0 即可抢在
+  `ResponseBodyResultHandler`（order 100）之前。
+- **不阻塞事件循环**。Excel 读写是阻塞动作，WebFlux 集成把它们全部放到
+  `Schedulers.boundedElastic()` 上。
+- **导出走临时文件**。WebFlux 下先在 `boundedElastic` 上把工作簿写到临时文件，
+  再用 `DataBufferUtils.read` 分块推给响应（内存占用与文件大小无关），
+  响应终结时删文件。直接往响应的 `DataBuffer` 上挤既会阻塞事件循环、也拿不到背压。
+- **上传落盘**。两栈的流式形状都先把上传落到临时文件——原始存储在请求结束时就被
+  容器回收，而流是懒执行的。目录用 `alt.excel.web.temp-dir` 配。
+
+WebFlux 集成层用的是 Reactor 而不是 RxJava：WebFlux 的扩展点签名本身就是
+`Mono`/`Flux`，属于「框架强加的 Reactor 留在框架层」，业务代码拿到的仍是集合或
+自己选的流类型。
+
 ## RxJava 是可选依赖
 
 核心 SPI（`ExcelReadSpec` / `ExcelWriteSpec`）的签名里**没有任何响应式类型**。
@@ -144,9 +190,10 @@ Flowable<UserImportCmd> rows = RxExcel.stream(
 RxExcel.write(excelTemplate.write(UserVO.class).to(outputStream), userService.streamAll());
 ```
 
-Web 层的响应式形状（`@ExcelImport Flowable<T>` 参数、`@ExcelExport` 返回 `Flowable<T>`）
-经 `ExcelReactiveSupport` 适配：有 rxjava 时自动装 `RxJavaExcelReactiveSupport`，
-没有则装 `NoOpExcelReactiveSupport`，两者按 classpath 严格二选一。
+Web 层的 `Flowable` 形状（两种栈都支持）经 `ExcelReactiveSupport` 适配：有 rxjava
+时自动装 `RxJavaExcelReactiveSupport`，没有则装 `NoOpExcelReactiveSupport`，
+两者按 classpath 严格二选一。WebFlux 下即使不引 rxjava，也还有 Reactor 的
+`Flux`/`Mono` 形状可用。
 
 ## 表头国际化
 
@@ -189,8 +236,8 @@ user.name=姓名
 | `alt.excel.write.i18n-head` | `true` | 表头国际化替换 |
 | `alt.excel.write.in-memory` | `false` | 全内存生成，大数据量务必保持 `false` |
 | `alt.excel.write.batch-size` | `2000` | 从 `Flowable` 写出时的分批大小 |
-| `alt.excel.web.enabled` | `true` | `@ExcelImport` / `@ExcelExport` 的 MVC 集成 |
-| `alt.excel.web.temp-dir` | 系统临时目录 | `Flowable` 形状上传落盘的目录 |
+| `alt.excel.web.enabled` | `true` | `@ExcelImport` / `@ExcelExport` 的 Web 集成（两栈共用） |
+| `alt.excel.web.temp-dir` | 系统临时目录 | 流式上传落盘的目录 |
 
 ## Spring Native / GraalVM
 
@@ -289,8 +336,9 @@ customizer 是唯一的逃生舱。
 - 一段链只服务一次操作：终结步骤消费掉数据源后不要复用（输入流读完即废）。
 - `RxExcel.stream(...)` 默认在 `Schedulers.io()` 上解析。**ThreadLocal 上下文
   （`SecurityContext`、租户上下文）不会跨调度器传递**，需要的值请在订阅前取出。
-- `Flowable` 形状的上传会先落临时文件再解析——multipart 的原始存储在请求结束时就被
-  容器回收了，懒订阅拿不到；临时文件在流终结（完成、出错、取消）时删除。
+- 流式上传会先落临时文件再解析——multipart 的原始存储在请求结束时就被容器回收了，
+  懒订阅拿不到；临时文件在流终结（完成、出错、取消）时删除。
+- WebFlux 集成不在事件循环上做任何阻塞动作，解析与写出都在 `boundedElastic` 上。
 
 ## 本次重写去掉了什么
 
@@ -301,6 +349,7 @@ customizer 是唯一的逃生舱。
 - `ExcelHelper` / `RxjavaExcelHelper` / `ValidaHelper` 用 `BeanFactoryPostProcessor` + `getBean()` 往 static 字段塞单例。
 - `exportDynamicExcel` 算完表头就丢掉、`.sheet()` 后没有 `doWrite`，实际什么都不写；`ImportExcelHelper.importExcel` 直接 `return null`；`ExcelHandlerManger`（拼写错误）三个方法全是空壳。
 - `@ExcelExport` 没有任何 `HandlerMethodReturnValueHandler`，导出功能完全不存在。
+- 只有 Servlet 集成，WebFlux 应用里两个注解静默失效；且 `jakarta.servlet-api` 是 `api` 依赖，会被拖进所有下游模块（包括非 Web 的）。
 - `@AliasFor` 用在非 Spring 元注解上，别名不生效。
 - `Flowable.create` 没有调度器声明，且读的是请求结束即关闭的 multipart 流；`merge` 分支在参数解析器里 `blockingStream()`。rxjava 还是硬依赖，且 `Flowable` 出现在核心接口签名上，没引它的应用会在反射枚举方法时炸。
 - `DynamicValidatorManagerImpl` 对注解类型调 `BeanUtils.getResolvableConstructor` —— 注解没有构造器，必抛异常；`DynamicAttributeService` 全仓无实现 bean。整个动态校验子系统不可用，已整体删除（动态列的读写保留）。

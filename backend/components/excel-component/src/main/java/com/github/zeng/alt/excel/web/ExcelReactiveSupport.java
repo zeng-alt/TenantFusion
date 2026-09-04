@@ -1,25 +1,25 @@
 package com.github.zeng.alt.excel.web;
 
-import com.github.zeng.alt.excel.read.ExcelReadSpec;
-import com.github.zeng.alt.excel.write.ExcelWriteSpec;
 import io.vavr.control.Try;
-import org.springframework.web.multipart.MultipartFile;
 
-import java.io.File;
+import java.util.Iterator;
 import java.util.List;
-import java.util.function.Function;
 
 /**
- * 响应式类型的适配点，让 Web 层在不引用任何 RxJava 类型的前提下支持
+ * RxJava 类型的适配点，让 Web 集成在不引用任何 RxJava 类型的前提下支持
  * {@code Flowable} 形状的导入导出。
  * <p>
  * RxJava 是本模块的<b>可选</b>依赖：没引入时装配的是
- * {@link NoOpExcelReactiveSupport}，{@code @ExcelImport} / {@code @ExcelExport}
- * 的集合形状照常工作，只有响应式形状会给出「请引入 rxjava」的明确报错；引入后
- * 自动换成 {@code RxJavaExcelReactiveSupport}。
+ * {@link NoOpExcelReactiveSupport}，集合形状照常工作，只有 {@code Flowable} 形状
+ * 会给出「请引入 rxjava」的明确报错；引入后自动换成
+ * {@link RxJavaExcelReactiveSupport}。
  * <p>
- * 所有方法都用 {@code Object} 承载响应式值——这是把可选依赖挡在核心代码之外的
- * 代价，也是它唯一的用途；业务代码不该直接用本接口，用
+ * 本接口与具体 Web 栈无关：上传文件在 Servlet 栈是 {@code MultipartFile}、在
+ * WebFlux 栈是 {@code FilePart}，两者都由各自的集成包成
+ * {@link ExcelStreamSource} 再递进来。
+ * <p>
+ * 方法都用 {@code Object} 承载响应式值——这是把可选依赖挡在核心代码之外的代价，
+ * 也是它唯一的用途；业务代码不该直接用本接口，用
  * {@code com.github.zeng.alt.excel.rx.RxExcel}。
  *
  * @author zengJiaJun
@@ -44,25 +44,24 @@ public interface ExcelReactiveSupport {
     Object emptyStream();
 
     /**
-     * 把若干上传文件懒解析成一条流。
+     * 把若干个懒打开的读取来源串成一条流。
      * <p>
-     * 实现必须保证：订阅时才落盘与解析，流终结（完成、出错、取消）时删除临时文件。
-     * 之所以要落盘——multipart 的原始存储在请求结束时就被 servlet 容器回收了，
-     * 而流是懒执行的，订阅时再去读原始流必然失败。
+     * 实现必须保证：订阅时才调用 {@link ExcelStreamSource#open()}，流终结
+     * （完成、出错、取消）时调用 {@link ExcelStreamSource#close()}。
      *
-     * @param files       上传文件
-     * @param tempDir     临时目录，空则用系统临时目录
-     * @param specFactory 由临时文件建读取链
+     * @param sources 读取来源，按顺序拼接
      * @return 行流
      */
-    Object streamOf(List<MultipartFile> files, String tempDir, Function<File, ExcelReadSpec<?>> specFactory);
+    Object streamOf(List<ExcelStreamSource> sources);
 
     /**
-     * 从响应式返回值写出。
+     * 把响应式值转成游标，供写出侧分批阻塞拉取。
+     * <p>
+     * 会阻塞当前线程，调用方负责把它放在允许阻塞的线程上（WebFlux 集成放在
+     * {@code boundedElastic}）。
      *
-     * @param spec          已配置好输出目标的写出链
-     * @param reactiveValue 控制器返回的响应式值
-     * @return 写出的行数
+     * @param reactiveValue 响应式值
+     * @return 行游标
      */
-    Try<Long> write(ExcelWriteSpec<Object> spec, Object reactiveValue);
+    Try<Iterator<Object>> iterator(Object reactiveValue);
 }

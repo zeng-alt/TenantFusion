@@ -1,17 +1,17 @@
-package com.github.zeng.alt.excel.web;
+package com.github.zeng.alt.excel.web.servlet;
 
-import com.github.zeng.alt.excel.ExcelTemplate;
 import com.github.zeng.alt.excel.annotation.ExcelImport;
 import com.github.zeng.alt.excel.config.ExcelProperties;
-import com.github.zeng.alt.excel.dynamic.DynamicCell;
-import com.github.zeng.alt.excel.dynamic.DynamicColumn;
 import com.github.zeng.alt.excel.exception.ExcelReadException;
 import com.github.zeng.alt.excel.read.ExcelReadResult;
-import com.github.zeng.alt.excel.read.ExcelReadSpec;
 import com.github.zeng.alt.excel.read.ExcelRowError;
+import com.github.zeng.alt.excel.web.ExcelReactiveSupport;
+import com.github.zeng.alt.excel.web.ExcelRowTypeResolver;
+import com.github.zeng.alt.excel.web.ExcelStreamSource;
+import com.github.zeng.alt.excel.web.ExcelUploadHelper;
+import com.github.zeng.alt.excel.web.ExcelWebSpecFactory;
 import lombok.RequiredArgsConstructor;
 import org.springframework.core.MethodParameter;
-import org.springframework.core.ResolvableType;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.support.WebDataBinderFactory;
 import org.springframework.web.context.request.NativeWebRequest;
@@ -24,20 +24,16 @@ import org.springframework.web.multipart.support.MultipartResolutionDelegate;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * 把上传的 Excel 文件解析成 {@link ExcelImport} 标注的方法参数。
+ * Servlet 栈：把上传的 Excel 文件解析成 {@link ExcelImport} 标注的方法参数。
  * <p>
  * 支持 {@code List<T>}、{@link ExcelReadResult}{@code <T>} 与 {@code Flowable<T>}
- * 三种形状，元素类型从参数泛型推断。响应式形状经
+ * 三种形状，元素类型从参数泛型推断。{@code Flowable} 形状经
  * {@link ExcelReactiveSupport} 适配——RxJava 是可选依赖，本类不引用它的任何类型。
  * <p>
- * 与旧实现的区别：不再继承 {@code AbstractMessageConverterMethodArgumentResolver}
- * （用不到消息转换器）、不再返回 {@code null}、不再在解析器里对 {@code Flowable}
- * 做 {@code blockingStream()}；{@code Flowable} 形状的上传内容先落临时文件，
- * 因此订阅时源仍然可用——旧实现拿的是请求结束即关闭的 multipart 流。
+ * WebFlux 应用请看
+ * {@code com.github.zeng.alt.excel.web.reactive.ExcelImportReactiveArgumentResolver}。
  *
  * @author zengJiaJun
  * @since 2026年09月04日
@@ -46,18 +42,10 @@ import java.util.concurrent.ConcurrentHashMap;
 @RequiredArgsConstructor
 public class ExcelImportArgumentResolver implements HandlerMethodArgumentResolver {
 
-    private final ExcelTemplate excelTemplate;
+    private final ExcelWebSpecFactory specFactory;
     private final ExcelProperties properties;
     private final ExcelReactiveSupport reactiveSupport;
-
-    /**
-     * 参数 → 行类型的缓存。
-     * <p>
-     * {@code ResolvableType.forMethodParameter} 要读泛型签名，是反射动作；
-     * handler method 的数量是有限且固定的，缓存后每个参数只解析一次，
-     * 而不是每次请求都解析。
-     */
-    private final Map<MethodParameter, Class<?>> rowTypeCache = new ConcurrentHashMap<>();
+    private final ExcelRowTypeResolver rowTypeResolver = new ExcelRowTypeResolver();
 
     @Override
     public boolean supportsParameter(MethodParameter parameter) {
@@ -73,7 +61,7 @@ public class ExcelImportArgumentResolver implements HandlerMethodArgumentResolve
                     "参数 '%s' 上没有 @ExcelImport".formatted(parameter.getParameterName()));
         }
         Class<?> container = requireSupportedContainer(parameter);
-        Class<?> rowType = rowTypeCache.computeIfAbsent(parameter, ExcelImportArgumentResolver::resolveRowType);
+        Class<?> rowType = rowTypeResolver.resolve(parameter, "@ExcelImport");
         List<MultipartFile> files = resolveFiles(parameter, webRequest, annotation);
 
         if (files.isEmpty()) {
@@ -81,8 +69,7 @@ public class ExcelImportArgumentResolver implements HandlerMethodArgumentResolve
         }
         List<MultipartFile> selected = annotation.merge() ? files : List.of(files.getFirst());
         if (reactiveSupport.supports(container)) {
-            return reactiveSupport.streamOf(selected, properties.getWeb().getTempDir(),
-                    temp -> readSpec(rowType, annotation).from(temp));
+            return reactiveSupport.streamOf(streamSources(selected, rowType, annotation));
         }
         ExcelReadResult<?> result = readAll(selected, rowType, annotation);
         return ExcelReadResult.class.isAssignableFrom(container) ? result : result.rows();
@@ -112,15 +99,6 @@ public class ExcelImportArgumentResolver implements HandlerMethodArgumentResolve
                 || reactiveSupport.supports(container);
     }
 
-    private static Class<?> resolveRowType(MethodParameter parameter) {
-        Class<?> rowType = ResolvableType.forMethodParameter(parameter).getGeneric(0).resolve();
-        if (rowType == null) {
-            throw new IllegalArgumentException("@ExcelImport 参数 '%s' 缺少泛型实参，无法确定行类型"
-                    .formatted(parameter.getParameterName()));
-        }
-        return rowType;
-    }
-
     private Object emptyValue(Class<?> container) {
         if (reactiveSupport.supports(container)) {
             return reactiveSupport.emptyStream();
@@ -146,24 +124,28 @@ public class ExcelImportArgumentResolver implements HandlerMethodArgumentResolve
         List<Object> rows = new ArrayList<>();
         List<ExcelRowError> errors = new ArrayList<>();
         for (MultipartFile file : files) {
-            ExcelReadResult<?> result = readSpec(rowType, annotation).from(file.getInputStream()).execute();
+            ExcelReadResult<?> result = specFactory.readSpec(rowType, annotation)
+                    .from(file.getInputStream())
+                    .execute();
             rows.addAll(result.rows());
             errors.addAll(result.errors());
         }
         return new ExcelReadResult<>(rows, errors);
     }
 
-    @SuppressWarnings("unchecked")
-    private ExcelReadSpec<?> readSpec(Class<?> rowType, ExcelImport annotation) {
-        ExcelReadSpec<?> spec = annotation.dynamic()
-                ? excelTemplate.readDynamic((Class<DynamicColumn<DynamicCell>>) rowType)
-                : excelTemplate.read(rowType);
-        spec.validate(annotation.validate())
-                .skipInvalidRows(annotation.skipInvalidRows())
-                .i18nHead(annotation.i18nHead());
-        if (annotation.headRowNumber() >= 0) {
-            spec.headRowNumber(annotation.headRowNumber());
+    /**
+     * 每个上传文件包成一个懒打开的来源：订阅时才落盘，流终结时删文件。
+     * <p>
+     * 必须落盘——multipart 的原始存储在请求结束时就被 servlet 容器回收了，
+     * 而响应式流是懒执行的，订阅时再去读原始流必然失败。
+     */
+    private List<ExcelStreamSource> streamSources(List<MultipartFile> files, Class<?> rowType,
+                                                  ExcelImport annotation) {
+        String tempDir = properties.getWeb().getTempDir();
+        List<ExcelStreamSource> sources = new ArrayList<>(files.size());
+        for (MultipartFile file : files) {
+            sources.add(new MultipartStreamSource(file, tempDir, rowType, annotation, specFactory));
         }
-        return spec;
+        return sources;
     }
 }

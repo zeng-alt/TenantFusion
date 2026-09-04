@@ -1,2 +1,4 @@
 com.github.zeng.alt.excel.config.ExcelAutoConfiguration
 com.github.zeng.alt.excel.config.ExcelWebAutoConfiguration
+com.github.zeng.alt.excel.config.ExcelWebMvcAutoConfiguration
+com.github.zeng.alt.excel.config.ExcelWebFluxAutoConfiguration

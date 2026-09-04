@@ -20,6 +20,7 @@ dependencies {
     // 非 Web 应用不需要 servlet / webmvc，故编译期可见、运行期条件装配
     compileOnly("jakarta.servlet:jakarta.servlet-api")
     compileOnly("org.springframework:spring-webmvc")
+    compileOnly("org.springframework.boot:spring-boot-starter-webflux")
     compileOnly("jakarta.validation:jakarta.validation-api")
 
     // RxJava 可选：核心 SPI 的签名里没有响应式类型，只有 rx 包与 Web 层的
@@ -31,6 +32,8 @@ dependencies {
 
     testImplementation("org.springframework.boot:spring-boot-starter-test")
     testImplementation("org.springframework.boot:spring-boot-starter-web")
+    testImplementation("org.springframework.boot:spring-boot-starter-webflux")
+    testImplementation("io.projectreactor:reactor-test")
     testImplementation(rootProject.libs.spring.boot.starter.validation)
     testImplementation(rootProject.libs.rxjava3)
 }
