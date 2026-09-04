@@ -1,24 +1,27 @@
 package com.github.zeng.alt.excel.read;
 
 import com.github.zeng.alt.excel.config.ExcelBindingMode;
-import io.reactivex.rxjava3.core.Flowable;
 import io.vavr.control.Try;
 
 import java.io.File;
 import java.io.InputStream;
 import java.nio.file.Path;
 import java.util.function.Consumer;
+import java.util.function.Predicate;
 
 /**
  * 读取链式配置面。
  * <p>
  * 形状固定为「一个数据源 + 若干可选项 + 一个终结步骤」，每个配置步骤返回 {@code this}，
- * 终结步骤按效果命名。三个终结步骤按数据量选：
+ * 终结步骤按效果命名，按数据量选：
  * <ul>
  *   <li>{@link #execute()} —— 小文件全量装入内存，成功行与失败明细一起拿到</li>
- *   <li>{@link #stream()} —— 大文件，带背压的响应式流，逐行下发</li>
  *   <li>{@link #consume(Consumer)} —— 大文件，只关心逐行副作用（入库、转发）</li>
+ *   <li>{@link #consumeWhile(Predicate)} —— 同上，但能提前收工</li>
  * </ul>
+ * 需要 {@code Flowable} 的话用 {@code RxExcel.stream(spec)}：RxJava 是本模块的
+ * <b>可选</b>依赖，因此响应式类型不出现在本接口的签名里——否则没引 rxjava 的应用
+ * 一旦反射枚举实现类的方法就会抛 {@code NoClassDefFoundError}。
  * 典型用法：
  * <pre>{@code
  * ExcelReadResult<UserImportCmd> result = excelTemplate.read(UserImportCmd.class)
@@ -41,7 +44,7 @@ public interface ExcelReadSpec<T> {
     /**
      * 从输入流读取。
      * <p>
-     * 流由本组件负责关闭；{@link #stream()} 是懒执行的，订阅前不要在外部关掉它。
+     * 流由本组件负责关闭。
      *
      * @param inputStream 输入流
      * @return this
@@ -114,7 +117,7 @@ public interface ExcelReadSpec<T> {
      * {@code false}：遇到第一个坏行就停止解析剩余行。停止的表现方式取决于终结步骤：
      * {@link #execute()} 返回已读到的行加那一条失败明细（{@code toEither()} 因此是
      * {@code left}，「全有或全无」的语义在 {@code Either} 这一层成立）；
-     * {@link #stream()} 以 {@code onError} 结束；{@link #consume(Consumer)} 返回
+     * {@link #consume(Consumer)} 与 {@link #consumeWhile(Predicate)} 返回
      * {@code Try.failure}。
      *
      * @param skipInvalidRows true 表示坏行跳过
@@ -169,24 +172,21 @@ public interface ExcelReadSpec<T> {
     ExcelReadResult<T> execute();
 
     /**
-     * 转成带背压的响应式流，逐行下发。
-     * <p>
-     * 懒执行：订阅时才真正开始解析，默认在 {@code Schedulers.io()} 上跑。
-     * 单行失败时若 {@link #skipInvalidRows(boolean)} 为 {@code false}，
-     * 流以 {@code onError} 结束。
-     * <p>
-     * 注意 ThreadLocal 上下文（SecurityContext、租户上下文）不会跨调度器传递，
-     * 需要的值请在订阅前取出。
-     *
-     * @return 行流
-     */
-    Flowable<T> stream();
-
-    /**
-     * 逐行消费，只要副作用。
+     * 逐行消费，只要副作用。内存占用与文件大小无关。
      *
      * @param consumer 每行的处理逻辑
      * @return 成功消费的行数；IO 或解析层面的失败包在 {@code Try} 里
      */
     Try<Long> consume(Consumer<T> consumer);
+
+    /**
+     * 逐行消费，可提前收工。
+     * <p>
+     * {@code consumer} 返回 {@code false} 时停止解析剩余行——本组件的响应式适配
+     * （{@code RxExcel.stream}）就是靠它把下游的取消信号传下来，不至于把整份文件读完。
+     *
+     * @param consumer 每行的处理逻辑，返回 {@code false} 表示不再需要后续行
+     * @return 实际消费的行数；IO 或解析层面的失败包在 {@code Try} 里
+     */
+    Try<Long> consumeWhile(Predicate<T> consumer);
 }

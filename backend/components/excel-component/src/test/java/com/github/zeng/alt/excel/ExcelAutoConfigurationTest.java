@@ -38,7 +38,7 @@ class ExcelAutoConfigurationTest {
             .withConfiguration(AutoConfigurations.of(ExcelAutoConfiguration.class, ValidationAutoConfiguration.class));
 
     @Test
-    void 默认装配出模板与校验器() {
+    void registersTemplateAndRowValidatorByDefault() {
         runner.run(context -> {
             assertThat(context).hasSingleBean(ExcelTemplate.class);
             assertThat(context.getBean(ExcelTemplate.class)).isInstanceOf(FesodExcelTemplate.class);
@@ -48,7 +48,7 @@ class ExcelAutoConfigurationTest {
     }
 
     @Test
-    void 组件通过spring工厂文件被发现() {
+    void isDiscoverableThroughSpringFactoriesFile() {
         // 旧版本没有这个文件，@AutoConfiguration 从未被加载，整个模块是死代码
         assertThat(getClass().getClassLoader().getResource(
                 "META-INF/spring/org.springframework.boot.autoconfigure.AutoConfiguration.imports"))
@@ -56,7 +56,7 @@ class ExcelAutoConfigurationTest {
     }
 
     @Test
-    void 没有Validator时不装校验器且读取照常工作() {
+    void skipsRowValidatorWithoutValidatorAndStillReads() {
         new ApplicationContextRunner()
                 .withConfiguration(AutoConfigurations.of(ExcelAutoConfiguration.class))
                 .run(context -> {
@@ -67,7 +67,7 @@ class ExcelAutoConfigurationTest {
     }
 
     @Test
-    void 配置前缀是_alt_excel() {
+    void bindsPropertiesUnderAltExcelPrefix() {
         runner.withPropertyValues(
                         "alt.excel.read.head-row-number=3",
                         "alt.excel.read.skip-invalid-rows=false",
@@ -83,7 +83,7 @@ class ExcelAutoConfigurationTest {
     }
 
     @Test
-    void customizer按Order生效且贡献者先于组件默认值() {
+    void appliesCustomizersInOrderContributorsBeforeDefaults() {
         runner.withUserConfiguration(CustomizerConfiguration.class).run(context -> {
             CustomizerRecorder recorder = context.getBean(CustomizerRecorder.class);
             readBack(context.getBean(ExcelTemplate.class));
@@ -92,7 +92,7 @@ class ExcelAutoConfigurationTest {
     }
 
     @Test
-    void 自定义ExcelTemplate能覆盖默认实现() {
+    void letsCustomExcelTemplateOverrideDefault() {
         ExcelTemplate custom = Mockito.mock(ExcelTemplate.class);
         runner.withBean(ExcelTemplate.class, () -> custom)
                 .run(context -> assertThat(context.getBean(ExcelTemplate.class)).isSameAs(custom));

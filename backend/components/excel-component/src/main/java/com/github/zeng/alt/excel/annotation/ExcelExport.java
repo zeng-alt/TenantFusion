@@ -22,7 +22,8 @@ import java.lang.annotation.Target;
  * }
  * }</pre>
  * 返回 {@code Flowable} 时按 {@code alt.excel.write.batch-size} 分批写出，
- * 内存占用与数据量无关。
+ * 内存占用与数据量无关；这需要自行引入 {@code io.reactivex.rxjava3:rxjava}，
+ * 它是本模块的可选依赖。
  *
  * @author zengJiaJun
  * @since 2026年09月04日

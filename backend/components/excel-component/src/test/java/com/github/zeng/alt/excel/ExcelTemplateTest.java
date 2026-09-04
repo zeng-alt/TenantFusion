@@ -5,6 +5,7 @@ import com.github.zeng.alt.excel.exception.ExcelReadException;
 import com.github.zeng.alt.excel.fesod.FesodExcelContext;
 import com.github.zeng.alt.excel.fesod.FesodExcelTemplate;
 import com.github.zeng.alt.excel.read.ExcelReadResult;
+import com.github.zeng.alt.excel.rx.RxExcel;
 import com.github.zeng.alt.excel.support.ExcelRowValidator;
 import io.vavr.control.Try;
 import jakarta.validation.Validation;
@@ -44,7 +45,7 @@ class ExcelTemplateTest {
     }
 
     @Test
-    void 按实体写出再读回应拿到同样的行() {
+    void roundTripsEntityRows() {
         byte[] bytes = writeUsers(new UserRow("张三", 18), new UserRow("李四", 30));
 
         ExcelReadResult<UserRow> result = excelTemplate.read(UserRow.class)
@@ -57,7 +58,7 @@ class ExcelTemplateTest {
     }
 
     @Test
-    void 校验不通过的行进失败明细而不是抛异常() {
+    void collectsInvalidRowsAsErrorsInsteadOfThrowing() {
         byte[] bytes = writeUsers(new UserRow("张三", 18), new UserRow("", 30));
 
         ExcelReadResult<UserRow> result = excelTemplate.read(UserRow.class)
@@ -73,7 +74,7 @@ class ExcelTemplateTest {
     }
 
     @Test
-    void 坏行策略关闭时首个坏行即停止解析剩余行() {
+    void stopsAtFirstInvalidRowWhenSkipDisabled() {
         byte[] bytes = writeUsers(new UserRow("", 18), new UserRow("李四", 30));
 
         ExcelReadResult<UserRow> result = excelTemplate.read(UserRow.class)
@@ -88,7 +89,7 @@ class ExcelTemplateTest {
     }
 
     @Test
-    void 坏行策略关闭时逐行消费返回失败() {
+    void failsConsumeWhenSkipDisabled() {
         byte[] bytes = writeUsers(new UserRow("", 18));
 
         Try<Long> count = excelTemplate.read(UserRow.class)
@@ -101,20 +102,19 @@ class ExcelTemplateTest {
     }
 
     @Test
-    void 坏行策略关闭时响应式流以错误结束() {
+    void errorsFlowableWhenSkipDisabled() {
         byte[] bytes = writeUsers(new UserRow("", 18));
 
-        assertThatThrownBy(() -> excelTemplate.read(UserRow.class)
-                .from(new ByteArrayInputStream(bytes))
-                .skipInvalidRows(false)
-                .stream()
+        assertThatThrownBy(() -> RxExcel.stream(excelTemplate.read(UserRow.class)
+                        .from(new ByteArrayInputStream(bytes))
+                        .skipInvalidRows(false))
                 .toList()
                 .blockingGet())
                 .hasRootCauseInstanceOf(ExcelReadException.class);
     }
 
     @Test
-    void 关闭校验后坏行照常收下() {
+    void acceptsInvalidRowsWhenValidationDisabled() {
         byte[] bytes = writeUsers(new UserRow("", 18));
 
         ExcelReadResult<UserRow> result = excelTemplate.read(UserRow.class)
@@ -127,12 +127,11 @@ class ExcelTemplateTest {
     }
 
     @Test
-    void 响应式流逐行下发且可被取消() {
+    void emitsRowsLazilyAndHonoursCancellation() {
         byte[] bytes = writeUsers(new UserRow("张三", 1), new UserRow("李四", 2), new UserRow("王五", 3));
 
-        List<String> names = excelTemplate.read(UserRow.class)
-                .from(new ByteArrayInputStream(bytes))
-                .stream()
+        List<String> names = RxExcel.stream(excelTemplate.read(UserRow.class)
+                        .from(new ByteArrayInputStream(bytes)))
                 .map(UserRow::getUserName)
                 .take(2)
                 .toList()
@@ -142,7 +141,7 @@ class ExcelTemplateTest {
     }
 
     @Test
-    void 逐行消费返回行数() {
+    void returnsRowCountFromConsume() {
         byte[] bytes = writeUsers(new UserRow("张三", 1), new UserRow("李四", 2));
         List<String> collected = new ArrayList<>();
 
@@ -155,7 +154,7 @@ class ExcelTemplateTest {
     }
 
     @Test
-    void 无实体导出用运行期表头() {
+    void exportsWithRuntimeHeadWithoutEntity() {
         ByteArrayOutputStream output = new ByteArrayOutputStream();
 
         Try<Long> written = excelTemplate.writeHead(List.of(List.of("一月"), List.of("二月")))
@@ -167,7 +166,7 @@ class ExcelTemplateTest {
     }
 
     @Test
-    void 未指定数据源时给出明确提示() {
+    void reportsMissingSourceClearly() {
         assertThatThrownBy(() -> excelTemplate.read(UserRow.class).execute())
                 .isInstanceOf(ExcelReadException.class)
                 .hasMessageContaining("未指定数据源");

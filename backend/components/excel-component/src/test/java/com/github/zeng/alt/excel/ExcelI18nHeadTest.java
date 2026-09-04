@@ -36,7 +36,7 @@ class ExcelI18nHeadTest {
             .withUserConfiguration(MessageConfiguration.class);
 
     @Test
-    void 导出时表头替换成当前语言文本() {
+    void resolvesHeadToCurrentLocaleOnWrite() {
         runner.run(context -> {
             ExcelTemplate excelTemplate = context.getBean(ExcelTemplate.class);
             byte[] bytes = write(excelTemplate, true);
@@ -57,7 +57,7 @@ class ExcelI18nHeadTest {
     }
 
     @Test
-    void 中文表头的文件能按国际化匹配读回实体() {
+    void readsLocalizedHeadFileBackIntoEntity() {
         runner.run(context -> {
             ExcelTemplate excelTemplate = context.getBean(ExcelTemplate.class);
             // 表头写成中文（模拟用户按导出模板填好的文件）
@@ -82,7 +82,7 @@ class ExcelI18nHeadTest {
     }
 
     @Test
-    void 关闭国际化时表头保持i18nKey原文() {
+    void keepsRawI18nKeyWhenI18nHeadDisabled() {
         runner.run(context -> {
             byte[] bytes = write(context.getBean(ExcelTemplate.class), false);
             assertThat(new String(bytes)).isNotEmpty();

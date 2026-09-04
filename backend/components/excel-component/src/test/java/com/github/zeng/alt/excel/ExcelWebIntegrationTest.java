@@ -61,7 +61,7 @@ class ExcelWebIntegrationTest {
     }
 
     @Test
-    void 上传文件解析成集合参数() throws Exception {
+    void resolvesUploadIntoListParameter() throws Exception {
         MockMultipartFile file = newUpload();
 
         mockMvc().perform(multipart("/excel/import-list").file(file))
@@ -69,7 +69,7 @@ class ExcelWebIntegrationTest {
     }
 
     @Test
-    void 上传文件解析成带失败明细的结果() throws Exception {
+    void resolvesUploadIntoReadResultParameter() throws Exception {
         MockMultipartFile file = newUpload();
 
         mockMvc().perform(multipart("/excel/import-result").file(file))
@@ -77,7 +77,7 @@ class ExcelWebIntegrationTest {
     }
 
     @Test
-    void 上传文件解析成响应式流() throws Exception {
+    void resolvesUploadIntoFlowableParameter() throws Exception {
         MockMultipartFile file = newUpload();
 
         mockMvc().perform(multipart("/excel/import-stream").file(file))
@@ -85,13 +85,13 @@ class ExcelWebIntegrationTest {
     }
 
     @Test
-    void 缺文件且非必填时给出空结果() throws Exception {
+    void returnsEmptyWhenOptionalFileIsAbsent() throws Exception {
         mockMvc().perform(multipart("/excel/import-optional"))
                 .andExpect(status().isOk());
     }
 
     @Test
-    void 集合返回值被写成附件下发() throws Exception {
+    void writesCollectionReturnValueAsAttachment() throws Exception {
         MvcResult result = mockMvc().perform(post("/excel/export"))
                 .andExpect(status().isOk())
                 .andReturn();
@@ -107,7 +107,7 @@ class ExcelWebIntegrationTest {
     }
 
     @Test
-    void 响应式返回值也能导出() throws Exception {
+    void writesFlowableReturnValueAsAttachment() throws Exception {
         MvcResult result = mockMvc().perform(post("/excel/export-stream"))
                 .andExpect(status().isOk())
                 .andReturn();

@@ -1,22 +1,22 @@
 package com.github.zeng.alt.excel.web;
 
-import io.reactivex.rxjava3.core.Flowable;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
-import java.util.function.Function;
 
 /**
  * 上传文件落盘与清理，内部便利类。
+ * <p>
+ * 本类刻意不引用任何响应式类型：怎么把落盘与流的生命周期绑起来是
+ * {@code RxJavaExcelReactiveSupport} 的事，那才是可选依赖该出现的地方。
  *
  * @author zengJiaJun
  * @since 2026年09月04日
@@ -32,26 +32,17 @@ final class ExcelUploadHelper {
     }
 
     /**
-     * 把上传内容落到临时文件，再交给 {@code streamFactory} 建流，流终结时删除临时文件。
+     * 把上传内容落到临时文件。
      * <p>
-     * 必须落盘的原因：{@code Flowable} 是懒执行的，而 multipart 的原始存储在请求
-     * 结束时就被 servlet 容器回收了，订阅时再去读原始流必然失败。
+     * 必须落盘的原因：响应式流是懒执行的，而 multipart 的原始存储在请求结束时就被
+     * servlet 容器回收了，订阅时再去读原始流必然失败。
      *
-     * @param file          上传文件
-     * @param tempDir       临时目录，空则用系统临时目录
-     * @param streamFactory 由临时文件建流
-     * @param <T>           行类型
-     * @return 行流；订阅时才真正落盘与解析
+     * @param file    上传文件
+     * @param tempDir 临时目录，空则用系统临时目录
+     * @return 临时文件路径，调用方负责在用完后 {@link #deleteQuietly(Path)}
+     * @throws IOException 落盘失败
      */
-    static <T> Flowable<T> spilledStream(MultipartFile file, String tempDir,
-                                         Function<File, Flowable<T>> streamFactory) {
-        return Flowable.using(
-                () -> spill(file, tempDir),
-                path -> streamFactory.apply(path.toFile()),
-                ExcelUploadHelper::deleteQuietly);
-    }
-
-    private static Path spill(MultipartFile file, String tempDir) throws IOException {
+    static Path spill(MultipartFile file, String tempDir) throws IOException {
         Path directory = resolveDirectory(tempDir);
         Path temp = directory == null
                 ? Files.createTempFile(TEMP_PREFIX, TEMP_SUFFIX)
@@ -64,6 +55,21 @@ final class ExcelUploadHelper {
         return temp;
     }
 
+    /**
+     * 删除临时文件。
+     * <p>
+     * 只记日志不抛异常：调用方通常是流的终结回调，在那里抛出会把真正的业务异常盖掉。
+     *
+     * @param path 临时文件
+     */
+    static void deleteQuietly(Path path) {
+        try {
+            Files.deleteIfExists(path);
+        } catch (IOException e) {
+            LOG.warn("临时文件删除失败: " + path, e);
+        }
+    }
+
     private static Path resolveDirectory(String tempDir) throws IOException {
         if (!StringUtils.hasText(tempDir)) {
             return null;
@@ -71,19 +77,5 @@ final class ExcelUploadHelper {
         Path directory = Paths.get(tempDir);
         Files.createDirectories(directory);
         return directory;
-    }
-
-    /**
-     * 删除临时文件。
-     * <p>
-     * 只记日志不抛异常：这里是 {@code Flowable.using} 的 disposer，抛出会变成
-     * RxJava 的 undeliverable error，把真正的业务异常盖掉。
-     */
-    private static void deleteQuietly(Path path) {
-        try {
-            Files.deleteIfExists(path);
-        } catch (IOException e) {
-            LOG.warn("临时文件删除失败: " + path, e);
-        }
     }
 }

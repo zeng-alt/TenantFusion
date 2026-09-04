@@ -9,7 +9,6 @@ import com.github.zeng.alt.excel.exception.ExcelReadException;
 import com.github.zeng.alt.excel.read.ExcelReadResult;
 import com.github.zeng.alt.excel.read.ExcelReadSpec;
 import com.github.zeng.alt.excel.read.ExcelRowError;
-import io.reactivex.rxjava3.core.Flowable;
 import lombok.RequiredArgsConstructor;
 import org.springframework.core.MethodParameter;
 import org.springframework.core.ResolvableType;
@@ -31,8 +30,9 @@ import java.util.concurrent.ConcurrentHashMap;
 /**
  * 把上传的 Excel 文件解析成 {@link ExcelImport} 标注的方法参数。
  * <p>
- * 支持 {@code List<T>}、{@link ExcelReadResult}{@code <T>} 与 {@link Flowable}{@code <T>}
- * 三种形状，元素类型从参数泛型推断。
+ * 支持 {@code List<T>}、{@link ExcelReadResult}{@code <T>} 与 {@code Flowable<T>}
+ * 三种形状，元素类型从参数泛型推断。响应式形状经
+ * {@link ExcelReactiveSupport} 适配——RxJava 是可选依赖，本类不引用它的任何类型。
  * <p>
  * 与旧实现的区别：不再继承 {@code AbstractMessageConverterMethodArgumentResolver}
  * （用不到消息转换器）、不再返回 {@code null}、不再在解析器里对 {@code Flowable}
@@ -48,6 +48,7 @@ public class ExcelImportArgumentResolver implements HandlerMethodArgumentResolve
 
     private final ExcelTemplate excelTemplate;
     private final ExcelProperties properties;
+    private final ExcelReactiveSupport reactiveSupport;
 
     /**
      * 参数 → 行类型的缓存。
@@ -79,8 +80,9 @@ public class ExcelImportArgumentResolver implements HandlerMethodArgumentResolve
             return emptyValue(container);
         }
         List<MultipartFile> selected = annotation.merge() ? files : List.of(files.getFirst());
-        if (Flowable.class.isAssignableFrom(container)) {
-            return concatStreams(selected, rowType, annotation);
+        if (reactiveSupport.supports(container)) {
+            return reactiveSupport.streamOf(selected, properties.getWeb().getTempDir(),
+                    temp -> readSpec(rowType, annotation).from(temp));
         }
         ExcelReadResult<?> result = readAll(selected, rowType, annotation);
         return ExcelReadResult.class.isAssignableFrom(container) ? result : result.rows();
@@ -88,7 +90,7 @@ public class ExcelImportArgumentResolver implements HandlerMethodArgumentResolve
 
     // ==================== 参数形状 ====================
 
-    private static Class<?> requireSupportedContainer(MethodParameter parameter) {
+    private Class<?> requireSupportedContainer(MethodParameter parameter) {
         Class<?> container = parameter.getParameterType();
         if (isSupportedContainer(container)) {
             return container;
@@ -104,10 +106,10 @@ public class ExcelImportArgumentResolver implements HandlerMethodArgumentResolve
      * @param container 参数类型
      * @return true 表示支持
      */
-    public static boolean isSupportedContainer(Class<?> container) {
+    public boolean isSupportedContainer(Class<?> container) {
         return Collection.class.isAssignableFrom(container)
-                || Flowable.class.isAssignableFrom(container)
-                || ExcelReadResult.class.isAssignableFrom(container);
+                || ExcelReadResult.class.isAssignableFrom(container)
+                || reactiveSupport.supports(container);
     }
 
     private static Class<?> resolveRowType(MethodParameter parameter) {
@@ -119,9 +121,9 @@ public class ExcelImportArgumentResolver implements HandlerMethodArgumentResolve
         return rowType;
     }
 
-    private static Object emptyValue(Class<?> container) {
-        if (Flowable.class.isAssignableFrom(container)) {
-            return Flowable.empty();
+    private Object emptyValue(Class<?> container) {
+        if (reactiveSupport.supports(container)) {
+            return reactiveSupport.emptyStream();
         }
         return ExcelReadResult.class.isAssignableFrom(container) ? ExcelReadResult.empty() : List.of();
     }
@@ -149,16 +151,6 @@ public class ExcelImportArgumentResolver implements HandlerMethodArgumentResolve
             errors.addAll(result.errors());
         }
         return new ExcelReadResult<>(rows, errors);
-    }
-
-    private Flowable<?> concatStreams(List<MultipartFile> files, Class<?> rowType, ExcelImport annotation) {
-        List<Flowable<?>> streams = new ArrayList<>(files.size());
-        String tempDir = properties.getWeb().getTempDir();
-        for (MultipartFile file : files) {
-            streams.add(ExcelUploadHelper.spilledStream(file, tempDir,
-                    temp -> readSpec(rowType, annotation).from(temp).stream()));
-        }
-        return Flowable.concat(streams);
     }
 
     @SuppressWarnings("unchecked")

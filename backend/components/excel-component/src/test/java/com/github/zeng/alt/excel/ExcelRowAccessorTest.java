@@ -25,12 +25,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 class ExcelRowAccessorTest {
 
     @Test
-    void 同一类型复用同一个访问器实例() {
+    void cachesAccessorPerRowType() {
         assertThat(ExcelRowAccessor.of(OrderedRow.class)).isSameAs(ExcelRowAccessor.of(OrderedRow.class));
     }
 
     @Test
-    void 列顺序按index再order再声明顺序() {
+    void ordersColumnsByIndexThenOrderThenDeclaration() {
         List<String> columns = ExcelRowAccessor.of(OrderedRow.class).getFields()
                 .stream()
                 .map(ExcelFieldMeta::fieldName)
@@ -41,7 +41,7 @@ class ExcelRowAccessorTest {
     }
 
     @Test
-    void ExcelIgnore与final静态字段不参与绑定() {
+    void excludesIgnoredAndConstantFields() {
         List<String> columns = ExcelRowAccessor.of(OrderedRow.class).getFields()
                 .stream()
                 .map(ExcelFieldMeta::fieldName)
@@ -51,7 +51,7 @@ class ExcelRowAccessorTest {
     }
 
     @Test
-    void 表头保留ExcelProperty原文而不做i18n解析() {
+    void keepsRawExcelPropertyHeadWithoutI18nResolution() {
         // i18n 替换交给 I18nHeadWriteHandler，与 engine 绑定路径共用一套逻辑
         ExcelRowAccessor<UserRow> accessor = ExcelRowAccessor.of(UserRow.class);
 
@@ -60,7 +60,7 @@ class ExcelRowAccessorTest {
     }
 
     @Test
-    void include优先于exclude() {
+    void prefersIncludeOverExclude() {
         ExcelRowAccessor<OrderedRow> accessor = ExcelRowAccessor.of(OrderedRow.class);
 
         assertThat(accessor.selectFields(List.of("first"), List.of("first")))
@@ -72,7 +72,7 @@ class ExcelRowAccessorTest {
     }
 
     @Test
-    void 按字段取值与赋值都走缓存好的方法句柄() {
+    void readsAndWritesThroughCachedMethodHandles() {
         ExcelRowAccessor<OrderedRow> accessor = ExcelRowAccessor.of(OrderedRow.class);
         List<ExcelFieldMeta> fields = accessor.selectFields(List.of("first"), null);
 

@@ -1,7 +1,6 @@
 package com.github.zeng.alt.excel.annotation;
 
 import com.github.zeng.alt.excel.read.ExcelReadResult;
-import io.reactivex.rxjava3.core.Flowable;
 
 import java.lang.annotation.Documented;
 import java.lang.annotation.ElementType;
@@ -18,8 +17,9 @@ import java.util.List;
  *   <li>{@code List<T>} —— 小文件，全量装入内存；坏行按 {@link #skipInvalidRows()} 处理，
  *       但拿不到失败明细</li>
  *   <li>{@link ExcelReadResult}{@code <T>} —— 小文件，同时拿到成功行与失败明细（推荐）</li>
- *   <li>{@link Flowable}{@code <T>} —— 大文件，带背压逐行下发；上传内容会先落到临时文件，
- *       订阅时才解析，因此可以安全地在请求线程之外消费</li>
+ *   <li>{@code Flowable<T>} —— 大文件，带背压逐行下发；上传内容会先落到临时文件，
+ *       订阅时才解析，因此可以安全地在请求线程之外消费。<b>需要自行引入
+ *       {@code io.reactivex.rxjava3:rxjava}</b>，它是本模块的可选依赖</li>
  * </ul>
  * 用法：
  * <pre>{@code

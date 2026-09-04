@@ -6,7 +6,6 @@ import com.github.zeng.alt.excel.fesod.handler.I18nHeadWriteHandler;
 import com.github.zeng.alt.excel.support.ExcelFieldMeta;
 import com.github.zeng.alt.excel.support.ExcelRowAccessor;
 import com.github.zeng.alt.excel.write.ExcelWriteSpec;
-import io.reactivex.rxjava3.core.Flowable;
 import io.vavr.control.Try;
 import org.apache.fesod.sheet.ExcelWriter;
 import org.apache.fesod.sheet.FesodSheet;
@@ -19,6 +18,7 @@ import java.io.OutputStream;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Iterator;
 import java.util.List;
 
 /**
@@ -137,13 +137,8 @@ public class FesodExcelWriteSpec<T> implements ExcelWriteSpec<T> {
     }
 
     @Override
-    public Try<Long> write(Flowable<T> rows) {
-        if (rows == null) {
-            return write(List.of());
-        }
-        int batchSize = context.properties().getWrite().getBatchSize();
-        // 写文件是同步动作，这里的阻塞发生在链路最外层的终结步骤，不藏在中间操作符里
-        return Try.of(() -> doWriteBatched(rows.buffer(batchSize).blockingIterable()));
+    public Try<Long> write(Iterator<T> rows) {
+        return rows == null ? write(List.of()) : Try.of(() -> doWriteBatched(rows));
     }
 
     // ==================== 内部 ====================
@@ -155,11 +150,27 @@ public class FesodExcelWriteSpec<T> implements ExcelWriteSpec<T> {
         }
     }
 
-    private long doWriteBatched(Iterable<List<T>> batches) {
+    /**
+     * 分批从游标拉数据写出，内存占用与总行数无关。
+     *
+     * @param rows 数据游标
+     * @return 写出的行数
+     */
+    private long doWriteBatched(Iterator<T> rows) {
+        int batchSize = Math.max(1, context.properties().getWrite().getBatchSize());
         long count = 0L;
         try (ExcelWriter writer = createBuilder().build()) {
             WriteSheet sheet = createSheet();
-            for (List<T> batch : batches) {
+            List<T> batch = new ArrayList<>(batchSize);
+            while (rows.hasNext()) {
+                batch.add(rows.next());
+                if (batch.size() == batchSize) {
+                    writer.write(toWriterRows(batch), sheet);
+                    count += batch.size();
+                    batch.clear();
+                }
+            }
+            if (!batch.isEmpty()) {
                 writer.write(toWriterRows(batch), sheet);
                 count += batch.size();
             }

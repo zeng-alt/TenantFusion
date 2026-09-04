@@ -1,20 +1,23 @@
 package com.github.zeng.alt.excel.write;
 
 import com.github.zeng.alt.excel.config.ExcelBindingMode;
-import io.reactivex.rxjava3.core.Flowable;
 import io.vavr.control.Try;
 
 import java.io.File;
 import java.io.OutputStream;
 import java.nio.file.Path;
 import java.util.Collection;
+import java.util.Iterator;
 
 /**
  * 写出链式配置面。
  * <p>
  * 形状与 {@link com.github.zeng.alt.excel.read.ExcelReadSpec} 对称：一个输出目标 +
  * 若干可选项 + 一个终结步骤。终结步骤按数据来源选 {@link #write(Collection)} 或
- * {@link #write(Flowable)}。
+ * {@link #write(Iterator)}。
+ * <p>
+ * 从 {@code Flowable} 导出用 {@code RxExcel.write(spec, flowable)}：RxJava 是本模块的
+ * <b>可选</b>依赖，响应式类型不出现在本接口的签名里。
  * <p>
  * 典型用法：
  * <pre>{@code
@@ -150,13 +153,14 @@ public interface ExcelWriteSpec<T> {
     Try<Long> write(Collection<T> rows);
 
     /**
-     * 从响应式流写出，适合大数据量导出。
+     * 从游标写出，适合大数据量导出：按 {@code alt.excel.write.batch-size} 分批取、
+     * 分批写，内存占用与数据量无关。
      * <p>
-     * 内部按 {@code alt.excel.write.batch-size} 分批阻塞拉取——写文件本身是同步动作，
-     * 这里的阻塞是链路最外层的终结步骤，不会藏在中间操作符里。
+     * 这是响应式导出的落点——{@code RxExcel.write(spec, flowable)} 把
+     * {@code Flowable} 转成游标后调用本方法。
      *
-     * @param rows 数据流
+     * @param rows 数据游标，{@code null} 会写出只含表头的文件
      * @return 写出的行数；IO 层面的失败包在 {@code Try} 里
      */
-    Try<Long> write(Flowable<T> rows);
+    Try<Long> write(Iterator<T> rows);
 }

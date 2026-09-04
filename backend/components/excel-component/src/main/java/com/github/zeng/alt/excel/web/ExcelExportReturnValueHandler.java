@@ -6,7 +6,6 @@ import com.github.zeng.alt.excel.exception.ExcelWriteException;
 import com.github.zeng.alt.excel.support.ExcelFileNameHelper;
 import com.github.zeng.alt.excel.support.ExcelMessageHelper;
 import com.github.zeng.alt.excel.write.ExcelWriteSpec;
-import io.reactivex.rxjava3.core.Flowable;
 import io.vavr.control.Try;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
@@ -28,6 +27,9 @@ import java.util.concurrent.ConcurrentHashMap;
  * <p>
  * 旧版本只有注解、没有任何处理器，导出功能实际上不存在；本类补上这一半。
  * <p>
+ * 响应式返回值经 {@link ExcelReactiveSupport} 适配——RxJava 是可选依赖，
+ * 本类不引用它的任何类型。
+ * <p>
  * 注册时必须插到内置处理器「之前」：{@code List<T>} 这类返回值会被
  * {@code RequestResponseBodyMethodProcessor} 先接走，靠
  * {@code WebMvcConfigurer#addReturnValueHandlers} 追加是拿不到的，
@@ -44,6 +46,7 @@ public class ExcelExportReturnValueHandler implements HandlerMethodReturnValueHa
             "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
 
     private final ExcelTemplate excelTemplate;
+    private final ExcelReactiveSupport reactiveSupport;
 
     /**
      * 返回值 → 行类型的缓存，理由同 {@code ExcelImportArgumentResolver}：
@@ -92,8 +95,8 @@ public class ExcelExportReturnValueHandler implements HandlerMethodReturnValueHa
             spec.i18nHead(annotation.i18nHead() == 1);
         }
 
-        if (returnValue instanceof Flowable<?> flowable) {
-            return spec.write((Flowable<Object>) flowable);
+        if (returnValue != null && reactiveSupport.supports(returnValue.getClass())) {
+            return reactiveSupport.write(spec, returnValue);
         }
         if (returnValue instanceof Collection<?> collection) {
             return spec.write((Collection<Object>) collection);

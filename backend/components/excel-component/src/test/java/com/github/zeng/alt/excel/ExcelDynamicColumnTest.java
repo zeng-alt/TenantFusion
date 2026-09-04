@@ -41,7 +41,7 @@ class ExcelDynamicColumnTest {
             TestObjectProviders.of(new DefaultFormattingConversionService())));
 
     @Test
-    void 固定列绑字段其余列进动态单元格() {
+    void bindsFixedColumnsAndCollectsRestAsDynamicCells() {
         // 表头：姓名 + 三个按月份铺开的动态列
         ByteArrayOutputStream output = new ByteArrayOutputStream();
         excelTemplate.writeHead(List.of(List.of("userName"), List.of("一月"), List.of("二月")))
@@ -68,7 +68,7 @@ class ExcelDynamicColumnTest {
     }
 
     @Test
-    void 动态列可以按运行期表头导出() {
+    void exportsDynamicColumnsWithRuntimeHead() {
         ScoreRow row = new ScoreRow();
         row.setUserName("张三");
         row.addDynamicCell(DynamicCell.of(1, "一月", "一月", "80"));

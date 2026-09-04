@@ -36,28 +36,28 @@ import static org.assertj.core.api.Assertions.assertThat;
 class ExcelAotHintsTest {
 
     @Test
-    void 从ExcelExport返回值泛型推出行类型() {
+    void discoversRowTypeFromExcelExportReturnGeneric() {
         RuntimeHints hints = process(ExportController.class);
 
         assertThat(RuntimeHintsPredicates.reflection().onType(UserRow.class)).accepts(hints);
     }
 
     @Test
-    void 从ExcelImport参数泛型推出行类型() {
+    void discoversRowTypeFromExcelImportParameterGeneric() {
         RuntimeHints hints = process(ImportController.class);
 
         assertThat(RuntimeHintsPredicates.reflection().onType(UserRow.class)).accepts(hints);
     }
 
     @Test
-    void 显式指定的type优先于泛型推断() {
+    void prefersExplicitTypeOverGenericInference() {
         RuntimeHints hints = process(ExplicitTypeController.class);
 
         assertThat(RuntimeHintsPredicates.reflection().onType(UserRow.class)).accepts(hints);
     }
 
     @Test
-    void 行类型的构造器与方法与字段都被登记() throws Exception {
+    void registersConstructorMethodAndFieldOfRowType() throws Exception {
         RuntimeHints hints = process(ImportController.class);
 
         // 绑定需要：无参构造器实例化 + setter 赋值 + 字段上读 @ExcelProperty
@@ -70,7 +70,7 @@ class ExcelAotHintsTest {
     }
 
     @Test
-    void 没有用到注解时不产生贡献() {
+    void contributesNothingWhenAnnotationsAreUnused() {
         DefaultListableBeanFactory beanFactory = new DefaultListableBeanFactory();
         beanFactory.registerBeanDefinition("plain", new RootBeanDefinition(String.class));
 
@@ -78,7 +78,7 @@ class ExcelAotHintsTest {
     }
 
     @Test
-    void 组件自身的固定可达性需求被登记() {
+    void registersComponentOwnReachabilityNeeds() {
         RuntimeHints hints = new RuntimeHints();
         new ExcelRuntimeHints().registerHints(hints, getClass().getClassLoader());
 

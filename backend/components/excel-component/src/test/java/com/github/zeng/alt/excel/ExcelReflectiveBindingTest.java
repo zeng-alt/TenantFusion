@@ -5,6 +5,7 @@ import com.github.zeng.alt.excel.config.ExcelProperties;
 import com.github.zeng.alt.excel.fesod.FesodExcelContext;
 import com.github.zeng.alt.excel.fesod.FesodExcelTemplate;
 import com.github.zeng.alt.excel.read.ExcelReadResult;
+import com.github.zeng.alt.excel.rx.RxExcel;
 import io.reactivex.rxjava3.core.Flowable;
 import jakarta.validation.Validation;
 import org.junit.jupiter.api.Test;
@@ -36,7 +37,7 @@ class ExcelReflectiveBindingTest {
     private final ExcelTemplate engine = template(properties(ExcelBindingMode.ENGINE));
 
     @Test
-    void reflective绑定读写往返() {
+    void roundTripsWithReflectiveBinding() {
         byte[] bytes = write(reflective, new UserRow("张三", 18), new UserRow("李四", 30));
 
         ExcelReadResult<UserRow> result = reflective.read(UserRow.class)
@@ -50,7 +51,7 @@ class ExcelReflectiveBindingTest {
     }
 
     @Test
-    void reflective写出的文件engine绑定也能读回() {
+    void readsReflectiveOutputWithEngineBinding() {
         // 两种绑定产出的表头与列顺序必须一致，否则模板会在升级前后错位
         byte[] bytes = write(reflective, new UserRow("张三", 18));
 
@@ -63,7 +64,7 @@ class ExcelReflectiveBindingTest {
     }
 
     @Test
-    void engine写出的文件reflective绑定也能读回() {
+    void readsEngineOutputWithReflectiveBinding() {
         byte[] bytes = write(engine, new UserRow("王五", 44));
 
         List<UserRow> rows = reflective.read(UserRow.class)
@@ -76,7 +77,7 @@ class ExcelReflectiveBindingTest {
     }
 
     @Test
-    void reflective绑定下逐行校验照常生效() {
+    void validatesRowsUnderReflectiveBinding() {
         byte[] bytes = write(reflective, new UserRow("张三", 18), new UserRow("", 30));
 
         ExcelReadResult<UserRow> result = reflective.read(UserRow.class)
@@ -89,7 +90,7 @@ class ExcelReflectiveBindingTest {
     }
 
     @Test
-    void reflective绑定支持列筛选() {
+    void supportsColumnFilterUnderReflectiveBinding() {
         ByteArrayOutputStream output = new ByteArrayOutputStream();
         reflective.write(UserRow.class)
                 .to(output)
@@ -109,13 +110,12 @@ class ExcelReflectiveBindingTest {
     }
 
     @Test
-    void reflective绑定支持响应式流导出() {
+    void exportsFromFlowableUnderReflectiveBinding() {
         ByteArrayOutputStream output = new ByteArrayOutputStream();
 
-        Long written = reflective.write(UserRow.class)
-                .to(output)
-                .i18nHead(false)
-                .write(Flowable.just(new UserRow("A", 1), new UserRow("B", 2), new UserRow("C", 3)))
+        Long written = RxExcel.write(
+                        reflective.write(UserRow.class).to(output).i18nHead(false),
+                        Flowable.just(new UserRow("A", 1), new UserRow("B", 2), new UserRow("C", 3)))
                 .get();
 
         assertThat(written).isEqualTo(3L);
@@ -126,7 +126,7 @@ class ExcelReflectiveBindingTest {
     }
 
     @Test
-    void 链上可以逐次覆盖绑定方式() {
+    void overridesBindingModePerCall() {
         // 全局配成 REFLECTIVE，某次调用仍能强制 ENGINE（例如该实体依赖自定义 Converter）
         byte[] bytes = write(reflective, new UserRow("张三", 18));
 

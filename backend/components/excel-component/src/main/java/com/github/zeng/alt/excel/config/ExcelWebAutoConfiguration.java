@@ -3,16 +3,21 @@ package com.github.zeng.alt.excel.config;
 import com.github.zeng.alt.excel.ExcelTemplate;
 import com.github.zeng.alt.excel.web.ExcelExportReturnValueHandler;
 import com.github.zeng.alt.excel.web.ExcelImportArgumentResolver;
+import com.github.zeng.alt.excel.web.ExcelReactiveSupport;
+import com.github.zeng.alt.excel.web.NoOpExcelReactiveSupport;
+import com.github.zeng.alt.excel.web.RxJavaExcelReactiveSupport;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.SmartInitializingSingleton;
 import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication;
 import org.springframework.boot.autoconfigure.web.servlet.WebMvcAutoConfiguration;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Role;
 import org.springframework.web.method.support.HandlerMethodArgumentResolver;
 import org.springframework.web.method.support.HandlerMethodReturnValueHandler;
@@ -40,14 +45,53 @@ public class ExcelWebAutoConfiguration {
     @Bean
     @ConditionalOnMissingBean
     public ExcelImportArgumentResolver excelImportArgumentResolver(
-            ExcelTemplate excelTemplate, ExcelProperties properties) {
-        return new ExcelImportArgumentResolver(excelTemplate, properties);
+            ExcelTemplate excelTemplate, ExcelProperties properties, ExcelReactiveSupport reactiveSupport) {
+        return new ExcelImportArgumentResolver(excelTemplate, properties, reactiveSupport);
     }
 
     @Bean
     @ConditionalOnMissingBean
-    public ExcelExportReturnValueHandler excelExportReturnValueHandler(ExcelTemplate excelTemplate) {
-        return new ExcelExportReturnValueHandler(excelTemplate);
+    public ExcelExportReturnValueHandler excelExportReturnValueHandler(
+            ExcelTemplate excelTemplate, ExcelReactiveSupport reactiveSupport) {
+        return new ExcelExportReturnValueHandler(excelTemplate, reactiveSupport);
+    }
+
+    /**
+     * classpath 上没有 RxJava 时的兜底：响应式形状给出明确报错，集合形状照常工作。
+     * <p>
+     * 条件用 {@code @ConditionalOnMissingClass} 而不是靠 bean 定义的注册顺序去和
+     * {@link ExcelRxJavaConfiguration} 互斥——两者按 classpath 严格二选一，
+     * 不依赖 Spring 处理嵌套配置的先后。
+     *
+     * @return 兜底适配
+     */
+    @Bean
+    @ConditionalOnMissingBean(ExcelReactiveSupport.class)
+    @ConditionalOnMissingClass("io.reactivex.rxjava3.core.Flowable")
+    public ExcelReactiveSupport noOpExcelReactiveSupport() {
+        return new NoOpExcelReactiveSupport();
+    }
+
+    /**
+     * classpath 上有 RxJava 时装配真正的适配实现。
+     * <p>
+     * 条件写成类名字符串（{@code @ConditionalOnClass(name = ...)}）而不是
+     * {@code Flowable.class}：RxJava 是可选依赖，配置类里出现硬引用会让缺少它的
+     * 应用在解析配置时报 {@code NoClassDefFoundError}。
+     *
+     * @author zengJiaJun
+     * @since 2026年09月04日
+     * @version 1.0
+     */
+    @Configuration(proxyBeanMethods = false)
+    @ConditionalOnClass(name = "io.reactivex.rxjava3.core.Flowable")
+    static class ExcelRxJavaConfiguration {
+
+        @Bean
+        @ConditionalOnMissingBean(ExcelReactiveSupport.class)
+        ExcelReactiveSupport rxJavaExcelReactiveSupport() {
+            return new RxJavaExcelReactiveSupport();
+        }
     }
 
     /**

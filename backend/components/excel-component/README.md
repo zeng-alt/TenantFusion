@@ -34,13 +34,15 @@ public class UserImportService {
 }
 ```
 
-三个终结步骤按数据量选：
+终结步骤按数据量选：
 
 | 终结步骤 | 适用场景 | 返回 |
 | --- | --- | --- |
 | `execute()` | 小文件（万级以内） | `ExcelReadResult<T>`：成功行 + 失败明细 |
-| `stream()` | 大文件，逐行下发 | `Flowable<T>`，默认跑在 `Schedulers.io()` |
 | `consume(Consumer<T>)` | 大文件，只要副作用 | `Try<Long>`，成功消费的行数 |
+| `consumeWhile(Predicate<T>)` | 同上，但要能提前收工 | `Try<Long>`，实际消费的行数 |
+
+要 `Flowable` 用 `RxExcel.stream(spec)`，见下方「RxJava 是可选依赖」。
 
 `execute()` 不会因为单行校验不过就抛异常——批量导入的常态是部分成功，所以成功行与
 失败明细一起交出来，由调用方决定整单驳回还是先入库好行。整份文件级别的失败
@@ -57,11 +59,10 @@ excelTemplate.write(UserVO.class)
         .getOrElseThrow(e -> new ExcelWriteException("导出失败", e));
 ```
 
-大数据量导出从 `Flowable` 走，按 `alt.excel.write.batch-size` 分批写，内存占用与
-数据量无关：
+大数据量导出从游标走，按 `alt.excel.write.batch-size` 分批写，内存占用与数据量无关：
 
 ```java
-excelTemplate.write(UserVO.class).to(outputStream).write(userService.streamAll());
+excelTemplate.write(UserVO.class).to(outputStream).write(userService.cursorAll());
 ```
 
 ### Web 集成
@@ -114,6 +115,38 @@ excelTemplate.writeHead(rows.getFirst().dynamicHead())
         .to(outputStream)
         .write(rows.stream().map(DynamicColumn::dynamicRow).toList());
 ```
+
+## RxJava 是可选依赖
+
+核心 SPI（`ExcelReadSpec` / `ExcelWriteSpec`）的签名里**没有任何响应式类型**。
+原因是硬性的：`Flowable` 一旦出现在接口签名上，没引 rxjava 的应用只要反射枚举
+实现类的方法（Spring、AOT、Jackson 都会做）就会抛 `NoClassDefFoundError`。
+
+不引 rxjava 时组件完全可用（有 `FilteredClassLoader` 测试钉住）：读写、`consume`、
+`consumeWhile`、`write(Iterator)`、`@ExcelImport` 的 `List<T>` / `ExcelReadResult<T>`
+形状、`@ExcelExport` 的 `Collection<T>` 形状全部正常。只有响应式形状会给出
+「请引入 rxjava」的明确报错。
+
+要用响应式，自己声明依赖：
+
+```kotlin
+implementation("io.reactivex.rxjava3:rxjava")
+```
+
+然后经 `RxExcel` 使用：
+
+```java
+// 读：逐行下发，下游取消即停止解析剩余行
+Flowable<UserImportCmd> rows = RxExcel.stream(
+        excelTemplate.read(UserImportCmd.class).from(inputStream));
+
+// 写：按 batch-size 分批阻塞拉取，阻塞发生在链路最外层的终结步骤
+RxExcel.write(excelTemplate.write(UserVO.class).to(outputStream), userService.streamAll());
+```
+
+Web 层的响应式形状（`@ExcelImport Flowable<T>` 参数、`@ExcelExport` 返回 `Flowable<T>`）
+经 `ExcelReactiveSupport` 适配：有 rxjava 时自动装 `RxJavaExcelReactiveSupport`，
+没有则装 `NoOpExcelReactiveSupport`，两者按 classpath 严格二选一。
 
 ## 表头国际化
 
@@ -254,7 +287,7 @@ customizer 是唯一的逃生舱。
 
 - `ExcelTemplate` 是无状态单例，可并发使用；每次调用现场造一段链，可变配置只落在那段链上。
 - 一段链只服务一次操作：终结步骤消费掉数据源后不要复用（输入流读完即废）。
-- `stream()` 默认在 `Schedulers.io()` 上解析。**ThreadLocal 上下文
+- `RxExcel.stream(...)` 默认在 `Schedulers.io()` 上解析。**ThreadLocal 上下文
   （`SecurityContext`、租户上下文）不会跨调度器传递**，需要的值请在订阅前取出。
 - `Flowable` 形状的上传会先落临时文件再解析——multipart 的原始存储在请求结束时就被
   容器回收了，懒订阅拿不到；临时文件在流终结（完成、出错、取消）时删除。
@@ -269,6 +302,6 @@ customizer 是唯一的逃生舱。
 - `exportDynamicExcel` 算完表头就丢掉、`.sheet()` 后没有 `doWrite`，实际什么都不写；`ImportExcelHelper.importExcel` 直接 `return null`；`ExcelHandlerManger`（拼写错误）三个方法全是空壳。
 - `@ExcelExport` 没有任何 `HandlerMethodReturnValueHandler`，导出功能完全不存在。
 - `@AliasFor` 用在非 Spring 元注解上，别名不生效。
-- `Flowable.create` 没有调度器声明，且读的是请求结束即关闭的 multipart 流；`merge` 分支在参数解析器里 `blockingStream()`。
+- `Flowable.create` 没有调度器声明，且读的是请求结束即关闭的 multipart 流；`merge` 分支在参数解析器里 `blockingStream()`。rxjava 还是硬依赖，且 `Flowable` 出现在核心接口签名上，没引它的应用会在反射枚举方法时炸。
 - `DynamicValidatorManagerImpl` 对注解类型调 `BeanUtils.getResolvableConstructor` —— 注解没有构造器，必抛异常；`DynamicAttributeService` 全仓无实现 bean。整个动态校验子系统不可用，已整体删除（动态列的读写保留）。
 - `AbstractReadListener` 复制了近 200 行 fesod 内部的模型构建逻辑（含 cglib `BeanMap`），只为支持国际化表头匹配；现改为 `ExcelRowAccessor` + `ExcelRowBinder`，反射元数据按类型缓存一次，且是 native 下唯一可用的绑定路径。

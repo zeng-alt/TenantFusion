@@ -9,15 +9,12 @@ import com.github.zeng.alt.excel.fesod.listener.CollectingRowSink;
 import com.github.zeng.alt.excel.fesod.listener.ConsumerRowSink;
 import com.github.zeng.alt.excel.fesod.listener.DynamicColumnReadListener;
 import com.github.zeng.alt.excel.fesod.listener.ExcelRowSink;
-import com.github.zeng.alt.excel.fesod.listener.FlowableRowSink;
 import com.github.zeng.alt.excel.fesod.listener.ModelReadListener;
+import com.github.zeng.alt.excel.fesod.listener.PredicateRowSink;
 import com.github.zeng.alt.excel.fesod.listener.ReflectiveModelReadListener;
 import com.github.zeng.alt.excel.read.ExcelReadResult;
 import com.github.zeng.alt.excel.read.ExcelReadSpec;
 import com.github.zeng.alt.excel.support.ExcelRowBinder;
-import io.reactivex.rxjava3.core.BackpressureStrategy;
-import io.reactivex.rxjava3.core.Flowable;
-import io.reactivex.rxjava3.schedulers.Schedulers;
 import io.vavr.control.Try;
 import org.apache.fesod.sheet.FesodSheet;
 import org.apache.fesod.sheet.enums.ReadDefaultReturnEnum;
@@ -29,6 +26,7 @@ import java.io.File;
 import java.io.InputStream;
 import java.nio.file.Path;
 import java.util.function.Consumer;
+import java.util.function.Predicate;
 
 /**
  * {@link ExcelReadSpec} 的 fesod 实现。
@@ -156,24 +154,17 @@ public class FesodExcelReadSpec<T> implements ExcelReadSpec<T> {
     }
 
     @Override
-    public Flowable<T> stream() {
-        requireSource();
-        return Flowable.<T>create(emitter -> {
-            FlowableRowSink<T> sink = new FlowableRowSink<>(emitter);
-            try {
-                doRead(createListener(sink));
-            } catch (Exception e) {
-                if (!sink.isCompleted() && !emitter.isCancelled()) {
-                    emitter.onError(new ExcelReadException("Excel 解析失败", e));
-                }
-            }
-        }, BackpressureStrategy.BUFFER).subscribeOn(Schedulers.io());
-    }
-
-    @Override
     public Try<Long> consume(Consumer<T> consumer) {
         requireSource();
         ConsumerRowSink<T> sink = new ConsumerRowSink<>(consumer);
+        AbstractExcelReadListener<?, T> listener = createListener(sink);
+        return Try.run(() -> doRead(listener)).map(unused -> listener.getRowCount());
+    }
+
+    @Override
+    public Try<Long> consumeWhile(Predicate<T> consumer) {
+        requireSource();
+        PredicateRowSink<T> sink = new PredicateRowSink<>(consumer);
         AbstractExcelReadListener<?, T> listener = createListener(sink);
         return Try.run(() -> doRead(listener)).map(unused -> listener.getRowCount());
     }
