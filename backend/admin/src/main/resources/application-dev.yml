@@ -163,13 +163,13 @@ springdoc:
 
 oss:
   s3:
-    enabled: true
+    enabled: false
     # 本地文件存储要求绝对 file:// URI（FileSystemOssTemplate 用 Paths.get(URI) 解析，
     # 相对路径会被拒），而绝对路径无法跨平台共用一个默认值：
     #   Windows  file:///d:/data/oss
     #   mac/Linux  file:///Users/<你>/data/oss
     # 因此默认值保留 Windows 形态，非 Windows 上用 OSS_ENDPOINT 覆盖。
-    endpoint: ${OSS_ENDPOINT:file:///d:/data/oss}
+    endpoint: ${OSS_ENDPOINT:file:./data/oss}
     storageType: file
 
   thumbnail:

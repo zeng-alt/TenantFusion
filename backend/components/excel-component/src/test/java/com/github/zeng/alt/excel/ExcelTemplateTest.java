@@ -2,8 +2,10 @@ package com.github.zeng.alt.excel;
 
 import com.github.zeng.alt.excel.config.ExcelProperties;
 import com.github.zeng.alt.excel.exception.ExcelReadException;
+import com.github.zeng.alt.excel.exception.ExcelValidationException;
 import com.github.zeng.alt.excel.fesod.FesodExcelContext;
 import com.github.zeng.alt.excel.fesod.FesodExcelTemplate;
+import com.github.zeng.alt.excel.read.ExcelErrorPolicy;
 import com.github.zeng.alt.excel.read.ExcelReadResult;
 import com.github.zeng.alt.excel.rx.RxExcel;
 import com.github.zeng.alt.excel.support.ExcelRowValidator;
@@ -79,7 +81,7 @@ class ExcelTemplateTest {
 
         ExcelReadResult<UserRow> result = excelTemplate.read(UserRow.class)
                 .from(new ByteArrayInputStream(bytes))
-                .skipInvalidRows(false)
+                .onError(ExcelErrorPolicy.FAIL_FAST)
                 .execute();
 
         // 第一行就坏，后面的「李四」不再被读
@@ -94,7 +96,7 @@ class ExcelTemplateTest {
 
         Try<Long> count = excelTemplate.read(UserRow.class)
                 .from(new ByteArrayInputStream(bytes))
-                .skipInvalidRows(false)
+                .onError(ExcelErrorPolicy.FAIL_FAST)
                 .consume(row -> {
                 });
 
@@ -102,15 +104,15 @@ class ExcelTemplateTest {
     }
 
     @Test
-    void errorsFlowableWhenSkipDisabled() {
+    void errorsFlowableWhenFailFast() {
         byte[] bytes = writeUsers(new UserRow("", 18));
 
         assertThatThrownBy(() -> RxExcel.stream(excelTemplate.read(UserRow.class)
                         .from(new ByteArrayInputStream(bytes))
-                        .skipInvalidRows(false))
+                        .onError(ExcelErrorPolicy.FAIL_FAST))
                 .toList()
                 .blockingGet())
-                .hasRootCauseInstanceOf(ExcelReadException.class);
+                .hasRootCauseInstanceOf(ExcelValidationException.class);
     }
 
     @Test

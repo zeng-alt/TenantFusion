@@ -67,6 +67,15 @@ public class ExcelRowBinder<T> {
      *
      * @return true 表示没有任何列能对上字段
      */
+    /**
+     * 行类型，供监听器把校验失败定位到具体列。
+     *
+     * @return 行类型
+     */
+    public Class<T> getRowType() {
+        return accessor.getType();
+    }
+
     public boolean isUnmapped() {
         return fieldByColumn.isEmpty();
     }

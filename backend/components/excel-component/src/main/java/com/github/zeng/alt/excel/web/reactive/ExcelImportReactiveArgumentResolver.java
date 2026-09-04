@@ -3,8 +3,9 @@ package com.github.zeng.alt.excel.web.reactive;
 import com.github.zeng.alt.excel.annotation.ExcelImport;
 import com.github.zeng.alt.excel.config.ExcelProperties;
 import com.github.zeng.alt.excel.exception.ExcelReadException;
+import com.github.zeng.alt.excel.exception.ExcelValidationException;
 import com.github.zeng.alt.excel.read.ExcelReadResult;
-import com.github.zeng.alt.excel.read.ExcelRowError;
+import com.github.zeng.alt.excel.read.ExcelReadResults;
 import com.github.zeng.alt.excel.web.ExcelReactiveSupport;
 import com.github.zeng.alt.excel.web.ExcelRowTypeResolver;
 import com.github.zeng.alt.excel.web.ExcelStreamSource;
@@ -135,7 +136,7 @@ public class ExcelImportReactiveArgumentResolver implements HandlerMethodArgumen
             return Mono.just(fluxOf(selected, rowType, annotation));
         }
         return readAll(selected, rowType, annotation)
-                .map(result -> ExcelReadResult.class.isAssignableFrom(container) ? result : result.rows());
+                .flatMap(result -> toValue(result, container, selected));
     }
 
     private Object emptyValue(Class<?> container) {
@@ -148,6 +149,26 @@ public class ExcelImportReactiveArgumentResolver implements HandlerMethodArgumen
         return ExcelReadResult.class.isAssignableFrom(container) ? ExcelReadResult.empty() : List.of();
     }
 
+    /**
+     * 结果落到具体参数形状。
+     * <p>
+     * {@code ExcelReadResult<T>} 自带失败明细，直接给；{@code List<T>} 承载不了，
+     * 整单驳回时只能抛 {@code ExcelValidationException}，异常里带着可直接给前端的报告。
+     */
+    private Mono<Object> toValue(ExcelReadResult<Object> result, Class<?> container, List<FilePart> parts) {
+        if (ExcelReadResult.class.isAssignableFrom(container)) {
+            return Mono.just(result);
+        }
+        if (result.isAborted()) {
+            return Mono.error(new ExcelValidationException(result.toReport(fileNameOf(parts))));
+        }
+        return Mono.just(result.rows());
+    }
+
+    private static String fileNameOf(List<FilePart> parts) {
+        return parts.size() == 1 ? parts.getFirst().filename() : "";
+    }
+
     /** 全量读：解析放在 boundedElastic 上，读完即删临时文件 */
     @SuppressWarnings("unchecked")
     private Mono<ExcelReadResult<Object>> readAll(List<FilePart> parts, Class<?> rowType, ExcelImport annotation) {
@@ -158,7 +179,7 @@ public class ExcelImportReactiveArgumentResolver implements HandlerMethodArgumen
                                 .execute())
                         .subscribeOn(Schedulers.boundedElastic())
                         .doFinally(signal -> ExcelUploadHelper.deleteQuietly(temp))))
-                .reduce(ExcelReadResult.empty(), ExcelImportReactiveArgumentResolver::merge);
+                .reduce(ExcelReadResult.empty(), ExcelReadResults::merge);
     }
 
     /** 流式读：每个文件一段懒执行的 Flux，订阅时落盘、终结时删文件 */
@@ -193,11 +214,4 @@ public class ExcelImportReactiveArgumentResolver implements HandlerMethodArgumen
         return sources;
     }
 
-    private static <T> ExcelReadResult<T> merge(ExcelReadResult<T> left, ExcelReadResult<T> right) {
-        List<T> rows = new ArrayList<>(left.rows());
-        rows.addAll(right.rows());
-        List<ExcelRowError> errors = new ArrayList<>(left.errors());
-        errors.addAll(right.errors());
-        return new ExcelReadResult<>(rows, errors);
-    }
 }

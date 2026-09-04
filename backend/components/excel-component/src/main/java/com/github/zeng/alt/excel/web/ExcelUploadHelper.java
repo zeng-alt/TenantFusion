@@ -1,5 +1,6 @@
 package com.github.zeng.alt.excel.web;
 
+import jakarta.validation.constraints.NotNull;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.util.StringUtils;
@@ -23,7 +24,7 @@ import java.nio.file.StandardCopyOption;
  * @version 1.0
  */
 public final class ExcelUploadHelper {
-
+    @NotNull
     private static final Log LOG = LogFactory.getLog(ExcelUploadHelper.class);
     private static final String TEMP_PREFIX = "excel-upload-";
     private static final String TEMP_SUFFIX = ".xlsx";

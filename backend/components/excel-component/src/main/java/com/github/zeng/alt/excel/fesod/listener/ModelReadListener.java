@@ -16,8 +16,9 @@ import org.apache.fesod.sheet.context.AnalysisContext;
  */
 public class ModelReadListener<T> extends AbstractExcelReadListener<T, T> {
 
-    public ModelReadListener(ExcelRowSink<T> sink, ExcelReadOptions options, ExcelRowValidator validator) {
-        super(sink, options, validator);
+    public ModelReadListener(ExcelRowSink<T> sink, ExcelReadOptions options,
+                             ExcelRowValidator validator, Class<T> rowType) {
+        super(sink, options, validator, rowType);
     }
 
     @Override

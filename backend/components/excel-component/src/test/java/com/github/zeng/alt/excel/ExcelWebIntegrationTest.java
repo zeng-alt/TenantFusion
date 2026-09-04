@@ -8,6 +8,9 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import com.github.zeng.alt.excel.config.ExcelAutoConfiguration;
 import com.github.zeng.alt.excel.config.ExcelWebAutoConfiguration;
+import com.github.zeng.alt.excel.read.ExcelErrorPolicy;
+import com.github.zeng.alt.excel.read.ExcelErrorReport;
+import com.github.zeng.alt.excel.exception.ExcelValidationException;
 import com.github.zeng.alt.excel.config.ExcelWebMvcAutoConfiguration;
 import org.springframework.boot.autoconfigure.ImportAutoConfiguration;
 import org.springframework.boot.autoconfigure.http.HttpMessageConvertersAutoConfiguration;
@@ -31,6 +34,8 @@ import java.io.ByteArrayOutputStream;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.catchThrowable;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -85,6 +90,43 @@ class ExcelWebIntegrationTest {
 
         mockMvc().perform(multipart("/excel/import-stream").file(file))
                 .andExpect(status().isOk());
+    }
+
+    @Test
+    void abortedImportThrowsReportForListShape() {
+        // List<T> 承载不了失败明细，整单驳回只能抛
+        assertThatThrownBy(() -> mockMvc().perform(multipart("/excel/import-collect-all").file(newUpload())))
+                .hasRootCauseInstanceOf(ExcelValidationException.class);
+    }
+
+    @Test
+    void abortedImportCarriesFrontendReport() {
+        Throwable thrown = catchThrowable(
+                () -> mockMvc().perform(multipart("/excel/import-collect-all").file(newUpload())));
+
+        ExcelValidationException cause = (ExcelValidationException) rootCause(thrown);
+        ExcelErrorReport report = cause.getReport();
+        assertThat(report.fileName()).isEqualTo("users.xlsx");
+        assertThat(report.summary().aborted()).isTrue();
+        // 前端画界面要用的三块：按行分组、按约束码计数、可直接显示的一句话
+        assertThat(report.rows()).isNotEmpty();
+        assertThat(report.codes()).containsKey("NotBlank");
+        assertThat(report.headline()).contains("users.xlsx").contains("未导入任何数据");
+    }
+
+    @Test
+    void abortedImportDoesNotThrowForReadResultShape() throws Exception {
+        // ExcelReadResult 形状装得下明细，所以不抛，由方法自己决定怎么处理
+        mockMvc().perform(multipart("/excel/import-collect-all-result").file(newUpload()))
+                .andExpect(status().isOk());
+    }
+
+    private static Throwable rootCause(Throwable thrown) {
+        Throwable current = thrown;
+        while (current.getCause() != null && current.getCause() != current) {
+            current = current.getCause();
+        }
+        return current;
     }
 
     @Test
@@ -179,6 +221,23 @@ class ExcelWebIntegrationTest {
         @PostMapping("/excel/import-stream")
         String importStream(@ExcelImport(value = "file", validate = false) Flowable<UserRow> rows) {
             assertThat(rows.toList().blockingGet()).hasSize(2);
+            return "ok";
+        }
+
+        @PostMapping("/excel/import-collect-all")
+        String importCollectAll(
+                @ExcelImport(value = "file", onError = ExcelErrorPolicy.COLLECT_ALL) List<UserRow> rows) {
+            // 走不到这里：文件里有坏行，List<T> 形状会先抛 ExcelValidationException
+            return "ok";
+        }
+
+        @PostMapping("/excel/import-collect-all-result")
+        String importCollectAllResult(
+                @ExcelImport(value = "file", onError = ExcelErrorPolicy.COLLECT_ALL)
+                ExcelReadResult<UserRow> result) {
+            // ExcelReadResult 形状承载得下明细，所以不抛，只把结局标出来
+            assertThat(result.isAborted()).isTrue();
+            assertThat(result.errors()).hasSize(1);
             return "ok";
         }
 

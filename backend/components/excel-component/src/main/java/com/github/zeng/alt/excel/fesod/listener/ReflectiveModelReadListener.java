@@ -32,7 +32,7 @@ public class ReflectiveModelReadListener<T> extends AbstractExcelReadListener<Ma
      */
     public ReflectiveModelReadListener(ExcelRowBinder<T> binder, ExcelRowSink<T> sink,
                                        ExcelReadOptions options, ExcelRowValidator validator) {
-        super(sink, options, validator);
+        super(sink, options, validator, binder.getRowType());
         this.binder = binder;
     }
 

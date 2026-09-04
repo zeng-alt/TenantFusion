@@ -3,8 +3,9 @@ package com.github.zeng.alt.excel.web.servlet;
 import com.github.zeng.alt.excel.annotation.ExcelImport;
 import com.github.zeng.alt.excel.config.ExcelProperties;
 import com.github.zeng.alt.excel.exception.ExcelReadException;
+import com.github.zeng.alt.excel.exception.ExcelValidationException;
 import com.github.zeng.alt.excel.read.ExcelReadResult;
-import com.github.zeng.alt.excel.read.ExcelRowError;
+import com.github.zeng.alt.excel.read.ExcelReadResults;
 import com.github.zeng.alt.excel.web.ExcelReactiveSupport;
 import com.github.zeng.alt.excel.web.ExcelRowTypeResolver;
 import com.github.zeng.alt.excel.web.ExcelStreamSource;
@@ -72,7 +73,14 @@ public class ExcelImportArgumentResolver implements HandlerMethodArgumentResolve
             return reactiveSupport.streamOf(streamSources(selected, rowType, annotation));
         }
         ExcelReadResult<?> result = readAll(selected, rowType, annotation);
-        return ExcelReadResult.class.isAssignableFrom(container) ? result : result.rows();
+        if (ExcelReadResult.class.isAssignableFrom(container)) {
+            return result;
+        }
+        // List<T> 承载不了失败明细，整单驳回只能抛——异常里带着可直接给前端的报告
+        if (result.isAborted()) {
+            throw new ExcelValidationException(result.toReport(fileNameOf(selected)));
+        }
+        return result.rows();
     }
 
     // ==================== 参数形状 ====================
@@ -119,18 +127,21 @@ public class ExcelImportArgumentResolver implements HandlerMethodArgumentResolve
 
     // ==================== 读取 ====================
 
-    private ExcelReadResult<?> readAll(List<MultipartFile> files, Class<?> rowType, ExcelImport annotation)
+    private ExcelReadResult<Object> readAll(List<MultipartFile> files, Class<?> rowType, ExcelImport annotation)
             throws Exception {
-        List<Object> rows = new ArrayList<>();
-        List<ExcelRowError> errors = new ArrayList<>();
+        ExcelReadResult<Object> merged = ExcelReadResult.empty();
         for (MultipartFile file : files) {
-            ExcelReadResult<?> result = specFactory.readSpec(rowType, annotation)
+            @SuppressWarnings("unchecked")
+            ExcelReadResult<Object> result = (ExcelReadResult<Object>) specFactory.readSpec(rowType, annotation)
                     .from(file.getInputStream())
                     .execute();
-            rows.addAll(result.rows());
-            errors.addAll(result.errors());
+            merged = ExcelReadResults.merge(merged, result);
         }
-        return new ExcelReadResult<>(rows, errors);
+        return merged;
+    }
+
+    private static String fileNameOf(List<MultipartFile> files) {
+        return files.size() == 1 ? files.getFirst().getOriginalFilename() : "";
     }
 
     /**

@@ -40,7 +40,7 @@ public class DynamicColumnReadListener<T extends DynamicColumn<DynamicCell>>
      */
     public DynamicColumnReadListener(ExcelRowBinder<T> binder, ExcelRowSink<T> sink,
                                      ExcelReadOptions options, ExcelRowValidator validator) {
-        super(sink, options, validator);
+        super(sink, options, validator, binder.getRowType());
         this.binder = binder;
     }
 

@@ -27,9 +27,9 @@ import java.util.function.Predicate;
  * ExcelReadResult<UserImportCmd> result = excelTemplate.read(UserImportCmd.class)
  *         .from(inputStream)
  *         .sheet(0)
- *         .skipInvalidRows(true)
+ *         .onError(ExcelErrorPolicy.COLLECT_ALL)
  *         .execute();
- * return result.toEither().fold(this::renderErrors, userService::batchCreate);
+ * return result.toEither("users.xlsx").fold(this::renderReport, userService::batchCreate);
  * }</pre>
  *
  * @param <T> 行类型
@@ -110,20 +110,54 @@ public interface ExcelReadSpec<T> {
     ExcelReadSpec<T> validate(boolean validate);
 
     /**
-     * 坏行策略。
+     * 指定 Bean Validation 的校验分组。
      * <p>
-     * {@code true}：跳过该行、记入失败明细、继续读后面的行（批量导入的常态）。
+     * 传入非空分组会隐式打开校验开关——指定了分组却不校验没有意义。不调用本方法
+     * 时按 jakarta 的默认分组（{@code Default.class}）校验。
      * <p>
-     * {@code false}：遇到第一个坏行就停止解析剩余行。停止的表现方式取决于终结步骤：
-     * {@link #execute()} 返回已读到的行加那一条失败明细（{@code toEither()} 因此是
-     * {@code left}，「全有或全无」的语义在 {@code Either} 这一层成立）；
-     * {@link #consume(Consumer)} 与 {@link #consumeWhile(Predicate)} 返回
-     * {@code Try.failure}。
+     * 典型用法是同一个实体在「新增导入」和「更新导入」下有不同的必填项：
+     * <pre>{@code
+     * excelTemplate.read(UserImportCmd.class)
+     *         .from(file)
+     *         .validationGroups(OnCreate.class)
+     *         .execute();
+     * }</pre>
      *
-     * @param skipInvalidRows true 表示坏行跳过
+     * @param groups 校验分组；空或 {@code null} 表示默认分组
+     * @return 当前链
+     */
+    ExcelReadSpec<T> validationGroups(Class<?>... groups);
+
+    /**
+     * 坏行（解析失败或校验不通过）策略，默认取配置项 {@code alt.excel.read.on-error}。
+     * <p>
+     * 三种语义见 {@link ExcelErrorPolicy}：
+     * <ul>
+     *   <li>{@link ExcelErrorPolicy#SKIP_ROW} —— 部分成功，好行照常返回</li>
+     *   <li>{@link ExcelErrorPolicy#FAIL_FAST} —— 马上中断，不再读后面的行</li>
+     *   <li>{@link ExcelErrorPolicy#COLLECT_ALL} —— 读完整个文件收齐所有错误再整单驳回</li>
+     * </ul>
+     * 三种策略下 {@link #execute()} 都<b>不抛异常</b>，结局在
+     * {@link ExcelReadResult#isAborted()} 里；{@link #consume(Consumer)} 与
+     * {@link #consumeWhile(Predicate)} 在整单驳回时返回 {@code Try.failure}，
+     * 因为它们没有地方承载失败明细。
+     *
+     * @param policy 坏行策略，{@code null} 忽略
      * @return this
      */
-    ExcelReadSpec<T> skipInvalidRows(boolean skipInvalidRows);
+    ExcelReadSpec<T> onError(ExcelErrorPolicy policy);
+
+    /**
+     * 失败明细的条数上限，默认取配置项 {@code alt.excel.read.max-errors}。
+     * <p>
+     * 达到上限就停止解析，并在 {@link ExcelReadSummary#truncated()} 上打标记，
+     * 让前端能提示「还有更多问题未列出」。存在的意义是防一份全是坏行的文件把
+     * 内存刷爆——{@code COLLECT_ALL} 策略下尤其需要。
+     *
+     * @param maxErrors 上限，必须为正
+     * @return this
+     */
+    ExcelReadSpec<T> maxErrors(int maxErrors);
 
     /**
      * 表头按国际化文本匹配字段。

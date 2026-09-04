@@ -4,6 +4,7 @@ import com.github.zeng.alt.excel.config.ExcelBindingMode;
 import com.github.zeng.alt.excel.dynamic.DynamicCell;
 import com.github.zeng.alt.excel.dynamic.DynamicColumn;
 import com.github.zeng.alt.excel.exception.ExcelReadException;
+import com.github.zeng.alt.excel.exception.ExcelValidationException;
 import com.github.zeng.alt.excel.fesod.listener.AbstractExcelReadListener;
 import com.github.zeng.alt.excel.fesod.listener.CollectingRowSink;
 import com.github.zeng.alt.excel.fesod.listener.ConsumerRowSink;
@@ -12,7 +13,10 @@ import com.github.zeng.alt.excel.fesod.listener.ExcelRowSink;
 import com.github.zeng.alt.excel.fesod.listener.ModelReadListener;
 import com.github.zeng.alt.excel.fesod.listener.PredicateRowSink;
 import com.github.zeng.alt.excel.fesod.listener.ReflectiveModelReadListener;
+import com.github.zeng.alt.excel.read.ExcelErrorPolicy;
+import com.github.zeng.alt.excel.read.ExcelErrorReport;
 import com.github.zeng.alt.excel.read.ExcelReadResult;
+import com.github.zeng.alt.excel.read.ExcelReadSummary;
 import com.github.zeng.alt.excel.read.ExcelReadSpec;
 import com.github.zeng.alt.excel.support.ExcelRowBinder;
 import io.vavr.control.Try;
@@ -25,6 +29,7 @@ import org.apache.fesod.sheet.read.listener.ReadListener;
 import java.io.File;
 import java.io.InputStream;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 
@@ -122,8 +127,20 @@ public class FesodExcelReadSpec<T> implements ExcelReadSpec<T> {
     }
 
     @Override
-    public ExcelReadSpec<T> skipInvalidRows(boolean skipInvalidRows) {
-        this.options = options.withSkipInvalidRows(skipInvalidRows);
+    public ExcelReadSpec<T> validationGroups(Class<?>... groups) {
+        this.options = options.withValidationGroups(groups);
+        return this;
+    }
+
+    @Override
+    public ExcelReadSpec<T> onError(ExcelErrorPolicy policy) {
+        this.options = options.withPolicy(policy);
+        return this;
+    }
+
+    @Override
+    public ExcelReadSpec<T> maxErrors(int maxErrors) {
+        this.options = options.withMaxErrors(maxErrors);
         return this;
     }
 
@@ -150,23 +167,44 @@ public class FesodExcelReadSpec<T> implements ExcelReadSpec<T> {
         if (read.isFailure() && !isAbortSignal(read.getCause())) {
             throw new ExcelReadException("Excel 解析失败", read.getCause());
         }
-        return new ExcelReadResult<>(sink.getRows(), listener.getErrors());
+        return new ExcelReadResult<>(sink.getRows(), listener.getErrors(), listener.getSummary());
     }
 
     @Override
     public Try<Long> consume(Consumer<T> consumer) {
         requireSource();
         ConsumerRowSink<T> sink = new ConsumerRowSink<>(consumer);
-        AbstractExcelReadListener<?, T> listener = createListener(sink);
-        return Try.run(() -> doRead(listener)).map(unused -> listener.getRowCount());
+        return runAndCount(createListener(sink));
     }
 
     @Override
     public Try<Long> consumeWhile(Predicate<T> consumer) {
         requireSource();
         PredicateRowSink<T> sink = new PredicateRowSink<>(consumer);
-        AbstractExcelReadListener<?, T> listener = createListener(sink);
-        return Try.run(() -> doRead(listener)).map(unused -> listener.getRowCount());
+        return runAndCount(createListener(sink));
+    }
+
+    /**
+     * 逐行消费的公共收尾。
+     * <p>
+     * 这两个终结步骤没有地方承载失败明细，所以整单驳回只能表达成
+     * {@code Try.failure(ExcelValidationException)}——异常里带着完整报告，
+     * 调用方要明细就从 {@code getReport()} 取。
+     *
+     * @param listener 读监听器
+     * @return 消费的行数，或失败
+     */
+    private Try<Long> runAndCount(AbstractExcelReadListener<?, T> listener) {
+        Try<Void> read = Try.run(() -> doRead(listener));
+        if (read.isFailure() && !isAbortSignal(read.getCause())) {
+            return Try.failure(new ExcelReadException("Excel 解析失败", read.getCause()));
+        }
+        ExcelReadSummary summary = listener.getSummary();
+        if (summary.aborted()) {
+            return Try.failure(new ExcelValidationException(ExcelErrorReport.of(
+                    null, new ExcelReadResult<T>(List.of(), listener.getErrors(), summary))));
+        }
+        return Try.success(listener.getRowCount());
     }
 
     // ==================== 内部 ====================
@@ -240,17 +278,18 @@ public class FesodExcelReadSpec<T> implements ExcelReadSpec<T> {
             return new ReflectiveModelReadListener<>(
                     new ExcelRowBinder<>(type, context.conversionService()), sink, options, context.validator());
         }
-        return new ModelReadListener<>(sink, options, context.validator());
+        return new ModelReadListener<>(sink, options, context.validator(), type);
     }
 
     /**
-     * 是否是「坏行策略为不跳过」时本组件主动抛出的中止信号。
+     * 是否是 {@code FAIL_FAST} 策略下本组件主动抛出的中止信号。
      * <p>
-     * fesod 会把监听器抛出的异常包一层，所以要顺着 cause 链找。
+     * fesod 会把监听器抛出的异常包一层，所以要顺着 cause 链找。中止信号用专门的
+     * {@link ExcelReadAbort} 类型，不和「真的解析炸了」混在一起。
      */
     private static boolean isAbortSignal(Throwable throwable) {
         for (Throwable current = throwable; current != null; current = current.getCause()) {
-            if (current instanceof ExcelReadException) {
+            if (current instanceof ExcelReadAbort) {
                 return true;
             }
             if (current.getCause() == current) {

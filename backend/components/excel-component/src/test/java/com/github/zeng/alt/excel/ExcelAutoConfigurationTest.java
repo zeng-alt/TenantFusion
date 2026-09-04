@@ -2,6 +2,7 @@ package com.github.zeng.alt.excel;
 
 import com.github.zeng.alt.excel.config.ExcelAutoConfiguration;
 import com.github.zeng.alt.excel.config.ExcelProperties;
+import com.github.zeng.alt.excel.read.ExcelErrorPolicy;
 import com.github.zeng.alt.excel.fesod.ExcelReadCustomizer;
 import com.github.zeng.alt.excel.fesod.FesodExcelTemplate;
 import com.github.zeng.alt.excel.support.ExcelRowValidator;
@@ -70,13 +71,13 @@ class ExcelAutoConfigurationTest {
     void bindsPropertiesUnderAltExcelPrefix() {
         runner.withPropertyValues(
                         "alt.excel.read.head-row-number=3",
-                        "alt.excel.read.skip-invalid-rows=false",
+                        "alt.excel.read.on-error=fail_fast",
                         "alt.excel.write.auto-width=false",
                         "alt.excel.write.batch-size=500")
                 .run(context -> {
                     ExcelProperties properties = context.getBean(ExcelProperties.class);
                     assertThat(properties.getRead().getHeadRowNumber()).isEqualTo(3);
-                    assertThat(properties.getRead().isSkipInvalidRows()).isFalse();
+                    assertThat(properties.getRead().getOnError()).isEqualTo(ExcelErrorPolicy.FAIL_FAST);
                     assertThat(properties.getWrite().isAutoWidth()).isFalse();
                     assertThat(properties.getWrite().getBatchSize()).isEqualTo(500);
                 });

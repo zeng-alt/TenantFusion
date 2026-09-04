@@ -1,5 +1,7 @@
 package com.github.zeng.alt.excel.config;
 
+import com.github.zeng.alt.excel.read.ExcelErrorPolicy;
+
 import lombok.Getter;
 import lombok.Setter;
 import org.apache.fesod.sheet.enums.CacheLocationEnum;
@@ -73,8 +75,11 @@ public class ExcelProperties {
         /** 是否对每行执行 Bean Validation */
         private boolean validate = true;
 
-        /** 坏行是否跳过并记入失败明细；false 时首个坏行即中止解析 */
-        private boolean skipInvalidRows = true;
+        /**
+         * 坏行策略：SKIP_ROW 跳过坏行继续（部分成功）、FAIL_FAST 首个坏行即中断、
+         * COLLECT_ALL 校验完整个文件再整单驳回。
+         */
+        private ExcelErrorPolicy onError = ExcelErrorPolicy.SKIP_ROW;
 
         /** 失败明细上限，超出后停止解析，避免坏文件把内存刷爆 */
         private int maxErrors = 1000;

@@ -1,5 +1,6 @@
 package com.github.zeng.alt.excel.annotation;
 
+import com.github.zeng.alt.excel.read.ExcelErrorPolicy;
 import com.github.zeng.alt.excel.read.ExcelReadResult;
 
 import java.lang.annotation.Documented;
@@ -14,8 +15,9 @@ import java.util.List;
  * <p>
  * 支持三种参数形状，按数据量选：
  * <ul>
- *   <li>{@code List<T>} —— 小文件，全量装入内存；坏行按 {@link #skipInvalidRows()} 处理，
- *       但拿不到失败明细</li>
+ *   <li>{@code List<T>} —— 小文件，全量装入内存；坏行按 {@link #onError()} 处理。
+ *       这个形状承载不了失败明细，所以策略是 {@code FAIL_FAST} / {@code COLLECT_ALL}
+ *       且确实有错时，会抛 {@code ExcelValidationException}（内含可直接给前端的报告）</li>
  *   <li>{@link ExcelReadResult}{@code <T>} —— 小文件，同时拿到成功行与失败明细（推荐）</li>
  *   <li>{@code Flowable<T>} —— 大文件，带背压逐行下发；上传内容会先落到临时文件，
  *       订阅时才解析，因此可以安全地在请求线程之外消费。<b>需要自行引入
@@ -89,11 +91,26 @@ public @interface ExcelImport {
     boolean validate() default true;
 
     /**
-     * 坏行是否跳过并记入失败明细；{@code false} 时首个坏行即中止解析。
+     * Bean Validation 的校验分组。
+     * <p>
+     * 非空时隐式打开 {@link #validate()}。不指定则按 jakarta 的默认分组
+     * （{@code Default.class}）校验。
      *
-     * @return true 表示跳过坏行
+     * @return 校验分组
      */
-    boolean skipInvalidRows() default true;
+    Class<?>[] validationGroups() default {};
+
+    /**
+     * 坏行（解析失败或校验不通过）策略，默认取配置项 {@code alt.excel.read.on-error}。
+     * <p>
+     * 三种语义见 {@link ExcelErrorPolicy}。参数形状是 {@code ExcelReadResult<T>} 时
+     * 三种策略都只体现在结果里（不抛异常）；形状是 {@code List<T>} /
+     * {@code Flux<T>} / {@code Flowable<T>} 时，整单驳回只能靠抛
+     * {@code ExcelValidationException} 表达。
+     *
+     * @return 坏行策略
+     */
+    ExcelErrorPolicy onError() default ExcelErrorPolicy.SKIP_ROW;
 
     /**
      * 是否按国际化文本匹配表头，见

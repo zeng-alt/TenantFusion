@@ -195,6 +195,95 @@ Web 层的 `Flowable` 形状（两种栈都支持）经 `ExcelReactiveSupport` �
 两者按 classpath 严格二选一。WebFlux 下即使不引 rxjava，也还有 Reactor 的
 `Flux`/`Mono` 形状可用。
 
+## 校验与错误处理
+
+### 逐行 Bean Validation
+
+实体上标 `jakarta.validation` 约束即可，读取时逐行校验：
+
+```java
+public class UserImportCmd {
+    @NotBlank(message = "姓名不能为空")
+    @ExcelProperty("姓名")
+    private String userName;
+
+    @Min(value = 1, message = "年龄必须大于 0")
+    @ExcelProperty("年龄")
+    private Integer age;
+}
+```
+
+`jakarta.validation-api` 是 `compileOnly`，`ExcelRowValidator` 只在 classpath 上有
+Bean Validation 且容器里确实有 `Validator` 时才装配；没有的话读写照常工作，
+只是不做校验（有测试钉住这条降级路径）。
+
+支持校验分组，同一个实体在「新增导入」和「更新导入」下可以有不同的必填项：
+
+```java
+excelTemplate.read(UserImportCmd.class).from(file)
+        .validationGroups(OnCreate.class)   // 指定分组即隐式打开校验
+        .execute();
+```
+
+注解上同样可用：`@ExcelImport(validationGroups = OnCreate.class)`。
+
+### 三种坏行策略
+
+`onError` / `alt.excel.read.on-error` / `@ExcelImport(onError = ...)`：
+
+| 策略 | 读到哪 | 好行 | 适用 |
+| --- | --- | --- | --- |
+| `SKIP_ROW`（默认） | 整个文件 | 照常返回 | 部分成功，让用户订正坏行后补传 |
+| `FAIL_FAST` | **首个坏行即停** | 丢弃 | 大文件 + 「有一行错就不该导」，最省资源 |
+| `COLLECT_ALL` | 整个文件 | 丢弃 | **最常用**：一次列出所有问题，用户不用改一行传一次 |
+
+后两者都是整单驳回，区别只在中断时机。三种策略下 `execute()` 都**不抛异常**，
+结局在 `result.isAborted()` 里：
+
+```java
+ExcelReadResult<UserImportCmd> result = excelTemplate.read(UserImportCmd.class)
+        .from(file)
+        .onError(ExcelErrorPolicy.COLLECT_ALL)
+        .execute();
+
+return result.toEither("users.xlsx").fold(this::renderReport, userService::batchCreate);
+```
+
+`maxErrors` 限制明细条数（默认 1000，防坏文件刷爆内存），触顶会在
+`summary().truncated()` 上打标记。
+
+### 给前端的错误报告
+
+每个违反的约束是**一条**明细，不是把一行拼成一句话——前端要按字段高亮单元格
+就必须拿到结构化数据：
+
+| 字段 | 用途 |
+| --- | --- |
+| `rowNumber` / `columnNumber` | 定位单元格（Excel 里肉眼看到的编号，表头是第 1 行） |
+| `header` | 显示列名 |
+| `field` | 对应表单字段，前端好联动 |
+| `rejectedValue` | 回显用户到底填了什么 |
+| `code` | 约束注解简单名（`NotBlank`/`Min`/`PARSE`），按类型分类提示 |
+| `message` | 兜底文案 |
+
+`result.toReport(fileName)` 汇总成 `ExcelErrorReport`，同一份数据给了三种形态：
+
+- `errors()` —— 平铺明细，按行号列号排序（顺序稳定，表格刷新不跳），渲染成错误表
+- `rows()` —— 按行号分组，用于「展开某行看全部问题」和预览表格里加红框
+- `codes()` —— 各约束码出现次数，用于「3 处缺必填项、2 处格式错误」这类分类摘要
+- `summary()` —— 总行数 / 出错行数 / 有效行数 / 是否截断 / 是否整单驳回
+- `headline()` —— 一句话摘要，直接放提示条
+
+Web 层的形状决定错误怎么传出去：
+
+| 参数形状 | 整单驳回时 |
+| --- | --- |
+| `ExcelReadResult<T>` | 不抛，明细在结果里，方法自己决定 |
+| `List<T>` / `Flux<T>` / `Flowable<T>` | 抛 `ExcelValidationException`，`getReport()` 拿报告 |
+
+建议在应用的 `@RestControllerAdvice` 里把 `ExcelValidationException` 渲染成
+RFC 9457 ProblemDetail，把报告放进扩展字段。
+
 ## 表头国际化
 
 `@ExcelProperty("{user.name}")` 里的 `{key}` 会在**导出**时替换成当前 Locale 的文本
@@ -229,7 +318,7 @@ user.name=姓名
 | `alt.excel.binding` | `AUTO` | 实体绑定方式，见下方「Spring Native」|
 | `alt.excel.read.head-row-number` | `1` | 表头行数 |
 | `alt.excel.read.validate` | `true` | 逐行 Bean Validation |
-| `alt.excel.read.skip-invalid-rows` | `true` | 坏行跳过并记账；`false` 则首个坏行即停止 |
+| `alt.excel.read.on-error` | `SKIP_ROW` | 坏行策略：`SKIP_ROW` 部分成功 / `FAIL_FAST` 马上中断 / `COLLECT_ALL` 收齐所有错误再整单驳回 |
 | `alt.excel.read.max-errors` | `1000` | 失败明细上限，到顶即停止解析 |
 | `alt.excel.read.i18n-head` | `false` | 按国际化文本匹配表头 |
 | `alt.excel.write.auto-width` | `true` | 列宽自适应 |

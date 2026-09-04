@@ -39,7 +39,8 @@ public class ExcelWebSpecFactory {
                 ? excelTemplate.readDynamic((Class<DynamicColumn<DynamicCell>>) rowType)
                 : excelTemplate.read(rowType);
         spec.validate(annotation.validate())
-                .skipInvalidRows(annotation.skipInvalidRows())
+                .validationGroups(annotation.validationGroups())
+                .onError(annotation.onError())
                 .i18nHead(annotation.i18nHead());
         if (annotation.headRowNumber() >= 0) {
             spec.headRowNumber(annotation.headRowNumber());
