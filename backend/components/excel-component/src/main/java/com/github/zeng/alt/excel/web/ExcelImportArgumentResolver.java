@@ -25,6 +25,8 @@ import org.springframework.web.multipart.support.MultipartResolutionDelegate;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * 把上传的 Excel 文件解析成 {@link ExcelImport} 标注的方法参数。
@@ -47,6 +49,15 @@ public class ExcelImportArgumentResolver implements HandlerMethodArgumentResolve
     private final ExcelTemplate excelTemplate;
     private final ExcelProperties properties;
 
+    /**
+     * 参数 → 行类型的缓存。
+     * <p>
+     * {@code ResolvableType.forMethodParameter} 要读泛型签名，是反射动作；
+     * handler method 的数量是有限且固定的，缓存后每个参数只解析一次，
+     * 而不是每次请求都解析。
+     */
+    private final Map<MethodParameter, Class<?>> rowTypeCache = new ConcurrentHashMap<>();
+
     @Override
     public boolean supportsParameter(MethodParameter parameter) {
         return parameter.hasParameterAnnotation(ExcelImport.class);
@@ -61,7 +72,7 @@ public class ExcelImportArgumentResolver implements HandlerMethodArgumentResolve
                     "参数 '%s' 上没有 @ExcelImport".formatted(parameter.getParameterName()));
         }
         Class<?> container = requireSupportedContainer(parameter);
-        Class<?> rowType = resolveRowType(parameter);
+        Class<?> rowType = rowTypeCache.computeIfAbsent(parameter, ExcelImportArgumentResolver::resolveRowType);
         List<MultipartFile> files = resolveFiles(parameter, webRequest, annotation);
 
         if (files.isEmpty()) {

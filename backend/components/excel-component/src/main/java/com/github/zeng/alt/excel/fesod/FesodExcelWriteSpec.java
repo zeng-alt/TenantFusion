@@ -1,7 +1,10 @@
 package com.github.zeng.alt.excel.fesod;
 
+import com.github.zeng.alt.excel.config.ExcelBindingMode;
 import com.github.zeng.alt.excel.exception.ExcelWriteException;
 import com.github.zeng.alt.excel.fesod.handler.I18nHeadWriteHandler;
+import com.github.zeng.alt.excel.support.ExcelFieldMeta;
+import com.github.zeng.alt.excel.support.ExcelRowAccessor;
 import com.github.zeng.alt.excel.write.ExcelWriteSpec;
 import io.reactivex.rxjava3.core.Flowable;
 import io.vavr.control.Try;
@@ -14,6 +17,7 @@ import org.apache.fesod.sheet.write.style.column.LongestMatchColumnWidthStyleStr
 import java.io.File;
 import java.io.OutputStream;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
@@ -37,6 +41,7 @@ public class FesodExcelWriteSpec<T> implements ExcelWriteSpec<T> {
     private boolean autoWidth;
     private boolean i18nHead;
     private boolean autoCloseStream;
+    private ExcelBindingMode binding;
     private Collection<String> includeColumns;
     private Collection<String> excludeColumns;
 
@@ -51,6 +56,7 @@ public class FesodExcelWriteSpec<T> implements ExcelWriteSpec<T> {
         this.context = context;
         this.autoWidth = context.properties().getWrite().isAutoWidth();
         this.i18nHead = context.properties().getWrite().isI18nHead();
+        this.binding = context.properties().getBinding();
     }
 
     // ==================== 输出目标 ====================
@@ -117,6 +123,12 @@ public class FesodExcelWriteSpec<T> implements ExcelWriteSpec<T> {
         return this;
     }
 
+    @Override
+    public ExcelWriteSpec<T> binding(ExcelBindingMode binding) {
+        this.binding = binding == null ? ExcelBindingMode.AUTO : binding;
+        return this;
+    }
+
     // ==================== 终结步骤 ====================
 
     @Override
@@ -138,7 +150,7 @@ public class FesodExcelWriteSpec<T> implements ExcelWriteSpec<T> {
 
     private long doWrite(Collection<T> rows) {
         try (ExcelWriter writer = createBuilder().build()) {
-            writer.write(rows, createSheet());
+            writer.write(toWriterRows(rows), createSheet());
             return rows.size();
         }
     }
@@ -148,11 +160,36 @@ public class FesodExcelWriteSpec<T> implements ExcelWriteSpec<T> {
         try (ExcelWriter writer = createBuilder().build()) {
             WriteSheet sheet = createSheet();
             for (List<T> batch : batches) {
-                writer.write(batch, sheet);
+                writer.write(toWriterRows(batch), sheet);
                 count += batch.size();
             }
         }
         return count;
+    }
+
+    /**
+     * 交给 fesod 的行集合。
+     * <p>
+     * engine 绑定原样递实体，由 fesod 自己反射；reflective 绑定先把实体拆成值列表，
+     * 走 fesod 的无模型写出路径（行是 {@code Collection}），绕开它那条用 cglib
+     * 运行期生成字节码的实体路径——native image 不支持运行期生成字节码。
+     */
+    private Collection<?> toWriterRows(Collection<T> rows) {
+        if (!usesReflectiveBinding()) {
+            return rows;
+        }
+        ExcelRowAccessor<T> accessor = ExcelRowAccessor.of(type);
+        List<ExcelFieldMeta> selected = accessor.selectFields(includeColumns, excludeColumns);
+        List<List<Object>> raw = new ArrayList<>(rows.size());
+        for (T row : rows) {
+            raw.add(accessor.extract(row, selected));
+        }
+        return raw;
+    }
+
+    /** 是否由本组件自己做实体绑定：有实体类型、无运行期表头、绑定方式落到 reflective */
+    private boolean usesReflectiveBinding() {
+        return type != null && head == null && binding.isReflective();
     }
 
     private WriteSheet createSheet() {
@@ -194,12 +231,25 @@ public class FesodExcelWriteSpec<T> implements ExcelWriteSpec<T> {
     private void applyHead(ExcelWriterBuilder builder) {
         if (head != null) {
             builder.head(head);
-        } else if (type != null) {
+            return;
+        }
+        if (usesReflectiveBinding()) {
+            // 表头由 accessor 从 @ExcelProperty 算出，i18n 仍由 I18nHeadWriteHandler 处理
+            ExcelRowAccessor<T> accessor = ExcelRowAccessor.of(type);
+            builder.head(accessor.head(accessor.selectFields(includeColumns, excludeColumns)));
+            return;
+        }
+        if (type != null) {
             builder.head(type);
         }
     }
 
     private void applyColumnFilter(ExcelWriterBuilder builder) {
+        if (usesReflectiveBinding()) {
+            // reflective 绑定下 fesod 看到的是无模型行，按字段名筛列无从下手，
+            // 筛选已经在 accessor.selectFields 里做完了
+            return;
+        }
         if (includeColumns != null && !includeColumns.isEmpty()) {
             builder.includeColumnFieldNames(includeColumns);
             return;

@@ -1,5 +1,6 @@
 package com.github.zeng.alt.excel.read;
 
+import com.github.zeng.alt.excel.config.ExcelBindingMode;
 import io.reactivex.rxjava3.core.Flowable;
 import io.vavr.control.Try;
 
@@ -140,6 +141,19 @@ public interface ExcelReadSpec<T> {
      * @return this
      */
     ExcelReadSpec<T> i18nHead(boolean i18nHead);
+
+    /**
+     * 实体绑定方式，默认取配置项 {@code alt.excel.binding}（{@code AUTO}）。
+     * <p>
+     * {@code AUTO} 在 native image 里自动切成 {@link ExcelBindingMode#REFLECTIVE}——
+     * fesod 自己的实体绑定走 cglib 运行期生成字节码，native 不支持。一般不需要在
+     * 调用处指定，只在某个实体依赖 fesod 自定义 {@code Converter}、必须强制
+     * {@link ExcelBindingMode#ENGINE} 时才用。
+     *
+     * @param binding 绑定方式，{@code null} 视为 {@code AUTO}
+     * @return this
+     */
+    ExcelReadSpec<T> binding(ExcelBindingMode binding);
 
     // ==================== 终结步骤 ====================
 

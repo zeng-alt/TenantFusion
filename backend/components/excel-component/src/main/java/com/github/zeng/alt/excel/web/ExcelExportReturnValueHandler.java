@@ -20,6 +20,8 @@ import org.springframework.web.method.support.ModelAndViewContainer;
 import java.io.OutputStream;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * 把 {@link ExcelExport} 标注的方法返回值写成 Excel 附件下发。
@@ -43,6 +45,12 @@ public class ExcelExportReturnValueHandler implements HandlerMethodReturnValueHa
 
     private final ExcelTemplate excelTemplate;
 
+    /**
+     * 返回值 → 行类型的缓存，理由同 {@code ExcelImportArgumentResolver}：
+     * 泛型签名解析是反射动作，每个 handler method 只该做一次。
+     */
+    private final Map<MethodParameter, Class<?>> rowTypeCache = new ConcurrentHashMap<>();
+
     @Override
     public boolean supportsReturnType(MethodParameter returnType) {
         return returnType.hasMethodAnnotation(ExcelExport.class);
@@ -60,7 +68,8 @@ public class ExcelExportReturnValueHandler implements HandlerMethodReturnValueHa
         if (response == null) {
             throw new ExcelWriteException("当前请求不是 Servlet 请求，无法导出 Excel");
         }
-        Class<?> rowType = resolveRowType(annotation, returnType);
+        Class<?> rowType = rowTypeCache.computeIfAbsent(
+                returnType, key -> resolveRowType(annotation, key));
         applyHeaders(response, annotation, returnType);
         write(returnValue, rowType, annotation, response.getOutputStream())
                 .getOrElseThrow(cause -> new ExcelWriteException("Excel 导出失败", cause));

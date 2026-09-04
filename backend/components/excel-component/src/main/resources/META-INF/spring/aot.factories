@@ -1,0 +1,4 @@
+# 构建期（./gradlew nativeCompile 或 processAot）生效：
+# 扫出 @ExcelImport / @ExcelExport 用到的行类型，登记反射可达性。
+org.springframework.beans.factory.aot.BeanFactoryInitializationAotProcessor=\
+com.github.zeng.alt.excel.config.ExcelModelAotProcessor

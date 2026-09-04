@@ -1,5 +1,6 @@
 package com.github.zeng.alt.excel.fesod;
 
+import com.github.zeng.alt.excel.config.ExcelBindingMode;
 import com.github.zeng.alt.excel.dynamic.DynamicCell;
 import com.github.zeng.alt.excel.dynamic.DynamicColumn;
 import com.github.zeng.alt.excel.exception.ExcelReadException;
@@ -9,11 +10,11 @@ import com.github.zeng.alt.excel.fesod.listener.ConsumerRowSink;
 import com.github.zeng.alt.excel.fesod.listener.DynamicColumnReadListener;
 import com.github.zeng.alt.excel.fesod.listener.ExcelRowSink;
 import com.github.zeng.alt.excel.fesod.listener.FlowableRowSink;
-import com.github.zeng.alt.excel.fesod.listener.I18nHeadBinder;
-import com.github.zeng.alt.excel.fesod.listener.I18nModelReadListener;
 import com.github.zeng.alt.excel.fesod.listener.ModelReadListener;
+import com.github.zeng.alt.excel.fesod.listener.ReflectiveModelReadListener;
 import com.github.zeng.alt.excel.read.ExcelReadResult;
 import com.github.zeng.alt.excel.read.ExcelReadSpec;
+import com.github.zeng.alt.excel.support.ExcelRowBinder;
 import io.reactivex.rxjava3.core.BackpressureStrategy;
 import io.reactivex.rxjava3.core.Flowable;
 import io.reactivex.rxjava3.schedulers.Schedulers;
@@ -51,6 +52,7 @@ public class FesodExcelReadSpec<T> implements ExcelReadSpec<T> {
     private int headRowNumber;
     private String password;
     private boolean i18nHead;
+    private ExcelBindingMode binding;
     private ExcelReadOptions options;
 
     /**
@@ -64,6 +66,7 @@ public class FesodExcelReadSpec<T> implements ExcelReadSpec<T> {
         this.dynamic = dynamic;
         this.headRowNumber = context.properties().getRead().getHeadRowNumber();
         this.i18nHead = context.properties().getRead().isI18nHead();
+        this.binding = context.properties().getBinding();
         this.options = ExcelReadOptions.from(context.properties());
     }
 
@@ -129,6 +132,12 @@ public class FesodExcelReadSpec<T> implements ExcelReadSpec<T> {
     @Override
     public ExcelReadSpec<T> i18nHead(boolean i18nHead) {
         this.i18nHead = i18nHead;
+        return this;
+    }
+
+    @Override
+    public ExcelReadSpec<T> binding(ExcelBindingMode binding) {
+        this.binding = binding == null ? ExcelBindingMode.AUTO : binding;
         return this;
     }
 
@@ -217,22 +226,28 @@ public class FesodExcelReadSpec<T> implements ExcelReadSpec<T> {
         }
     }
 
+    /**
+     * 是否走 fesod 的无模型路径（每行给一个 {@code Map<列下标, 字符串>}）。
+     * <p>
+     * 动态列必然是无模型的；国际化表头匹配与 reflective 绑定都由本组件自己绑，
+     * 也需要无模型。只有 engine 绑定的普通读取才让 fesod 自己建模型。
+     */
     private boolean usesRawStringRows() {
-        return dynamic || i18nHead;
+        return dynamic || i18nHead || binding.isReflective();
     }
 
     @SuppressWarnings("unchecked")
     private AbstractExcelReadListener<?, T> createListener(ExcelRowSink<T> sink) {
         if (dynamic) {
             // read 入口已由 ExcelTemplate#readDynamic 约束了 T 的上界，这里的转型是安全的
-            I18nHeadBinder<DynamicColumn<DynamicCell>> binder =
-                    new I18nHeadBinder<>((Class<DynamicColumn<DynamicCell>>) type, context.conversionService());
+            ExcelRowBinder<DynamicColumn<DynamicCell>> binder =
+                    new ExcelRowBinder<>((Class<DynamicColumn<DynamicCell>>) type, context.conversionService());
             return (AbstractExcelReadListener<?, T>) new DynamicColumnReadListener<>(
                     binder, (ExcelRowSink<DynamicColumn<DynamicCell>>) sink, options, context.validator());
         }
-        if (i18nHead) {
-            return new I18nModelReadListener<>(
-                    new I18nHeadBinder<>(type, context.conversionService()), sink, options, context.validator());
+        if (usesRawStringRows()) {
+            return new ReflectiveModelReadListener<>(
+                    new ExcelRowBinder<>(type, context.conversionService()), sink, options, context.validator());
         }
         return new ModelReadListener<>(sink, options, context.validator());
     }

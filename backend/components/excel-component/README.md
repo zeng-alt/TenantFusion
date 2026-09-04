@@ -146,6 +146,7 @@ user.name=姓名
 | `alt.excel.auto-trim` | `true` | 单元格文本去首尾空白 |
 | `alt.excel.locale` | JVM 默认 | 默认 Locale |
 | `alt.excel.field-cache-location` | `THREAD_LOCAL` | 字段元数据缓存位置 |
+| `alt.excel.binding` | `AUTO` | 实体绑定方式，见下方「Spring Native」|
 | `alt.excel.read.head-row-number` | `1` | 表头行数 |
 | `alt.excel.read.validate` | `true` | 逐行 Bean Validation |
 | `alt.excel.read.skip-invalid-rows` | `true` | 坏行跳过并记账；`false` 则首个坏行即停止 |
@@ -157,6 +158,79 @@ user.name=姓名
 | `alt.excel.write.batch-size` | `2000` | 从 `Flowable` 写出时的分批大小 |
 | `alt.excel.web.enabled` | `true` | `@ExcelImport` / `@ExcelExport` 的 MVC 集成 |
 | `alt.excel.web.temp-dir` | 系统临时目录 | `Flowable` 形状上传落盘的目录 |
+
+## Spring Native / GraalVM
+
+### 一句话结论
+
+组件默认配置（`alt.excel.binding=AUTO`）在 JVM 和 native image 下都能用，**不需要改代码**。
+AUTO 在 native image 里自动切到 `REFLECTIVE` 绑定。
+
+### 为什么需要切绑定方式
+
+fesod 的实体绑定路径用 cglib **在运行期生成字节码**：
+
+| fesod 路径 | 底层机制 | native |
+| --- | --- | --- |
+| `ModelBuildEventListener#buildUserModel`（读实体） | `BeanMap.Generator.create()` | ❌ |
+| `ExcelWriteAddExecutor#addJavaObjectToExcel`（写实体） | 同上 | ❌ |
+| `ExcelWriteFillExecutor`（模板填充） | 同上 | ❌ |
+| `buildNoModel`（无模型读，返回 `Map<列下标, 字符串>`） | 纯 Map | ✅ |
+| 行是 `Collection` / `Map` 的写出（`CollectionRowData`） | 纯集合 | ✅ |
+
+GraalVM 不支持运行期生成字节码，**这不是缺 reflection hints，注册多少 hints 都无解**。
+所以本组件在 fesod 的无模型路径之上自建了一层反射绑定
+（`ExcelRowAccessor` / `ExcelRowBinder`），native 下走这条路。
+
+### 三种绑定方式
+
+| `alt.excel.binding` | 行为 | 适用 |
+| --- | --- | --- |
+| `AUTO`（默认） | native image 里用 `REFLECTIVE`，JVM 里用 `ENGINE` | 一般情况 |
+| `ENGINE` | fesod 自己绑定。更快，`@ExcelProperty(converter=)`、`@DateTimeFormat`、`@NumberFormat` 全部生效 | 只跑 JVM，且依赖自定义 `Converter` |
+| `REFLECTIVE` | 组件自建反射绑定，值转换走 Spring `ConversionService` | native；或想在 JVM 上先验证 native 行为 |
+
+也能在链上逐次覆盖：`.binding(ExcelBindingMode.ENGINE)`。
+
+**`REFLECTIVE` 的限制**：不支持 fesod 的自定义 `Converter` 与 `@DateTimeFormat` /
+`@NumberFormat`；表头国际化、列筛选（`includeColumns` / `excludeColumns`）、列顺序
+（`@ExcelProperty` 的 `index` / `order`）、逐行校验都照常工作，两种绑定产出的文件
+可以互相读写（有测试钉住）。**模板填充（`fill`）只有 cglib 一条路，native 下不可用。**
+
+### 反射用量
+
+- 扫字段、读注解、找 getter/setter 只在每个行类型**首次**使用时做一次，
+  连同 `Method` 句柄缓存在 `ExcelRowAccessor` 里；逐行读写是直接的
+  `Method#invoke`，没有任何查找。
+- `@ExcelImport` / `@ExcelExport` 的参数与返回值泛型解析（`ResolvableType`）
+  按 handler method 缓存，不是每请求解析。
+
+### 可达性注册
+
+两部分，都是自动的：
+
+1. **组件自身**：`ExcelRuntimeHints`（`@ImportRuntimeHints` 挂在
+   `ExcelAutoConfiguration` 上）——`DynamicCell`、写处理器、POI 的
+   `WorkbookFactory`、`excel*.properties` 资源。
+2. **业务行类型**：`ExcelModelAotProcessor`（`META-INF/spring/aot.factories`
+   注册的 `BeanFactoryInitializationAotProcessor`）在构建期扫所有 bean 的方法，
+   从 `@ExcelExport` 的返回值泛型、`@ExcelImport` 的参数泛型反推行类型，
+   用 Spring 的 `BindingReflectionHintsRegistrar` 登记（`@ExcelExport(type=)`
+   显式声明时优先用它）。
+
+**覆盖不到的场景**：不经过注解、直接调 `excelTemplate.read(Xxx.class)` 的行类型
+扫不出来。给那个类加 `@RegisterReflectionForBinding(Xxx.class)`，或在自己模块的
+`RuntimeHintsRegistrar` 里登记：
+
+```java
+@Configuration
+@RegisterReflectionForBinding({UserImportCmd.class, ScoreRow.class})
+public class MyExcelHints {
+}
+```
+
+构建后可以在 `build/generated/aotSources/.../*.json` 里核对登记结果，
+`ExcelModelAotProcessor` 也会在构建日志里打出扫到的行类型。
 
 ## 扩展：customizer DSL
 
@@ -197,4 +271,4 @@ customizer 是唯一的逃生舱。
 - `@AliasFor` 用在非 Spring 元注解上，别名不生效。
 - `Flowable.create` 没有调度器声明，且读的是请求结束即关闭的 multipart 流；`merge` 分支在参数解析器里 `blockingStream()`。
 - `DynamicValidatorManagerImpl` 对注解类型调 `BeanUtils.getResolvableConstructor` —— 注解没有构造器，必抛异常；`DynamicAttributeService` 全仓无实现 bean。整个动态校验子系统不可用，已整体删除（动态列的读写保留）。
-- `AbstractReadListener` 复制了近 200 行 fesod 内部的模型构建逻辑，只为支持国际化表头匹配；现改为可选的 `i18nHead` 路径，用 Spring `ConversionService` 绑定，不再依赖引擎内部。
+- `AbstractReadListener` 复制了近 200 行 fesod 内部的模型构建逻辑（含 cglib `BeanMap`），只为支持国际化表头匹配；现改为 `ExcelRowAccessor` + `ExcelRowBinder`，反射元数据按类型缓存一次，且是 native 下唯一可用的绑定路径。

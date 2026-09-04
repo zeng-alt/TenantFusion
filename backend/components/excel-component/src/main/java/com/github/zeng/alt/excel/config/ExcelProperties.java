@@ -39,6 +39,14 @@ public class ExcelProperties {
     /** 默认 Locale，留空则用 JVM 默认 */
     private Locale locale;
 
+    /**
+     * 实体与单元格之间的绑定方式，默认按运行环境自动选。
+     * <p>
+     * native image 下必须是 {@code REFLECTIVE}（{@code AUTO} 会自动切过去）——
+     * fesod 自己的实体绑定走 cglib 运行期生成字节码，native 不支持。
+     */
+    private ExcelBindingMode binding = ExcelBindingMode.AUTO;
+
     @NestedConfigurationProperty
     private final Read read = new Read();
 

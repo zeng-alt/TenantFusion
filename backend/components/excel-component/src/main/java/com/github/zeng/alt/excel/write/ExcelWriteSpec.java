@@ -1,5 +1,6 @@
 package com.github.zeng.alt.excel.write;
 
+import com.github.zeng.alt.excel.config.ExcelBindingMode;
 import io.reactivex.rxjava3.core.Flowable;
 import io.vavr.control.Try;
 
@@ -119,6 +120,24 @@ public interface ExcelWriteSpec<T> {
      * @return this
      */
     ExcelWriteSpec<T> autoCloseStream(boolean autoCloseStream);
+
+    /**
+     * 实体绑定方式，默认取配置项 {@code alt.excel.binding}（{@code AUTO}）。
+     * <p>
+     * {@code AUTO} 在 native image 里自动切成 {@link ExcelBindingMode#REFLECTIVE}：
+     * 本组件先用 {@link com.github.zeng.alt.excel.support.ExcelRowAccessor} 把实体拆成
+     * 表头 + 行值，再走 fesod 的无模型写出路径，绕开 fesod 自己那条用 cglib
+     * 运行期生成字节码的实体写出路径（native 不支持）。
+     * <p>
+     * {@link ExcelBindingMode#REFLECTIVE} 下 {@code @ExcelProperty(converter = ...)}、
+     * {@code @DateTimeFormat}、{@code @NumberFormat} 不生效，值按
+     * {@code String.valueOf} 语义写出；需要它们就显式指定
+     * {@link ExcelBindingMode#ENGINE}（但那样过不了 native）。
+     *
+     * @param binding 绑定方式，{@code null} 视为 {@code AUTO}
+     * @return this
+     */
+    ExcelWriteSpec<T> binding(ExcelBindingMode binding);
 
     // ==================== 终结步骤 ====================
 
