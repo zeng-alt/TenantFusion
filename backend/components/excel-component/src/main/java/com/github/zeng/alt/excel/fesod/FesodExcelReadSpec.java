@@ -1,0 +1,256 @@
+package com.github.zeng.alt.excel.fesod;
+
+import com.github.zeng.alt.excel.dynamic.DynamicCell;
+import com.github.zeng.alt.excel.dynamic.DynamicColumn;
+import com.github.zeng.alt.excel.exception.ExcelReadException;
+import com.github.zeng.alt.excel.fesod.listener.AbstractExcelReadListener;
+import com.github.zeng.alt.excel.fesod.listener.CollectingRowSink;
+import com.github.zeng.alt.excel.fesod.listener.ConsumerRowSink;
+import com.github.zeng.alt.excel.fesod.listener.DynamicColumnReadListener;
+import com.github.zeng.alt.excel.fesod.listener.ExcelRowSink;
+import com.github.zeng.alt.excel.fesod.listener.FlowableRowSink;
+import com.github.zeng.alt.excel.fesod.listener.I18nHeadBinder;
+import com.github.zeng.alt.excel.fesod.listener.I18nModelReadListener;
+import com.github.zeng.alt.excel.fesod.listener.ModelReadListener;
+import com.github.zeng.alt.excel.read.ExcelReadResult;
+import com.github.zeng.alt.excel.read.ExcelReadSpec;
+import io.reactivex.rxjava3.core.BackpressureStrategy;
+import io.reactivex.rxjava3.core.Flowable;
+import io.reactivex.rxjava3.schedulers.Schedulers;
+import io.vavr.control.Try;
+import org.apache.fesod.sheet.FesodSheet;
+import org.apache.fesod.sheet.enums.ReadDefaultReturnEnum;
+import org.apache.fesod.sheet.read.builder.ExcelReaderBuilder;
+import org.apache.fesod.sheet.read.builder.ExcelReaderSheetBuilder;
+import org.apache.fesod.sheet.read.listener.ReadListener;
+
+import java.io.File;
+import java.io.InputStream;
+import java.nio.file.Path;
+import java.util.function.Consumer;
+
+/**
+ * {@link ExcelReadSpec} 的 fesod 实现。
+ * <p>
+ * 一个实例只服务一次读取：终结步骤消费掉数据源后不要复用（输入流读完即废）。
+ *
+ * @param <T> 行类型
+ * @author zengJiaJun
+ * @since 2026年09月04日
+ * @version 1.0
+ */
+public class FesodExcelReadSpec<T> implements ExcelReadSpec<T> {
+
+    private final Class<T> type;
+    private final FesodExcelContext context;
+    private final boolean dynamic;
+
+    private Object source;
+    private Integer sheetNo = 0;
+    private String sheetName;
+    private int headRowNumber;
+    private String password;
+    private boolean i18nHead;
+    private ExcelReadOptions options;
+
+    /**
+     * @param type    行类型
+     * @param context 共用协作对象
+     * @param dynamic 是否按动态列读取
+     */
+    public FesodExcelReadSpec(Class<T> type, FesodExcelContext context, boolean dynamic) {
+        this.type = type;
+        this.context = context;
+        this.dynamic = dynamic;
+        this.headRowNumber = context.properties().getRead().getHeadRowNumber();
+        this.i18nHead = context.properties().getRead().isI18nHead();
+        this.options = ExcelReadOptions.from(context.properties());
+    }
+
+    // ==================== 数据源 ====================
+
+    @Override
+    public ExcelReadSpec<T> from(InputStream inputStream) {
+        this.source = inputStream;
+        return this;
+    }
+
+    @Override
+    public ExcelReadSpec<T> from(File file) {
+        this.source = file;
+        return this;
+    }
+
+    @Override
+    public ExcelReadSpec<T> from(Path path) {
+        this.source = path == null ? null : path.toFile();
+        return this;
+    }
+
+    // ==================== 可选项 ====================
+
+    @Override
+    public ExcelReadSpec<T> sheet(int sheetNo) {
+        this.sheetNo = sheetNo;
+        this.sheetName = null;
+        return this;
+    }
+
+    @Override
+    public ExcelReadSpec<T> sheet(String sheetName) {
+        this.sheetName = sheetName;
+        return this;
+    }
+
+    @Override
+    public ExcelReadSpec<T> headRowNumber(int headRowNumber) {
+        this.headRowNumber = headRowNumber;
+        return this;
+    }
+
+    @Override
+    public ExcelReadSpec<T> password(String password) {
+        this.password = password;
+        return this;
+    }
+
+    @Override
+    public ExcelReadSpec<T> validate(boolean validate) {
+        this.options = options.withValidate(validate);
+        return this;
+    }
+
+    @Override
+    public ExcelReadSpec<T> skipInvalidRows(boolean skipInvalidRows) {
+        this.options = options.withSkipInvalidRows(skipInvalidRows);
+        return this;
+    }
+
+    @Override
+    public ExcelReadSpec<T> i18nHead(boolean i18nHead) {
+        this.i18nHead = i18nHead;
+        return this;
+    }
+
+    // ==================== 终结步骤 ====================
+
+    @Override
+    public ExcelReadResult<T> execute() {
+        requireSource();
+        CollectingRowSink<T> sink = new CollectingRowSink<>();
+        AbstractExcelReadListener<?, T> listener = createListener(sink);
+        Try<Void> read = Try.run(() -> doRead(listener));
+        if (read.isFailure() && !isAbortSignal(read.getCause())) {
+            throw new ExcelReadException("Excel 解析失败", read.getCause());
+        }
+        return new ExcelReadResult<>(sink.getRows(), listener.getErrors());
+    }
+
+    @Override
+    public Flowable<T> stream() {
+        requireSource();
+        return Flowable.<T>create(emitter -> {
+            FlowableRowSink<T> sink = new FlowableRowSink<>(emitter);
+            try {
+                doRead(createListener(sink));
+            } catch (Exception e) {
+                if (!sink.isCompleted() && !emitter.isCancelled()) {
+                    emitter.onError(new ExcelReadException("Excel 解析失败", e));
+                }
+            }
+        }, BackpressureStrategy.BUFFER).subscribeOn(Schedulers.io());
+    }
+
+    @Override
+    public Try<Long> consume(Consumer<T> consumer) {
+        requireSource();
+        ConsumerRowSink<T> sink = new ConsumerRowSink<>(consumer);
+        AbstractExcelReadListener<?, T> listener = createListener(sink);
+        return Try.run(() -> doRead(listener)).map(unused -> listener.getRowCount());
+    }
+
+    // ==================== 内部 ====================
+
+    private void doRead(ReadListener<?> listener) {
+        ExcelReaderBuilder builder = createBuilder(listener);
+        ExcelReaderSheetBuilder sheetBuilder = sheetName == null
+                ? builder.sheet(sheetNo)
+                : builder.sheet(sheetName);
+        sheetBuilder.doRead();
+    }
+
+    private ExcelReaderBuilder createBuilder(ReadListener<?> listener) {
+        ExcelReaderBuilder builder = FesodSheet.read();
+        FesodParameterHelper.applyGlobal(builder, context.properties());
+        // 贡献者先应用，组件默认值最后应用——首次匹配生效的场景下顺序是承重的
+        context.readCustomizers().orderedStream().forEach(customizer -> customizer.customize(builder));
+        applySource(builder);
+        builder.headRowNumber(headRowNumber);
+        builder.useScientificFormat(context.properties().isUseScientificFormat());
+        builder.ignoreEmptyRow(context.properties().getRead().isIgnoreEmptyRow());
+        builder.password(password);
+        if (usesRawStringRows()) {
+            // 无模型读取：fesod 把每行转成 Map<列下标, 字符串>，绑定由本组件接手
+            builder.readDefaultReturn(ReadDefaultReturnEnum.STRING);
+        } else {
+            builder.head(type);
+        }
+        builder.registerReadListener(listener);
+        return builder;
+    }
+
+    private void applySource(ExcelReaderBuilder builder) {
+        if (source instanceof InputStream inputStream) {
+            builder.file(inputStream);
+        } else if (source instanceof File file) {
+            builder.file(file);
+        }
+    }
+
+    /**
+     * 数据源缺失是调用方的编程错误，在终结步骤入口就抛出——不能等到
+     * {@code Try} 里，那会被 {@link #isAbortSignal} 当成坏行中止信号吞掉。
+     */
+    private void requireSource() {
+        if (source == null) {
+            throw new ExcelReadException("未指定数据源，请先调用 from(...)");
+        }
+    }
+
+    private boolean usesRawStringRows() {
+        return dynamic || i18nHead;
+    }
+
+    @SuppressWarnings("unchecked")
+    private AbstractExcelReadListener<?, T> createListener(ExcelRowSink<T> sink) {
+        if (dynamic) {
+            // read 入口已由 ExcelTemplate#readDynamic 约束了 T 的上界，这里的转型是安全的
+            I18nHeadBinder<DynamicColumn<DynamicCell>> binder =
+                    new I18nHeadBinder<>((Class<DynamicColumn<DynamicCell>>) type, context.conversionService());
+            return (AbstractExcelReadListener<?, T>) new DynamicColumnReadListener<>(
+                    binder, (ExcelRowSink<DynamicColumn<DynamicCell>>) sink, options, context.validator());
+        }
+        if (i18nHead) {
+            return new I18nModelReadListener<>(
+                    new I18nHeadBinder<>(type, context.conversionService()), sink, options, context.validator());
+        }
+        return new ModelReadListener<>(sink, options, context.validator());
+    }
+
+    /**
+     * 是否是「坏行策略为不跳过」时本组件主动抛出的中止信号。
+     * <p>
+     * fesod 会把监听器抛出的异常包一层，所以要顺着 cause 链找。
+     */
+    private static boolean isAbortSignal(Throwable throwable) {
+        for (Throwable current = throwable; current != null; current = current.getCause()) {
+            if (current instanceof ExcelReadException) {
+                return true;
+            }
+            if (current.getCause() == current) {
+                break;
+            }
+        }
+        return false;
+    }
+}

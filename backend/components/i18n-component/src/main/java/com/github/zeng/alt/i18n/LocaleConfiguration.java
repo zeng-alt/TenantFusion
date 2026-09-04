@@ -3,6 +3,7 @@ package com.github.zeng.alt.i18n;
 import jakarta.validation.Validator;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.context.MessageSourceAutoConfiguration;
 import org.springframework.context.MessageSource;
 import org.springframework.context.MessageSourceResolvable;
@@ -31,6 +32,21 @@ public class LocaleConfiguration {
         LocalValidatorFactoryBean bean = new LocalValidatorFactoryBean();
         bean.setValidationMessageSource(messageSource);
         return bean;
+    }
+
+    /**
+     * 注册 {@link MessageSourceHelper}。
+     * <p>
+     * 它靠 {@code ApplicationContextAware} 回调拿 {@link MessageSourceAccessor}，
+     * 不注册成 bean 的话内部的静态字段恒为 null，所有 {@code {key}} 解析都会静默
+     * 退回原文——本仓此前一直缺这个 bean，excel 表头国际化因此从未真正生效。
+     *
+     * @return helper
+     */
+    @Bean
+    @ConditionalOnMissingBean
+    public MessageSourceHelper messageSourceHelper() {
+        return MessageSourceHelper.create();
     }
 
     @Bean
