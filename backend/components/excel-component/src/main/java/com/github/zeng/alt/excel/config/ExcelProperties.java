@@ -26,6 +26,13 @@ import java.util.Locale;
 @ConfigurationProperties(prefix = "alt.excel")
 public class ExcelProperties {
 
+    /**
+     * 组件总开关。关掉之后连 {@code ExcelTemplate} 都不装配，整个模块等于不存在——
+     * 只在「依赖被别的模块传递进来但本应用确实不用 Excel」时才需要。
+     * 只想关注解集成的话用 {@code alt.excel.web.enabled}。
+     */
+    private boolean enabled = true;
+
     /** 单元格文本是否去除首尾空白 */
     private boolean autoTrim = true;
 
@@ -84,6 +91,24 @@ public class ExcelProperties {
         /** 失败明细上限，超出后停止解析，避免坏文件把内存刷爆 */
         private int maxErrors = 1000;
 
+        /**
+         * 批量消费的每批条数，{@code consumeBatch} 攒够这么多行才回调一次。
+         * <p>
+         * 批量导入的瓶颈几乎总在下游写库：逐行 insert 一万次和五百行一批 insert
+         * 二十次差一到两个数量级。默认 500 是「单条 SQL 参数量」与「失败重做成本」
+         * 的折中；行很宽（几十列）时调小，很窄时可以到 2000。
+         */
+        private int batchSize = 500;
+
+        /**
+         * 单次读取的数据行上限，{@code -1} 表示不限。
+         * <p>
+         * 防的是「有人传了一份一百万行的文件」把内存和数据库一起打爆。超限按
+         * {@link #onError} 处理：{@code SKIP_ROW} 下截断并记一条错误，
+         * 另两种策略下整单驳回。
+         */
+        private int maxRows = -1;
+
         /** 是否按国际化文本匹配表头 */
         private boolean i18nHead = false;
 
@@ -111,8 +136,24 @@ public class ExcelProperties {
         /** 是否全部在内存中生成（快但吃内存，大数据量务必保持 false） */
         private boolean inMemory = false;
 
-        /** 从 Flowable 写出时的分批大小 */
+        /** 从游标写出时的分批大小 */
         private int batchSize = 2000;
+
+        /**
+         * 单个 sheet 的数据行上限，超出自动开新 sheet（{@code Sheet1}、{@code Sheet2}…）。
+         * <p>
+         * xlsx 格式本身的硬上限是 1048576 行（含表头），撞上去 POI 会直接抛异常。
+         * 默认留 100 万，给表头和多行表头留余量。{@code -1} 表示不分。
+         */
+        private int maxRowsPerSheet = 1_000_000;
+
+        /**
+         * 下载文件名里时间戳的格式，配合 {@code @ExcelExport(timestamp = true)}。
+         * <p>
+         * 之前硬编码成 {@code yyyyMMddHHmmss}；按天归档只想要 {@code yyyyMMdd} 的场景
+         * 得能改。格式非法时退回默认值并记一条 warn，不让它把导出整个搞挂。
+         */
+        private String fileNameTimestampPattern = "yyyyMMddHHmmss";
     }
 
     /**

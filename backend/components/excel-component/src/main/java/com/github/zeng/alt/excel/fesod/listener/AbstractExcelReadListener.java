@@ -56,6 +56,7 @@ public abstract class AbstractExcelReadListener<R, T> implements ReadListener<R>
     private final Set<Integer> errorRows = new HashSet<>();
     private int totalRows;
     private boolean truncated;
+    private boolean limitExceeded;
 
     /**
      * @param sink      成功行的去处
@@ -98,10 +99,31 @@ public abstract class AbstractExcelReadListener<R, T> implements ReadListener<R>
 
     @Override
     public void invoke(R raw, AnalysisContext context) {
+        if (exceedsRowLimit(context)) {
+            return;
+        }
         totalRows++;
         toRow(raw, context)
                 .peekLeft(reason -> recordRowError(reason, context))
                 .peek(row -> emit(row, context));
+    }
+
+    /**
+     * 是否已经超过 {@code alt.excel.read.max-rows} 上限。
+     * <p>
+     * 超限只记一条错误就停，不逐行报——一份一百万行的文件报一百万条错等于没报。
+     * 之后 {@link #hasNext} 会看到 {@link #limitExceeded} 从而结束解析。
+     */
+    private boolean exceedsRowLimit(AnalysisContext context) {
+        if (!options.hasRowLimit() || totalRows < options.maxRows()) {
+            return false;
+        }
+        if (!limitExceeded) {
+            limitExceeded = true;
+            addError(ExcelRowError.ofRow(rowIndexOf(context),
+                    "数据行数超过上限 %d，已停止解析".formatted(options.maxRows())));
+        }
+        return true;
     }
 
     @Override
@@ -124,7 +146,7 @@ public abstract class AbstractExcelReadListener<R, T> implements ReadListener<R>
 
     @Override
     public boolean hasNext(AnalysisContext context) {
-        if (sink.isCancelled()) {
+        if (sink.isCancelled() || limitExceeded) {
             return false;
         }
         if (errors.size() >= options.maxErrors()) {
@@ -151,7 +173,8 @@ public abstract class AbstractExcelReadListener<R, T> implements ReadListener<R>
      */
     public ExcelReadSummary getSummary() {
         boolean aborted = !errors.isEmpty() && options.policy().rejectsWholeFile();
-        return new ExcelReadSummary(options.policy(), totalRows, errorRows.size(), truncated, aborted);
+        return new ExcelReadSummary(
+                options.policy(), totalRows, errorRows.size(), truncated || limitExceeded, aborted);
     }
 
     /**

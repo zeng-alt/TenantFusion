@@ -13,6 +13,7 @@ import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.validation.ValidationAutoConfiguration;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -38,6 +39,7 @@ import org.springframework.core.convert.ConversionService;
         after = ValidationAutoConfiguration.class,
         afterName = "com.github.zeng.alt.i18n.LocaleConfiguration")
 @Role(BeanDefinition.ROLE_INFRASTRUCTURE)
+@ConditionalOnProperty(prefix = "alt.excel", name = "enabled", matchIfMissing = true)
 @EnableConfigurationProperties(ExcelProperties.class)
 @ImportRuntimeHints(ExcelRuntimeHints.class)
 public class ExcelAutoConfiguration {

@@ -41,8 +41,8 @@ public class ExcelWebAutoConfiguration {
 
     @Bean
     @ConditionalOnMissingBean
-    public ExcelWebSpecFactory excelWebSpecFactory(ExcelTemplate excelTemplate) {
-        return new ExcelWebSpecFactory(excelTemplate);
+    public ExcelWebSpecFactory excelWebSpecFactory(ExcelTemplate excelTemplate, ExcelProperties properties) {
+        return new ExcelWebSpecFactory(excelTemplate, properties);
     }
 
     /**

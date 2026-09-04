@@ -79,7 +79,7 @@ public class ExcelExportResultHandler implements HandlerResultHandler, Ordered {
             return Mono.error(new ExcelWriteException("返回值上找不到 @ExcelExport"));
         }
         Class<?> rowType = resolveRowType(annotation, returnType);
-        applyHeaders(exchange, ExcelDownloadHeaders.of(annotation, returnType));
+        applyHeaders(exchange, ExcelDownloadHeaders.of(annotation, returnType, specFactory.fileNameTimestampPattern()));
 
         return toRows(result.getReturnValue())
                 .flatMap(rows -> writeTempFile(rows, rowType, annotation))

@@ -62,7 +62,7 @@ public class ExcelExportReturnValueHandler implements HandlerMethodReturnValueHa
             throw new ExcelWriteException("当前请求不是 Servlet 请求，无法导出 Excel");
         }
         Class<?> rowType = resolveRowType(annotation, returnType);
-        applyHeaders(response, ExcelDownloadHeaders.of(annotation, returnType));
+        applyHeaders(response, ExcelDownloadHeaders.of(annotation, returnType, specFactory.fileNameTimestampPattern()));
         write(returnValue, rowType, annotation, response.getOutputStream())
                 .getOrElseThrow(cause -> new ExcelWriteException("Excel 导出失败", cause));
     }

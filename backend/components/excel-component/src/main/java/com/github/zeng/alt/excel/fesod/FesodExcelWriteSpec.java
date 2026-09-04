@@ -1,6 +1,7 @@
 package com.github.zeng.alt.excel.fesod;
 
 import com.github.zeng.alt.excel.config.ExcelBindingMode;
+import com.github.zeng.alt.excel.config.ExcelProperties;
 import com.github.zeng.alt.excel.exception.ExcelWriteException;
 import com.github.zeng.alt.excel.fesod.handler.I18nHeadWriteHandler;
 import com.github.zeng.alt.excel.support.ExcelFieldMeta;
@@ -157,17 +158,28 @@ public class FesodExcelWriteSpec<T> implements ExcelWriteSpec<T> {
      * @return 写出的行数
      */
     private long doWriteBatched(Iterator<T> rows) {
-        int batchSize = Math.max(1, context.properties().getWrite().getBatchSize());
+        ExcelProperties.Write writeProperties = context.properties().getWrite();
+        int batchSize = Math.max(1, writeProperties.getBatchSize());
+        int perSheet = writeProperties.getMaxRowsPerSheet();
         long count = 0L;
         try (ExcelWriter writer = createBuilder().build()) {
-            WriteSheet sheet = createSheet();
+            int sheetNo = 0;
+            WriteSheet sheet = createSheet(sheetNo);
+            long inSheet = 0L;
             List<T> batch = new ArrayList<>(batchSize);
             while (rows.hasNext()) {
                 batch.add(rows.next());
-                if (batch.size() == batchSize) {
-                    writer.write(toWriterRows(batch), sheet);
-                    count += batch.size();
-                    batch.clear();
+                if (batch.size() < batchSize) {
+                    continue;
+                }
+                writer.write(toWriterRows(batch), sheet);
+                count += batch.size();
+                inSheet += batch.size();
+                batch.clear();
+                if (perSheet > 0 && inSheet >= perSheet) {
+                    // 撞到单 sheet 上限就开新 sheet，否则超过 xlsx 的 1048576 行会直接抛异常
+                    sheet = createSheet(++sheetNo);
+                    inSheet = 0L;
                 }
             }
             if (!batch.isEmpty()) {
@@ -204,9 +216,24 @@ public class FesodExcelWriteSpec<T> implements ExcelWriteSpec<T> {
     }
 
     private WriteSheet createSheet() {
-        return sheetName == null
-                ? FesodSheet.writerSheet().build()
-                : FesodSheet.writerSheet(sheetName).build();
+        return createSheet(0);
+    }
+
+    /**
+     * 建第 {@code sheetNo} 个 sheet。
+     * <p>
+     * 第一个沿用调用方指定的名字（没指定就交给 fesod 默认），后续的加序号后缀，
+     * 因为 sheet 名在一个工作簿里必须唯一。
+     *
+     * @param sheetNo 0 基序号
+     * @return sheet
+     */
+    private WriteSheet createSheet(int sheetNo) {
+        if (sheetName == null) {
+            return FesodSheet.writerSheet(sheetNo).build();
+        }
+        String name = sheetNo == 0 ? sheetName : sheetName + "_" + (sheetNo + 1);
+        return FesodSheet.writerSheet(sheetNo, name).build();
     }
 
     private ExcelWriterBuilder createBuilder() {

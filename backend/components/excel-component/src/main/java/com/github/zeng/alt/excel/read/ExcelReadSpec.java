@@ -6,6 +6,7 @@ import io.vavr.control.Try;
 import java.io.File;
 import java.io.InputStream;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 
@@ -18,6 +19,7 @@ import java.util.function.Predicate;
  *   <li>{@link #execute()} —— 小文件全量装入内存，成功行与失败明细一起拿到</li>
  *   <li>{@link #consume(Consumer)} —— 大文件，只关心逐行副作用（入库、转发）</li>
  *   <li>{@link #consumeWhile(Predicate)} —— 同上，但能提前收工</li>
+ *   <li>{@link #consumeBatch(Consumer)} —— 大文件批量入库，攒够一批回调一次</li>
  * </ul>
  * 需要 {@code Flowable} 的话用 {@code RxExcel.stream(spec)}：RxJava 是本模块的
  * <b>可选</b>依赖，因此响应式类型不出现在本接口的签名里——否则没引 rxjava 的应用
@@ -160,6 +162,24 @@ public interface ExcelReadSpec<T> {
     ExcelReadSpec<T> maxErrors(int maxErrors);
 
     /**
+     * 批量消费的每批条数，默认取配置项 {@code alt.excel.read.batch-size}。
+     * <p>
+     * 只影响 {@link #consumeBatch(Consumer)}。
+     *
+     * @param batchSize 每批条数，必须为正
+     * @return this
+     */
+    ExcelReadSpec<T> batchSize(int batchSize);
+
+    /**
+     * 单次读取的数据行上限，默认取配置项 {@code alt.excel.read.max-rows}。
+     *
+     * @param maxRows 行数上限，{@code -1} 表示不限
+     * @return this
+     */
+    ExcelReadSpec<T> maxRows(int maxRows);
+
+    /**
      * 表头按国际化文本匹配字段。
      * <p>
      * 开启后 {@code @ExcelProperty("{user.name}")} 能对上表头写着「姓名」的文件——
@@ -223,4 +243,26 @@ public interface ExcelReadSpec<T> {
      * @return 实际消费的行数；IO 或解析层面的失败包在 {@code Try} 里
      */
     Try<Long> consumeWhile(Predicate<T> consumer);
+
+    /**
+     * 攒够一批再消费，专为批量入库设计。
+     * <p>
+     * 每 {@link #batchSize(int)} 行回调一次，最后不足一批的余量也会回调一次
+     * （空文件不回调）。内存占用是「一批」而不是「整个文件」。
+     * <p>
+     * 批量导入的瓶颈几乎总在下游写库，逐行 {@code consume} 做一万次 insert 和
+     * 五百行一批做二十次差一到两个数量级：
+     * <pre>{@code
+     * excelTemplate.read(UserImportCmd.class)
+     *         .from(file)
+     *         .batchSize(500)
+     *         .consumeBatch(userRepository::saveAll);
+     * }</pre>
+     * 每批的事务边界由调用方自己控制——本方法不碰事务，把 {@code @Transactional}
+     * 标在接收批次的 service 方法上，一批一个事务。
+     *
+     * @param consumer 每批的处理逻辑，收到的列表不可变
+     * @return 实际消费的行数；IO 或解析层面的失败包在 {@code Try} 里
+     */
+    Try<Long> consumeBatch(Consumer<List<T>> consumer);
 }

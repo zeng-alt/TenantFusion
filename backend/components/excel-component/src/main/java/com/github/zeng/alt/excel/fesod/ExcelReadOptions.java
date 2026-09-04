@@ -13,12 +13,15 @@ import com.github.zeng.alt.excel.read.ExcelErrorPolicy;
  * @param validationGroups 校验分组，空数组表示默认分组（{@code Default.class}）
  * @param policy           坏行策略：跳过、马上中断、还是校验完整个文件再中断
  * @param maxErrors        失败明细上限，达到后停止解析并标记截断
+ * @param batchSize        批量消费的每批条数
+ * @param maxRows          数据行上限，{@code -1} 表示不限
  * @author zengJiaJun
  * @since 2026年09月04日
  * @version 1.0
  */
 public record ExcelReadOptions(
-        boolean validate, Class<?>[] validationGroups, ExcelErrorPolicy policy, int maxErrors) {
+        boolean validate, Class<?>[] validationGroups, ExcelErrorPolicy policy,
+        int maxErrors, int batchSize, int maxRows) {
 
     /** 未指定分组时用的空数组，jakarta 的 Validator 收到空数组即按 Default 分组校验 */
     private static final Class<?>[] NO_GROUPS = new Class<?>[0];
@@ -31,7 +34,8 @@ public record ExcelReadOptions(
      */
     public static ExcelReadOptions from(ExcelProperties properties) {
         ExcelProperties.Read read = properties.getRead();
-        return new ExcelReadOptions(read.isValidate(), NO_GROUPS, read.getOnError(), read.getMaxErrors());
+        return new ExcelReadOptions(read.isValidate(), NO_GROUPS, read.getOnError(),
+                read.getMaxErrors(), read.getBatchSize(), read.getMaxRows());
     }
 
     /**
@@ -41,7 +45,7 @@ public record ExcelReadOptions(
      * @return 新选项
      */
     public ExcelReadOptions withValidate(boolean value) {
-        return new ExcelReadOptions(value, validationGroups, policy, maxErrors);
+        return new ExcelReadOptions(value, validationGroups, policy, maxErrors, batchSize, maxRows);
     }
 
     /**
@@ -52,7 +56,7 @@ public record ExcelReadOptions(
      */
     public ExcelReadOptions withValidationGroups(Class<?>[] value) {
         Class<?>[] groups = value == null ? NO_GROUPS : value.clone();
-        return new ExcelReadOptions(validate || groups.length > 0, groups, policy, maxErrors);
+        return new ExcelReadOptions(validate || groups.length > 0, groups, policy, maxErrors, batchSize, maxRows);
     }
 
     /**
@@ -62,7 +66,8 @@ public record ExcelReadOptions(
      * @return 新选项
      */
     public ExcelReadOptions withPolicy(ExcelErrorPolicy value) {
-        return value == null ? this : new ExcelReadOptions(validate, validationGroups, value, maxErrors);
+        return value == null ? this
+                : new ExcelReadOptions(validate, validationGroups, value, maxErrors, batchSize, maxRows);
     }
 
     /**
@@ -72,7 +77,38 @@ public record ExcelReadOptions(
      * @return 新选项
      */
     public ExcelReadOptions withMaxErrors(int value) {
-        return value <= 0 ? this : new ExcelReadOptions(validate, validationGroups, policy, value);
+        return value <= 0 ? this
+                : new ExcelReadOptions(validate, validationGroups, policy, value, batchSize, maxRows);
+    }
+
+    /**
+     * 替换批量消费的每批条数。
+     *
+     * @param value 新值，非正数忽略
+     * @return 新选项
+     */
+    public ExcelReadOptions withBatchSize(int value) {
+        return value <= 0 ? this
+                : new ExcelReadOptions(validate, validationGroups, policy, maxErrors, value, maxRows);
+    }
+
+    /**
+     * 替换数据行上限。
+     *
+     * @param value 新值，{@code -1} 表示不限
+     * @return 新选项
+     */
+    public ExcelReadOptions withMaxRows(int value) {
+        return new ExcelReadOptions(validate, validationGroups, policy, maxErrors, batchSize, value);
+    }
+
+    /**
+     * 是否设了行数上限。
+     *
+     * @return true 表示有上限
+     */
+    public boolean hasRowLimit() {
+        return maxRows > 0;
     }
 
     /**

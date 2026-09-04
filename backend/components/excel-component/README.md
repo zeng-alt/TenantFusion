@@ -48,6 +48,23 @@ public class UserImportService {
 失败明细一起交出来，由调用方决定整单驳回还是先入库好行。整份文件级别的失败
 （文件损坏、密码错误、未指定数据源）才抛 `ExcelReadException`。
 
+### 批量导入
+
+`consumeBatch` 攒够一批才回调一次，内存占用是「一批」而不是整个文件。批量导入的
+瓶颈几乎总在下游写库，逐行 insert 一万次和五百行一批 insert 二十次差一到两个数量级：
+
+```java
+excelTemplate.read(UserImportCmd.class)
+        .from(file)
+        .batchSize(500)              // 不传则用 alt.excel.read.batch-size
+        .maxRows(100_000)            // 不传则用 alt.excel.read.max-rows
+        .consumeBatch(userService::batchCreate);
+```
+
+末批不足 `batchSize` 也会回调（空文件不回调）；每批是独立快照，下游可以安全地
+异步持有。事务边界由调用方自己控制——把 `@Transactional` 标在接收批次的 service
+方法上，一批一个事务。
+
 ### 导出
 
 ```java
@@ -310,23 +327,62 @@ user.name=姓名
 前缀 `alt.excel`（旧版本是 `fast.excel`，且直接绑在 fesod 的 `GlobalConfiguration` 上，
 没有配置元数据）。
 
+全部配置项都有 `spring-boot-configuration-processor` 生成的元数据，IDE 里有补全和文档。
+
+### 全局
+
 | 配置项 | 默认值 | 说明 |
 | --- | --- | --- |
+| `alt.excel.enabled` | `true` | 组件总开关，关掉连 `ExcelTemplate` 都不装配 |
 | `alt.excel.auto-trim` | `true` | 单元格文本去首尾空白 |
+| `alt.excel.use1904windowing` | `false` | 按 1904 日期系统解释日期（Mac 版旧行为） |
+| `alt.excel.use-scientific-format` | `false` | 读数字时保留科学计数法原样 |
 | `alt.excel.locale` | JVM 默认 | 默认 Locale |
 | `alt.excel.field-cache-location` | `THREAD_LOCAL` | 字段元数据缓存位置 |
 | `alt.excel.binding` | `AUTO` | 实体绑定方式，见下方「Spring Native」|
+
+### 读取
+
+| 配置项 | 默认值 | 说明 |
+| --- | --- | --- |
 | `alt.excel.read.head-row-number` | `1` | 表头行数 |
 | `alt.excel.read.validate` | `true` | 逐行 Bean Validation |
 | `alt.excel.read.on-error` | `SKIP_ROW` | 坏行策略：`SKIP_ROW` 部分成功 / `FAIL_FAST` 马上中断 / `COLLECT_ALL` 收齐所有错误再整单驳回 |
-| `alt.excel.read.max-errors` | `1000` | 失败明细上限，到顶即停止解析 |
+| `alt.excel.read.max-errors` | `1000` | 失败明细上限，到顶即停止解析并标记截断 |
+| `alt.excel.read.batch-size` | `500` | **批量导入每批条数**，`consumeBatch` 攒够这么多才回调一次 |
+| `alt.excel.read.max-rows` | `-1` | 单次读取行数上限，`-1` 不限；防超大文件打爆内存和数据库 |
 | `alt.excel.read.i18n-head` | `false` | 按国际化文本匹配表头 |
+| `alt.excel.read.ignore-empty-row` | `true` | 忽略全空行 |
+
+### 写出
+
+| 配置项 | 默认值 | 说明 |
+| --- | --- | --- |
 | `alt.excel.write.auto-width` | `true` | 列宽自适应 |
 | `alt.excel.write.i18n-head` | `true` | 表头国际化替换 |
 | `alt.excel.write.in-memory` | `false` | 全内存生成，大数据量务必保持 `false` |
-| `alt.excel.write.batch-size` | `2000` | 从 `Flowable` 写出时的分批大小 |
+| `alt.excel.write.batch-size` | `2000` | 从游标写出时的分批大小 |
+| `alt.excel.write.max-rows-per-sheet` | `1000000` | 单 sheet 行数上限，超出自动开新 sheet；`-1` 不分 |
+| `alt.excel.write.file-name-timestamp-pattern` | `yyyyMMddHHmmss` | 下载文件名的时间戳格式 |
+
+### Web
+
+| 配置项 | 默认值 | 说明 |
+| --- | --- | --- |
 | `alt.excel.web.enabled` | `true` | `@ExcelImport` / `@ExcelExport` 的 Web 集成（两栈共用） |
 | `alt.excel.web.temp-dir` | 系统临时目录 | 流式上传落盘的目录 |
+
+### 三层覆盖
+
+每个行为都能在三个层次上表达，越靠内层优先级越高：
+
+```java
+// 1. 配置文件给全局默认：alt.excel.read.batch-size=500
+// 2. 注解按接口覆盖
+@ExcelImport(value = "file", onError = ExcelErrorPolicy.COLLECT_ALL)
+// 3. 链式方法按次覆盖
+excelTemplate.read(UserImportCmd.class).from(file).batchSize(1000).maxRows(50_000)
+```
 
 ## Spring Native / GraalVM
 

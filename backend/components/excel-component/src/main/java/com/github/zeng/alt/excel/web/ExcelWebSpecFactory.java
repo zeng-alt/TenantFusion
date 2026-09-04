@@ -3,6 +3,7 @@ package com.github.zeng.alt.excel.web;
 import com.github.zeng.alt.excel.ExcelTemplate;
 import com.github.zeng.alt.excel.annotation.ExcelExport;
 import com.github.zeng.alt.excel.annotation.ExcelImport;
+import com.github.zeng.alt.excel.config.ExcelProperties;
 import com.github.zeng.alt.excel.dynamic.DynamicCell;
 import com.github.zeng.alt.excel.dynamic.DynamicColumn;
 import com.github.zeng.alt.excel.read.ExcelReadSpec;
@@ -25,6 +26,16 @@ import org.springframework.util.StringUtils;
 public class ExcelWebSpecFactory {
 
     private final ExcelTemplate excelTemplate;
+    private final ExcelProperties properties;
+
+    /**
+     * 下载文件名里时间戳的格式，取自 {@code alt.excel.write.file-name-timestamp-pattern}。
+     *
+     * @return 格式串
+     */
+    public String fileNameTimestampPattern() {
+        return properties.getWrite().getFileNameTimestampPattern();
+    }
 
     /**
      * 按 {@code @ExcelImport} 建读取链（还未绑定数据源）。

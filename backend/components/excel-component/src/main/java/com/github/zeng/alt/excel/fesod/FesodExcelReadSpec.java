@@ -7,6 +7,7 @@ import com.github.zeng.alt.excel.exception.ExcelReadException;
 import com.github.zeng.alt.excel.exception.ExcelValidationException;
 import com.github.zeng.alt.excel.fesod.listener.AbstractExcelReadListener;
 import com.github.zeng.alt.excel.fesod.listener.CollectingRowSink;
+import com.github.zeng.alt.excel.fesod.listener.BatchRowSink;
 import com.github.zeng.alt.excel.fesod.listener.ConsumerRowSink;
 import com.github.zeng.alt.excel.fesod.listener.DynamicColumnReadListener;
 import com.github.zeng.alt.excel.fesod.listener.ExcelRowSink;
@@ -145,6 +146,18 @@ public class FesodExcelReadSpec<T> implements ExcelReadSpec<T> {
     }
 
     @Override
+    public ExcelReadSpec<T> batchSize(int batchSize) {
+        this.options = options.withBatchSize(batchSize);
+        return this;
+    }
+
+    @Override
+    public ExcelReadSpec<T> maxRows(int maxRows) {
+        this.options = options.withMaxRows(maxRows);
+        return this;
+    }
+
+    @Override
     public ExcelReadSpec<T> i18nHead(boolean i18nHead) {
         this.i18nHead = i18nHead;
         return this;
@@ -181,6 +194,13 @@ public class FesodExcelReadSpec<T> implements ExcelReadSpec<T> {
     public Try<Long> consumeWhile(Predicate<T> consumer) {
         requireSource();
         PredicateRowSink<T> sink = new PredicateRowSink<>(consumer);
+        return runAndCount(createListener(sink));
+    }
+
+    @Override
+    public Try<Long> consumeBatch(Consumer<List<T>> consumer) {
+        requireSource();
+        BatchRowSink<T> sink = new BatchRowSink<>(consumer, options.batchSize());
         return runAndCount(createListener(sink));
     }
 

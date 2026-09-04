@@ -39,11 +39,25 @@ public record ExcelDownloadHeaders(String contentType, String contentDisposition
      * @return 下载头
      */
     public static ExcelDownloadHeaders of(ExcelExport annotation, MethodParameter returnType) {
+        return of(annotation, returnType, ExcelFileNameHelper.DEFAULT_TIMESTAMP_PATTERN);
+    }
+
+    /**
+     * 按 {@code @ExcelExport} 与方法名算出下载头，时间戳用指定格式。
+     *
+     * @param annotation       导出注解
+     * @param returnType       返回值，用于取方法名兜底文件名
+     * @param timestampPattern 时间戳格式，取自 {@code alt.excel.write.file-name-timestamp-pattern}
+     * @return 下载头
+     */
+    public static ExcelDownloadHeaders of(
+            ExcelExport annotation, MethodParameter returnType, String timestampPattern) {
         String base = StringUtils.hasText(annotation.fileName()) ? annotation.fileName() : annotation.value();
         if (!StringUtils.hasText(base)) {
             base = returnType.getMethod() == null ? "export" : returnType.getMethod().getName();
         }
-        String fileName = ExcelFileNameHelper.build(ExcelMessageHelper.resolve(base), annotation.timestamp());
+        String fileName = ExcelFileNameHelper.build(
+                ExcelMessageHelper.resolve(base), annotation.timestamp(), timestampPattern);
         String encoded = ExcelFileNameHelper.percentEncode(fileName);
         return new ExcelDownloadHeaders(
                 XLSX_CONTENT_TYPE + ";charset=UTF-8",
