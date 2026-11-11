@@ -62,6 +62,18 @@ dependencies {
     // 多租户：接 row 模块即可，core 与 api 由它以 api(...) 传递进来。
     // 需要模式级/库级/表级隔离时，再各自加对应模块（schema/database/table + h2/pg 方言）。
     implementation(project(":backend:components:tenant-component:row-tenant-component"))
+    // 租户库直连：独立物理租户库（main_tenant 唯一真相源）+ 本地元数据端点（给 workflow 的 remote 读）
+    implementation(project(":backend:components:tenant-component:local-tenant-component"))
+    // 混合模式：逐租户读 main_tenant.isolation_mode 决定四档隔离（需要下面四个策略模块支撑）
+    implementation(project(":backend:components:tenant-component:hybrid-tenant-component"))
+    implementation(project(":backend:components:tenant-component:schema-tenant-component"))
+    implementation(project(":backend:components:tenant-component:database-tenant-component"))
+    implementation(project(":backend:components:tenant-component:table-tenant-component"))
+    // 租户方言：h2（dev）/ pg（prod），PG 优先（需要强制指定时自行注册 TenantDialect Bean 覆盖）
+    implementation(project(":backend:components:tenant-component:h2-tenant-component"))
+    implementation(project(":backend:components:tenant-component:pg-tenant-component"))
+    // 租户迁移：逐 SCHEMA / DATABASE 租户执行 changelog（schema 建表 + 库建表）
+    implementation(project(":backend:components:tenant-component:liquibase-tenant-component"))
     implementation(project(":backend:components:security-component:jwt-auth-security-component"))
     implementation(project(":backend:components:security-component:captcha-auth-security-component"))
     // RBAC 服务端（鉴权）

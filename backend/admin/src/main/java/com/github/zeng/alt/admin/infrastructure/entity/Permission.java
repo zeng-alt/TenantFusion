@@ -2,7 +2,7 @@ package com.github.zeng.alt.admin.infrastructure.entity;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.github.zeng.alt.api.exception.BaseException;
-import com.github.zeng.alt.domain.base.BaseEntity;
+import com.github.zeng.alt.tenant.row.TenantBaseEntity;
 import com.github.zeng.alt.domain.key.SnowflakeId;
 import com.github.zeng.alt.rest.annotation.QueryField;
 import com.github.zeng.alt.rest.annotation.QueryType;
@@ -28,7 +28,7 @@ import java.util.Set;
     where permission_id=?
 """)
 @SQLRestriction("is_deleted=false")
-public abstract class Permission extends BaseEntity<Long> {
+public abstract class Permission extends TenantBaseEntity<Long> {
 
     @Id
     @SnowflakeId

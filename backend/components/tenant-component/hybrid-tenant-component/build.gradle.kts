@@ -9,6 +9,7 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-autoconfigure")
     compileOnly(rootProject.libs.lombok)
     annotationProcessor(rootProject.libs.lombok)
+    annotationProcessor(rootProject.libs.spring.boot.configuration.processor)
 
     testImplementation("org.springframework.boot:spring-boot-starter-test")
     testImplementation(rootProject.libs.h2)

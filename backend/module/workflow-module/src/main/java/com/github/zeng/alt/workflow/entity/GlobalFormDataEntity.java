@@ -1,6 +1,6 @@
 package com.github.zeng.alt.workflow.entity;
 
-import com.github.zeng.alt.domain.base.BaseEntity;
+import com.github.zeng.alt.tenant.row.TenantBaseEntity;
 import com.github.zeng.alt.domain.key.SnowflakeId;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -28,7 +28,7 @@ import java.time.LocalDateTime;
 @Table(name = "wf_global_form_data")
 @Getter
 @Setter
-public class GlobalFormDataEntity extends BaseEntity<Long> {
+public class GlobalFormDataEntity extends TenantBaseEntity<Long> {
 
     @Serial
     private static final long serialVersionUID = 1L;

@@ -150,6 +150,9 @@ public class TenantLiquibaseRunner implements InitializingBean {
 
     private Map<String, String> parametersFor(TenantRouting routing) {
         Map<String, String> parameters = new LinkedHashMap<>();
+        if (properties.getParameters() != null) {
+            parameters.putAll(properties.getParameters());
+        }
         if (Boolean.TRUE.equals(properties.getPassTenantNameParameter())) {
             parameters.put("tenantName", routing.tenantId());
         }

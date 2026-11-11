@@ -61,6 +61,28 @@ camunda:
       queue-capacity: 3
 
 alt:
+  tenant:
+    # workflow 无租户库直连权限，经 remote 读 admin；启用 core 的租户上下文链路
+    #（JWT -> TenantContextHolder），当前无行级实体故为安全空转，
+    # wf_* 改 TenantBaseEntity 后即生效
+    enabled: true
+    mode: ROW
+    default-tenant-id: master
+    root-tenant-id: master
+    # 租户远程源：调用 admin 的 local 端点 GET /v1/tenants（保持鉴权，不开白名单）。
+    # 用户链路透传当前请求 JWT；无用户上下文时（定时任务/启动预热）用 service-token（M2M）。
+    remote:
+      enabled: true
+      base-url: http://127.0.0.1:8080
+      # 必须与 admin 的 alt.tenant.store.service-key 一致（dev 同值联调，生产走环境变量）。
+      service-token: ${TENANT_SERVICE_TOKEN:dev-tenant-sync-key}
+    # 远端源中断时跳过启动校验（admin 未启动也能跑完校验阶段）。
+    # 注意：这只是 validator 层面的逃生舱——Hibernate 首个路由连接（引擎初始化）
+    # 仍需解析元数据，冷启动时 admin 必须可达；运行期已解析租户走注册表永久缓存，
+    # admin 短暂中断不影响。生产编排里给 workflow 加上对 admin 的启动依赖。
+    # admin 侧保持默认严格（fail-on-unavailable=true），本地库中断必须 fail-fast。
+    hybrid:
+      fail-on-unavailable: false
   camunda:
     identity:
       admin:

@@ -1,7 +1,7 @@
 package com.github.zeng.alt.admin.infrastructure.entity;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.github.zeng.alt.domain.base.BaseEntity;
+import com.github.zeng.alt.tenant.row.TenantBaseEntity;
 import com.github.zeng.alt.domain.key.SnowflakeId;
 import jakarta.persistence.*;
 import lombok.Getter;
@@ -20,7 +20,7 @@ import org.jspecify.annotations.Nullable;
     where role_permission_id=?
 """)
 @SQLRestriction("is_deleted=false")
-public class RolePermission extends BaseEntity<Long> {
+public class RolePermission extends TenantBaseEntity<Long> {
 
     @Id @SnowflakeId
     private Long rolePermissionId;

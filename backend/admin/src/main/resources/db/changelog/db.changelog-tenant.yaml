@@ -1,0 +1,8 @@
+databaseChangeLog:
+
+  # 独立物理租户库的 changelog，由 admin 的 TenantStoreLiquibaseConfiguration 在
+  # tenantStoreDataSource 上执行（业务库不再建 main_tenant 表）。
+  # 目录由该 Bean 传入的 tenantChangelogDir 参数决定：dev -> tenant/h2，prod -> tenant/pg。
+  - includeAll:
+      path: ${tenantChangelogDir}/
+      relativeToChangelogFile: true

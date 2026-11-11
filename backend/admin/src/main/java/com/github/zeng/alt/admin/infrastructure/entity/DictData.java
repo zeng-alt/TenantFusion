@@ -2,16 +2,14 @@ package com.github.zeng.alt.admin.infrastructure.entity;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.github.zeng.alt.admin.infrastructure.listener.DictDataListener;
-import com.github.zeng.alt.domain.base.BaseEntity;
 import com.github.zeng.alt.domain.key.SnowflakeId;
 import com.github.zeng.alt.domain.validation.UniqueCheck;
+import com.github.zeng.alt.tenant.row.TenantBaseEntity;
 import com.github.zeng.alt.rest.annotation.QueryField;
 import com.github.zeng.alt.rest.annotation.QueryOrder;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
-import org.hibernate.annotations.TenantId;
-import org.springframework.lang.Nullable;
 
 /**
  * @author zengJiaJun
@@ -24,7 +22,7 @@ import org.springframework.lang.Nullable;
 @Table(name = "main_dict_data")
 @EntityListeners(DictDataListener.class)
 @UniqueCheck(field = "dictValue")
-public class DictData extends BaseEntity<Long> {
+public class DictData extends TenantBaseEntity<Long> {
 
     @Id @SnowflakeId
     private Long dictDataId;
@@ -70,10 +68,6 @@ public class DictData extends BaseEntity<Long> {
      */
     @Column(name = "is_enabled")
     private Boolean enabled = true;
-
-    @TenantId
-    @Nullable
-    private String tenantBy;
 
     /**
      * 字典类型编码

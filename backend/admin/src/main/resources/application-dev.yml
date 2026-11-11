@@ -75,6 +75,33 @@ alt:
     default-tenant-id: master
     # master 为超管租户，其请求绕过行级判别条件，可跨租户查看
     root-tenant-id: master
+    # 库级隔离的数据源：键即 main_tenant.datasource_key，真实凭据放这里并由环境变量注入。
+    # dev 用独立 H2 内存库演示；TenantDataSourceRegistry 按需懒建池（minimumIdle=0）。
+    datasources:
+      tdb:
+        url: jdbc:h2:mem:tenant_tdb_db;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+        username: sa
+        password:
+        driver-class-name: org.h2.Driver
+    # 租户迁移：逐 SCHEMA / DATABASE 租户执行 changelog（建 schema/建表+种子）。
+    # changeLog 复用业务主 changelog；contexts=tenant 只跑无 context 的 DDL 与
+    # context:tenant 的租户种子，跳过 dev 专属种子（V0019/V0021）。
+    liquibase:
+      enabled: true
+      contexts: tenant
+      parameters:
+        changelogDir: h2
+    # 独立物理租户库：main_tenant 唯一真相源（local 模块直连，业务库不再建该表）。
+    # 配了 url 即生效：建 tenantStoreDataSource + 本地元数据端点 GET /v1/tenants。
+    store:
+      url: jdbc:h2:mem:tenant_store_db;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+      username: sa
+      password:
+      driver-class-name: org.h2.Driver
+      table: main_tenant
+      # 服务间调用密钥：workflow 经 X-Tenant-Service-Key 调元数据端点，仅放行该端点。
+      # dev 固定值联调，生产必须换（见 prod 的 TENANT_STORE_SERVICE_KEY）。
+      service-key: ${TENANT_STORE_SERVICE_KEY:dev-tenant-sync-key}
 
 security:
   jwt-auth:

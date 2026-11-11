@@ -63,7 +63,7 @@ public class TenantLiquibaseAutoConfiguration {
             TenantLiquibaseProperties properties,
             TenantMetadataProvider metadataProvider,
             TenantRoutingRegistry registry,
-            DataSource dataSource,
+            @org.springframework.beans.factory.annotation.Qualifier("dataSource") DataSource dataSource,
             ObjectProvider<TenantDialect> dialect,
             ResourceLoader resourceLoader,
             TenantDataSourceLocator dataSourceLocator) {

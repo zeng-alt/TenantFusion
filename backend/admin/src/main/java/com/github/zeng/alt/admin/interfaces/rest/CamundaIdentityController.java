@@ -1,13 +1,13 @@
 package com.github.zeng.alt.admin.interfaces.rest;
 
 import com.github.zeng.alt.admin.infrastructure.entity.Role;
-import com.github.zeng.alt.admin.infrastructure.entity.Tenant;
 import com.github.zeng.alt.admin.infrastructure.entity.User;
 import com.github.zeng.alt.admin.infrastructure.entity.UserRole;
 import com.github.zeng.alt.admin.infrastructure.repository.RoleRepository;
-import com.github.zeng.alt.admin.infrastructure.repository.TenantRepository;
 import com.github.zeng.alt.admin.infrastructure.repository.UserRepository;
 import com.github.zeng.alt.admin.infrastructure.repository.UserRoleRepository;
+import com.github.zeng.alt.tenant.api.TenantMetadata;
+import com.github.zeng.alt.tenant.api.TenantMetadataProvider;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
@@ -36,7 +36,8 @@ public class CamundaIdentityController {
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
     private final UserRoleRepository userRoleRepository;
-    private final TenantRepository tenantRepository;
+    /** 租户元数据走独立租户库（local 模块），不再经业务库 JPA */
+    private final TenantMetadataProvider tenantMetadataProvider;
     private final PasswordEncoder passwordEncoder;
 
     @GetMapping("/users/{username}")
@@ -72,24 +73,24 @@ public class CamundaIdentityController {
     }
 
     @GetMapping("/tenants")
-    public List<CamundaIdentityTenant> listTenants(@RequestParam(required = false) String username) {
+    public List<CamundaIdentityTenant> listTenants(@RequestParam(value = "username", required = false) String username) {
         if (username != null && !username.isBlank()) {
             return userRepository.findByUsername(username)
                     .filter(u -> Boolean.TRUE.equals(u.getEnabled()) && !Boolean.TRUE.equals(u.getDeleted()))
-                    .map(u -> tenantRepository.findActiveById(u.getTenantBy())
+                    .map(u -> tenantMetadataProvider.findById(u.getTenantBy())
                             .map(List::of)
                             .orElseGet(List::of))
                     .map(tenants -> tenants.stream().map(this::toTenant).toList())
                     .orElseGet(List::of);
         }
-        return tenantRepository.findAllActive().stream()
+        return tenantMetadataProvider.findAll().stream()
                 .map(this::toTenant)
                 .toList();
     }
 
     @GetMapping("/tenants/{tenantId}")
-    public CamundaIdentityTenant getTenant(@PathVariable String tenantId) {
-        return tenantRepository.findActiveById(tenantId)
+    public CamundaIdentityTenant getTenant(@PathVariable("tenantId") String tenantId) {
+        return tenantMetadataProvider.findById(tenantId)
                 .map(this::toTenant)
                 .orElse(null);
     }
@@ -108,8 +109,8 @@ public class CamundaIdentityController {
         return new CamundaIdentityGroup(role.getCode(), role.getName(), null);
     }
 
-    private CamundaIdentityTenant toTenant(Tenant tenant) {
-        return new CamundaIdentityTenant(tenant.getTenantId(), tenant.getTenantName());
+    private CamundaIdentityTenant toTenant(TenantMetadata tenant) {
+        return new CamundaIdentityTenant(tenant.tenantId(), tenant.tenantName());
     }
 
     private String firstName(String nickName) {

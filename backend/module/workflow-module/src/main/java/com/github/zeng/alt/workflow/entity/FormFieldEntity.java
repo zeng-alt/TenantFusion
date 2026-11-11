@@ -1,6 +1,6 @@
 package com.github.zeng.alt.workflow.entity;
 
-import com.github.zeng.alt.domain.base.BaseEntity;
+import com.github.zeng.alt.tenant.row.TenantBaseEntity;
 import com.github.zeng.alt.domain.key.SnowflakeId;
 import com.github.zeng.alt.workflow.model.FieldType;
 import jakarta.persistence.Column;
@@ -28,7 +28,7 @@ import java.io.Serial;
 @Table(name = "wf_form_field")
 @Getter
 @Setter
-public class FormFieldEntity extends BaseEntity<Long> {
+public class FormFieldEntity extends TenantBaseEntity<Long> {
 
     @Serial
     private static final long serialVersionUID = 1L;

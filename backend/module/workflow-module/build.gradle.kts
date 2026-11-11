@@ -19,6 +19,8 @@ dependencies {
     api("org.springframework.boot:spring-boot-starter-actuator")
 
     api(project(":backend:components:security-component:core-security-component"))
+    // 多租户行级：wf_* 业务表继承 TenantBaseEntity（@TenantId tenant_by），hybrid 下按租户路由
+    api(project(":backend:components:tenant-component:row-tenant-component"))
 
     // 纯 BPMN 模型解析（无引擎依赖，用于表单定义解析，本地/远程通用）
     api("org.camunda.bpm.model:camunda-bpmn-model:7.24.0")

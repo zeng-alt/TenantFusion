@@ -95,3 +95,13 @@ alt:
     mode: ROW
     default-tenant-id: master
     root-tenant-id: master
+    # 独立物理租户库：与业务库不同的库、不同的账号，口令一律环境变量注入。
+    # 未设置 TENANT_STORE_URL 时 local 模块静默跳过（回退到单库行为）。
+    store:
+      url: ${TENANT_STORE_URL:}
+      username: ${TENANT_STORE_USERNAME:}
+      password: ${TENANT_STORE_PASSWORD:}
+      driver-class-name: org.postgresql.Driver
+      table: main_tenant
+      # 服务间调用密钥：无默认值，缺失时 M2M 通道关闭（workflow 启动校验会明确报错）。
+      service-key: ${TENANT_STORE_SERVICE_KEY:}

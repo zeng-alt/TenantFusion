@@ -3,6 +3,9 @@ package com.github.zeng.alt.tenant.liquibase;
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
+import java.util.LinkedHashMap;
+import java.util.Map;
+
 /**
  * 多租户迁移配置。
  *
@@ -44,4 +47,12 @@ public class TenantLiquibaseProperties {
      * 逐租户迁移时应当替换成各自的租户标识。
      */
     private Boolean passTenantNameParameter = true;
+
+    /**
+     * 透传给 changelog 的额外参数，例如业务主 changelog 需要的
+     * {@code changelogDir}（h2/pg 方言目录选择）。
+     * 与租户相关的 {@code tenantName/tenantSchema/tenantSuffix} 由执行器按路由填写，
+     * 同名时以执行器的为准。
+     */
+    private Map<String, String> parameters = new LinkedHashMap<>();
 }

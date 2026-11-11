@@ -37,24 +37,27 @@ public class HybridTenantValidator {
     private final ObjectProvider<TenantConnectionStrategy> strategies;
     private final ObjectProvider<TenantConnectionCustomizer> customizers;
     private final ObjectProvider<TenantSqlRewriter> rewriters;
+    private final HybridTenantProperties properties;
 
     public HybridTenantValidator(
             TenantRoutingRegistry registry,
             ObjectProvider<TenantMetadataProvider> metadataProvider,
             ObjectProvider<TenantConnectionStrategy> strategies,
             ObjectProvider<TenantConnectionCustomizer> customizers,
-            ObjectProvider<TenantSqlRewriter> rewriters) {
+            ObjectProvider<TenantSqlRewriter> rewriters,
+            HybridTenantProperties properties) {
         this.registry = registry;
         this.metadataProvider = metadataProvider;
         this.strategies = strategies;
         this.customizers = customizers;
         this.rewriters = rewriters;
+        this.properties = properties;
     }
 
     /**
      * 校验每个启用中的租户，其声明的隔离档位都有对应模块支撑。
      *
-     * @throws IllegalStateException 存在无法支撑的租户配置
+     * @throws IllegalStateException 存在无法支撑的租户配置，或元数据不可用且未放行
      */
     @EventListener(ApplicationReadyEvent.class)
     public void validate() {
@@ -63,7 +66,19 @@ public class HybridTenantValidator {
             log.warn("混合模式已启用但没有租户元数据来源，所有租户都会回落到全局档位");
             return;
         }
-        List<TenantMetadata> tenants = provider.findAll();
+        List<TenantMetadata> tenants;
+        try {
+            tenants = provider.findAll();
+        } catch (RuntimeException e) {
+            if (properties.isFailOnUnavailable()) {
+                throw new IllegalStateException(
+                        "多租户混合模式校验失败：租户元数据不可用，"
+                                + "远端源请检查 admin 是否启动、service-token 是否配置", e);
+            }
+            log.error("租户元数据不可用，跳过混合模式校验（alt.tenant.hybrid.fail-on-unavailable=false）："
+                    + "配置错误将延迟到首个路由请求时暴露", e);
+            return;
+        }
         List<String> problems = new ArrayList<>();
         boolean hasSchemaSupport = customizers.stream().findAny().isPresent();
         boolean hasTableSupport = rewriters.stream().findAny().isPresent();

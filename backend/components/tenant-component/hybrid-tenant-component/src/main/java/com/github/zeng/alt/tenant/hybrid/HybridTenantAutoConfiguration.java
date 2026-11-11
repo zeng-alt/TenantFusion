@@ -12,6 +12,7 @@ import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Primary;
 import org.springframework.context.annotation.Role;
@@ -29,6 +30,7 @@ import org.springframework.context.annotation.Role;
  */
 @AutoConfiguration(before = TenantAutoConfiguration.class)
 @Role(BeanDefinition.ROLE_INFRASTRUCTURE)
+@EnableConfigurationProperties(HybridTenantProperties.class)
 @ConditionalOnProperty(prefix = "alt.tenant", name = "enabled", havingValue = "true")
 public class HybridTenantAutoConfiguration {
 
@@ -48,8 +50,9 @@ public class HybridTenantAutoConfiguration {
             ObjectProvider<TenantMetadataProvider> metadataProvider,
             ObjectProvider<TenantConnectionStrategy> strategies,
             ObjectProvider<TenantConnectionCustomizer> customizers,
-            ObjectProvider<TenantSqlRewriter> rewriters) {
+            ObjectProvider<TenantSqlRewriter> rewriters,
+            HybridTenantProperties properties) {
         return new HybridTenantValidator(
-                registry, metadataProvider, strategies, customizers, rewriters);
+                registry, metadataProvider, strategies, customizers, rewriters, properties);
     }
 }

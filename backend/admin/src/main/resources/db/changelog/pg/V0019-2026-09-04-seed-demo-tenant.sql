@@ -1,12 +1,8 @@
 --liquibase formatted sql
 
 --changeset zeng:seed-demo-tenant context:dev
--- 仅 dev 用的第二租户，用于验证行级隔离确实生效。
+-- 仅 dev 用的第二租户业务种子（t001 本体已搬到租户库 changelog）。
 -- t001 走行级隔离（与 master 共享同一张表），master 为超管租户、绕过判别条件。
-INSERT INTO main_tenant
-(tenant_id, tenant_name, is_enabled, is_deleted, isolation_mode, is_row_isolated, created_by, created_date)
-VALUES ('t001', '演示租户一', TRUE, FALSE, 'ROW', TRUE, 'superAdmin', CURRENT_TIMESTAMP);
-
 -- t001 自己的用户；用户名在租户内唯一，故可与 master 的用户重名，这里另起名字便于区分
 INSERT INTO main_user
 (user_id, username, password, nick_name, email, phone_number, gender, is_enabled, is_deleted, tenant_by)

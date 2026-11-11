@@ -50,7 +50,11 @@ import java.util.List;
 public class TenantAutoConfiguration {
 
     /**
-     * 元数据来源。{@code alt.tenant.metadata.enabled=false} 时不注册，此时路由完全由配置决定。
+     * 元数据来源（单库回退）。{@code alt.tenant.metadata.enabled=false} 时不注册，此时路由完全由配置决定。
+     * <p>
+     * local/remote 租户源模块声明 {@code before = TenantAutoConfiguration} 并提供同类型 Bean，
+     * 引入它们后本回退自动退让：local 读物理独立租户库，remote 经 HTTP 读 admin。
+     * 本回退仅用于单库老部署，直读主业务数据源。
      */
     @Bean
     @ConditionalOnBean(DataSource.class)
@@ -96,11 +100,11 @@ public class TenantAutoConfiguration {
         return new ContextTenantIdentifierResolver(properties, discriminatorPolicy);
     }
 
-    /** 兜底连接来源：主数据源 */
+    /** 兜底连接来源：主业务数据源（Boot 默认 Bean 名 {@code dataSource}，区别于租户库的 tenantStoreDataSource） */
     @Bean
     @ConditionalOnBean(DataSource.class)
     public PrimaryDataSourceConnectionStrategy primaryDataSourceConnectionStrategy(
-            DataSource dataSource) {
+            @org.springframework.beans.factory.annotation.Qualifier("dataSource") DataSource dataSource) {
         return new PrimaryDataSourceConnectionStrategy(dataSource);
     }
 
@@ -120,6 +124,7 @@ public class TenantAutoConfiguration {
             ObjectProvider<TenantConnectionStrategy> strategies,
             ObjectProvider<TenantConnectionCustomizer> customizers,
             ObjectProvider<TenantSqlRewriter> rewriters,
+            @org.springframework.beans.factory.annotation.Qualifier("dataSource")
             ObjectProvider<DataSource> dataSource) {
         return hibernateProperties -> {
             hibernateProperties.put(

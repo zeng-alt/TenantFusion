@@ -1,6 +1,6 @@
 package com.github.zeng.alt.workflow.entity;
 
-import com.github.zeng.alt.domain.base.BaseEntity;
+import com.github.zeng.alt.tenant.row.TenantBaseEntity;
 import com.github.zeng.alt.domain.key.SnowflakeId;
 import com.github.zeng.alt.workflow.model.WorkflowVersionStatus;
 import jakarta.persistence.Column;
@@ -33,7 +33,7 @@ import java.time.LocalDateTime;
 @Table(name = "wf_workflow_version")
 @Getter
 @Setter
-public class WorkflowVersionEntity extends BaseEntity<Long> {
+public class WorkflowVersionEntity extends TenantBaseEntity<Long> {
 
     @Serial
     private static final long serialVersionUID = 1L;

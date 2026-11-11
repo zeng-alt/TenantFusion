@@ -102,12 +102,49 @@ class HybridTenantValidatorTest {
                 TenantMetadataProviderStub.of(DB_TENANT, SCHEMA_TENANT, TABLE_TENANT),
                 ListObjectProvider.of(fallbackStrategy()),
                 ListObjectProvider.of(),
-                ListObjectProvider.of());
+                ListObjectProvider.of(),
+                new HybridTenantProperties());
 
         assertThatThrownBy(validator::validate)
                 .isInstanceOf(IllegalStateException.class)
                 .satisfies(e -> assertThat(e.getMessage())
                         .contains("big").contains("mid").contains("tbl"));
+    }
+
+    @Test
+    @DisplayName("元数据不可达且未放行：启动即失败")
+    void failsWhenProviderUnavailableByDefault() {
+        HybridTenantRoutingRegistry registry = new HybridTenantRoutingRegistry(
+                new TenantProperties(), ListObjectProvider.of());
+        HybridTenantValidator validator = new HybridTenantValidator(
+                registry,
+                ListObjectProvider.of(failingProvider()),
+                ListObjectProvider.of(fallbackStrategy()),
+                ListObjectProvider.of(),
+                ListObjectProvider.of(),
+                new HybridTenantProperties());
+
+        assertThatThrownBy(validator::validate)
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("元数据不可用");
+    }
+
+    @Test
+    @DisplayName("元数据不可达但 fail-on-unavailable=false：跳过并记错")
+    void skipsWhenProviderUnavailableAllowed() {
+        HybridTenantRoutingRegistry registry = new HybridTenantRoutingRegistry(
+                new TenantProperties(), ListObjectProvider.of());
+        HybridTenantProperties properties = new HybridTenantProperties();
+        properties.setFailOnUnavailable(false);
+        HybridTenantValidator validator = new HybridTenantValidator(
+                registry,
+                ListObjectProvider.of(failingProvider()),
+                ListObjectProvider.of(fallbackStrategy()),
+                ListObjectProvider.of(),
+                ListObjectProvider.of(),
+                properties);
+
+        assertThatCode(validator::validate).doesNotThrowAnyException();
     }
 
     private HybridTenantValidator validator(
@@ -119,7 +156,22 @@ class HybridTenantValidatorTest {
                 new TenantProperties(), TenantMetadataProviderStub.of(tenant));
         return new HybridTenantValidator(
                 registry, TenantMetadataProviderStub.of(tenant),
-                strategies, customizers, rewriters);
+                strategies, customizers, rewriters, new HybridTenantProperties());
+    }
+
+    /** 模拟远端源中断：每次查询都抛错 */
+    private com.github.zeng.alt.tenant.api.TenantMetadataProvider failingProvider() {
+        return new com.github.zeng.alt.tenant.api.TenantMetadataProvider() {
+            @Override
+            public java.util.Optional<TenantMetadata> findById(String tenantId) {
+                throw new IllegalStateException("connection refused");
+            }
+
+            @Override
+            public java.util.List<TenantMetadata> findAll() {
+                throw new IllegalStateException("connection refused");
+            }
+        };
     }
 
     /** core 的兜底策略：对一切路由都返回 true，校验器必须把它识别出来并排除 */
