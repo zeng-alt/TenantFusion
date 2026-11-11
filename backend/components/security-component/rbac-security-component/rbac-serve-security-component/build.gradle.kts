@@ -15,4 +15,7 @@ dependencies {
     api(project(":backend:components:message-component:api-message-component"))
 
     annotationProcessor("org.springframework.boot:spring-boot-configuration-processor")
+
+    testImplementation("org.springframework.boot:spring-boot-starter-test")
+    testImplementation("io.projectreactor:reactor-test")
 }

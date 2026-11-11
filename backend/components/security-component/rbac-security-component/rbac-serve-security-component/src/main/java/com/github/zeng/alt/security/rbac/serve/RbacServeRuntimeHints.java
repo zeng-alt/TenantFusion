@@ -1,8 +1,10 @@
 package com.github.zeng.alt.security.rbac.serve;
 
 import com.github.zeng.alt.security.rbac.serve.config.RbacAutoConfiguration;
+import com.github.zeng.alt.security.rbac.serve.config.RbacProperties;
 import com.github.zeng.alt.security.rbac.serve.config.RbacReactiveAutoConfiguration;
 import com.github.zeng.alt.security.rbac.serve.config.RbacWebAutoConfiguration;
+import com.github.zeng.alt.security.rbac.serve.config.UnmatchedUrlPolicy;
 import com.github.zeng.alt.security.rbac.serve.handler.AbstractReactiveResourceHandler;
 import com.github.zeng.alt.security.rbac.serve.handler.AbstractResourceHandler;
 import com.github.zeng.alt.security.rbac.serve.handler.HttpResourceHandler;
@@ -35,6 +37,8 @@ public class RbacServeRuntimeHints implements RuntimeHintsRegistrar {
                 RbacAutoConfiguration.class,
                 RbacWebAutoConfiguration.class,
                 RbacReactiveAutoConfiguration.class,
+                RbacProperties.class,
+                UnmatchedUrlPolicy.class,
                 RouteTemplateManager.class,
                 RouteTemplateTrie.class,
                 RouteTemplateEvent.class,

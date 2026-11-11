@@ -1,6 +1,7 @@
 package com.github.zeng.alt.security.core.reactive.config;
 
 
+import com.github.zeng.alt.security.api.ReactiveAuthorizationConstraint;
 import com.github.zeng.alt.security.api.ReactiveAuthorizationManagerProvider;
 import com.github.zeng.alt.security.api.WhiteListService;
 import com.github.zeng.alt.security.core.properties.SecurityProperties;
@@ -42,6 +43,7 @@ import java.util.List;
 public class ReactiveSecurityAutoConfiguration {
 
 	private final SecurityProperties securityProperties;
+	private final ObjectProvider<ReactiveAuthorizationConstraint<AuthorizationContext>> authorizationConstraints;
 
 	@Bean
 	public SecurityWebFilterChain springSecurityFilterChain(
@@ -64,7 +66,9 @@ public class ReactiveSecurityAutoConfiguration {
 			authorizeExchangeSpec
 					.pathMatchers(HttpMethod.POST, "/login/**").permitAll();
 			if (Boolean.TRUE.equals(securityProperties.getEnabledAccess())) {
-				authorizeExchangeSpec.anyExchange().access(compositeReactiveAuthorizationManager(reactiveAuthorizationManagerProviders, whiteListService));
+				authorizeExchangeSpec.anyExchange().access(compositeReactiveAuthorizationManager(
+						reactiveAuthorizationManagerProviders, whiteListService, authorizationConstraints
+				));
 			} else {
 				authorizeExchangeSpec.anyExchange().permitAll();
 			}
@@ -73,15 +77,20 @@ public class ReactiveSecurityAutoConfiguration {
 		return http.build();
 	}
 
-	private CompositeReactiveAuthorizationManager compositeReactiveAuthorizationManager(ObjectProvider<ReactiveAuthorizationManagerProvider<AuthorizationContext>> reactiveAuthorizationManagerProviders, WhiteListService whiteListService) {
+	private CompositeReactiveAuthorizationManager compositeReactiveAuthorizationManager(
+			ObjectProvider<ReactiveAuthorizationManagerProvider<AuthorizationContext>> reactiveAuthorizationManagerProviders,
+			WhiteListService whiteListService,
+			ObjectProvider<ReactiveAuthorizationConstraint<AuthorizationContext>> authorizationConstraints
+	) {
 		List<ReactiveAuthorizationManager<AuthorizationContext>> list = new ArrayList<>();
 		list.add(ReactiveWhiteListAuthorizationManager.authenticated(whiteListService));
-		List<ReactiveAuthorizationManager<AuthorizationContext>> managers = reactiveAuthorizationManagerProviders.orderedStream().map(ReactiveAuthorizationManagerProvider::get).toList();
+		List<ReactiveAuthorizationManager<AuthorizationContext>> managers = reactiveAuthorizationManagerProviders.orderedStream()
+				.map(ReactiveAuthorizationManagerProvider::get).toList();
 		list.addAll(managers);
 		if (CollectionUtils.isEmpty(managers)) {
 			list.add(AuthenticatedReactiveAuthorizationManager.authenticated());
 		}
-		return new CompositeReactiveAuthorizationManager(list);
+		return new CompositeReactiveAuthorizationManager(list, authorizationConstraints.orderedStream().toList());
 	}
 
 

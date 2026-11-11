@@ -46,6 +46,11 @@ subprojects {
                 languageVersion.set(JavaLanguageVersion.of(21))
             }
         }
+        // 保留方法参数名：Spring 6.2 的 DefaultParameterNameDiscoverer 已移除 LVT 回退，
+        // ABAC 方法拦截器按参数名（#id 等）注入上下文必须依赖 -parameters 编译标志。
+        tasks.withType<JavaCompile>().configureEach {
+            options.compilerArgs.add("-parameters")
+        }
         dependencies {
             "testRuntimeOnly"("org.junit.platform:junit-platform-launcher")
         }

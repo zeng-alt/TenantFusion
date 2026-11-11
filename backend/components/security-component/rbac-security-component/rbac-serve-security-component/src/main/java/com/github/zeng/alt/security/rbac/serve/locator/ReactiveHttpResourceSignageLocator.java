@@ -24,6 +24,6 @@ public class ReactiveHttpResourceSignageLocator implements ReactiveResourceSigna
         if (authentication instanceof TenantDetail tenantDetail) {
             tenant = tenantDetail.getTenantName();
         }
-        return Mono.just(resourceService.findPermission(tenant, resource));
+        return Mono.justOrEmpty(resourceService.findPermission(tenant, resource));
     }
 }

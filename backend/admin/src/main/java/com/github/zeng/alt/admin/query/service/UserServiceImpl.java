@@ -1,6 +1,7 @@
 package com.github.zeng.alt.admin.query.service;
 
 import com.github.zeng.alt.admin.infrastructure.entity.Department;
+import com.github.zeng.alt.admin.infrastructure.security.UserResourceResolver;
 import com.github.zeng.alt.admin.infrastructure.entity.Role;
 import com.github.zeng.alt.admin.infrastructure.entity.User;
 import com.github.zeng.alt.admin.infrastructure.entity.UserRole;
@@ -13,6 +14,7 @@ import com.github.zeng.alt.admin.query.api.dto.*;
 import com.github.zeng.alt.admin.query.service.transformation.UserDtoTransformation;
 import com.github.zeng.alt.api.exception.BaseException;
 import com.github.zeng.alt.bean.BeanHelper;
+import com.github.zeng.alt.security.abac.AbacAuthorize;
 import com.github.zeng.alt.security.api.AuthHelper;
 import com.github.zeng.alt.security.api.SecurityUser;
 import com.github.zeng.alt.security.api.UserContextHolder;
@@ -98,6 +100,10 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
+    @AbacAuthorize(
+            permission = "user:update",
+            resources = {UserResourceResolver.class}
+    )
     @Transactional(rollbackFor = Exception.class)
     public Either<String, Long> patchUser(Long id, PatchUserDto dto) {
         if (authHelper.isSuperAdmin(id)) {

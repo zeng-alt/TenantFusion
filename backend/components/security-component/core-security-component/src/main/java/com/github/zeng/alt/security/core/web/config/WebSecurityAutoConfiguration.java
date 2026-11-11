@@ -2,6 +2,7 @@ package com.github.zeng.alt.security.core.web.config;
 
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.zeng.alt.security.api.AuthorizationConstraint;
 import com.github.zeng.alt.security.api.AuthorizationManagerProvider;
 import com.github.zeng.alt.security.api.WhiteListService;
 import com.github.zeng.alt.security.core.properties.SecurityProperties;
@@ -61,6 +62,7 @@ public class WebSecurityAutoConfiguration {
 
 
 	private final SecurityProperties securityProperties;
+	private final ObjectProvider<AuthorizationConstraint<RequestAuthorizationContext>> authorizationConstraints;
 
 	@Bean
 	@ConditionalOnMissingBean(SecurityFilterChain.class)
@@ -100,7 +102,9 @@ public class WebSecurityAutoConfiguration {
 							.requestMatchers("/tenant/graphql/**").permitAll()
 							.requestMatchers(HttpMethod.POST, "/actuator/startup").permitAll();
 					if (Boolean.TRUE.equals(securityProperties.getEnabledAccess())) {
-						author.anyRequest().access(compositeAuthorizationManager(authorizationManagerProviders, whiteListService));
+						author.anyRequest().access(compositeAuthorizationManager(
+								authorizationManagerProviders, whiteListService, authorizationConstraints
+						));
 					} else {
 						author.anyRequest().permitAll();
 					}
@@ -139,15 +143,20 @@ public class WebSecurityAutoConfiguration {
 	}
 
 
-	private CompositeAuthorizationManager compositeAuthorizationManager(ObjectProvider<AuthorizationManagerProvider<RequestAuthorizationContext>> authorizationManagerProviders, WhiteListService whiteListService) {
+	private CompositeAuthorizationManager compositeAuthorizationManager(
+			ObjectProvider<AuthorizationManagerProvider<RequestAuthorizationContext>> authorizationManagerProviders,
+			WhiteListService whiteListService,
+			ObjectProvider<AuthorizationConstraint<RequestAuthorizationContext>> authorizationConstraints
+	) {
 		List<AuthorizationManager<RequestAuthorizationContext>> list = new ArrayList<>();
 		list.add(WhiteListAuthorizationManager.authenticated(whiteListService));
-		List<AuthorizationManager<RequestAuthorizationContext>> managers = authorizationManagerProviders.orderedStream().map(AuthorizationManagerProvider::get).toList();
+		List<AuthorizationManager<RequestAuthorizationContext>> managers = authorizationManagerProviders.orderedStream()
+				.map(AuthorizationManagerProvider::get).toList();
 		list.addAll(managers);
 		if (CollectionUtils.isEmpty(managers)) {
 			list.add(AuthenticatedAuthorizationManager.authenticated());
 		}
-		return new CompositeAuthorizationManager(list);
+		return new CompositeAuthorizationManager(list, authorizationConstraints.orderedStream().toList());
 	}
 
 

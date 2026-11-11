@@ -5,6 +5,7 @@ plugins {
 description = "security api"
 
 dependencies {
+    api("io.projectreactor:reactor-core")
     implementation("org.springframework:spring-web")
     implementation("org.springframework.security:spring-security-core")
     implementation("org.springframework.security:spring-security-web")

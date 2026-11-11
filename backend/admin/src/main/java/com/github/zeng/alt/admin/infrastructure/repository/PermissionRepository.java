@@ -2,6 +2,7 @@ package com.github.zeng.alt.admin.infrastructure.repository;
 
 import com.github.zeng.alt.admin.infrastructure.entity.Permission;
 import com.github.zeng.alt.domain.base.BaseRepository;
+import io.vavr.control.Option;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -36,4 +37,14 @@ public interface PermissionRepository extends BaseRepository<Permission, Long> {
         where r.code = :roleCode
     """)
     List<Permission> findPermissionsByRoleCode(@Param("roleCode") String roleCode);
+
+    /**
+     * 按租户与标识查找权限；(code, tenant_by) 唯一，软删除的权限不返回。
+     */
+    @Query("""
+        select p from Permission p
+        where p.tenantBy = :tenant
+          and p.code = :code
+        """)
+    Option<Permission> findByTenantAndCode(@Param("tenant") String tenant, @Param("code") String code);
 }

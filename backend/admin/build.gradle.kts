@@ -78,6 +78,9 @@ dependencies {
     implementation(project(":backend:components:security-component:captcha-auth-security-component"))
     // RBAC 服务端（鉴权）
     implementation(project(":backend:components:security-component:rbac-security-component:rbac-serve-security-component"))
+    implementation(project(":backend:components:security-component:abac-security-component:core-abac-security-component"))
+    implementation(project(":backend:components:security-component:abac-security-component:method-abac-security-component"))
+    runtimeOnly(project(":backend:components:security-component:abac-security-component:spel-abac-security-component"))
     // RBAC 客户端（路由收集，可选）
     implementation(project(":backend:components:security-component:rbac-security-component:rbac-client-security-component"))
     implementation(project(":backend:components:doc-component"))
@@ -98,6 +101,7 @@ dependencies {
     testImplementation(libs.spring.boot.starter.test)
     testImplementation(libs.spring.modulith.starter.test)
     testImplementation(libs.spring.security.test)
+    testImplementation(project(":backend:components:security-component:abac-security-component:spel-abac-security-component"))
 
     annotationProcessor(libs.lombok)
     annotationProcessor(libs.spring.boot.configuration.processor)

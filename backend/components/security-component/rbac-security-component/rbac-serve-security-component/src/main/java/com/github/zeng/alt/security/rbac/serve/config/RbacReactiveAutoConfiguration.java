@@ -17,6 +17,7 @@ import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBooleanProperty;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.core.annotation.Order;
 import org.springframework.security.web.server.authorization.AuthorizationContext;
@@ -33,6 +34,7 @@ import java.util.List;
 @AutoConfiguration
 @ConditionalOnBooleanProperty("security.context.enabled-access")
 @ConditionalOnWebApplication(type = ConditionalOnWebApplication.Type.REACTIVE)
+@EnableConfigurationProperties(RbacProperties.class)
 @Slf4j
 public class RbacReactiveAutoConfiguration {
 
@@ -43,14 +45,14 @@ public class RbacReactiveAutoConfiguration {
     }
 
     @Bean
-    public ReactiveParseManager reactiveParseManager(
+    public ReactiveParseManager reactiveParseManager(RbacProperties rbacProperties,
             ObjectProvider<ReactiveResourceHandler> reactiveResourceHandlers,
             RouteTemplateManager routeTemplateManager,
             ReactivePermissionLocator permissionLocator,
             RbacResourceService rbacResourceService) {
         List<ReactiveResourceHandler> list = new ArrayList<>(reactiveResourceHandlers.orderedStream().toList());
         log.debug("Creating ReactiveParseManager with {} custom handlers + ReactiveHttpResourceHandler fallback", list.size());
-        return new ReactiveParseManager(list, new ReactiveHttpResourceHandler(routeTemplateManager, permissionLocator, new ReactiveHttpResourceSignageLocator(rbacResourceService)));
+        return new ReactiveParseManager(list, new ReactiveHttpResourceHandler(routeTemplateManager, permissionLocator, new ReactiveHttpResourceSignageLocator(rbacResourceService), rbacProperties.getUnmatchedUrlPolicy()));
     }
 
     @Bean

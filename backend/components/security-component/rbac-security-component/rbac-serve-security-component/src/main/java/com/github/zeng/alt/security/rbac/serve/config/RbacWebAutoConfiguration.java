@@ -16,6 +16,7 @@ import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBooleanProperty;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.core.annotation.Order;
 import org.springframework.security.web.access.intercept.RequestAuthorizationContext;
@@ -32,6 +33,7 @@ import java.util.List;
 @AutoConfiguration
 @ConditionalOnBooleanProperty("security.context.enabled-access")
 @ConditionalOnWebApplication(type = ConditionalOnWebApplication.Type.SERVLET)
+@EnableConfigurationProperties(RbacProperties.class)
 @Slf4j
 public class RbacWebAutoConfiguration {
 
@@ -43,12 +45,12 @@ public class RbacWebAutoConfiguration {
 
 
 	@Bean
-	public ParseManager parseManager(ObjectProvider<ResourceHandler> resourceHandlers, RouteTemplateManager routeTemplateManager, PermissionLocator permissionLocator, RbacResourceService rbacResourceService) {
+	public ParseManager parseManager(ObjectProvider<ResourceHandler> resourceHandlers, RouteTemplateManager routeTemplateManager, PermissionLocator permissionLocator, RbacResourceService rbacResourceService, RbacProperties rbacProperties) {
 		List<ResourceHandler> list = new ArrayList<>(resourceHandlers.orderedStream().toList());
 		log.debug("Creating ParseManager with {} custom handlers + HttpResourceHandler fallback", list.size());
 		return new ParseManager(
 				list,
-				new HttpResourceHandler(routeTemplateManager, permissionLocator, new HttpResourceSignageLocator(rbacResourceService))
+				new HttpResourceHandler(routeTemplateManager, permissionLocator, new HttpResourceSignageLocator(rbacResourceService), rbacProperties.getUnmatchedUrlPolicy())
 		);
 	}
 
