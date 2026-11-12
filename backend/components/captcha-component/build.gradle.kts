@@ -12,4 +12,5 @@ dependencies {
     annotationProcessor(rootProject.libs.spring.boot.configuration.processor)
 
     testImplementation("org.springframework.boot:spring-boot-starter-test")
+    testImplementation("jakarta.servlet:jakarta.servlet-api")
 }

@@ -14,11 +14,6 @@ import org.springframework.aot.hint.MemberCategory;
 import org.springframework.aot.hint.RuntimeHints;
 import org.springframework.aot.hint.RuntimeHintsRegistrar;
 
-import javax.imageio.ImageIO;
-import java.awt.*;
-import java.awt.geom.AffineTransform;
-import java.awt.image.BufferedImage;
-
 public class CaptchaRuntimeHints implements RuntimeHintsRegistrar {
 
     @Override
@@ -40,19 +35,6 @@ public class CaptchaRuntimeHints implements RuntimeHintsRegistrar {
                 CaptchaInfo.class,
                 CaptchaChallenge.class);
 
-        registerType(hints,
-                BufferedImage.class,
-                Graphics2D.class,
-                Color.class,
-                Font.class,
-                BasicStroke.class,
-                RenderingHints.class,
-                RenderingHints.Key.class,
-                Image.class,
-                AffineTransform.class);
-
-        hints.reflection().registerType(ImageIO.class,
-                MemberCategory.INVOKE_DECLARED_METHODS);
     }
 
     private static void registerType(RuntimeHints hints, Class<?>... classes) {

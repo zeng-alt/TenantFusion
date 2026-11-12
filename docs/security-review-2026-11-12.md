@@ -48,6 +48,16 @@ Cookie SPA 客户端先发 GET，读取 `XSRF-TOKEN`，再在 POST/PUT/PATCH/DEL
 - `git diff --check`、新增 Java 文件头/行宽检查和 Docker 脚本语法检查通过。
 - Native：修复日志/Netty 构建期初始化冲突，优化模式镜像构建成功；启动发现领域唯一性检查 Bean 的事务代理缺失，已将工厂返回类型收窄为实现类型，并通过真实 AOT 代理生成回归。修复后的 quick-build 镜像构建成功，连接隔离 PostgreSQL/Redis 的五项原生 HTTP 烟测全部通过：匿名 401、合法缓存 JWT 200、篡改 JWT 401、数据库账户停用后 401、撤销凭证后 401。最终回归使用 GraalVM 21.0.12+7.1 / macOS ARM64 / quick-build；项目默认仍为优化模式，修复代理后未重复运行完整优化模式构建。
 
+## 本机原生验证码修复追加验证
+
+本机 macOS ARM64 / GraalVM 21 原生进程的验证码曾因 AWT 库不可用返回 500。渲染器改用内置点阵字形和 JDK 压缩、CRC 功能生成 PNG，不再调用 AWT、ImageIO 或系统字体；保持随机字符、算术验证码、图片接口、Cookie 和 Redis 校验契约。Servlet API 仅补为组件测试的运行时依赖，未新增生产依赖。
+
+真实登录还暴露出 JWT 的外部嵌套配置未生成绑定元数据，配置的 `/v1/login/jwt` 未生效。为登录、登出属性补充 `@NestedConfigurationProperty`，新增真实 AOT 生成回归；修复前该测试失败，修复后通过。最终镜像中的配置路径生效，默认 `/login/jwt` 不再提供登录。
+
+- 本轮重跑 97 项测试全部通过：验证码 14、JWT 30、admin 53（含隔离 Docker 集成验证）。渲染器 JaCoCo 行覆盖率为 95.1%；仅加载 `java.base` 的子进程也能生成 PNG。
+- 最终 quick-build 原生文件重建并重启成功；连接本次启动任务创建的专用 PostgreSQL/Redis，12 项原生检查通过：匿名拒绝、默认登录路径停用、缺失验证码拒绝、错误验证码拒绝、错误尝试后的验证码不可再用、错误密码拒绝、正确登录、受保护接口访问、验证码重放拒绝、登出、登出后 Token 失效、PNG 图片返回。
+- 运行配置、随机管理员密码和验证脚本位于 Git 忽略的 `backend/admin/build/local-native`，未提交凭证。验证码校验保持开启，数据库、Redis 与最终原生进程继续运行。
+
 ## 重复执行
 
 Docker 脚本使用仅绑定本机的随机端口、临时 PostgreSQL 文件系统和独立 Redis，退出时自动删除本次容器：

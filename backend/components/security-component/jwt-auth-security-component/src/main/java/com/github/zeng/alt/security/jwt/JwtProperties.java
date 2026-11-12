@@ -6,6 +6,7 @@ import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
 import org.hibernate.validator.constraints.Length;
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.boot.context.properties.NestedConfigurationProperty;
 import org.springframework.http.HttpMethod;
 import org.springframework.validation.annotation.Validated;
 
@@ -23,7 +24,9 @@ import org.springframework.validation.annotation.Validated;
 @Validated
 public class JwtProperties {
 
+    @NestedConfigurationProperty
     private LoginProperties login = LoginProperties.of("/login/jwt", HttpMethod.POST);
+    @NestedConfigurationProperty
     private LogoutProperties logout = LogoutProperties.of("/logout/jwt", HttpMethod.POST);
 
     /** 开启 JWT 签发与刷新，并通过本地 UserDetailsService 校验当前账户状态。 */
