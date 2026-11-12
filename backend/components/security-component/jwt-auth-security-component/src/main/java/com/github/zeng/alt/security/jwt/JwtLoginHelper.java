@@ -4,6 +4,7 @@ import com.github.zeng.alt.security.api.LoginHelper;
 import com.github.zeng.alt.security.api.LoginResponse;
 import com.github.zeng.alt.security.api.SecurityUser;
 import com.github.zeng.alt.security.api.UserContextHolder;
+import io.vavr.control.Option;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -14,6 +15,7 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.Authentication;
 import org.springframework.util.StringUtils;
 
+import java.util.Arrays;
 import java.util.Map;
 
 @CommonsLog
@@ -40,12 +42,8 @@ public class JwtLoginHelper implements LoginHelper {
         LoginResponse reset = reset(user, rememberMe);
         Map<String, Object> attributes = reset.getAttributes();
         if (rememberMe) {
-            Cookie cookie = new Cookie(jwtProperties.getRefreshCookieName(), String.valueOf(attributes.get("refreshToken")));
-            cookie.setHttpOnly(true);
-            cookie.setSecure(request.isSecure());
-            cookie.setPath(jwtProperties.getRefreshCookiePath());
-            cookie.setMaxAge(jwtProperties.getRememberMeExpiration().intValue());
-            response.addCookie(cookie);
+            response.addCookie(JwtCookieHelper.create(jwtProperties, request, String.valueOf(attributes.get("refreshToken")),
+                    jwtProperties.getRememberMeExpiration().intValue()));
         }
         return reset;
     }
@@ -113,7 +111,7 @@ public class JwtLoginHelper implements LoginHelper {
         if (authHeader == null || !authHeader.startsWith(jwtProperties.getTokenType())) {
             return;
         }
-        String token = authHeader.substring(7);
+        String token = authHeader.substring(jwtProperties.getTokenType().length());
         String cacheKey = jwtTokenProvider.getAccessCacheKey(token);
         if (cacheKey != null) {
             jwtStorage.removeToken(cacheKey);
@@ -130,26 +128,13 @@ public class JwtLoginHelper implements LoginHelper {
     }
 
     private void cleanRefreshTokens(HttpServletRequest request) {
-        try {
-            String refreshToken = extractRefreshTokenFromCookie(request);
-            if (StringUtils.hasText(refreshToken)) {
-                String refreshCacheKey = jwtTokenProvider.getRefreshCacheKey(refreshToken);
-                jwtStorage.removeToken(refreshCacheKey);
-            }
-        } catch (Exception ignored) {
-        }
-    }
-
-    private String extractRefreshTokenFromCookie(HttpServletRequest request) {
-        Cookie[] cookies = request.getCookies();
-        if (cookies != null) {
-            for (Cookie cookie : cookies) {
-                if (jwtProperties.getRefreshCookieName().equals(cookie.getName())) {
-                    return cookie.getValue();
-                }
-            }
-        }
-        return null;
+        Option.of(request.getHeader(jwtProperties.getRefreshTokenHeader())).filter(StringUtils::hasText)
+                .orElse(() -> Option.of(request.getCookies()).map(Arrays::stream)
+                        .flatMap(cookies -> Option.ofOptional(cookies
+                                .filter(cookie -> jwtProperties.getRefreshCookieName().equals(cookie.getName()))
+                                .map(Cookie::getValue).findFirst())))
+                .flatMap(token -> Option.of(jwtTokenProvider.getRefreshCacheKey(token)))
+                .peek(jwtStorage::removeToken);
     }
 
     @Override

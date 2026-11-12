@@ -5,6 +5,7 @@ import com.github.zeng.alt.security.core.properties.LoginProperties;
 import com.github.zeng.alt.security.core.properties.UsernameLoginProperties;
 import com.github.zeng.alt.security.core.web.SecurityBuilderCustomizer;
 import com.github.zeng.alt.storage.StorageTemplate;
+import io.vavr.control.Option;
 import io.swagger.v3.oas.models.Operation;
 import io.swagger.v3.oas.models.PathItem;
 import io.swagger.v3.oas.models.media.*;
@@ -104,7 +105,7 @@ public class JwtAuthAutoConfiguration {
                 authenticationManager, jwtTokenProvider, jwtStorage, jwtProperties);
     }
 
-    @Bean
+    @Bean("jwtAuthenticationSecurityCustomizer")
     @ConditionalOnProperty(prefix = "security.jwt-auth", name = "validation", havingValue = "true")
     public SecurityBuilderCustomizer authCookieSecurityCustomizer(
             JwtTokenProvider jwtTokenProvider,
@@ -115,14 +116,12 @@ public class JwtAuthAutoConfiguration {
             JwtAuthenticationFilter authFilter = new JwtAuthenticationFilter(
                     jwtTokenProvider,
                     jwtStorage,
-                    userDetailsService,
-                    "Authorization",
-                    jwtProperties.getLogin(),
-                    jwtProperties.getNewAccessTokenHeader(),
-                    jwtProperties.getRefreshCookieName()
+                    Option.when(Boolean.TRUE.equals(jwtProperties.getAuthentication()), () -> userDetailsService),
+                    jwtProperties
             );
 
-            http.addFilterBefore(authFilter, UsernamePasswordAuthenticationFilter.class);
+            http.sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                    .addFilterBefore(authFilter, UsernamePasswordAuthenticationFilter.class);
         };
     }
 
@@ -177,7 +176,7 @@ public class JwtAuthAutoConfiguration {
     )
     static class SpringDocConfiguration {
 
-        @Bean
+        @Bean("jwtLoginApiCustomizer")
         @ConditionalOnProperty(prefix = "security.jwt-auth", name = "authentication", havingValue = "true")
         public OpenApiCustomizer loginApiCustomizer(UsernameLoginProperties usernameLoginProperties, JwtProperties jwtProperties) {
             return openApi -> {

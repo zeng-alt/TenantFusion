@@ -28,6 +28,12 @@ public class CookieAuthProperties {
     /** 开启Cookie认证，请求要带上Cookie */
     private Boolean validation = false;
 
+    /** Cookie 认证默认启用 CSRF；浏览器写请求需提交 X-XSRF-TOKEN。 */
+    private Boolean csrfEnabled = true;
+
+    /** Cookie SameSite 属性。 */
+    private String cookieSameSite = "Lax";
+
     /** Session 缓存过期时间（秒），默认 24 小时 */
     private Long expiration = 86400L;
 

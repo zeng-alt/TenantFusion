@@ -123,6 +123,7 @@ security:
 
   filter:
     ignore-url:
+      - "/h2-console/**" # 开发控制台由宿主显式放行
       - "/v1/test/**"
       - "/v1/camunda-identity/**"
       - "/v1/auth/captcha"

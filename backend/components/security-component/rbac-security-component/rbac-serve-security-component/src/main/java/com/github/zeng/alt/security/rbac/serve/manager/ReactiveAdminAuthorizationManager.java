@@ -27,6 +27,9 @@ public class ReactiveAdminAuthorizationManager implements ReactiveAuthorizationM
 
     @Override
     public Mono<AuthorizationDecision> check(Mono<Authentication> authentication, AuthorizationContext object) {
+        if (!Boolean.TRUE.equals(securityProperties.getAdmin().getEnabled())) {
+            return Mono.just(new AuthorizationDecision(false));
+        }
         return authentication
                 .filter(auth -> auth.isAuthenticated() && isAdmin(auth))
                 .map(this::getAuthorizationDecision)

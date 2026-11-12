@@ -7,6 +7,7 @@ import com.github.zeng.alt.admin.infrastructure.repository.UserRepository;
 import com.github.zeng.alt.admin.infrastructure.repository.UserRoleRepository;
 import com.github.zeng.alt.admin.query.api.dto.PatchUserDto;
 import com.github.zeng.alt.admin.query.service.UserServiceImpl;
+import com.github.zeng.alt.admin.query.service.UserSecurityService;
 import com.github.zeng.alt.admin.query.service.transformation.UserDtoTransformation;
 import com.github.zeng.alt.security.abac.AbacPolicy;
 import com.github.zeng.alt.security.abac.AbacTemplate;
@@ -21,7 +22,6 @@ import com.github.zeng.alt.security.abac.method.AbacSubjectProvider;
 import com.github.zeng.alt.security.abac.spel.SpelAbacEvaluator;
 import com.github.zeng.alt.security.api.AuthHelper;
 import com.github.zeng.alt.security.core.properties.SecurityProperties;
-import com.github.zeng.alt.security.rbac.serve.repository.RbacResourceService;
 import io.vavr.control.Either;
 import io.vavr.control.Option;
 import org.junit.jupiter.api.Test;
@@ -61,7 +61,7 @@ class UserAbacAuthorizationTest {
     @Mock private PasswordEncoder passwordEncoder;
     @Mock private UserDtoTransformation userDtoTransformation;
     @Mock private AuthHelper authHelper;
-    @Mock private RbacResourceService rbacResourceService;
+    @Mock private UserSecurityService userSecurityService;
     @InjectMocks private UserServiceImpl service;
 
     @Test
@@ -70,7 +70,7 @@ class UserAbacAuthorizationTest {
 
         assertThatThrownBy(() -> proxy.patchUser(42L, new PatchUserDto()))
                 .isInstanceOf(AccessDeniedException.class);
-        verifyNoInteractions(userDtoTransformation, userRoleRepository, roleRepository, rbacResourceService);
+        verifyNoInteractions(userDtoTransformation, userRoleRepository, roleRepository, userSecurityService);
     }
 
     @Test
@@ -84,6 +84,7 @@ class UserAbacAuthorizationTest {
 
         assertThat(proxy.patchUser(42L, command).get()).isEqualTo(42L);
         verify(userDtoTransformation).mergeEntity(command, user);
+        verify(userSecurityService).update(user);
     }
 
     private UserServiceImpl proxied(long subjectDeptId, long resourceDeptId) {

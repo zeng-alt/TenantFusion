@@ -1,7 +1,6 @@
 package com.github.zeng.alt.security.rbac.serve.locator;
 
 import com.github.zeng.alt.security.api.Resource;
-import com.github.zeng.alt.security.api.SecurityUser;
 import com.github.zeng.alt.security.rbac.serve.repository.RbacResourceService;
 import com.github.zeng.alt.tenant.api.TenantDetail;
 import lombok.RequiredArgsConstructor;
@@ -21,7 +20,7 @@ public class ReactiveHttpResourceSignageLocator implements ReactiveResourceSigna
     @Override
     public Mono<String> load(Resource resource, Authentication authentication) {
         String tenant = null;
-        if (authentication instanceof TenantDetail tenantDetail) {
+        if (authentication.getPrincipal() instanceof TenantDetail tenantDetail) {
             tenant = tenantDetail.getTenantName();
         }
         return Mono.justOrEmpty(resourceService.findPermission(tenant, resource));

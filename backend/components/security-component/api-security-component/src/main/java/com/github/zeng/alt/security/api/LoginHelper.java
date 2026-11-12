@@ -29,12 +29,13 @@ public interface LoginHelper {
     LoginResponse login(String username, String password);
 
 
+    /** 未提供凭证重签能力的实现必须明确拒绝，不能返回空结果。 */
     default LoginResponse reset(SecurityUser user, boolean rememberMe) {
-        return null;
+        throw new UnsupportedOperationException(name() + " does not support credential reset");
     }
 
     default LoginResponse reset(SecurityUser user, boolean rememberMe, HttpServletRequest request, HttpServletResponse response) {
-        return null;
+        return reset(user, rememberMe);
     }
 
     /**
@@ -63,8 +64,9 @@ public interface LoginHelper {
         logout(String.valueOf(id));
     }
 
+    /** 撤销用户全部凭证；实现不支持时明确失败，避免调用方误认为已撤销。 */
     default void logout(String id) {
-
+        throw new UnsupportedOperationException(name() + " does not support user-wide logout");
     }
 
     /**

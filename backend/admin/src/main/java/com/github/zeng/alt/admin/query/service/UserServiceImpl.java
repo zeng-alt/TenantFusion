@@ -19,7 +19,6 @@ import com.github.zeng.alt.security.api.AuthHelper;
 import com.github.zeng.alt.security.api.SecurityUser;
 import com.github.zeng.alt.security.api.UserContextHolder;
 import com.github.zeng.alt.security.core.properties.SecurityProperties;
-import com.github.zeng.alt.security.rbac.serve.repository.RbacResourceService;
 import io.vavr.control.Either;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.BooleanUtils;
@@ -49,7 +48,7 @@ public class UserServiceImpl implements UserService {
     private final PasswordEncoder passwordEncoder;
     private final UserDtoTransformation userDtoTransformation;
     private final AuthHelper authHelper;
-    private final RbacResourceService rbacResourceService;
+    private final UserSecurityService userSecurityService;
 
     @Override
     @Transactional(readOnly = true)
@@ -118,7 +117,7 @@ public class UserServiceImpl implements UserService {
                             .ifPresent(
                                     roleIds -> updateUserRoles(user.getId(), roleIds)
                             );
-                    rbacResourceService.removeUserRole(List.of(String.valueOf(user.getId())));
+                    userSecurityService.update(user);
                     return user.getId();
                 });
     }

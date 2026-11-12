@@ -24,6 +24,7 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.web.authentication.logout.LogoutFilter;
 import org.springframework.security.web.servlet.util.matcher.PathPatternRequestMatcher;
@@ -33,7 +34,7 @@ import java.util.List;
 /**
  * Cookie 认证自动配置.
  * <p>
- * 通过 {@code security.cookie-auth.enabled=true} 启用 Cookie 认证，使用
+ * 通过 {@code security.cookie-auth.validation=true} 启用 Cookie 认证，使用
  * {@link UsernameLoginProperties} 配置登录路径和参数名，
  * {@link LogoutProperties} 配置退出路径。
  * <p>
@@ -103,6 +104,10 @@ public class CookieAuthAutoConfiguration {
     @ConditionalOnProperty(prefix = "security.cookie-auth", name = "validation", havingValue = "true")
     public SecurityBuilderCustomizer authCookieSecurityCustomizer(CookieAuthProperties cookieAuthProperties, SessionManager sessionManager) {
         return http -> {
+            if (Boolean.TRUE.equals(cookieAuthProperties.getCsrfEnabled())) {
+                http.csrf(csrf -> csrf.csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
+                        .csrfTokenRequestHandler(new CookieCsrfTokenRequestHandler()));
+            }
             // ===== Cookie 认证过滤器（读取 Session Cookie）=====
             CookieAuthenticationFilter authFilter = new CookieAuthenticationFilter(
                     sessionManager,
@@ -169,7 +174,7 @@ public class CookieAuthAutoConfiguration {
     static class SpringDocConfiguration {
 
 
-        @Bean
+        @Bean("cookieLoginApiCustomizer")
         public OpenApiCustomizer loginApiCustomizer(UsernameLoginProperties usernameLoginProperties, CookieAuthProperties cookieAuthProperties) {
             return openApi -> {
 

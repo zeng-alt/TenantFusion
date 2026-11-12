@@ -5,6 +5,7 @@ import com.github.zeng.alt.security.api.ReactiveAuthorizationManagerProvider;
 import com.github.zeng.alt.security.api.WhiteListService;
 import com.github.zeng.alt.security.core.properties.SecurityProperties;
 import org.junit.jupiter.api.Test;
+import org.springframework.http.HttpMethod;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ReactiveWebApplicationContextRunner;
 import org.springframework.context.ApplicationContext;
@@ -98,6 +99,18 @@ class ReactiveSecurityAutoConfigurationTest {
                     .expectError(AccessDeniedException.class).verify();
             assertThat(context.getBean(OrderedProviders.class).calls).containsExactly("deny", "allow");
             assertThat(context.getBean(OrderedConstraints.class).calls).containsExactly("first", "deny");
+        });
+    }
+
+    @Test
+    void shouldNotPermitUnconfiguredLoginPaths() {
+        runner.run(context -> {
+            final var exchange = MockServerWebExchange.from(
+                    MockServerHttpRequest.method(HttpMethod.POST, "/login/unrelated").build());
+            StepVerifier.create(context.getBean(SecurityWebFilterChain.class).getWebFilters()
+                    .filter(AuthorizationWebFilter.class::isInstance).cast(AuthorizationWebFilter.class).single()
+                    .flatMap(filter -> filter.filter(exchange, ignored -> Mono.empty())))
+                    .expectError(AccessDeniedException.class).verify();
         });
     }
 

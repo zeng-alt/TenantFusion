@@ -1,6 +1,7 @@
 package com.github.zeng.alt.security.core.reactive.config;
 
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.zeng.alt.security.api.ReactiveAuthorizationConstraint;
 import com.github.zeng.alt.security.api.ReactiveAuthorizationManagerProvider;
 import com.github.zeng.alt.security.api.WhiteListService;
@@ -15,7 +16,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication;
 import org.springframework.context.annotation.Bean;
-import org.springframework.http.HttpMethod;
+import org.springframework.http.converter.json.Jackson2ObjectMapperBuilder;
 import org.springframework.security.authorization.AuthenticatedReactiveAuthorizationManager;
 import org.springframework.security.authorization.ReactiveAuthorizationManager;
 import org.springframework.security.config.annotation.web.reactive.EnableWebFluxSecurity;
@@ -63,8 +64,6 @@ public class ReactiveSecurityAutoConfiguration {
 		http.exceptionHandling(ex -> ex.authenticationEntryPoint(serverAuthenticationEntryPoint).accessDeniedHandler(serverAccessDeniedHandler));
 		http.authorizeExchange(authorizeExchangeSpec -> {
 			authorizeExchangeCustomizers.orderedStream().forEach(spec -> spec.customize(authorizeExchangeSpec));
-			authorizeExchangeSpec
-					.pathMatchers(HttpMethod.POST, "/login/**").permitAll();
 			if (Boolean.TRUE.equals(securityProperties.getEnabledAccess())) {
 				authorizeExchangeSpec.anyExchange().access(compositeReactiveAuthorizationManager(
 						reactiveAuthorizationManagerProviders, whiteListService, authorizationConstraints
@@ -97,14 +96,16 @@ public class ReactiveSecurityAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
-	public ServerAccessDeniedHandler serverAccessDeniedHandler() {
-		return DefaultReactiveAccessDeniedHandler.handler();
+	public ServerAccessDeniedHandler serverAccessDeniedHandler(ObjectProvider<ObjectMapper> objectMappers) {
+		return DefaultReactiveAccessDeniedHandler.handler(
+				objectMappers.getIfAvailable(() -> Jackson2ObjectMapperBuilder.json().build()));
 	}
 
 	@Bean
 	@ConditionalOnMissingBean
-	public ServerAuthenticationEntryPoint serverAuthenticationEntryPoint() {
-		return DefaultReactiveAuthenticationEntryPoint.handler();
+	public ServerAuthenticationEntryPoint serverAuthenticationEntryPoint(ObjectProvider<ObjectMapper> objectMappers) {
+		return DefaultReactiveAuthenticationEntryPoint.handler(
+				objectMappers.getIfAvailable(() -> Jackson2ObjectMapperBuilder.json().build()));
 	}
 
 }

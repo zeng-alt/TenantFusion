@@ -2,16 +2,18 @@ package com.github.zeng.alt.security.rbac.serve.repository;
 
 import com.github.zeng.alt.security.api.Resource;
 import com.github.zeng.alt.storage.StorageTemplate;
+import io.vavr.control.Option;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
 import java.time.Duration;
-import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * 基于 {@link StorageTemplate} 的默认 RBAC 权限数据服务实现。
@@ -74,44 +76,27 @@ public class DefaultRbacResourceService implements RbacResourceService {
     @SuppressWarnings("unchecked")
     public Set<String> findRolePermission(List<String> authorities, String userId, String tenantName) {
         if (CollectionUtils.isEmpty(authorities)) {
-            log.trace("No authorities provided, returning empty permissions");
-            return Collections.emptySet();
+            return Set.of();
         }
-
-        Set<String> userRole = findUserRole(userId, tenantName);
-        authorities = userRole.stream()
-                .filter(authorities::contains)
-                .toList();
-
-        if (CollectionUtils.isEmpty(authorities)) {
-            return Collections.emptySet();
+        final List<String> activeRoles = findUserRole(userId, tenantName).stream()
+                .filter(authorities::contains).toList();
+        if (activeRoles.isEmpty()) {
+            return Set.of();
         }
-
-        Set<String> result = new HashSet<>();
-        for (String authority : authorities) {
-            String key = ROLE_PERMISSIONS_KEY_PREFIX + tenantName + ":" + authority;
-            Set<String> perms = storageTemplate.opsForString().get(key, Set.class);
-            if (perms != null) {
-                result.addAll(perms);
-            }
-        }
-        if (!result.isEmpty()) {
-            log.debug("All {} authorities cache-hit in tenant '{}', total {} permissions",
-                    authorities.size(), tenantName, result.size());
-            return result;
-        }
-        log.info("Cache miss for permissions (tenant '{}', {} authorities), loading from RbacResourceLoader",
-                tenantName, authorities.size());
-        Map<String, Set<String>> loaded = resourceLoader.loadPermissions(authorities, tenantName);
-        if (loaded != null) {
-            for (Map.Entry<String, Set<String>> entry : loaded.entrySet()) {
-                String authKey = ROLE_PERMISSIONS_KEY_PREFIX + tenantName + ":" + entry.getKey();
-                log.debug("Caching {} permissions for authority '{}'", entry.getValue().size(), entry.getKey());
-                storageTemplate.opsForString().set(authKey, entry.getValue(), ROLE_PERMISSIONS_TIME);
-                result.addAll(entry.getValue());
-            }
-        }
-        return result;
+        final Map<String, Option<Set<String>>> cachedPermissionsByRole = activeRoles.stream()
+                .collect(Collectors.toUnmodifiableMap(Function.identity(), role -> Option.<Set<String>>of(
+                        storageTemplate.opsForString().get(ROLE_PERMISSIONS_KEY_PREFIX + tenantName + ":" + role,
+                                Set.class))));
+        final List<String> missingRoles = activeRoles.stream()
+                .filter(role -> cachedPermissionsByRole.get(role).isEmpty()).toList();
+        final Map<String, Set<String>> loadedPermissionsByRole = missingRoles.isEmpty() ? Map.of()
+                : Option.of(resourceLoader.loadPermissions(missingRoles, tenantName)).getOrElse(Map::of);
+        loadedPermissionsByRole.forEach((role, permissions) -> storageTemplate.opsForString().set(
+                ROLE_PERMISSIONS_KEY_PREFIX + tenantName + ":" + role, permissions, ROLE_PERMISSIONS_TIME));
+        return Stream.concat(
+                cachedPermissionsByRole.values().stream().flatMap(Option::toJavaStream).flatMap(Set::stream),
+                loadedPermissionsByRole.values().stream().flatMap(Set::stream)
+        ).collect(Collectors.toUnmodifiableSet());
     }
 
 

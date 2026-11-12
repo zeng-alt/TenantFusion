@@ -7,6 +7,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.data.domain.AuditorAware;
+import org.springframework.test.context.aot.DisabledInAotMode;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.servlet.mvc.method.RequestMappingInfo;
 import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerMapping;
@@ -23,6 +24,7 @@ import java.util.LinkedHashMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+@DisabledInAotMode("路由 SQL 导出工具依赖 JVM 文件系统与开发环境，不参与 AOT 测试")
 @SpringBootTest(
         classes = {AdminApplication.class, HttpResourceSqlExporter.AuditConfig.class},
         properties = {

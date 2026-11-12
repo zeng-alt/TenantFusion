@@ -4,7 +4,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.zeng.alt.api.rest.RestResponse;
 import com.github.zeng.alt.log.LoginInfoEvent;
 import com.github.zeng.alt.security.api.SecurityUser;
-import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
@@ -62,12 +61,8 @@ public class JwtAuthenticationSuccessHandler implements AuthenticationSuccessHan
                 jwtStorage.setRefreshToken(refreshCacheKey, securityUser.getUsername());
             }
 
-            Cookie cookie = new Cookie(jwtProperties.getRefreshCookieName(), refreshToken);
-            cookie.setHttpOnly(true);
-            cookie.setSecure(request.isSecure());
-            cookie.setPath(jwtProperties.getRefreshCookiePath());
-            cookie.setMaxAge(jwtProperties.getRememberMeExpiration().intValue());
-            response.addCookie(cookie);
+            response.addCookie(JwtCookieHelper.create(jwtProperties, request, refreshToken,
+                    jwtProperties.getRememberMeExpiration().intValue()));
         }
 
         RestResponse<Map<String, Object>> restResponse = RestResponse.success(tokenData);

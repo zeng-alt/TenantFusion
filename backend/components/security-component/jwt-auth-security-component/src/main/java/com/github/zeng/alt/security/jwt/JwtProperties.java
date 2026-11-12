@@ -26,10 +26,10 @@ public class JwtProperties {
     private LoginProperties login = LoginProperties.of("/login/jwt", HttpMethod.POST);
     private LogoutProperties logout = LogoutProperties.of("/logout/jwt", HttpMethod.POST);
 
-    /** 开启jwt登录 */
+    /** 开启 JWT 签发与刷新，并通过本地 UserDetailsService 校验当前账户状态。 */
     private Boolean authentication = false;
 
-    /** 开启jwt认证，请求要带上jwt */
+    /** 开启 JWT 校验；未开启 authentication 时仅验签及查询共享凭证缓存，不在本地刷新。 */
     private Boolean validation = false;
 
     /** Base64 编码的 HMAC 签名密钥（至少 256 位），用于 HS256 Access Token */

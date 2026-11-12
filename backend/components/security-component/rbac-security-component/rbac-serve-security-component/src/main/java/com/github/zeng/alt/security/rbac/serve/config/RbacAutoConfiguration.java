@@ -36,7 +36,7 @@ import org.springframework.context.annotation.ImportRuntimeHints;
 @AutoConfiguration
 @ImportRuntimeHints(RbacServeRuntimeHints.class)
 @Slf4j
-@ConditionalOnBooleanProperty("security.context.enabled-access")
+@ConditionalOnBooleanProperty(value = "security.context.enabled-access", matchIfMissing = true)
 public class RbacAutoConfiguration {
 
     @Bean

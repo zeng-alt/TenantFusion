@@ -3,7 +3,6 @@ package com.github.zeng.alt.security.cookie;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.zeng.alt.api.rest.RestResponse;
 import com.github.zeng.alt.security.api.SecurityUser;
-import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
@@ -37,15 +36,8 @@ public class CookieAuthenticationSuccessHandler implements AuthenticationSuccess
         SecurityUser securityUser = (SecurityUser) authentication.getPrincipal();
         String sessionId = sessionManager.createSession(securityUser);
 
-        Cookie sessionCookie = new Cookie(cookieAuthProperties.getCookieName(), sessionId);
-        sessionCookie.setPath(cookieAuthProperties.getCookiePath());
-        sessionCookie.setHttpOnly(cookieAuthProperties.getCookieHttpOnly());
-        sessionCookie.setSecure(cookieAuthProperties.getCookieSecure());
-        sessionCookie.setMaxAge(cookieAuthProperties.getCookieMaxAge());
-        if (cookieAuthProperties.getCookieDomain() != null && !cookieAuthProperties.getCookieDomain().isBlank()) {
-            sessionCookie.setDomain(cookieAuthProperties.getCookieDomain());
-        }
-        response.addCookie(sessionCookie);
+        response.addCookie(CookieHelper.create(cookieAuthProperties, request, sessionId,
+                cookieAuthProperties.getCookieMaxAge()));
 
         response.setStatus(HttpStatus.OK.value());
         response.setCharacterEncoding(StandardCharsets.UTF_8.name());

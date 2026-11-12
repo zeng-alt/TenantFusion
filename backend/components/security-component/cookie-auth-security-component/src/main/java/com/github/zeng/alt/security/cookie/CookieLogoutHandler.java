@@ -38,17 +38,7 @@ public class CookieLogoutHandler implements LogoutHandler {
                     // 从缓存中删除会话
                     sessionManager.removeSession(cookie.getValue());
 
-                    // 清除客户端的 Cookie
-                    Cookie clearCookie = new Cookie(cookieAuthProperties.getCookieName(), null);
-                    clearCookie.setPath(cookieAuthProperties.getCookiePath());
-                    clearCookie.setHttpOnly(cookieAuthProperties.getCookieHttpOnly());
-                    clearCookie.setSecure(cookieAuthProperties.getCookieSecure());
-                    clearCookie.setMaxAge(0);
-                    if (cookieAuthProperties.getCookieDomain() != null
-                            && !cookieAuthProperties.getCookieDomain().isBlank()) {
-                        clearCookie.setDomain(cookieAuthProperties.getCookieDomain());
-                    }
-                    response.addCookie(clearCookie);
+                    response.addCookie(CookieHelper.create(cookieAuthProperties, request, "", 0));
                 });
     }
 }

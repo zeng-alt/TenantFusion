@@ -32,7 +32,7 @@ import java.util.List;
  * 创建 WebFlux 安全所需的 Bean：权限定位器、资源定位器、查询管理器、解析管理器和授权管理器。</p>
  */
 @AutoConfiguration
-@ConditionalOnBooleanProperty("security.context.enabled-access")
+@ConditionalOnBooleanProperty(value = "security.context.enabled-access", matchIfMissing = true)
 @ConditionalOnWebApplication(type = ConditionalOnWebApplication.Type.REACTIVE)
 @EnableConfigurationProperties(RbacProperties.class)
 @Slf4j

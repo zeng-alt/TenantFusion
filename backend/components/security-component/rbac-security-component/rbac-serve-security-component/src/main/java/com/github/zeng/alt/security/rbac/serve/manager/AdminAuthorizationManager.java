@@ -28,6 +28,9 @@ public class AdminAuthorizationManager implements AuthorizationManager<RequestAu
 
     @Override
     public AuthorizationDecision check(Supplier<Authentication> supplier, RequestAuthorizationContext object) {
+        if (!Boolean.TRUE.equals(securityProperties.getAdmin().getEnabled())) {
+            return new AuthorizationDecision(false);
+        }
         Authentication authentication = supplier.get();
         if (authentication == null) {
             return new AuthorizationDecision(false);

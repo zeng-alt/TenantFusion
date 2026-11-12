@@ -2,7 +2,6 @@ package com.github.zeng.alt.security.core;
 
 
 import com.github.zeng.alt.security.api.AuthHelper;
-import com.github.zeng.alt.security.api.SecurityUser;
 import com.github.zeng.alt.security.api.WhiteListService;
 import com.github.zeng.alt.security.core.properties.SecurityProperties;
 import com.github.zeng.alt.security.core.properties.WhiteListProperties;
@@ -56,8 +55,7 @@ public class SecurityAutoConfiguration {
 	@Bean
 	@ConditionalOnMissingBean
 	public UserDetailsService inMemoryUserDetailsManager(PasswordEncoder passwordEncoder) {
-		return new InMemoryUserDetailsManager(
-				List.of(SecurityUser.withUsername("root").password(passwordEncoder.encode("123456")).roles().build()));
+		return new InMemoryUserDetailsManager();
 	}
 
 	@Bean

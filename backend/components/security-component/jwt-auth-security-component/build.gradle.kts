@@ -17,4 +17,8 @@ dependencies {
 
     compileOnly(libs.lombok)
     annotationProcessor(libs.lombok)
+
+    testImplementation("org.springframework.boot:spring-boot-starter-test")
+    testImplementation("org.springframework:spring-webmvc")
+    testImplementation(project(":backend:components:security-component:cookie-auth-security-component"))
 }

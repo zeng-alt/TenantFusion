@@ -7,6 +7,8 @@ import com.github.zeng.alt.security.api.WhiteListService;
 import com.github.zeng.alt.security.core.properties.SecurityProperties;
 import jakarta.servlet.http.HttpServletRequest;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.WebApplicationContextRunner;
 import org.springframework.context.ApplicationContext;
@@ -98,6 +100,17 @@ class WebSecurityAutoConfigurationTest {
             assertThat(authorizationManager(context).authorize(() -> null, request("/secured")).isGranted()).isFalse();
             assertThat(context.getBean(OrderedProviders.class).calls).containsExactly("deny", "allow");
             assertThat(context.getBean(OrderedConstraints.class).calls).containsExactly("first", "deny");
+        });
+    }
+
+    @ParameterizedTest
+    @CsvSource({"GET,/h2-console/index", "POST,/tenant/graphql/query", "GET,/tenant/graphiql/index",
+            "POST,/actuator/startup", "POST,/login/unrelated"})
+    void shouldNotPermitApplicationPathsByDefault(String method, String path) {
+        runner.run(context -> {
+            final var request = request(path);
+            request.setMethod(method);
+            assertThat(authorizationManager(context).authorize(() -> null, request).isGranted()).isFalse();
         });
     }
 

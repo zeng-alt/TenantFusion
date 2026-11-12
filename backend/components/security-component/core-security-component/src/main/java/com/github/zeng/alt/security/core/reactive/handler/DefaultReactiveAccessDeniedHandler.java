@@ -1,44 +1,47 @@
 package com.github.zeng.alt.security.core.reactive.handler;
 
-import org.springframework.core.io.buffer.DataBuffer;
-import org.springframework.core.io.buffer.DataBufferFactory;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ProblemDetail;
-import org.springframework.http.server.reactive.ServerHttpResponse;
+import org.springframework.http.converter.json.Jackson2ObjectMapperBuilder;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.web.server.authorization.ServerAccessDeniedHandler;
 import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
-
-import java.nio.charset.StandardCharsets;
-
 
 /**
  * @author zengJiaJun
  * @version 1.0
  * @crateTime 2024年11月27日 21:44
  */
+@RequiredArgsConstructor
 public class DefaultReactiveAccessDeniedHandler implements ServerAccessDeniedHandler {
+    private final ObjectMapper objectMapper;
+
+    public DefaultReactiveAccessDeniedHandler() {
+        this(Jackson2ObjectMapperBuilder.json().build());
+    }
 
     @Override
-    public Mono<Void> handle(ServerWebExchange exchange, AccessDeniedException denied) {
-        ServerHttpResponse response = exchange.getResponse();
-//        exchange.getResponse().getHeaders().setContentType(MediaType.APPLICATION_JSON);
-//        response.setStatusCode(HttpStatus.FORBIDDEN);
-//
-//        DataBufferFactory dataBufferFactory = response.bufferFactory();
-//
-//        ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(HttpStatus.FORBIDDEN, denied.getMessage());
-//        problemDetail.setInstance(exchange.getRequest().getURI());
-//        problemDetail.setTitle("访问拒绝");
-//
-//        DataBuffer dataBuffer = dataBufferFactory.wrap(JsonUtils.toJsonString(problemDetail).getBytes(StandardCharsets.UTF_8));
-//        return exchange.getResponse().writeWith(Mono.just(dataBuffer));
-
-        return null;
+    public Mono<Void> handle(ServerWebExchange exchange, AccessDeniedException exception) {
+        final var response = exchange.getResponse();
+        final ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.FORBIDDEN, exception.getMessage());
+        problem.setTitle("用户没有访问权限");
+        problem.setInstance(exchange.getRequest().getURI());
+        response.setStatusCode(HttpStatus.FORBIDDEN);
+        response.getHeaders().setContentType(MediaType.APPLICATION_PROBLEM_JSON);
+        return Mono.fromCallable(() -> objectMapper.writeValueAsBytes(problem))
+                .flatMap(bytes -> response.writeWith(Mono.just(response.bufferFactory().wrap(bytes))));
     }
 
     public static ServerAccessDeniedHandler handler() {
         return new DefaultReactiveAccessDeniedHandler();
+    }
+
+    /** 使用宿主配置的 JSON 序列化器创建默认处理器。 */
+    public static ServerAccessDeniedHandler handler(ObjectMapper objectMapper) {
+        return new DefaultReactiveAccessDeniedHandler(objectMapper);
     }
 }
