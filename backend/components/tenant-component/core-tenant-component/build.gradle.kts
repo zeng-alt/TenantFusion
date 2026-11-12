@@ -5,6 +5,7 @@ plugins {
 description = "core-tenant-component"
 
 dependencies {
+    implementation("org.springframework.boot:spring-boot-hibernate")
     api(project(":backend:components:tenant-component:api-tenant-component"))
     api("org.hibernate.orm:hibernate-core")
     implementation("org.springframework.boot:spring-boot-autoconfigure")

@@ -23,12 +23,12 @@ import com.github.zeng.alt.workflow.repository.FormTemplateRepository;
 import com.github.zeng.alt.workflow.repository.FormTemplateVersionRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.apachecommons.CommonsLog;
-import org.camunda.bpm.model.bpmn.Bpmn;
-import org.camunda.bpm.model.bpmn.BpmnModelInstance;
-import org.camunda.bpm.model.bpmn.instance.ExtensionElements;
-import org.camunda.bpm.model.bpmn.instance.UserTask;
-import org.camunda.bpm.model.bpmn.instance.camunda.CamundaFormData;
-import org.camunda.bpm.model.xml.instance.ModelElementInstance;
+import org.operaton.bpm.model.bpmn.Bpmn;
+import org.operaton.bpm.model.bpmn.BpmnModelInstance;
+import org.operaton.bpm.model.bpmn.instance.ExtensionElements;
+import org.operaton.bpm.model.bpmn.instance.UserTask;
+import org.operaton.bpm.model.bpmn.instance.operaton.OperatonFormData;
+import org.operaton.bpm.model.xml.instance.ModelElementInstance;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
@@ -147,16 +147,16 @@ public class TaskFormResolver {
                 .taskDefinitionKey(task.getTaskDefinitionKey())
                 .taskName(task.getName());
 
-        String formRef = userTask.getCamundaFormRef();
+        String formRef = userTask.getOperatonFormRef();
         if (StringUtils.hasText(formRef)) {
             return builder.formType(TaskFormType.FORM_TEMPLATE)
                     .formRef(formRef)
-                    .formRefBinding(userTask.getCamundaFormRefBinding())
-                    .formRefVersion(userTask.getCamundaFormRefVersion())
-                    .definition(loadTemplateDefinition(formRef, userTask.getCamundaFormRefBinding(), userTask.getCamundaFormRefVersion()))
+                    .formRefBinding(userTask.getOperatonFormRefBinding())
+                    .formRefVersion(userTask.getOperatonFormRefVersion())
+                    .definition(loadTemplateDefinition(formRef, userTask.getOperatonFormRefBinding(), userTask.getOperatonFormRefVersion()))
                     .build();
         }
-        String formKey = userTask.getCamundaFormKey();
+        String formKey = userTask.getOperatonFormKey();
         if (StringUtils.hasText(formKey)) {
             return builder.formType(TaskFormType.FORM_KEY).formKey(formKey).build();
         }
@@ -282,22 +282,22 @@ public class TaskFormResolver {
         if (extensionElements == null) {
             return List.of();
         }
-        CamundaFormData formData = extensionElements.getElementsQuery()
-                .filterByType(CamundaFormData.class)
+        OperatonFormData formData = extensionElements.getElementsQuery()
+                .filterByType(OperatonFormData.class)
                 .singleResult();
         if (formData == null) {
             return List.of();
         }
-        return formData.getCamundaFormFields().stream().map(field -> CamundaFormFieldVO.builder()
-                .id(field.getCamundaId())
-                .label(field.getCamundaLabel())
-                .type(field.getCamundaType())
-                .defaultValue(field.getCamundaDefaultValue())
-                .datePattern(field.getCamundaDatePattern())
-                .values(field.getCamundaValues().stream()
+        return formData.getOperatonFormFields().stream().map(field -> CamundaFormFieldVO.builder()
+                .id(field.getOperatonId())
+                .label(field.getOperatonLabel())
+                .type(field.getOperatonType())
+                .defaultValue(field.getOperatonDefaultValue())
+                .datePattern(field.getOperatonDatePattern())
+                .values(field.getOperatonValues().stream()
                         .map(value -> CamundaFormFieldOptionVO.builder()
-                                .id(value.getCamundaId())
-                                .name(value.getCamundaName())
+                                .id(value.getOperatonId())
+                                .name(value.getOperatonName())
                                 .build())
                         .toList())
                 .build()).toList();

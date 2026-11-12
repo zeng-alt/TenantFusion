@@ -2,8 +2,8 @@ package com.github.zeng.alt.camunda.engine.embedded.correlation;
 
 import com.github.zeng.alt.camunda.engine.api.correlation.CorrelateMessageCmd;
 import com.github.zeng.alt.camunda.engine.api.correlation.CorrelationApi;
-import org.camunda.bpm.engine.RuntimeService;
-import org.camunda.bpm.engine.runtime.MessageCorrelationBuilder;
+import org.operaton.bpm.engine.RuntimeService;
+import org.operaton.bpm.engine.runtime.MessageCorrelationBuilder;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 

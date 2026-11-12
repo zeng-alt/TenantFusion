@@ -32,16 +32,14 @@ dependencies {
     // 嵌入式引擎实现（远程部署时替换为 remote-engine-component）
     implementation(project(":backend:components:camunda-component:embedded-engine-component"))
     // 引擎 API（编译 formkService 等 delegate 表达式 Bean 需要，运行时由 embedded-engine-component 提供）
-    implementation("org.camunda.bpm:camunda-engine:7.24.0")
-    // 流程变量读写框架（formkService 读取 IO 映射输入参数）
-    implementation("io.holunda.data:camunda-bpm-data:2026.04.2")
+    implementation("org.operaton.bpm:operaton-engine:${rootProject.libs.versions.operaton.get()}")
     // Camunda REST API 的 OpenAPI 定义
-//    implementation("org.camunda.bpm:camunda-engine-rest-openapi:7.24.0")
+//    implementation("org.operaton.bpm:operaton-engine-rest-openapi:${rootProject.libs.versions.operaton.get()}")
     runtimeOnly(libs.h2)
     implementation("org.springframework.boot:spring-boot-starter-web")
 //    implementation("org.springframework.boot:spring-boot-starter-data-jpa")
 //    implementation(libs.spring.boot.starter.validation)
-//    implementation("org.camunda.bpm.springboot:camunda-bpm-spring-boot-starter-webapp:7.24.0")
+//    implementation("org.operaton.bpm.springboot:operaton-bpm-spring-boot-starter-webapp:${rootProject.libs.versions.operaton.get()}")
 //    implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui")
 //    implementation("org.springframework.boot:spring-boot-starter-actuator")
 //

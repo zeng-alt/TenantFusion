@@ -9,6 +9,7 @@ import org.springframework.beans.factory.config.BeanFactoryPostProcessor;
 import org.springframework.beans.factory.support.DefaultListableBeanFactory;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.ImportRuntimeHints;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.io.ResourceLoader;
 import org.springframework.util.StringUtils;
@@ -39,6 +40,7 @@ import java.util.Map;
 @ConditionalOnProperty(prefix = "alt.tenant.store", name = "url")
 @ConditionalOnProperty(prefix = "spring.liquibase", name = "enabled",
         havingValue = "true", matchIfMissing = true)
+@ImportRuntimeHints(TenantStoreRuntimeHints.class)
 public class TenantStoreLiquibaseConfiguration {
 
     @Bean

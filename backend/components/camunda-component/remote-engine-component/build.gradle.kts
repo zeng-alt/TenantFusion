@@ -5,9 +5,11 @@ plugins {
 description = "remote-engine-component"
 
 dependencies {
+    testImplementation("org.springframework.boot:spring-boot-http-converter")
+    testImplementation("org.springframework.boot:spring-boot-jackson2")
     api(project(":backend:components:camunda-component:api-engine-component"))
 
-    implementation("io.holunda.c7:c7-rest-client-spring-boot-starter-feign:2026.04.2")
+    implementation("io.holunda.c7:c7-rest-client-spring-boot-starter-feign-4:2026.04.2")
     implementation("org.springframework:spring-web")
     implementation("org.springframework:spring-context")
 

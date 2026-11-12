@@ -7,7 +7,7 @@ description = "api-message-component"
 dependencies {
     implementation(project(":backend:components:api-component"))
     implementation("org.springframework.boot:spring-boot-autoconfigure")
-    implementation("org.springframework.boot:spring-boot-starter-json")
+    implementation(project(":backend:components:json-component"))
     implementation("org.springframework:spring-tx")
 
     annotationProcessor(rootProject.libs.spring.boot.configuration.processor)

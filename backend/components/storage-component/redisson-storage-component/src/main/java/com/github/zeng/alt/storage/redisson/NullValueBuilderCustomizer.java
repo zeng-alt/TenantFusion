@@ -4,7 +4,7 @@ package com.github.zeng.alt.storage.redisson;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
-import org.springframework.boot.autoconfigure.jackson.Jackson2ObjectMapperBuilderCustomizer;
+import org.springframework.boot.jackson2.autoconfigure.Jackson2ObjectMapperBuilderCustomizer;
 import org.springframework.cache.support.NullValue;
 import org.springframework.http.converter.json.Jackson2ObjectMapperBuilder;
 

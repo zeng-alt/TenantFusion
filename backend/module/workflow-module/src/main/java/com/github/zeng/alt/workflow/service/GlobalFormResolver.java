@@ -12,12 +12,12 @@ import com.github.zeng.alt.workflow.repository.FormTemplateRepository;
 import com.github.zeng.alt.workflow.repository.FormTemplateVersionRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.apachecommons.CommonsLog;
-import org.camunda.bpm.model.bpmn.Bpmn;
-import org.camunda.bpm.model.bpmn.BpmnModelInstance;
-import org.camunda.bpm.model.bpmn.instance.ExtensionElements;
-import org.camunda.bpm.model.bpmn.instance.Process;
-import org.camunda.bpm.model.bpmn.instance.camunda.CamundaProperties;
-import org.camunda.bpm.model.bpmn.instance.camunda.CamundaProperty;
+import org.operaton.bpm.model.bpmn.Bpmn;
+import org.operaton.bpm.model.bpmn.BpmnModelInstance;
+import org.operaton.bpm.model.bpmn.instance.ExtensionElements;
+import org.operaton.bpm.model.bpmn.instance.Process;
+import org.operaton.bpm.model.bpmn.instance.operaton.OperatonProperties;
+import org.operaton.bpm.model.bpmn.instance.operaton.OperatonProperty;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
@@ -99,14 +99,14 @@ public class GlobalFormResolver {
         if (extensionElements == null) {
             return map;
         }
-        CamundaProperties properties = extensionElements.getElementsQuery()
-                .filterByType(CamundaProperties.class)
+        OperatonProperties properties = extensionElements.getElementsQuery()
+                .filterByType(OperatonProperties.class)
                 .singleResult();
         if (properties == null) {
             return map;
         }
-        for (CamundaProperty property : properties.getCamundaProperties()) {
-            map.put(property.getCamundaName(), property.getCamundaValue());
+        for (OperatonProperty property : properties.getOperatonProperties()) {
+            map.put(property.getOperatonName(), property.getOperatonValue());
         }
         return map;
     }

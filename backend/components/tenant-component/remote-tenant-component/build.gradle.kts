@@ -5,11 +5,13 @@ plugins {
 description = "remote-tenant-component"
 
 dependencies {
+    implementation("org.springframework.boot:spring-boot-http-converter")
+    implementation("org.springframework.boot:spring-boot-jackson2")
     api(project(":backend:components:tenant-component:core-tenant-component"))
 
     implementation("org.springframework.boot:spring-boot-autoconfigure")
-    // 与 remote-engine-component 同一套 OpenFeign（Boot 3.5 对应 4.3.x，外层已有 catalog 时可收敛过去）
-    implementation("org.springframework.cloud:spring-cloud-starter-openfeign:4.3.3")
+    // OpenFeign 版本由根项目 Spring Cloud BOM 统一管理。
+    implementation("org.springframework.cloud:spring-cloud-starter-openfeign")
     implementation("org.springframework:spring-web")
     implementation("com.fasterxml.jackson.core:jackson-databind")
     compileOnly("jakarta.servlet:jakarta.servlet-api")

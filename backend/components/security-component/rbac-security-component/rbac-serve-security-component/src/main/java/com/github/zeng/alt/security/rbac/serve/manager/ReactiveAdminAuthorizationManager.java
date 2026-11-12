@@ -5,6 +5,7 @@ import com.github.zeng.alt.security.core.properties.SecurityProperties;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authorization.AuthorizationDecision;
+import org.springframework.security.authorization.AuthorizationResult;
 import org.springframework.security.authorization.ReactiveAuthorizationManager;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
@@ -26,13 +27,13 @@ public class ReactiveAdminAuthorizationManager implements ReactiveAuthorizationM
     private final SecurityProperties securityProperties;
 
     @Override
-    public Mono<AuthorizationDecision> check(Mono<Authentication> authentication, AuthorizationContext object) {
+    public Mono<AuthorizationResult> authorize(Mono<Authentication> authentication, AuthorizationContext object) {
         if (!Boolean.TRUE.equals(securityProperties.getAdmin().getEnabled())) {
             return Mono.just(new AuthorizationDecision(false));
         }
         return authentication
                 .filter(auth -> auth.isAuthenticated() && isAdmin(auth))
-                .map(this::getAuthorizationDecision)
+                .<AuthorizationResult>map(this::getAuthorizationDecision)
                 .doOnNext(decision -> {
                     if (decision.isGranted()) {
                         log.debug("Super admin bypass for user '{}'", securityProperties.getAdmin());

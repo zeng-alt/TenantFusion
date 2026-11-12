@@ -4,7 +4,6 @@ package com.github.zeng.alt.security.core.web;
 import com.github.zeng.alt.security.api.WhiteListService;
 import org.springframework.security.authorization.AuthorizationDecision;
 import org.springframework.security.authorization.AuthorizationManager;
-import org.springframework.security.authorization.AuthorizationResult;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.web.access.intercept.RequestAuthorizationContext;
 import org.springframework.security.web.servlet.util.matcher.PathPatternRequestMatcher;
@@ -31,15 +30,10 @@ public class WhiteListAuthorizationManager implements AuthorizationManager<Reque
     }
 
     @Override
-    public AuthorizationDecision check(Supplier<Authentication> authentication, RequestAuthorizationContext context) {
+    public AuthorizationDecision authorize(Supplier<? extends Authentication> authentication, RequestAuthorizationContext context) {
         refreshWhiteList();
         return new AuthorizationDecision(snapshot.get().matchers().stream()
                 .anyMatch(matcher -> matcher.matches(context.getRequest())));
-    }
-
-    @Override
-    public AuthorizationResult authorize(Supplier<Authentication> authentication, RequestAuthorizationContext context) {
-        return check(authentication, context);
     }
 
     /** 白名单变更在下一次授权时生效，仅在快照变化时重新编译路径。 */

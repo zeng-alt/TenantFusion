@@ -28,7 +28,7 @@ public final class RbacAccessAuthorizationManager
 	}
 
 	@Override
-	public AuthorizationDecision check(Supplier<Authentication> supplier, RequestAuthorizationContext object) {
+	public AuthorizationDecision authorize(Supplier<? extends Authentication> supplier, RequestAuthorizationContext object) {
 		Authentication authentication = supplier.get();
 		if (authentication == null) {
 			log.warn("Authentication is null, denying access");

@@ -10,13 +10,14 @@ import io.reactivex.rxjava3.core.Flowable;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.ImportAutoConfiguration;
-import org.springframework.boot.autoconfigure.http.codec.CodecsAutoConfiguration;
-import org.springframework.boot.autoconfigure.jackson.JacksonAutoConfiguration;
-import org.springframework.boot.autoconfigure.validation.ValidationAutoConfiguration;
-import org.springframework.boot.autoconfigure.web.reactive.HttpHandlerAutoConfiguration;
-import org.springframework.boot.autoconfigure.web.reactive.WebFluxAutoConfiguration;
-import org.springframework.boot.autoconfigure.web.reactive.ReactiveWebServerFactoryAutoConfiguration;
+import org.springframework.boot.http.codec.autoconfigure.CodecsAutoConfiguration;
+import org.springframework.boot.jackson2.autoconfigure.Jackson2AutoConfiguration;
+import org.springframework.boot.validation.autoconfigure.ValidationAutoConfiguration;
+import org.springframework.boot.webflux.autoconfigure.HttpHandlerAutoConfiguration;
+import org.springframework.boot.webflux.autoconfigure.WebFluxAutoConfiguration;
+import org.springframework.boot.reactor.netty.autoconfigure.NettyReactiveWebServerAutoConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.webtestclient.autoconfigure.AutoConfigureWebTestClient;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.http.HttpHeaders;
@@ -50,6 +51,7 @@ import static org.assertj.core.api.Assertions.assertThat;
         classes = ExcelWebFluxIntegrationTest.TestApplication.class,
         webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
         properties = "spring.main.web-application-type=reactive")
+@AutoConfigureWebTestClient
 class ExcelWebFluxIntegrationTest {
 
     @Autowired
@@ -176,11 +178,11 @@ class ExcelWebFluxIntegrationTest {
     @Configuration(proxyBeanMethods = false)
     @RestController
     @ImportAutoConfiguration({
-            ReactiveWebServerFactoryAutoConfiguration.class,
+            NettyReactiveWebServerAutoConfiguration.class,
             HttpHandlerAutoConfiguration.class,
             WebFluxAutoConfiguration.class,
             CodecsAutoConfiguration.class,
-            JacksonAutoConfiguration.class,
+            Jackson2AutoConfiguration.class,
             ValidationAutoConfiguration.class,
             ExcelAutoConfiguration.class,
             ExcelWebAutoConfiguration.class,

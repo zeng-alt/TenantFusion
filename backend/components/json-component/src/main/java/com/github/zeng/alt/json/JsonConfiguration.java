@@ -20,10 +20,11 @@ import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
-import org.springframework.boot.autoconfigure.jackson.JacksonAutoConfiguration;
+import org.springframework.boot.jackson2.autoconfigure.Jackson2AutoConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.DependsOn;
 import org.springframework.context.annotation.Role;
+import org.springframework.context.annotation.PropertySource;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -38,7 +39,8 @@ import java.time.format.DateTimeFormatter;
  * @version 1.0
  */
 @Role(BeanDefinition.ROLE_INFRASTRUCTURE)
-@AutoConfiguration(before = JacksonAutoConfiguration.class)
+@AutoConfiguration(before = Jackson2AutoConfiguration.class)
+@PropertySource("classpath:alt-json-defaults.properties")
 public class JsonConfiguration {
 
 	@Bean

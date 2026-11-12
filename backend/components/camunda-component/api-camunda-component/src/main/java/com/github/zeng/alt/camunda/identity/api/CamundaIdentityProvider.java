@@ -1,21 +1,21 @@
 package com.github.zeng.alt.camunda.identity.api;
 
-import org.camunda.bpm.engine.BadUserRequestException;
-import org.camunda.bpm.engine.identity.Group;
-import org.camunda.bpm.engine.identity.GroupQuery;
-import org.camunda.bpm.engine.identity.NativeUserQuery;
-import org.camunda.bpm.engine.identity.Tenant;
-import org.camunda.bpm.engine.identity.TenantQuery;
-import org.camunda.bpm.engine.identity.User;
-import org.camunda.bpm.engine.identity.UserQuery;
-import org.camunda.bpm.engine.impl.Page;
-import org.camunda.bpm.engine.impl.context.Context;
-import org.camunda.bpm.engine.impl.identity.ReadOnlyIdentityProvider;
-import org.camunda.bpm.engine.impl.interceptor.CommandContext;
-import org.camunda.bpm.engine.impl.interceptor.Session;
-import org.camunda.bpm.engine.impl.persistence.entity.GroupEntity;
-import org.camunda.bpm.engine.impl.persistence.entity.TenantEntity;
-import org.camunda.bpm.engine.impl.persistence.entity.UserEntity;
+import org.operaton.bpm.engine.BadUserRequestException;
+import org.operaton.bpm.engine.identity.Group;
+import org.operaton.bpm.engine.identity.GroupQuery;
+import org.operaton.bpm.engine.identity.NativeUserQuery;
+import org.operaton.bpm.engine.identity.Tenant;
+import org.operaton.bpm.engine.identity.TenantQuery;
+import org.operaton.bpm.engine.identity.User;
+import org.operaton.bpm.engine.identity.UserQuery;
+import org.operaton.bpm.engine.impl.Page;
+import org.operaton.bpm.engine.impl.context.Context;
+import org.operaton.bpm.engine.impl.identity.ReadOnlyIdentityProvider;
+import org.operaton.bpm.engine.impl.interceptor.CommandContext;
+import org.operaton.bpm.engine.impl.interceptor.Session;
+import org.operaton.bpm.engine.impl.persistence.entity.GroupEntity;
+import org.operaton.bpm.engine.impl.persistence.entity.TenantEntity;
+import org.operaton.bpm.engine.impl.persistence.entity.UserEntity;
 
 import java.util.Arrays;
 import java.util.Collections;

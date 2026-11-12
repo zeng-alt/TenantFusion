@@ -42,7 +42,7 @@ class TenantServiceAuthorizationManagerTest {
     private boolean check(Object authentication, String uri) {
         MockHttpServletRequest request = new MockHttpServletRequest("GET", uri);
         RequestAuthorizationContext context = new RequestAuthorizationContext(request);
-        return manager.check(() -> (org.springframework.security.core.Authentication) authentication,
+        return manager.authorize(() -> (org.springframework.security.core.Authentication) authentication,
                 context).isGranted();
     }
 

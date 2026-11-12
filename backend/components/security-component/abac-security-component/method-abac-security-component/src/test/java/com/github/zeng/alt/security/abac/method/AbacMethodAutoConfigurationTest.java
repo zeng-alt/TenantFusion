@@ -3,6 +3,9 @@ package com.github.zeng.alt.security.abac.method;
 import com.github.zeng.alt.security.abac.AbacTemplate;
 import io.vavr.control.Either;
 import org.junit.jupiter.api.Test;
+import org.aopalliance.intercept.MethodInterceptor;
+import org.aopalliance.intercept.MethodInvocation;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.annotation.Bean;
@@ -12,6 +15,8 @@ import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.verifyNoInteractions;
 
 /**
  * 从 AutoConfiguration.imports 发现方法授权装配，验证默认 beans、退让、开关与缺 SPI 启动失败。
@@ -59,6 +64,21 @@ class AbacMethodAutoConfigurationTest {
     @Test
     void shouldFailFastWithoutSubjectProvider() {
         runner.run(context -> assertThat(context).hasFailed());
+    }
+
+    @Test
+    void advisorDefersInterceptorLookupUntilInvocation() throws Throwable {
+        final ObjectProvider<AbacMethodInterceptor> provider = mock();
+        final var interceptor = mock(AbacMethodInterceptor.class);
+        final var invocation = mock(MethodInvocation.class);
+        when(provider.getObject()).thenReturn(interceptor);
+        when(interceptor.invoke(invocation)).thenReturn("authorized");
+
+        final var advisor = new AbacMethodAutoConfiguration()
+                .abacMethodAdvisor(provider, new AbacMethodProperties());
+
+        verifyNoInteractions(provider, interceptor);
+        assertThat(((MethodInterceptor) advisor.getAdvice()).invoke(invocation)).isEqualTo("authorized");
     }
 
     @Configuration(proxyBeanMethods = false)

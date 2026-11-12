@@ -5,6 +5,7 @@ import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.ImportRuntimeHints;
 import org.springframework.context.support.MessageSourceAccessor;
 import org.springframework.core.annotation.Order;
 
@@ -14,6 +15,7 @@ import org.springframework.core.annotation.Order;
  * @version 1.0
  */
 @AutoConfiguration
+@ImportRuntimeHints(LoggingRuntimeHints.class)
 public class CoreConfig {
 
 //    @Bean

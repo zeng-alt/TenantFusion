@@ -4,6 +4,7 @@ package com.github.zeng.alt.security.core.reactive;
 import com.github.zeng.alt.security.api.WhiteListService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authorization.AuthorizationDecision;
+import org.springframework.security.authorization.AuthorizationResult;
 import org.springframework.security.authorization.ReactiveAuthorizationManager;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.web.server.authorization.AuthorizationContext;
@@ -29,7 +30,7 @@ public class ReactiveWhiteListAuthorizationManager implements ReactiveAuthorizat
     private final WhiteListService whiteListService;
 
     @Override
-    public Mono<AuthorizationDecision> check(Mono<Authentication> authentication, AuthorizationContext object) {
+    public Mono<AuthorizationResult> authorize(Mono<Authentication> authentication, AuthorizationContext object) {
         Set<String> whiteList = whiteListService.getWhiteList();
         if (CollectionUtils.isEmpty(whiteList)) {
             return Mono.just(new AuthorizationDecision(false));

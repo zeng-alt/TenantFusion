@@ -1,12 +1,10 @@
 package com.github.zeng.alt.camunda.engine.embedded.listener;
 
-import io.holunda.camunda.bpm.data.factory.VariableFactory;
 import lombok.extern.slf4j.Slf4j;
-import org.camunda.bpm.engine.delegate.DelegateTask;
-import org.camunda.bpm.engine.delegate.TaskListener;
+import org.operaton.bpm.engine.delegate.DelegateTask;
+import org.operaton.bpm.engine.delegate.TaskListener;
 import org.springframework.stereotype.Component;
 
-import static io.holunda.camunda.bpm.data.CamundaBpmData.stringVariable;
 
 /**
  * 通用任务监听器骨架
@@ -23,22 +21,12 @@ import static io.holunda.camunda.bpm.data.CamundaBpmData.stringVariable;
 @Slf4j
 public class TaskLoggingListener implements TaskListener {
 
-    public static final VariableFactory<String> BUSINESS_KEY =
-            stringVariable("businessKey");
+    public static final String BUSINESS_KEY = "businessKey";
 
     @Override
     public void notify(DelegateTask delegateTask) {
         String eventName = delegateTask.getEventName();
         log.info("任务事件 [{}] taskId={}, taskDefinitionKey={}, taskName={}, assignee={}, processInstanceId={}, processDefinitionId={}, executionId={}", eventName, delegateTask.getId(), delegateTask.getTaskDefinitionKey(), delegateTask.getName(), delegateTask.getAssignee(), delegateTask.getProcessInstanceId(), delegateTask.getProcessDefinitionId(), delegateTask.getExecutionId());
-//        String businessCode = BUSINESS_KEY.from(delegateTask).get();
-//        log.debug("businessKey={}", businessCode);
-//        switch (eventName) {
-//            case EVENTNAME_CREATE -> onCreate(delegateTask);
-//            case EVENTNAME_ASSIGNMENT -> onAssignment(delegateTask);
-//            case EVENTNAME_COMPLETE -> onComplete(delegateTask);
-//            case EVENTNAME_DELETE -> onDelete(delegateTask);
-//            default -> log.debug("未处理的任务事件: {}", eventName);
-//        }
     }
 
     /**

@@ -8,6 +8,7 @@ import org.springframework.mock.http.server.reactive.MockServerHttpRequest;
 import org.springframework.mock.web.server.MockServerWebExchange;
 import org.springframework.security.authentication.TestingAuthenticationToken;
 import org.springframework.security.authorization.AuthorizationDecision;
+import org.springframework.security.authorization.AuthorizationResult;
 import org.springframework.security.authorization.ReactiveAuthorizationManager;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.web.server.authorization.AuthorizationContext;
@@ -36,7 +37,7 @@ class CompositeReactiveAuthorizationManagerTest {
 
     @Test
     void waitsForEarlierBaseManagerAndStopsAfterItsGrant() {
-        final var pending = TestPublisher.<AuthorizationDecision>create();
+        final var pending = TestPublisher.<AuthorizationResult>create();
         final List<String> calls = new ArrayList<>();
         final ReactiveAuthorizationManager<AuthorizationContext> first = (auth, request) -> {
             calls.add("first");
@@ -48,7 +49,7 @@ class CompositeReactiveAuthorizationManagerTest {
         };
         final var composite = new CompositeReactiveAuthorizationManager(List.of(first, later));
 
-        StepVerifier.create(composite.check(authentication, context))
+        StepVerifier.create(composite.authorize(authentication, context))
                 .then(() -> {
                     assertThat(calls).containsExactly("first");
                     pending.emit(new AuthorizationDecision(true));
@@ -75,7 +76,7 @@ class CompositeReactiveAuthorizationManagerTest {
                 ? new CompositeReactiveAuthorizationManager(managers, List.of())
                 : new CompositeReactiveAuthorizationManager(managers);
 
-        StepVerifier.create(composite.check(authentication, context))
+        StepVerifier.create(composite.authorize(authentication, context))
                 .assertNext(decision -> assertThat(decision.isGranted()).isTrue())
                 .verifyComplete();
         assertThat(calls).isEmpty();
@@ -88,22 +89,22 @@ class CompositeReactiveAuthorizationManagerTest {
                 ? new CompositeReactiveAuthorizationManager(List.of(), List.of())
                 : new CompositeReactiveAuthorizationManager(List.of());
 
-        StepVerifier.create(composite.check(authentication, context))
+        StepVerifier.create(composite.authorize(authentication, context))
                 .assertNext(decision -> assertThat(decision.isGranted()).isFalse())
                 .verifyComplete();
     }
 
     @Test
     void constraintsWaitForBaseAndEachOtherBeforeGranting() {
-        final var base = TestPublisher.<AuthorizationDecision>create();
-        final var first = TestPublisher.<AuthorizationDecision>create();
+        final var base = TestPublisher.<AuthorizationResult>create();
+        final var first = TestPublisher.<AuthorizationResult>create();
         final List<String> calls = new ArrayList<>();
         final var composite = new CompositeReactiveAuthorizationManager(
                 List.of((auth, request) -> base.mono()),
                 List.of(constraint("first", first.mono(), calls), constraint("second", allow(), calls))
         );
 
-        StepVerifier.create(composite.check(authentication, context))
+        StepVerifier.create(composite.authorize(authentication, context))
                 .then(() -> {
                     assertThat(calls).isEmpty();
                     base.emit(new AuthorizationDecision(true));
@@ -118,7 +119,7 @@ class CompositeReactiveAuthorizationManagerTest {
     @ParameterizedTest
     @ValueSource(strings = {"deny", "empty", "null"})
     void nonGrantingConstraintDeniesAndStopsWithoutResumingOr(String outcome) {
-        final Mono<AuthorizationDecision> denial = switch (outcome) {
+        final Mono<AuthorizationResult> denial = switch (outcome) {
             case "deny" -> Mono.just(new AuthorizationDecision(false));
             case "empty" -> Mono.empty();
             default -> null;
@@ -136,7 +137,7 @@ class CompositeReactiveAuthorizationManagerTest {
                 )
         );
 
-        StepVerifier.create(composite.check(authentication, context))
+        StepVerifier.create(composite.authorize(authentication, context))
                 .assertNext(decision -> assertThat(decision.isGranted()).isFalse())
                 .verifyComplete();
         assertThat(calls).containsExactly("first", "denial");
@@ -144,14 +145,14 @@ class CompositeReactiveAuthorizationManagerTest {
 
     @Test
     void waitsForConstraintDenialAndNeverInvokesLaterConstraint() {
-        final var pending = TestPublisher.<AuthorizationDecision>create();
+        final var pending = TestPublisher.<AuthorizationResult>create();
         final List<String> calls = new ArrayList<>();
         final var composite = new CompositeReactiveAuthorizationManager(
                 List.of((auth, request) -> allow()),
                 List.of(constraint("pending", pending.mono(), calls), constraint("unreached", allow(), calls))
         );
 
-        StepVerifier.create(composite.check(authentication, context))
+        StepVerifier.create(composite.authorize(authentication, context))
                 .then(() -> {
                     assertThat(calls).containsExactly("pending");
                     pending.emit(new AuthorizationDecision(false));
@@ -164,7 +165,7 @@ class CompositeReactiveAuthorizationManagerTest {
     @ParameterizedTest
     @ValueSource(strings = {"deny", "empty", "null", "noManagers"})
     void baseWithoutGrantDoesNotEvaluateConstraints(String outcome) {
-        final Mono<AuthorizationDecision> denial = switch (outcome) {
+        final Mono<AuthorizationResult> denial = switch (outcome) {
             case "deny" -> Mono.just(new AuthorizationDecision(false));
             case "empty" -> Mono.empty();
             default -> null;
@@ -176,7 +177,7 @@ class CompositeReactiveAuthorizationManagerTest {
                 managers, List.of(constraint("unreached", allow(), calls))
         );
 
-        StepVerifier.create(composite.check(authentication, context))
+        StepVerifier.create(composite.authorize(authentication, context))
                 .assertNext(decision -> assertThat(decision.isGranted()).isFalse())
                 .verifyComplete();
         assertThat(calls).isEmpty();
@@ -201,7 +202,7 @@ class CompositeReactiveAuthorizationManagerTest {
                 List.of(constraint("unreachedConstraint", allow(), calls))
         );
 
-        StepVerifier.create(composite.check(authentication, context))
+        StepVerifier.create(composite.authorize(authentication, context))
                 .expectErrorSatisfies(error -> assertThat(error).isSameAs(failure))
                 .verify();
         assertThat(calls).isEmpty();
@@ -224,18 +225,31 @@ class CompositeReactiveAuthorizationManagerTest {
                 List.of(broken, constraint("unreached", allow(), calls))
         );
 
-        StepVerifier.create(composite.check(authentication, context))
+        StepVerifier.create(composite.authorize(authentication, context))
                 .expectErrorSatisfies(error -> assertThat(error).isSameAs(failure))
                 .verify();
         assertThat(calls).containsExactly("broken");
     }
 
-    private Mono<AuthorizationDecision> allow() {
+    @Test
+    void preservesCustomAuthorizationResultAfterConstraintsGrant() {
+        final AuthorizationResult granted = () -> true;
+        final var composite = new CompositeReactiveAuthorizationManager(
+                List.of((auth, request) -> Mono.just(granted)),
+                List.of((auth, request) -> Mono.just(() -> true))
+        );
+
+        StepVerifier.create(composite.authorize(authentication, context))
+                .assertNext(result -> assertThat(result).isSameAs(granted))
+                .verifyComplete();
+    }
+
+    private Mono<AuthorizationResult> allow() {
         return Mono.just(new AuthorizationDecision(true));
     }
 
     private ReactiveAuthorizationConstraint<AuthorizationContext> constraint(
-            String name, Mono<AuthorizationDecision> decision, List<String> calls
+            String name, Mono<AuthorizationResult> decision, List<String> calls
     ) {
         return (auth, request) -> {
             assertThat(auth).isSameAs(authentication);

@@ -7,20 +7,6 @@ plugins {
 }
 
 
-// 覆盖 Boot 3.5.16 尚未包含的同主版本安全修复；应用和组件使用同一版本基线。
-val securityDependencyVersions = mapOf(
-    "commons-lang3.version" to "3.18.0",
-    "httpclient5.version" to "5.6.3",
-    "httpcore5.version" to "5.4.3",
-    "jackson-bom.version" to "2.21.7",
-    "log4j2.version" to "2.25.5",
-    "netty.version" to "4.1.137.Final",
-    "postgresql.version" to "42.7.12",
-    "tomcat.version" to "10.1.59"
-)
-
-
-
 allprojects {
     group = "com.github.zeng.alt"
     version = "0.0.1-SNAPSHOT"
@@ -33,18 +19,27 @@ subprojects {
     // 仅处理 backend 子模块
     if (!path.startsWith(":backend")) return@subprojects
 
-    securityDependencyVersions.forEach { (name, version) -> extra[name] = version }
+    // Boot 默认 7.4.13 缺少对应增强插件；运行时与已发布插件一起对齐到 7.4.15。
+    extra["hibernate.version"] = rootProject.libs.versions.hibernate.orm.get()
     apply(plugin = "io.spring.dependency-management")
 
+    // 防止遗留传递依赖把旧 Camunda 引擎带回 Operaton 应用。
+    configurations.configureEach {
+        exclude(group = "org.camunda.bpm")
+        exclude(group = "org.camunda.bpm.model")
+        exclude(group = "org.camunda.bpm.springboot")
+        exclude(group = "org.camunda.spin")
+        exclude(group = "org.camunda.connect")
+    }
+
     the<io.spring.gradle.dependencymanagement.dsl.DependencyManagementExtension>().apply {
-        dependencies {
-            dependency("org.bouncycastle:bcprov-jdk18on:1.85")
-        }
         imports {
-            mavenBom("org.springdoc:springdoc-openapi-bom:2.8.17")
+            mavenBom("org.springdoc:springdoc-openapi-bom:3.2.0")
+            // 使用 Boot 4.1.2 的完整依赖基线，不沿用 Boot 3.5 的版本覆盖。
             mavenBom(org.springframework.boot.gradle.plugin.SpringBootPlugin.BOM_COORDINATES) {
-                securityDependencyVersions.forEach { (name, version) -> bomProperty(name, version) }
+                bomProperty("hibernate.version", rootProject.libs.versions.hibernate.orm.get())
             }
+            mavenBom("org.springframework.cloud:spring-cloud-dependencies:${rootProject.libs.versions.spring.cloud.get()}")
             mavenBom(rootProject.libs.spring.modulith.bom.get().toString())
             mavenBom("io.opentelemetry.instrumentation:opentelemetry-instrumentation-bom:2.28.1")
             mavenBom(rootProject.libs.aws.bom.get().toString())

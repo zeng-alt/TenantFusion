@@ -77,10 +77,10 @@ class CamundaIdentityProviderTest {
 
     @Test
     void groupQuery_byMember_returnsGroups() {
-        // 直接构造无 CommandExecutor 的查询，避免单元测试依赖 ProcessEngine 上下文
-        var groups = new CamundaGroupQuery(provider)
-                .groupMember("admin")
-                .list();
+        // 单元测试直接验证过滤；.list() 在 Operaton 中必须由真实引擎命令上下文执行。
+        var query = new CamundaGroupQuery(provider);
+        query.groupMember("admin");
+        var groups = query.executeList(null, null);
         assertEquals(1, groups.size());
         assertEquals("ADMIN", groups.get(0).getId());
     }

@@ -10,6 +10,10 @@ plugins {
 graalvmNative {
     binaries {
         named("main") {
+            javaLauncher.set(javaToolchains.launcherFor {
+                languageVersion.set(JavaLanguageVersion.of(25))
+                vendor.set(JvmVendorSpec.GRAAL_VM)
+            })
             buildArgs.addAll(
                 "-H:+ReportExceptionStackTraces", // 打印完整异常堆栈
                 "-H:-CheckToolchain",
@@ -28,7 +32,17 @@ graalvmNative {
     }
     metadataRepository {
         enabled.set(true)
-        version.set("0.3.15")
+        val metadataVersion = rootProject.libs.versions.graalvm.metadata.get()
+        version.set(metadataVersion)
+        uri(
+            "https://repo.maven.apache.org/maven2/org/graalvm/buildtools/graalvm-reachability-metadata/"
+                    + "$metadataVersion/graalvm-reachability-metadata-$metadataVersion-repository.zip"
+        )
+        // 未测试的 Netty 4.2.19 会回退到 Netty 5 alpha 元数据；选择对应的稳定元数据。
+        moduleToConfigVersion.put("io.netty:netty-common", "4.2.1.Final")
+        moduleToConfigVersion.put("io.netty:netty-transport", "4.2.1.Final")
+        moduleToConfigVersion.put("io.netty:netty-resolver", "4.1.80.Final")
+        moduleToConfigVersion.put("io.netty:netty-codec", "4.1.105.Final")
     }
 }
 
@@ -43,6 +57,7 @@ tasks.named<org.springframework.boot.gradle.tasks.run.BootRun>("bootRun") {
 val activeProfile = project.findProperty("profiles.active") as? String ?: "dev"
 
 dependencies {
+    testImplementation("org.springframework.boot:spring-boot-web-server")
 
     implementation("org.springframework.boot:spring-boot-starter-actuator")
     //    if (activeProfile != "prod") {
@@ -120,5 +135,12 @@ dependencies {
 tasks.named<Test>("test") {
     if (providers.environmentVariable("SECURITY_DOCKER_TESTS").orNull == "true") {
         outputs.upToDateWhen { false }
+    }
+}
+
+// Spring Data 4.1 的查询源码生成尚不能处理 Vavr Option；保留仓库契约和标准 AOT 提示。
+tasks.withType<JavaExec>().configureEach {
+    if (name == "processAot" || name == "processTestAot") {
+        systemProperty("spring.aot.jpa.repositories.enabled", "false")
     }
 }

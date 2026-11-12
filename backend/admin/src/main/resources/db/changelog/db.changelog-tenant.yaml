@@ -1,8 +1,13 @@
 databaseChangeLog:
 
-  # 独立物理租户库的 changelog，由 admin 的 TenantStoreLiquibaseConfiguration 在
-  # tenantStoreDataSource 上执行（业务库不再建 main_tenant 表）。
-  # 目录由该 Bean 传入的 tenantChangelogDir 参数决定：dev -> tenant/h2，prod -> tenant/pg。
-  - includeAll:
-      path: ${tenantChangelogDir}/
+  # 独立租户库使用显式文件清单，避免 Native 下自建 Liquibase 执行器的动态目录枚举。
+  # 保留原 SQL 文件路径与 changeset 标识；新增迁移时在这里追加一项。
+  - include:
+      file: ${tenantChangelogDir}/V0001-2026-10-02-init-tenant-store.sql
+      relativeToChangelogFile: true
+  - include:
+      file: ${tenantChangelogDir}/V0002-2026-10-02-seed-demo-tenant.sql
+      relativeToChangelogFile: true
+  - include:
+      file: ${tenantChangelogDir}/V0003-2026-10-02-seed-hybrid-demo-tenants.sql
       relativeToChangelogFile: true

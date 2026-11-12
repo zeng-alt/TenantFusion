@@ -29,7 +29,7 @@ public class AdminAbacAuthorizationConstraint implements AuthorizationConstraint
     private final WhiteListService whiteList;
 
     @Override
-    public AuthorizationDecision check(Supplier<Authentication> authentication, RequestAuthorizationContext context) {
+    public AuthorizationDecision authorize(Supplier<? extends Authentication> authentication, RequestAuthorizationContext context) {
         final var request = context.getRequest();
         if (whiteList.getWhiteList().stream()
                 .anyMatch(path -> PathPatternRequestMatcher.withDefaults().matcher(path).matches(request))) {

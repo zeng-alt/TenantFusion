@@ -2,7 +2,7 @@ package com.github.zeng.alt.storage.redisson.suepr;
 
 import com.github.zeng.alt.storage.DefaultKeyPrefixStrategy;
 import com.github.zeng.alt.storage.KeyPrefixStrategy;
-import org.redisson.api.NameMapper;
+import org.redisson.config.NameMapper;
 
 import java.util.Objects;
 

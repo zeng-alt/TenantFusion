@@ -5,6 +5,18 @@ plugins {
 description = "Excel 导入导出组件"
 
 dependencies {
+    testImplementation("org.springframework.boot:spring-boot-starter-webflux-test")
+    testImplementation("org.springframework.boot:spring-boot-web-server")
+    testImplementation("org.springframework.boot:spring-boot-servlet")
+    testImplementation("org.springframework.boot:spring-boot-jackson2")
+    testImplementation("org.springframework.boot:spring-boot-http-converter")
+    testImplementation("org.springframework.boot:spring-boot-http-codec")
+    compileOnly("org.springframework.boot:spring-boot-webmvc")
+    testImplementation("org.springframework.boot:spring-boot-webmvc")
+    compileOnly("org.springframework.boot:spring-boot-webflux")
+    testImplementation("org.springframework.boot:spring-boot-webflux")
+    compileOnly("org.springframework.boot:spring-boot-validation")
+    testImplementation("org.springframework.boot:spring-boot-validation")
     api(project(":backend:components:api-component"))
     implementation(project(":backend:components:core-component"))
     implementation(project(":backend:components:i18n-component"))

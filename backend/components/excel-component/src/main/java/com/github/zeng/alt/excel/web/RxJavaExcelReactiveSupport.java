@@ -2,6 +2,7 @@ package com.github.zeng.alt.excel.web;
 
 import com.github.zeng.alt.excel.rx.RxExcel;
 import io.reactivex.rxjava3.core.Flowable;
+import io.reactivex.rxjava3.schedulers.Schedulers;
 import io.vavr.control.Try;
 
 import java.util.ArrayList;
@@ -50,6 +51,7 @@ public class RxJavaExcelReactiveSupport implements ExcelReactiveSupport {
      * {@code Flowable.using} 保证订阅时才 open、流终结时一定 close。
      */
     private static Flowable<?> lazyStream(ExcelStreamSource source) {
-        return Flowable.using(() -> source, s -> RxExcel.stream(s.open()), ExcelStreamSource::close);
+        return Flowable.using(() -> source, s -> RxExcel.stream(s.open()), ExcelStreamSource::close)
+                .subscribeOn(Schedulers.io());
     }
 }

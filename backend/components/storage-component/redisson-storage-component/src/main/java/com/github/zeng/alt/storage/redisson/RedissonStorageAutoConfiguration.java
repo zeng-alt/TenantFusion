@@ -18,9 +18,10 @@ import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
-import org.springframework.boot.autoconfigure.jackson.Jackson2ObjectMapperBuilderCustomizer;
+import org.springframework.boot.jackson2.autoconfigure.Jackson2ObjectMapperBuilderCustomizer;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.ImportRuntimeHints;
 import org.springframework.http.converter.json.Jackson2ObjectMapperBuilder;
 
 import java.util.List;
@@ -39,6 +40,7 @@ import java.util.Objects;
 @AutoConfiguration(before = {StorageAutoConfiguration.class})
 @EnableConfigurationProperties({RedissonProperties.class})
 @ConditionalOnClass(RedissonClient.class)
+@ImportRuntimeHints(RedissonRuntimeHints.class)
 public class RedissonStorageAutoConfiguration {
 
     private final RedissonProperties redissonProperties;

@@ -5,6 +5,8 @@ plugins {
 description = "liquibase-tenant-component"
 
 dependencies {
+    implementation("org.springframework.boot:spring-boot-liquibase")
+    implementation("org.springframework.boot:spring-boot-jpa")
     api(project(":backend:components:tenant-component:api-tenant-component"))
     api(project(":backend:components:tenant-component:core-tenant-component"))
     implementation("org.springframework.boot:spring-boot-autoconfigure")

@@ -5,10 +5,11 @@ plugins {
 description = "领域模型基础：JPA 实体、Repository、QueryDSL 支持等"
 
 dependencies {
+    implementation("org.springframework.boot:spring-boot-hibernate")
     api(project(":backend:components:core-component"))
     api("jakarta.persistence:jakarta.persistence-api")
     api("org.hibernate.orm:hibernate-core")
-    api("org.hibernate.validator:hibernate-validator")
+    api(rootProject.libs.spring.boot.starter.validation)
     api(rootProject.libs.jpa.search.helper)
     api(project(":backend:components:rest-component:rest-annotation-component"))
     implementation("org.springframework.data:spring-data-commons")

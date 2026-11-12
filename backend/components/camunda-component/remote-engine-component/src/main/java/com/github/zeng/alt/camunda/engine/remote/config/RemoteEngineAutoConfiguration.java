@@ -2,7 +2,6 @@ package com.github.zeng.alt.camunda.engine.remote.config;
 
 import org.camunda.community.rest.client.EnableCamundaFeignClients;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
-import org.springframework.cloud.openfeign.EnableFeignClients;
 import org.springframework.context.annotation.ComponentScan;
 
 /**
@@ -20,7 +19,6 @@ import org.springframework.context.annotation.ComponentScan;
  */
 @AutoConfiguration
 @EnableCamundaFeignClients
-@EnableFeignClients(basePackages = "org.camunda.community.rest.client.api")
 @ComponentScan(basePackages = "com.github.zeng.alt.camunda.engine.remote")
 public class RemoteEngineAutoConfiguration {
 

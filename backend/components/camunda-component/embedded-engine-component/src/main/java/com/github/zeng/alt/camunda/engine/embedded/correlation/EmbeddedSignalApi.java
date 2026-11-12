@@ -2,7 +2,7 @@ package com.github.zeng.alt.camunda.engine.embedded.correlation;
 
 import com.github.zeng.alt.camunda.engine.api.correlation.SendSignalCmd;
 import com.github.zeng.alt.camunda.engine.api.correlation.SignalApi;
-import org.camunda.bpm.engine.RuntimeService;
+import org.operaton.bpm.engine.RuntimeService;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 

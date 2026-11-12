@@ -14,7 +14,7 @@ import java.nio.file.Path;
  * <p>
  * {@code FilePart#transferTo} 是 {@code Mono}，而 {@link ExcelStreamSource#open()}
  * 是同步的，所以这里 {@code block()} 等落盘完成。这不会卡事件循环——
- * {@code open()} 由 {@code RxExcel.stream} 在 {@code Schedulers.io()} 上调用，
+ * {@code open()} 由 {@code RxJavaExcelReactiveSupport} 在 {@code Schedulers.io()} 上调用，
  * 那是允许阻塞的线程。{@code Flux} 形状不走本类，它在解析器里全程非阻塞。
  *
  * @author zengJiaJun

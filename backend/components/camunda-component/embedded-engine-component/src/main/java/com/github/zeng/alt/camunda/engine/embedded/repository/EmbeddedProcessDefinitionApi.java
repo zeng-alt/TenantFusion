@@ -4,8 +4,8 @@ import com.github.zeng.alt.api.rest.PageRestResponse;
 import com.github.zeng.alt.camunda.engine.api.repository.ProcessDefinitionApi;
 import com.github.zeng.alt.camunda.engine.api.repository.ProcessDefinitionInfo;
 import com.github.zeng.alt.camunda.engine.api.repository.ProcessDefinitionQuery;
-import org.camunda.bpm.engine.RepositoryService;
-import org.camunda.bpm.engine.repository.ProcessDefinition;
+import org.operaton.bpm.engine.RepositoryService;
+import org.operaton.bpm.engine.repository.ProcessDefinition;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
@@ -27,7 +27,7 @@ public class EmbeddedProcessDefinitionApi implements ProcessDefinitionApi {
 
     @Override
     public PageRestResponse<ProcessDefinitionInfo> query(ProcessDefinitionQuery q) {
-        org.camunda.bpm.engine.repository.ProcessDefinitionQuery query = repositoryService.createProcessDefinitionQuery();
+        org.operaton.bpm.engine.repository.ProcessDefinitionQuery query = repositoryService.createProcessDefinitionQuery();
         if (StringUtils.hasText(q.getKey())) {
             query.processDefinitionKey(q.getKey());
         }

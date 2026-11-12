@@ -1,10 +1,10 @@
 package com.github.zeng.alt.camunda.identity.api;
 
-import org.camunda.bpm.engine.identity.Tenant;
-import org.camunda.bpm.engine.impl.Page;
-import org.camunda.bpm.engine.impl.TenantQueryImpl;
-import org.camunda.bpm.engine.impl.interceptor.CommandContext;
-import org.camunda.bpm.engine.impl.interceptor.CommandExecutor;
+import org.operaton.bpm.engine.identity.Tenant;
+import org.operaton.bpm.engine.impl.Page;
+import org.operaton.bpm.engine.impl.TenantQueryImpl;
+import org.operaton.bpm.engine.impl.interceptor.CommandContext;
+import org.operaton.bpm.engine.impl.interceptor.CommandExecutor;
 
 import java.util.List;
 

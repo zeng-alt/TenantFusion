@@ -4,9 +4,9 @@ import com.github.zeng.alt.camunda.engine.api.deploy.DeployBundleCommand;
 import com.github.zeng.alt.camunda.engine.api.deploy.DeploymentApi;
 import com.github.zeng.alt.camunda.engine.api.deploy.DeploymentInformation;
 import com.github.zeng.alt.camunda.engine.api.deploy.NamedResource;
-import org.camunda.bpm.engine.RepositoryService;
-import org.camunda.bpm.engine.repository.Deployment;
-import org.camunda.bpm.engine.repository.DeploymentBuilder;
+import org.operaton.bpm.engine.RepositoryService;
+import org.operaton.bpm.engine.repository.Deployment;
+import org.operaton.bpm.engine.repository.DeploymentBuilder;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 

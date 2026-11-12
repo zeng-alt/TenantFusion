@@ -4,7 +4,7 @@ import com.github.zeng.alt.camunda.identity.api.CamundaIdentityProvider;
 import com.github.zeng.alt.camunda.identity.api.CamundaIdentityProviderPlugin;
 import com.github.zeng.alt.camunda.identity.api.CamundaTenantSource;
 import com.github.zeng.alt.camunda.identity.api.CamundaUserGroupSource;
-import org.camunda.bpm.engine.impl.cfg.ProcessEnginePlugin;
+import org.operaton.bpm.engine.impl.cfg.ProcessEnginePlugin;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;

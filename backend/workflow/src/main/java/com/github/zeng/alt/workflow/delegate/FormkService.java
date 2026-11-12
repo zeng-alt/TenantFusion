@@ -6,11 +6,10 @@ import com.github.zeng.alt.json.JacksonHelper;
 import com.github.zeng.alt.workflow.model.GlobalFormDataSubmitCmd;
 import com.github.zeng.alt.workflow.model.GlobalFormDataVO;
 import com.github.zeng.alt.workflow.service.GlobalFormDataService;
-import io.holunda.camunda.bpm.data.CamundaBpmData;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.apachecommons.CommonsLog;
-import org.camunda.bpm.engine.delegate.DelegateExecution;
-import org.camunda.bpm.engine.delegate.JavaDelegate;
+import org.operaton.bpm.engine.delegate.DelegateExecution;
+import org.operaton.bpm.engine.delegate.JavaDelegate;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
@@ -29,7 +28,7 @@ import org.springframework.util.StringUtils;
  *         （{@code <camunda:inputParameter name="formk:delete:test" />}）。</li>
  * </ul>
  * 引擎的 IO 映射会将上述输入参数解析为当前执行上的局部流程变量，本服务通过
- * camunda-bpm-data（{@link CamundaBpmData}）读取这些变量，再对当前流程实例已初始化的
+ * Operaton 的局部变量 API 读取这些变量，再对当前流程实例已初始化的
  * 全局表单数据（{@link GlobalFormDataService}）原地增删后提交；未配置任何操作指令时仅记录日志，
  * 不影响流程执行。
  *
@@ -95,7 +94,7 @@ public class FormkService implements JavaDelegate {
      * 读取输入参数对应的局部流程变量值
      */
     private Object readInput(DelegateExecution execution, String name) {
-        return CamundaBpmData.customVariable(name, Object.class).from(execution).getLocalOrNull();
+        return execution.getVariableLocal(name);
     }
 
     /**

@@ -5,7 +5,7 @@ plugins {
 description = "api-camunda-component"
 
 dependencies {
-    api("org.camunda.bpm:camunda-engine:7.24.0")
+    api("org.operaton.bpm:operaton-engine:${rootProject.libs.versions.operaton.get()}")
     implementation("org.springframework.boot:spring-boot-autoconfigure")
     implementation("org.springframework:spring-context")
     implementation(project(":backend:components:security-component:core-security-component"))

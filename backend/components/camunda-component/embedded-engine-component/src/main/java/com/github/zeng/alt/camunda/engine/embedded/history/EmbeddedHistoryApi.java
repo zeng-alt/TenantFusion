@@ -7,11 +7,11 @@ import com.github.zeng.alt.camunda.engine.api.history.HistoricProcessInstanceQue
 import com.github.zeng.alt.camunda.engine.api.history.HistoricTaskInfo;
 import com.github.zeng.alt.camunda.engine.api.history.HistoricVariableInfo;
 import com.github.zeng.alt.camunda.engine.api.history.HistoryApi;
-import org.camunda.bpm.engine.HistoryService;
-import org.camunda.bpm.engine.history.HistoricActivityInstance;
-import org.camunda.bpm.engine.history.HistoricProcessInstance;
-import org.camunda.bpm.engine.history.HistoricTaskInstance;
-import org.camunda.bpm.engine.history.HistoricVariableInstance;
+import org.operaton.bpm.engine.HistoryService;
+import org.operaton.bpm.engine.history.HistoricActivityInstance;
+import org.operaton.bpm.engine.history.HistoricProcessInstance;
+import org.operaton.bpm.engine.history.HistoricTaskInstance;
+import org.operaton.bpm.engine.history.HistoricVariableInstance;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
@@ -37,7 +37,7 @@ public class EmbeddedHistoryApi implements HistoryApi {
 
     @Override
     public PageRestResponse<HistoricProcessInstanceInfo> queryProcessInstances(HistoricProcessInstanceQuery query) {
-        org.camunda.bpm.engine.history.HistoricProcessInstanceQuery camundaQuery =
+        org.operaton.bpm.engine.history.HistoricProcessInstanceQuery camundaQuery =
                 historyService.createHistoricProcessInstanceQuery();
 
         if (StringUtils.hasText(query.getProcessDefinitionKey())) {
@@ -88,7 +88,7 @@ public class EmbeddedHistoryApi implements HistoryApi {
     @Override
     public PageRestResponse<HistoricTaskInfo> queryTasks(String assignee, String processInstanceId, Boolean finished,
                                                          int pageNo, int pageSize) {
-        org.camunda.bpm.engine.history.HistoricTaskInstanceQuery camundaQuery =
+        org.operaton.bpm.engine.history.HistoricTaskInstanceQuery camundaQuery =
                 historyService.createHistoricTaskInstanceQuery();
         if (StringUtils.hasText(assignee)) {
             camundaQuery.taskAssignee(assignee);
@@ -121,7 +121,7 @@ public class EmbeddedHistoryApi implements HistoryApi {
     @Override
     public PageRestResponse<HistoricVariableInfo> queryVariables(String processInstanceId, String variableName,
                                                                  int pageNo, int pageSize) {
-        org.camunda.bpm.engine.history.HistoricVariableInstanceQuery camundaQuery =
+        org.operaton.bpm.engine.history.HistoricVariableInstanceQuery camundaQuery =
                 historyService.createHistoricVariableInstanceQuery()
                         .processInstanceId(processInstanceId);
         if (StringUtils.hasText(variableName)) {

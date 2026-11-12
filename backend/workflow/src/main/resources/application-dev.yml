@@ -48,7 +48,7 @@ security:
     enabled-access: true
 
 
-camunda:
+operaton:
   bpm:
     authorization:
       enabled: false

@@ -2,6 +2,11 @@
   port: 8080
 
 spring:
+  http:
+    converters:
+      preferred-json-mapper: jackson2
+    codecs:
+      preferred-json-mapper: jackson2
   application:
     name: admin-application
   profiles:

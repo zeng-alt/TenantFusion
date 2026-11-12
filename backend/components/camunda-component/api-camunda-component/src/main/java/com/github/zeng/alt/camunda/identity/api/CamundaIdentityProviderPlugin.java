@@ -1,8 +1,8 @@
 package com.github.zeng.alt.camunda.identity.api;
 
-import org.camunda.bpm.engine.ProcessEngine;
-import org.camunda.bpm.engine.impl.cfg.ProcessEngineConfigurationImpl;
-import org.camunda.bpm.engine.impl.cfg.ProcessEnginePlugin;
+import org.operaton.bpm.engine.ProcessEngine;
+import org.operaton.bpm.engine.impl.cfg.ProcessEngineConfigurationImpl;
+import org.operaton.bpm.engine.impl.cfg.ProcessEnginePlugin;
 
 /**
  * 将自定义 {@link CamundaIdentityProvider} 注册为 Camunda 引擎的身份提供者插件。

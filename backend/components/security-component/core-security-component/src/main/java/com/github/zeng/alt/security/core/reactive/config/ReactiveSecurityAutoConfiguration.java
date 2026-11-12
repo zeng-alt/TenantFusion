@@ -86,7 +86,7 @@ public class ReactiveSecurityAutoConfiguration {
 			);
 			http.addFilterAfter(
 					new AuthorizationWebFilter((authentication, exchange) ->
-							manager.check(authentication, new AuthorizationContext(exchange))),
+							manager.authorize(authentication, new AuthorizationContext(exchange))),
 					SecurityWebFiltersOrder.AUTHORIZATION
 			);
 		}

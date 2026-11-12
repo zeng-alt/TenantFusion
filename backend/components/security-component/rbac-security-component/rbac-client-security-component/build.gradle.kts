@@ -5,6 +5,9 @@ plugins {
 description = "rbac client security"
 
 dependencies {
+    testImplementation("org.springframework.boot:spring-boot-starter-test")
+    testImplementation("org.springframework.boot:spring-boot-starter-webmvc")
+    testImplementation("org.springframework.boot:spring-boot-starter-webflux")
     implementation("org.springframework.boot:spring-boot-autoconfigure")
     implementation("org.springframework:spring-web")
     implementation("io.projectreactor:reactor-core")

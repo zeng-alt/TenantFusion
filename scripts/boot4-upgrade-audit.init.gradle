@@ -1,0 +1,122 @@
+// 后端升级验证入口；各任务显式选择普通编译、回归检查或补充诊断，不运行前端。
+gradle.projectsEvaluated {
+    def backendProjects = gradle.rootProject.allprojects.findAll { it.path.startsWith(':backend') }
+    gradle.rootProject.tasks.register('boot4BackendCompile') {
+        group = 'verification'
+        description = 'Compile every backend main/test Java source set for the Boot 4 upgrade audit'
+        dependsOn(backendProjects.collectMany { p ->
+            ['compileJava', 'compileTestJava'].collect { p.tasks.findByName(it) }.findAll { it != null }
+        })
+    }
+    // SQL 导出器是手动开发工具；正常回归按仓库 *Test 约定执行。
+    backendProjects.each { p ->
+        p.tasks.withType(Test).configureEach {
+            filter { includeTestsMatching('*Test') }
+        }
+    }
+    gradle.rootProject.tasks.register('boot4BackendTest') {
+        group = 'verification'
+        description = 'Run all backend regression tests using real project dependencies'
+        dependsOn(backendProjects.collect { it.tasks.findByName('test') }.findAll { it != null })
+    }
+    gradle.rootProject.tasks.register('boot4BackendCheck') {
+        group = 'verification'
+        description = 'Run every backend check task and package both applications'
+        dependsOn(backendProjects.collect { it.tasks.findByName('check') }.findAll { it != null })
+        dependsOn(':backend:admin:bootJar', ':backend:workflow:bootJar')
+    }
+    gradle.rootProject.tasks.register('boot4BackendInventory') {
+        group = 'verification'
+        doLast {
+            def report = new File(gradle.rootProject.buildDir, 'reports/boot4-upgrade')
+            report.mkdirs()
+            def inventory = backendProjects.collect { p ->
+                [path: p.path,
+                 mainJava: p.tasks.findByName('compileJava')?.source?.files?.count { it.name.endsWith('.java') } ?: 0,
+                 testJava: p.tasks.findByName('compileTestJava')?.source?.files?.count { it.name.endsWith('.java') } ?: 0]
+            }
+            new File(report, 'projects.json').text = groovy.json.JsonOutput.prettyPrint(
+                    groovy.json.JsonOutput.toJson(inventory))
+            println "Backend projects: ${inventory.size()}"
+        }
+    }
+    gradle.rootProject.tasks.register('boot4DependencyInventory') {
+        group = 'verification'
+        doLast {
+            def rows = []
+            def unresolved = []
+            backendProjects.each { p ->
+                def configuration = p.configurations.findByName('compileClasspath')
+                if (configuration != null && configuration.canBeResolved) {
+                    def resolution = configuration.incoming.resolutionResult
+                    resolution.allComponents.each { component ->
+                        def id = component.moduleVersion
+                        if (id != null && (id.group.startsWith('org.springframework')
+                                || id.group.startsWith('org.hibernate') || id.group.startsWith('org.operaton')
+                                || id.group.startsWith('org.camunda') || id.group.startsWith('org.redisson')
+                                || id.group.startsWith('com.fasterxml.jackson') || id.group.startsWith('tools.jackson')
+                                || id.group.startsWith('io.holunda') || id.group == 'app.tozzi')) {
+                            rows.add([project: p.path, module: "${id.group}:${id.name}", version: id.version])
+                        }
+                    }
+                    resolution.allDependencies.findAll {
+                        it instanceof org.gradle.api.artifacts.result.UnresolvedDependencyResult
+                    }.each { dependency ->
+                        unresolved.add([project: p.path, requested: dependency.attempted.displayName,
+                                        reason: dependency.failure.message])
+                    }
+                }
+            }
+            def report = new File(gradle.rootProject.buildDir, 'reports/boot4-upgrade')
+            report.mkdirs()
+            new File(report, 'dependencies.json').text = groovy.json.JsonOutput.prettyPrint(
+                    groovy.json.JsonOutput.toJson([resolved: rows.unique(), unresolved: unresolved.unique()]))
+            println "Resolved framework coordinates: ${rows.size()}, unresolved dependencies: ${unresolved.size()}"
+        }
+    }
+
+    // 上游失败会阻断普通编译。此探测借用已有组件薄 JAR，仅用于发现更多源码错误，不能作为迁移通过证明。
+    def sourceProbes = []
+    def componentJars = backendProjects.collectEntries { p ->
+        def jar = p.tasks.findByName('jar')
+        [(p.path): jar == null ? null : jar.archiveFile.get().asFile]
+    }
+    backendProjects.findAll { it.plugins.hasPlugin('java') || it.plugins.hasPlugin('java-library') }.each { p ->
+        p.sourceSets.each { sourceSet ->
+            if (!(sourceSet.name in ['main', 'test'])) {
+                return
+            }
+            def original = p.tasks.named(sourceSet.compileJavaTaskName).get()
+            def probe = p.tasks.register("boot4Probe${sourceSet.name.capitalize()}", JavaCompile) {
+                group = 'verification'
+                description = 'Diagnostic compilation using existing component bytecode as placeholders'
+                source(sourceSet.java)
+                javaCompiler.set(original.javaCompiler)
+                classpath = p.files(p.provider {
+                    def external = p.configurations.getByName(sourceSet.compileClasspathConfigurationName)
+                            .incoming.artifactView { lenient(true) }.files.files.findAll {
+                        !it.toPath().startsWith(gradle.rootProject.projectDir.toPath().resolve('backend'))
+                    }
+                    def placeholders = componentJars.findAll { path, file ->
+                        file != null && file.isFile() && (sourceSet.name == 'test' || path != p.path)
+                    }.values()
+                    external + placeholders
+                })
+                options.annotationProcessorPath = p.files(p.provider {
+                    p.configurations.getByName(sourceSet.annotationProcessorConfigurationName)
+                            .incoming.artifactView { lenient(true) }.files.files
+                })
+                options.compilerArgs.addAll(original.options.compilerArgs)
+                destinationDirectory.set(p.layout.buildDirectory.dir("boot4-probe/${sourceSet.name}/classes"))
+                options.generatedSourceOutputDirectory.set(
+                        p.layout.buildDirectory.dir("boot4-probe/${sourceSet.name}/generated"))
+            }
+            sourceProbes.add(probe)
+        }
+    }
+    gradle.rootProject.tasks.register('boot4BackendSourceProbe') {
+        group = 'verification'
+        description = 'Find additional source incompatibilities without treating placeholder-based builds as passing'
+        dependsOn(sourceProbes)
+    }
+}

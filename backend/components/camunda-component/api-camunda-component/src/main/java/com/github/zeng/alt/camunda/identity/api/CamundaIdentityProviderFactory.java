@@ -1,8 +1,8 @@
 package com.github.zeng.alt.camunda.identity.api;
 
-import org.camunda.bpm.engine.impl.identity.ReadOnlyIdentityProvider;
-import org.camunda.bpm.engine.impl.interceptor.Session;
-import org.camunda.bpm.engine.impl.interceptor.SessionFactory;
+import org.operaton.bpm.engine.impl.identity.ReadOnlyIdentityProvider;
+import org.operaton.bpm.engine.impl.interceptor.Session;
+import org.operaton.bpm.engine.impl.interceptor.SessionFactory;
 
 /**
  * 为 Camunda 引擎提供自定义 {@link ReadOnlyIdentityProvider} 会话。

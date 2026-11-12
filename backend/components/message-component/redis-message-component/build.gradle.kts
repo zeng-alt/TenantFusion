@@ -5,6 +5,7 @@ plugins {
 description = "redis-message-component"
 
 dependencies {
+    implementation(project(":backend:components:json-component"))
     api(project(":backend:components:message-component:api-message-component"))
     implementation("org.springframework.boot:spring-boot-starter-data-redis")
     implementation(rootProject.libs.redisson.spring.boot.starter)

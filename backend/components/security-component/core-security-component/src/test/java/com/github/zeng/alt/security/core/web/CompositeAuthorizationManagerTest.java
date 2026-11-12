@@ -3,8 +3,7 @@ package com.github.zeng.alt.security.core.web;
 import com.github.zeng.alt.security.api.AuthorizationConstraint;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.CsvSource;
-import org.junit.jupiter.params.provider.EnumSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.security.authentication.TestingAuthenticationToken;
 import org.springframework.security.authorization.AuthorizationDecision;
@@ -39,8 +38,8 @@ class CompositeAuthorizationManagerTest {
             new RequestAuthorizationContext(new MockHttpServletRequest());
 
     @ParameterizedTest
-    @CsvSource({"CHECK,false", "CHECK,true", "AUTHORIZE,false", "AUTHORIZE,true"})
-    void bothConstructorsKeepOrAndStopAtFirstGrant(EntryPoint entryPoint, boolean withConstraints) {
+    @ValueSource(booleans = {false, true})
+    void bothConstructorsKeepOrAndStopAtFirstGrant(boolean withConstraints) {
         final List<String> calls = new ArrayList<>();
         final List<AuthorizationManager<RequestAuthorizationContext>> managers = List.of(
                 base("abstain", null, calls),
@@ -52,36 +51,34 @@ class CompositeAuthorizationManagerTest {
                 ? new CompositeAuthorizationManager(managers, List.of())
                 : new CompositeAuthorizationManager(managers);
 
-        assertThat(evaluate(composite, entryPoint).isGranted()).isTrue();
+        assertThat(composite.authorize(authentication, context).isGranted()).isTrue();
         assertThat(calls).containsExactly("abstain", "deny", "allow");
     }
 
     @ParameterizedTest
-    @CsvSource({"CHECK,false", "CHECK,true", "AUTHORIZE,false", "AUTHORIZE,true"})
-    void bothConstructorsDenyWithoutBaseManagers(EntryPoint entryPoint, boolean withConstraints) {
+    @ValueSource(booleans = {false, true})
+    void bothConstructorsDenyWithoutBaseManagers(boolean withConstraints) {
         final var composite = withConstraints
                 ? new CompositeAuthorizationManager(List.of(), List.of())
                 : new CompositeAuthorizationManager(List.of());
 
-        assertThat(evaluate(composite, entryPoint).isGranted()).isFalse();
+        assertThat(composite.authorize(authentication, context).isGranted()).isFalse();
     }
 
-    @ParameterizedTest
-    @EnumSource(EntryPoint.class)
-    void grantsOnlyAfterAllConstraintsAllowInOrder(EntryPoint entryPoint) {
+    @Test
+    void grantsOnlyAfterAllConstraintsAllowInOrder() {
         final List<String> calls = new ArrayList<>();
         final var composite = new CompositeAuthorizationManager(
                 List.of(base("base", true, calls)),
                 List.of(constraint("first", true, calls), constraint("second", true, calls))
         );
 
-        assertThat(evaluate(composite, entryPoint).isGranted()).isTrue();
+        assertThat(composite.authorize(authentication, context).isGranted()).isTrue();
         assertThat(calls).containsExactly("base", "first", "second");
     }
 
-    @ParameterizedTest
-    @EnumSource(EntryPoint.class)
-    void constraintDenialStopsLaterConstraintsAndDoesNotResumeOr(EntryPoint entryPoint) {
+    @Test
+    void constraintDenialStopsLaterConstraintsAndDoesNotResumeOr() {
         final List<String> calls = new ArrayList<>();
         final var composite = new CompositeAuthorizationManager(
                 List.of(base("base", true, calls), base("laterBase", true, calls)),
@@ -92,51 +89,47 @@ class CompositeAuthorizationManagerTest {
                 )
         );
 
-        assertThat(evaluate(composite, entryPoint).isGranted()).isFalse();
+        assertThat(composite.authorize(authentication, context).isGranted()).isFalse();
         assertThat(calls).containsExactly("base", "first", "deny");
     }
 
-    @ParameterizedTest
-    @EnumSource(EntryPoint.class)
-    void nullConstraintDecisionDeniesAndStops(EntryPoint entryPoint) {
+    @Test
+    void nullConstraintDecisionDeniesAndStops() {
         final List<String> calls = new ArrayList<>();
         final var composite = new CompositeAuthorizationManager(
                 List.of(base("base", true, calls)),
                 List.of(constraint("null", null, calls), constraint("unreached", true, calls))
         );
 
-        assertThat(evaluate(composite, entryPoint).isGranted()).isFalse();
+        assertThat(composite.authorize(authentication, context).isGranted()).isFalse();
         assertThat(calls).containsExactly("base", "null");
     }
 
-    @ParameterizedTest
-    @EnumSource(EntryPoint.class)
-    void baseDenialDoesNotEvaluateConstraints(EntryPoint entryPoint) {
+    @Test
+    void baseDenialDoesNotEvaluateConstraints() {
         final List<String> calls = new ArrayList<>();
         final var composite = new CompositeAuthorizationManager(
                 List.of(base("deny", false, calls), base("abstain", null, calls)),
                 List.of(constraint("unreached", true, calls))
         );
 
-        assertThat(evaluate(composite, entryPoint).isGranted()).isFalse();
+        assertThat(composite.authorize(authentication, context).isGranted()).isFalse();
         assertThat(calls).containsExactly("deny", "abstain");
     }
 
-    @ParameterizedTest
-    @EnumSource(EntryPoint.class)
-    void emptyBaseDoesNotEvaluateConstraints(EntryPoint entryPoint) {
+    @Test
+    void emptyBaseDoesNotEvaluateConstraints() {
         final List<String> calls = new ArrayList<>();
         final var composite = new CompositeAuthorizationManager(
                 List.of(), List.of(constraint("unreached", true, calls))
         );
 
-        assertThat(evaluate(composite, entryPoint).isGranted()).isFalse();
+        assertThat(composite.authorize(authentication, context).isGranted()).isFalse();
         assertThat(calls).isEmpty();
     }
 
-    @ParameterizedTest
-    @EnumSource(EntryPoint.class)
-    void baseExceptionPropagatesWithoutGrantingOrEvaluatingConstraints(EntryPoint entryPoint) {
+    @Test
+    void baseExceptionPropagatesWithoutGrantingOrEvaluatingConstraints() {
         final var failure = new IllegalStateException("base failure");
         final List<String> calls = new ArrayList<>();
         final AuthorizationManager<RequestAuthorizationContext> broken = (auth, request) -> {
@@ -147,13 +140,12 @@ class CompositeAuthorizationManagerTest {
                 List.of(constraint("unreachedConstraint", true, calls))
         );
 
-        assertThatThrownBy(() -> evaluate(composite, entryPoint)).isSameAs(failure);
+        assertThatThrownBy(() -> composite.authorize(authentication, context)).isSameAs(failure);
         assertThat(calls).isEmpty();
     }
 
-    @ParameterizedTest
-    @EnumSource(EntryPoint.class)
-    void constraintExceptionPropagatesAndStops(EntryPoint entryPoint) {
+    @Test
+    void constraintExceptionPropagatesAndStops() {
         final var failure = new IllegalStateException("constraint failure");
         final List<String> calls = new ArrayList<>();
         final AuthorizationConstraint<RequestAuthorizationContext> broken = (auth, request) -> {
@@ -165,7 +157,7 @@ class CompositeAuthorizationManagerTest {
                 List.of(broken, constraint("unreached", true, calls))
         );
 
-        assertThatThrownBy(() -> evaluate(composite, entryPoint)).isSameAs(failure);
+        assertThatThrownBy(() -> composite.authorize(authentication, context)).isSameAs(failure);
         assertThat(calls).containsExactly("base", "broken");
     }
 
@@ -184,13 +176,6 @@ class CompositeAuthorizationManagerTest {
         verify(manager, times(2)).authorize(authentication, context);
         verify(constraint, times(2)).authorize(authentication, context);
         verifyNoMoreInteractions(manager, constraint);
-    }
-
-    private AuthorizationResult evaluate(CompositeAuthorizationManager composite, EntryPoint entryPoint) {
-        return switch (entryPoint) {
-            case CHECK -> composite.check(authentication, context);
-            case AUTHORIZE -> composite.authorize(authentication, context);
-        };
     }
 
     private AuthorizationManager<RequestAuthorizationContext> base(
@@ -215,7 +200,4 @@ class CompositeAuthorizationManagerTest {
         };
     }
 
-    private enum EntryPoint {
-        CHECK, AUTHORIZE
-    }
 }

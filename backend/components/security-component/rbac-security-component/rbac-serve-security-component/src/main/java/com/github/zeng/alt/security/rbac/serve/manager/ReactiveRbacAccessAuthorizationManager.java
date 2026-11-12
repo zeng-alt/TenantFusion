@@ -2,6 +2,7 @@ package com.github.zeng.alt.security.rbac.serve.manager;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authorization.AuthorizationDecision;
+import org.springframework.security.authorization.AuthorizationResult;
 import org.springframework.security.authorization.ReactiveAuthorizationManager;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.web.server.authorization.AuthorizationContext;
@@ -23,7 +24,7 @@ public final class ReactiveRbacAccessAuthorizationManager implements ReactiveAut
     }
 
     @Override
-    public Mono<AuthorizationDecision> check(Mono<Authentication> authentication, AuthorizationContext object) {
+    public Mono<AuthorizationResult> authorize(Mono<Authentication> authentication, AuthorizationContext object) {
         String path = object.getExchange().getRequest().getURI().getPath();
         return reactiveParseManager
                 .parse(object.getExchange())
@@ -35,7 +36,7 @@ public final class ReactiveRbacAccessAuthorizationManager implements ReactiveAut
                         log.warn("DENY request {} to user", path);
                     }
                 })
-                .map(AuthorizationDecision::new)
+                .<AuthorizationResult>map(AuthorizationDecision::new)
                 .defaultIfEmpty(new AuthorizationDecision(false));
     }
 }

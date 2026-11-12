@@ -41,21 +41,7 @@ public class CompositeAuthorizationManager implements AuthorizationManager<Reque
     }
 
     @Override
-    public AuthorizationDecision check(Supplier<Authentication> authentication, RequestAuthorizationContext object) {
-        return authorizationManagers.stream()
-                .map(manager -> manager.check(authentication, object))
-                .filter(Objects::nonNull)
-                .filter(AuthorizationDecision::isGranted)
-                .findFirst()
-                .map(granted -> constraints.stream()
-                        .map(constraint -> constraint.check(authentication, object))
-                        .allMatch(decision -> decision != null && decision.isGranted())
-                        ? granted : new AuthorizationDecision(false))
-                .orElseGet(() -> new AuthorizationDecision(false));
-    }
-
-    @Override
-    public AuthorizationResult authorize(Supplier<Authentication> authentication, RequestAuthorizationContext object) {
+    public AuthorizationResult authorize(Supplier<? extends Authentication> authentication, RequestAuthorizationContext object) {
         return authorizationManagers.stream()
                 .map(manager -> manager.authorize(authentication, object))
                 .filter(Objects::nonNull)

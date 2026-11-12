@@ -2,8 +2,8 @@ package com.github.zeng.alt.camunda.identity.api.security;
 
 import com.github.zeng.alt.camunda.identity.api.CamundaUserGroupSource;
 import com.github.zeng.alt.security.core.web.SecurityBuilderCustomizer;
-import org.camunda.bpm.engine.IdentityService;
-import org.camunda.bpm.engine.impl.cfg.ProcessEnginePlugin;
+import org.operaton.bpm.engine.IdentityService;
+import org.operaton.bpm.engine.impl.cfg.ProcessEnginePlugin;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.AutoConfigureAfter;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;

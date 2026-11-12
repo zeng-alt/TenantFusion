@@ -13,11 +13,11 @@ import com.github.zeng.alt.excel.read.ExcelErrorReport;
 import com.github.zeng.alt.excel.exception.ExcelValidationException;
 import com.github.zeng.alt.excel.config.ExcelWebMvcAutoConfiguration;
 import org.springframework.boot.autoconfigure.ImportAutoConfiguration;
-import org.springframework.boot.autoconfigure.http.HttpMessageConvertersAutoConfiguration;
-import org.springframework.boot.autoconfigure.jackson.JacksonAutoConfiguration;
-import org.springframework.boot.autoconfigure.validation.ValidationAutoConfiguration;
-import org.springframework.boot.autoconfigure.web.servlet.MultipartAutoConfiguration;
-import org.springframework.boot.autoconfigure.web.servlet.WebMvcAutoConfiguration;
+import org.springframework.boot.http.converter.autoconfigure.HttpMessageConvertersAutoConfiguration;
+import org.springframework.boot.jackson2.autoconfigure.Jackson2AutoConfiguration;
+import org.springframework.boot.validation.autoconfigure.ValidationAutoConfiguration;
+import org.springframework.boot.servlet.autoconfigure.MultipartAutoConfiguration;
+import org.springframework.boot.webmvc.autoconfigure.WebMvcAutoConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.MediaType;
@@ -196,7 +196,7 @@ class ExcelWebIntegrationTest {
             WebMvcAutoConfiguration.class,
             MultipartAutoConfiguration.class,
             HttpMessageConvertersAutoConfiguration.class,
-            JacksonAutoConfiguration.class,
+            Jackson2AutoConfiguration.class,
             ValidationAutoConfiguration.class,
             ExcelAutoConfiguration.class,
             ExcelWebAutoConfiguration.class,

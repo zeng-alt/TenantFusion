@@ -5,16 +5,16 @@ import com.github.zeng.alt.camunda.engine.api.task.CommentInfo;
 import com.github.zeng.alt.camunda.engine.api.task.TaskApi;
 import com.github.zeng.alt.camunda.engine.api.task.TaskInfo;
 import com.github.zeng.alt.camunda.engine.api.task.TaskQuery;
-import org.camunda.bpm.engine.HistoryService;
-import org.camunda.bpm.engine.RepositoryService;
-import org.camunda.bpm.engine.RuntimeService;
-import org.camunda.bpm.engine.TaskService;
-import org.camunda.bpm.engine.history.HistoricProcessInstance;
-import org.camunda.bpm.engine.history.HistoricTaskInstance;
-import org.camunda.bpm.engine.repository.ProcessDefinition;
-import org.camunda.bpm.engine.runtime.ProcessInstance;
-import org.camunda.bpm.engine.task.Comment;
-import org.camunda.bpm.engine.task.Task;
+import org.operaton.bpm.engine.HistoryService;
+import org.operaton.bpm.engine.RepositoryService;
+import org.operaton.bpm.engine.RuntimeService;
+import org.operaton.bpm.engine.TaskService;
+import org.operaton.bpm.engine.history.HistoricProcessInstance;
+import org.operaton.bpm.engine.history.HistoricTaskInstance;
+import org.operaton.bpm.engine.repository.ProcessDefinition;
+import org.operaton.bpm.engine.runtime.ProcessInstance;
+import org.operaton.bpm.engine.task.Comment;
+import org.operaton.bpm.engine.task.Task;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
@@ -47,7 +47,7 @@ public class EmbeddedTaskApi implements TaskApi {
 
     @Override
     public PageRestResponse<TaskInfo> query(TaskQuery query) {
-        org.camunda.bpm.engine.task.TaskQuery camundaQuery = taskService.createTaskQuery();
+        org.operaton.bpm.engine.task.TaskQuery camundaQuery = taskService.createTaskQuery();
 
         if (StringUtils.hasText(query.getName())) {
             camundaQuery.taskNameLike("%" + query.getName() + "%");

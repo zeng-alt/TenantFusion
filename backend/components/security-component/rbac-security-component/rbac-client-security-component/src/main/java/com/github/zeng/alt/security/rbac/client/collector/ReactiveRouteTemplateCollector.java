@@ -201,6 +201,11 @@ public class ReactiveRouteTemplateCollector implements RouteTemplateCollector {
             public void pathExtension(String extension) {}
 
             @Override
+            public void version(String version) {
+                // 权限键仍使用方法与路径；同一路径的多个 API 版本共享权限资源。
+            }
+
+            @Override
             public void unknown(RequestPredicate p) {}
         });
 

@@ -33,17 +33,17 @@ class AdminAuthorizationManagerTest {
                 .roles(new SimpleGrantedAuthority(role)).currentRole(new SimpleGrantedAuthority(role)).build();
         final var authentication = new TestingAuthenticationToken(principal, "unused", role);
 
-        assertThat(new AdminAuthorizationManager(properties).check(() -> authentication, null).isGranted())
+        assertThat(new AdminAuthorizationManager(properties).authorize(() -> authentication, null).isGranted())
                 .isEqualTo(granted);
-        assertThat(new ReactiveAdminAuthorizationManager(properties).check(Mono.just(authentication), null)
+        assertThat(new ReactiveAdminAuthorizationManager(properties).authorize(Mono.just(authentication), null)
                 .block().isGranted()).isEqualTo(granted);
     }
 
     @Test
     void shouldDenyMissingAuthenticationInBothStacks() {
         final var properties = new SecurityProperties();
-        assertThat(new AdminAuthorizationManager(properties).check(() -> null, null).isGranted()).isFalse();
-        assertThat(new ReactiveAdminAuthorizationManager(properties).check(Mono.empty(), null)
+        assertThat(new AdminAuthorizationManager(properties).authorize(() -> null, null).isGranted()).isFalse();
+        assertThat(new ReactiveAdminAuthorizationManager(properties).authorize(Mono.empty(), null)
                 .block().isGranted()).isFalse();
     }
 }

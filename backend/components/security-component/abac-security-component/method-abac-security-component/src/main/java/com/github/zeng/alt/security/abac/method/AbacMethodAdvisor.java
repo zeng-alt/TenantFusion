@@ -1,6 +1,8 @@
 package com.github.zeng.alt.security.abac.method;
 
 import org.aopalliance.aop.Advice;
+import org.aopalliance.intercept.MethodInterceptor;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.aop.Pointcut;
 import org.springframework.aop.support.AbstractPointcutAdvisor;
 
@@ -17,6 +19,12 @@ public final class AbacMethodAdvisor extends AbstractPointcutAdvisor {
 
     public AbacMethodAdvisor(AbacMethodInterceptor interceptor, int order) {
         this.advice = interceptor;
+        setOrder(order);
+    }
+
+    /** AOT 分析只需要切点，不提前创建依赖数据库的授权服务。 */
+    AbacMethodAdvisor(ObjectProvider<AbacMethodInterceptor> interceptor, int order) {
+        this.advice = (MethodInterceptor) invocation -> interceptor.getObject().invoke(invocation);
         setOrder(order);
     }
 

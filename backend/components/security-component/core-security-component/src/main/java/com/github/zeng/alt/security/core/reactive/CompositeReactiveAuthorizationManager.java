@@ -2,6 +2,7 @@ package com.github.zeng.alt.security.core.reactive;
 
 import com.github.zeng.alt.security.api.ReactiveAuthorizationConstraint;
 import org.springframework.security.authorization.AuthorizationDecision;
+import org.springframework.security.authorization.AuthorizationResult;
 import org.springframework.security.authorization.ReactiveAuthorizationManager;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.web.server.authorization.AuthorizationContext;
@@ -39,22 +40,22 @@ public class CompositeReactiveAuthorizationManager implements ReactiveAuthorizat
     }
 
     @Override
-    public Mono<AuthorizationDecision> check(Mono<Authentication> authentication, AuthorizationContext context) {
+    public Mono<AuthorizationResult> authorize(Mono<Authentication> authentication, AuthorizationContext context) {
         return Flux.fromIterable(managers)
                 .concatMap(manager -> {
-                    final Mono<AuthorizationDecision> decision = manager.check(authentication, context);
+                    final Mono<AuthorizationResult> decision = manager.authorize(authentication, context);
                     return decision == null ? Mono.empty() : decision;
                 })
-                .filter(AuthorizationDecision::isGranted)
+                .filter(AuthorizationResult::isGranted)
                 .next()
                 .flatMap(granted -> Flux.fromIterable(constraints)
                         .concatMap(constraint -> {
-                            final Mono<AuthorizationDecision> decision = constraint.check(authentication, context);
+                            final Mono<AuthorizationResult> decision = constraint.authorize(authentication, context);
                             return decision == null ? Mono.just(new AuthorizationDecision(false))
                                     : decision.defaultIfEmpty(new AuthorizationDecision(false));
                         })
-                        .all(AuthorizationDecision::isGranted)
-                        .map(AuthorizationDecision::new))
+                        .all(AuthorizationResult::isGranted)
+                        .map(allowed -> allowed ? granted : new AuthorizationDecision(false)))
                 .defaultIfEmpty(new AuthorizationDecision(false));
     }
 }

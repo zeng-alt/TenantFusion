@@ -4,6 +4,7 @@ import com.github.zeng.alt.security.abac.AbacTemplate;
 import com.github.zeng.alt.security.abac.core.AbacAutoConfiguration;
 
 import org.springframework.beans.factory.ListableBeanFactory;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -47,7 +48,8 @@ public class AbacMethodAutoConfiguration {
 
     @Bean
     @ConditionalOnMissingBean
-    public AbacMethodAdvisor abacMethodAdvisor(AbacMethodInterceptor interceptor, AbacMethodProperties properties) {
+    public AbacMethodAdvisor abacMethodAdvisor(
+            ObjectProvider<AbacMethodInterceptor> interceptor, AbacMethodProperties properties) {
         return new AbacMethodAdvisor(interceptor, properties.getOrder());
     }
 }

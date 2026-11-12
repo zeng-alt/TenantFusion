@@ -5,6 +5,8 @@ plugins {
 description = "核心组件：全局异常处理、统一响应增强等"
 
 dependencies {
+    testImplementation("org.springframework.boot:spring-boot-starter-test")
+    implementation("org.springframework.boot:spring-boot-webmvc")
     api(project(":backend:components:api-component"))
     api(project(":backend:components:json-component"))
     api(project(":backend:components:bean-component"))

@@ -7,7 +7,7 @@ description = "api-lock-component"
 dependencies {
     implementation(project(":backend:components:api-component"))
     implementation("org.springframework.boot:spring-boot-autoconfigure")
-    implementation("org.springframework.boot:spring-boot-starter-aop")
+    implementation("org.springframework.boot:spring-boot-starter-aspectj")
 
     annotationProcessor(rootProject.libs.spring.boot.configuration.processor)
 

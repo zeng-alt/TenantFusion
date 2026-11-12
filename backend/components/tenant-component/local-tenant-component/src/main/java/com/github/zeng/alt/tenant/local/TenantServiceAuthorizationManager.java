@@ -40,8 +40,8 @@ public class TenantServiceAuthorizationManager
     }
 
     @Override
-    public AuthorizationDecision check(
-            Supplier<Authentication> authentication, RequestAuthorizationContext context) {
+    public AuthorizationDecision authorize(
+            Supplier<? extends Authentication> authentication, RequestAuthorizationContext context) {
         Authentication auth = authentication.get();
         if (auth instanceof TenantServiceAuthentication && auth.isAuthenticated()
                 && isMetadataPath(context.getRequest().getRequestURI(),

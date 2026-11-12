@@ -4,10 +4,10 @@ import com.github.zeng.alt.api.rest.PageRestResponse;
 import com.github.zeng.alt.camunda.engine.api.process.ProcessInstanceApi;
 import com.github.zeng.alt.camunda.engine.api.process.ProcessInstanceInfo;
 import com.github.zeng.alt.camunda.engine.api.process.ProcessInstanceQuery;
-import org.camunda.bpm.engine.RepositoryService;
-import org.camunda.bpm.engine.RuntimeService;
-import org.camunda.bpm.engine.repository.ProcessDefinition;
-import org.camunda.bpm.engine.runtime.ProcessInstance;
+import org.operaton.bpm.engine.RepositoryService;
+import org.operaton.bpm.engine.RuntimeService;
+import org.operaton.bpm.engine.repository.ProcessDefinition;
+import org.operaton.bpm.engine.runtime.ProcessInstance;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
@@ -34,7 +34,7 @@ public class EmbeddedProcessInstanceApi implements ProcessInstanceApi {
 
     @Override
     public PageRestResponse<ProcessInstanceInfo> query(ProcessInstanceQuery q) {
-        org.camunda.bpm.engine.runtime.ProcessInstanceQuery camundaQuery = runtimeService.createProcessInstanceQuery();
+        org.operaton.bpm.engine.runtime.ProcessInstanceQuery camundaQuery = runtimeService.createProcessInstanceQuery();
         if (StringUtils.hasText(q.getProcessDefinitionKey())) {
             camundaQuery.processDefinitionKey(q.getProcessDefinitionKey());
         }
