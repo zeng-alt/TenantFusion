@@ -103,3 +103,6 @@ include("backend:components:security-component:abac-security-component:spel-abac
 include("backend:components:security-component:abac-security-component:method-abac-security-component")
 include("backend:components:security-component:rbac-security-component:rbac-serve-security-component")
 include("backend:components:security-component:rbac-security-component:rbac-client-security-component")
+include("backend:components:security-component:data-permission-security-component:api-data-permission-security-component")
+include("backend:components:security-component:data-permission-security-component:core-data-permission-security-component")
+include("backend:components:security-component:data-permission-security-component:jpa-data-permission-security-component")

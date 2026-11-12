@@ -16,3 +16,8 @@ logging:
 #    mode: database
 #    basename: messages
 #    prefix: /api/i18n-messages
+
+# 内置管理员的数据查询全量授权仍受当前租户边界限制。
+security:
+  data-permission:
+    administrator-all: true

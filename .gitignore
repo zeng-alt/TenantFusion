@@ -2,6 +2,9 @@ HELP.md
 .gradle
 build/
 data/
+# 数据权限源码包不是本地数据目录。
+!backend/components/security-component/data-permission-security-component/**/src/**/data/
+!backend/components/security-component/data-permission-security-component/**/src/**/data/**
 !gradle/wrapper/gradle-wrapper.jar
 !**/src/main/**/build/
 !**/src/test/**/build/

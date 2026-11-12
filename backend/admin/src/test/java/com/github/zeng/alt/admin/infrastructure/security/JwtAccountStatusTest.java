@@ -2,7 +2,7 @@ package com.github.zeng.alt.admin.infrastructure.security;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.zeng.alt.admin.infrastructure.entity.User;
-import com.github.zeng.alt.admin.infrastructure.repository.DepartmentRepository;
+import com.github.zeng.alt.admin.query.api.UserQueryService;
 import com.github.zeng.alt.admin.infrastructure.repository.RoleRepository;
 import com.github.zeng.alt.admin.infrastructure.repository.UserRepository;
 import com.github.zeng.alt.admin.infrastructure.repository.UserRoleRepository;
@@ -75,7 +75,7 @@ class JwtAccountStatusTest {
         when(users.findByUsername("review-user")).thenReturn(Option.of(user).toJavaOptional());
         when(users.findById(7L)).thenReturn(Option.of(user));
         final var service = new UserServiceImpl(
-                users, mock(RoleRepository.class), mock(UserRoleRepository.class), mock(DepartmentRepository.class),
+                users, mock(RoleRepository.class), mock(UserRoleRepository.class), mock(UserQueryService.class),
                 new SecurityProperties(), mock(PasswordEncoder.class), Mappers.getMapper(UserDtoTransformation.class),
                 mock(AuthHelper.class), mock(UserSecurityService.class));
         runner(users).run(context -> {

@@ -74,6 +74,7 @@ dependencies {
     implementation(project(":backend:components:tenant-component:liquibase-tenant-component"))
     implementation(project(":backend:components:security-component:jwt-auth-security-component"))
     implementation(project(":backend:components:security-component:captcha-auth-security-component"))
+    implementation(project(":backend:components:security-component:data-permission-security-component:jpa-data-permission-security-component"))
     // RBAC 服务端（鉴权）
     implementation(project(":backend:components:security-component:rbac-security-component:rbac-serve-security-component"))
     implementation(project(":backend:components:security-component:abac-security-component:core-abac-security-component"))
@@ -112,4 +113,11 @@ dependencies {
     annotationProcessor(libs.mapstruct.processor)
     // 解决 Lombok 与 MapStruct 注解处理顺序问题
     annotationProcessor(libs.lombok.mapstruct.binding)
+}
+
+// Docker 回归每次使用新容器，不能复用上一次数据库上的测试结果。
+tasks.named<Test>("test") {
+    if (providers.environmentVariable("SECURITY_DOCKER_TESTS").orNull == "true") {
+        outputs.upToDateWhen { false }
+    }
 }

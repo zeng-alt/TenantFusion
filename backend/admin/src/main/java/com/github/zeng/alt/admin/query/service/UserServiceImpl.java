@@ -1,14 +1,13 @@
 package com.github.zeng.alt.admin.query.service;
 
-import com.github.zeng.alt.admin.infrastructure.entity.Department;
-import com.github.zeng.alt.admin.infrastructure.security.UserResourceResolver;
 import com.github.zeng.alt.admin.infrastructure.entity.Role;
 import com.github.zeng.alt.admin.infrastructure.entity.User;
 import com.github.zeng.alt.admin.infrastructure.entity.UserRole;
-import com.github.zeng.alt.admin.infrastructure.repository.DepartmentRepository;
 import com.github.zeng.alt.admin.infrastructure.repository.RoleRepository;
 import com.github.zeng.alt.admin.infrastructure.repository.UserRepository;
 import com.github.zeng.alt.admin.infrastructure.repository.UserRoleRepository;
+import com.github.zeng.alt.admin.infrastructure.security.UserResourceResolver;
+import com.github.zeng.alt.admin.query.api.UserQueryService;
 import com.github.zeng.alt.admin.query.api.UserService;
 import com.github.zeng.alt.admin.query.api.dto.*;
 import com.github.zeng.alt.admin.query.service.transformation.UserDtoTransformation;
@@ -22,6 +21,7 @@ import com.github.zeng.alt.security.core.properties.SecurityProperties;
 import io.vavr.control.Either;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.BooleanUtils;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -43,7 +43,7 @@ public class UserServiceImpl implements UserService {
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
     private final UserRoleRepository userRoleRepository;
-    private final DepartmentRepository departmentRepository;
+    private final UserQueryService userQueries;
     private final SecurityProperties securityProperties;
     private final PasswordEncoder passwordEncoder;
     private final UserDtoTransformation userDtoTransformation;
@@ -173,20 +173,8 @@ public class UserServiceImpl implements UserService {
             throw new BaseException("userId或username至少提供一个");
         }
 
-        User user = userId != null
-                ? userRepository.findById(userId)
-                        .getOrElseThrow(() -> new BaseException("用户不存在"))
-                : userRepository.findByUsername(username)
-                        .orElseThrow(() -> new BaseException("用户不存在"));
-
-        UserInfoDto dto = BeanHelper.copyToObject(user, UserInfoDto.class);
-        if (user.getDeptId() != null) {
-            Department dept = departmentRepository.findById(user.getDeptId()).getOrNull();
-            if (dept != null) {
-                dto.setDeptName(dept.getDeptName());
-            }
-        }
-        return dto;
+        return userQueries.getInfo(userId, username).getOrElseThrow(AccessDeniedException::new)
+                .getOrElseThrow(() -> new BaseException("用户不存在"));
     }
 
     private void updateUserRoles(Long userId, List<Long> roleIds) {

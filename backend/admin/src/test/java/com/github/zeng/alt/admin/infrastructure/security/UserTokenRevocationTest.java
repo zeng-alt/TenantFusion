@@ -1,7 +1,7 @@
 package com.github.zeng.alt.admin.infrastructure.security;
 
 import com.github.zeng.alt.admin.infrastructure.entity.User;
-import com.github.zeng.alt.admin.infrastructure.repository.DepartmentRepository;
+import com.github.zeng.alt.admin.query.api.UserQueryService;
 import com.github.zeng.alt.admin.infrastructure.repository.RoleRepository;
 import com.github.zeng.alt.admin.infrastructure.repository.UserRepository;
 import com.github.zeng.alt.admin.infrastructure.repository.UserRoleRepository;
@@ -101,7 +101,7 @@ class UserTokenRevocationTest {
         user.setTenantBy("t001");
         when(users.findById(7L)).thenReturn(Option.of(user));
         final var service = new UserServiceImpl(
-                users, mock(RoleRepository.class), mock(UserRoleRepository.class), mock(DepartmentRepository.class),
+                users, mock(RoleRepository.class), mock(UserRoleRepository.class), mock(UserQueryService.class),
                 new SecurityProperties(), mock(PasswordEncoder.class), Mappers.getMapper(UserDtoTransformation.class),
                 mock(AuthHelper.class), new UserSecurityService(mock(RbacResourceService.class), login));
         final SecurityUser admin = principal("1", "t001");
