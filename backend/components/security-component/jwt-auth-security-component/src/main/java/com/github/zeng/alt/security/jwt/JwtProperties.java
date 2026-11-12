@@ -2,13 +2,17 @@ package com.github.zeng.alt.security.jwt;
 
 import com.github.zeng.alt.security.core.properties.LoginProperties;
 import com.github.zeng.alt.security.core.properties.LogoutProperties;
+import io.vavr.control.Try;
+import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
-import org.hibernate.validator.constraints.Length;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
 import org.springframework.http.HttpMethod;
+import org.springframework.util.StringUtils;
 import org.springframework.validation.annotation.Validated;
+
+import java.util.Base64;
 
 /**
  * JWT 认证配置属性.
@@ -37,11 +41,9 @@ public class JwtProperties {
 
     /** Base64 编码的 HMAC 签名密钥（至少 256 位），用于 HS256 Access Token */
     @NotBlank(message = "HMAC 签名密钥不能为空")
-    @Length(min = 256, message = "HMAC 签名密钥长度最小为【256】位")
     private String base64Secret;
 
     /** Base64 编码的 HMAC 签名密钥（至少 512 位），用于 HS512 Refresh Token，不配置则复用 base64Secret */
-    @Length(min = 512, message = "Refresh HMAC 签名密钥长度最小为【512】位")
     private String base64SecretRefresh;
 
     /** Token 过期时间（秒），默认 4 小时 */
@@ -67,5 +69,15 @@ public class JwtProperties {
 
     /** Cookie SameSite 属性 */
     private String refreshCookieSameSite = "Lax";
+
+    /** 签发端复用 Access 密钥作 HS512 刷新签名时，解码后须达到 64 字节。 */
+    @AssertTrue(message = "JWT 密钥须为合法 Base64：Access 至少 256 位，Refresh 至少 512 位")
+    public boolean isSigningKeysValid() {
+        final boolean separateRefreshKey = StringUtils.hasText(base64SecretRefresh);
+        final int accessBytes = Boolean.TRUE.equals(authentication) && !separateRefreshKey ? 64 : 32;
+        return Try.of(() -> Base64.getDecoder().decode(base64Secret).length >= accessBytes
+                && (!separateRefreshKey || Base64.getDecoder().decode(base64SecretRefresh).length >= 64))
+                .getOrElse(false);
+    }
 
 }

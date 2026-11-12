@@ -60,6 +60,11 @@ public class CookieLoginHelper implements LoginHelper {
     }
 
     @Override
+    public void logout(String id) {
+        sessionManager.removeUserSessions(id, UserContextHolder.getTenant());
+    }
+
+    @Override
     public SecurityUser getCurrentUser() {
         return UserContextHolder.getSecurityUser();
     }

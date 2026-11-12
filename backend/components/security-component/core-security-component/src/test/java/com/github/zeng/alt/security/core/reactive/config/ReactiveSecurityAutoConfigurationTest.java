@@ -4,6 +4,7 @@ import com.github.zeng.alt.security.api.ReactiveAuthorizationConstraint;
 import com.github.zeng.alt.security.api.ReactiveAuthorizationManagerProvider;
 import com.github.zeng.alt.security.api.WhiteListService;
 import com.github.zeng.alt.security.core.properties.SecurityProperties;
+import com.github.zeng.alt.security.core.reactive.AuthorizeExchangeCustomizer;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpMethod;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
@@ -24,6 +25,7 @@ import org.springframework.security.web.server.authorization.AuthorizationContex
 import org.springframework.security.web.server.authorization.AuthorizationWebFilter;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
+import org.springframework.web.server.handler.DefaultWebFilterChain;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -103,6 +105,21 @@ class ReactiveSecurityAutoConfigurationTest {
     }
 
     @Test
+    void constraintsVetoCustomAuthenticatedAndPublicPaths() {
+        runner.withUserConfiguration(OrderedConstraints.class)
+                .withBean(AuthorizeExchangeCustomizer.class, () -> registry -> registry
+                        .pathMatchers("/custom/private").authenticated()
+                        .pathMatchers("/custom/public").permitAll())
+                .run(context -> {
+                    final var auth = new TestingAuthenticationToken("user", "unused", "ROLE_USER");
+                    StepVerifier.create(authorize(context, "/custom/private", auth))
+                            .expectError(AccessDeniedException.class).verify();
+                    StepVerifier.create(authorize(context, "/custom/public", null))
+                            .expectError(AccessDeniedException.class).verify();
+                });
+    }
+
+    @Test
     void shouldNotPermitUnconfiguredLoginPaths() {
         runner.run(context -> {
             final var exchange = MockServerWebExchange.from(
@@ -118,9 +135,8 @@ class ReactiveSecurityAutoConfigurationTest {
         final var exchange = MockServerWebExchange.from(MockServerHttpRequest.get(path).build());
         final Mono<Void> authorization = context.getBean(SecurityWebFilterChain.class).getWebFilters()
                 .filter(AuthorizationWebFilter.class::isInstance)
-                .cast(AuthorizationWebFilter.class)
-                .single()
-                .flatMap(filter -> filter.filter(exchange, ignored -> Mono.empty()));
+                .collectList()
+                .flatMap(filters -> new DefaultWebFilterChain(ignored -> Mono.empty(), filters).filter(exchange));
         return authentication == null ? authorization
                 : authorization.contextWrite(ReactiveSecurityContextHolder.withAuthentication(authentication));
     }

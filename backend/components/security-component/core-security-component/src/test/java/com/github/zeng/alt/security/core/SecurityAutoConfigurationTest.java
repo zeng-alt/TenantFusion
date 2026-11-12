@@ -4,6 +4,8 @@ import org.junit.jupiter.api.Test;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.core.userdetails.ReactiveUserDetailsService;
+import reactor.core.publisher.Mono;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 
@@ -31,5 +33,18 @@ class SecurityAutoConfigurationTest {
         final UserDetailsService users = new InMemoryUserDetailsManager();
         runner.withBean(UserDetailsService.class, () -> users)
                 .run(context -> assertThat(context.getBean(UserDetailsService.class)).isSameAs(users));
+    }
+
+    @Test
+    void shouldNotCreateReactiveFixedRootAccount() {
+        runner.run(context -> assertThat(context.getBean(ReactiveUserDetailsService.class)
+                .findByUsername("root").blockOptional()).isEmpty());
+    }
+
+    @Test
+    void shouldKeepHostReactiveUserDetailsService() {
+        final ReactiveUserDetailsService users = username -> Mono.empty();
+        runner.withBean(ReactiveUserDetailsService.class, () -> users)
+                .run(context -> assertThat(context.getBean(ReactiveUserDetailsService.class)).isSameAs(users));
     }
 }

@@ -27,6 +27,7 @@ import org.springframework.security.authentication.ProviderManager;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.authorization.AuthenticatedAuthorizationManager;
 import org.springframework.security.authorization.AuthorizationManager;
+import org.springframework.security.authorization.AuthorizationDecision;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -38,6 +39,7 @@ import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.access.AccessDeniedHandler;
 import org.springframework.security.web.access.intercept.RequestAuthorizationContext;
+import org.springframework.security.web.access.intercept.AuthorizationFilter;
 import org.springframework.security.web.authentication.AuthenticationFailureHandler;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
 import org.springframework.util.CollectionUtils;
@@ -95,7 +97,7 @@ public class WebSecurityAutoConfiguration {
 					requestsCustomizers.orderedStream().forEach(customizer -> customizer.customize(author));
 					if (Boolean.TRUE.equals(securityProperties.getEnabledAccess())) {
 						author.anyRequest().access(compositeAuthorizationManager(
-								authorizationManagerProviders, whiteListService, authorizationConstraints
+								authorizationManagerProviders, whiteListService
 						));
 					} else {
 						author.anyRequest().permitAll();
@@ -131,14 +133,29 @@ public class WebSecurityAutoConfiguration {
 			}
 		});
 
+		applyConstraints(http);
 		return http.build();
+	}
+
+	private void applyConstraints(HttpSecurity http) {
+		final List<AuthorizationConstraint<RequestAuthorizationContext>> constraints = authorizationConstraints.orderedStream().toList();
+		if (constraints.isEmpty()) {
+			return;
+		}
+		final CompositeAuthorizationManager manager = new CompositeAuthorizationManager(
+				List.of((authentication, context) -> new AuthorizationDecision(true)),
+				constraints
+		);
+		// 在 URL 规则之后运行，既覆盖 customizer，也保留基础拒绝时的短路行为。
+		http.addFilterAfter(new AuthorizationFilter((authentication, request) -> new AuthorizationDecision(
+				manager.authorize(authentication, new RequestAuthorizationContext(request)).isGranted()
+		)), AuthorizationFilter.class);
 	}
 
 
 	private CompositeAuthorizationManager compositeAuthorizationManager(
 			ObjectProvider<AuthorizationManagerProvider<RequestAuthorizationContext>> authorizationManagerProviders,
-			WhiteListService whiteListService,
-			ObjectProvider<AuthorizationConstraint<RequestAuthorizationContext>> authorizationConstraints
+			WhiteListService whiteListService
 	) {
 		List<AuthorizationManager<RequestAuthorizationContext>> list = new ArrayList<>();
 		list.add(WhiteListAuthorizationManager.authenticated(whiteListService));
@@ -148,7 +165,7 @@ public class WebSecurityAutoConfiguration {
 		if (CollectionUtils.isEmpty(managers)) {
 			list.add(AuthenticatedAuthorizationManager.authenticated());
 		}
-		return new CompositeAuthorizationManager(list, authorizationConstraints.orderedStream().toList());
+		return new CompositeAuthorizationManager(list);
 	}
 
 

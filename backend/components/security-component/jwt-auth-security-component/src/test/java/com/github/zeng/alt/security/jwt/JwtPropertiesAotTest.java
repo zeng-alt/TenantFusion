@@ -34,6 +34,8 @@ class JwtPropertiesAotTest {
                     .test(generation.getRuntimeHints())).isTrue();
             assertThat(reflection.onMethod(LogoutProperties.class, "setLogoutPath")
                     .test(generation.getRuntimeHints())).isTrue();
+            assertThat(reflection.onMethod(JwtProperties.class, "isSigningKeysValid")
+                    .test(generation.getRuntimeHints())).isTrue();
         }
     }
 

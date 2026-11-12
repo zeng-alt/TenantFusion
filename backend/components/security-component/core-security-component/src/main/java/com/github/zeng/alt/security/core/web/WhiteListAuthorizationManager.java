@@ -2,17 +2,12 @@ package com.github.zeng.alt.security.core.web;
 
 
 import com.github.zeng.alt.security.api.WhiteListService;
-import jakarta.servlet.http.HttpServletRequest;
-import lombok.RequiredArgsConstructor;
-import org.springframework.lang.Nullable;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.security.authorization.AuthorizationDecision;
 import org.springframework.security.authorization.AuthorizationManager;
 import org.springframework.security.authorization.AuthorizationResult;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.web.access.intercept.RequestAuthorizationContext;
 import org.springframework.security.web.servlet.util.matcher.PathPatternRequestMatcher;
-import org.springframework.security.web.util.matcher.RequestMatcher;
 
 import java.util.List;
 import java.util.Set;
@@ -26,10 +21,9 @@ import java.util.function.Supplier;
  */
 public class WhiteListAuthorizationManager implements AuthorizationManager<RequestAuthorizationContext> {
 
-    private WhiteListService whiteListService;
-
-    private final AtomicReference<List<PathPatternRequestMatcher>> whiteMatchers =
-            new AtomicReference<>(List.of());
+    private final WhiteListService whiteListService;
+    private final AtomicReference<WhiteListSnapshot> snapshot = new AtomicReference<>(
+            new WhiteListSnapshot(Set.of(), List.of()));
 
     public WhiteListAuthorizationManager(WhiteListService whiteListService) {
         this.whiteListService = whiteListService;
@@ -37,49 +31,32 @@ public class WhiteListAuthorizationManager implements AuthorizationManager<Reque
     }
 
     @Override
-    public AuthorizationDecision check(
-            Supplier<Authentication> authentication,
-            RequestAuthorizationContext object) {
-
-        HttpServletRequest request = object.getRequest();
-
-        List<PathPatternRequestMatcher> matchers = whiteMatchers.get();
-        for (PathPatternRequestMatcher matcher : matchers) {
-            if (matcher.matches(request)) {
-                return new AuthorizationDecision(true);
-            }
-        }
-
-        return new AuthorizationDecision(false);
+    public AuthorizationDecision check(Supplier<Authentication> authentication, RequestAuthorizationContext context) {
+        refreshWhiteList();
+        return new AuthorizationDecision(snapshot.get().matchers().stream()
+                .anyMatch(matcher -> matcher.matches(context.getRequest())));
     }
 
-    @Nullable
     @Override
-    public AuthorizationResult authorize(Supplier<Authentication> authentication, RequestAuthorizationContext object) {
-        HttpServletRequest request = object.getRequest();
-
-        List<PathPatternRequestMatcher> matchers = whiteMatchers.get();
-        for (PathPatternRequestMatcher matcher : matchers) {
-            if (matcher.matches(request)) {
-                return new AuthorizationDecision(true);
-            }
-        }
-
-        return new AuthorizationDecision(false);
+    public AuthorizationResult authorize(Supplier<Authentication> authentication, RequestAuthorizationContext context) {
+        return check(authentication, context);
     }
 
-    @Scheduled(fixedDelay = 60_000) // 每60秒刷新一次
+    /** 白名单变更在下一次授权时生效，仅在快照变化时重新编译路径。 */
     public void refreshWhiteList() {
-
-        Set<String> whiteList = whiteListService.getWhiteList();
-
-        this.whiteMatchers.set(whiteList.stream()
-                .map(path -> PathPatternRequestMatcher.withDefaults().matcher(path))
-                .toList());
+        final Set<String> paths = Set.copyOf(whiteListService.getWhiteList());
+        if (paths.equals(snapshot.get().paths())) {
+            return;
+        }
+        final List<PathPatternRequestMatcher> matchers = paths.stream()
+                .map(path -> PathPatternRequestMatcher.withDefaults().matcher(path)).toList();
+        snapshot.set(new WhiteListSnapshot(paths, matchers));
     }
-
 
     public static AuthorizationManager<RequestAuthorizationContext> authenticated(WhiteListService whiteListService) {
         return new WhiteListAuthorizationManager(whiteListService);
+    }
+
+    private record WhiteListSnapshot(Set<String> paths, List<PathPatternRequestMatcher> matchers) {
     }
 }

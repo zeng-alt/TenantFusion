@@ -19,17 +19,21 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.http.converter.json.Jackson2ObjectMapperBuilder;
 import org.springframework.security.authorization.AuthenticatedReactiveAuthorizationManager;
 import org.springframework.security.authorization.ReactiveAuthorizationManager;
+import org.springframework.security.authorization.AuthorizationDecision;
+import org.springframework.security.config.web.server.SecurityWebFiltersOrder;
 import org.springframework.security.config.annotation.web.reactive.EnableWebFluxSecurity;
 import org.springframework.security.config.web.server.ServerHttpSecurity;
 import org.springframework.security.web.server.SecurityWebFilterChain;
 import org.springframework.security.web.server.ServerAuthenticationEntryPoint;
 import org.springframework.security.web.server.WebFilterChainProxy;
 import org.springframework.security.web.server.authorization.AuthorizationContext;
+import org.springframework.security.web.server.authorization.AuthorizationWebFilter;
 import org.springframework.security.web.server.authorization.ServerAccessDeniedHandler;
 import org.springframework.util.CollectionUtils;
 
 import java.util.ArrayList;
 import java.util.List;
+import reactor.core.publisher.Mono;
 
 /**
  * @author zengJiaJun
@@ -66,20 +70,32 @@ public class ReactiveSecurityAutoConfiguration {
 			authorizeExchangeCustomizers.orderedStream().forEach(spec -> spec.customize(authorizeExchangeSpec));
 			if (Boolean.TRUE.equals(securityProperties.getEnabledAccess())) {
 				authorizeExchangeSpec.anyExchange().access(compositeReactiveAuthorizationManager(
-						reactiveAuthorizationManagerProviders, whiteListService, authorizationConstraints
+						reactiveAuthorizationManagerProviders, whiteListService
 				));
 			} else {
 				authorizeExchangeSpec.anyExchange().permitAll();
 			}
 		});
 		customizers.orderedStream().forEach(customizer -> customizer.customizer(http));
+		final List<ReactiveAuthorizationConstraint<AuthorizationContext>> constraints =
+				authorizationConstraints.orderedStream().toList();
+		if (!constraints.isEmpty()) {
+			final CompositeReactiveAuthorizationManager manager = new CompositeReactiveAuthorizationManager(
+					List.of((authentication, context) -> Mono.just(new AuthorizationDecision(true))),
+					constraints
+			);
+			http.addFilterAfter(
+					new AuthorizationWebFilter((authentication, exchange) ->
+							manager.check(authentication, new AuthorizationContext(exchange))),
+					SecurityWebFiltersOrder.AUTHORIZATION
+			);
+		}
 		return http.build();
 	}
 
 	private CompositeReactiveAuthorizationManager compositeReactiveAuthorizationManager(
 			ObjectProvider<ReactiveAuthorizationManagerProvider<AuthorizationContext>> reactiveAuthorizationManagerProviders,
-			WhiteListService whiteListService,
-			ObjectProvider<ReactiveAuthorizationConstraint<AuthorizationContext>> authorizationConstraints
+			WhiteListService whiteListService
 	) {
 		List<ReactiveAuthorizationManager<AuthorizationContext>> list = new ArrayList<>();
 		list.add(ReactiveWhiteListAuthorizationManager.authenticated(whiteListService));
@@ -89,7 +105,7 @@ public class ReactiveSecurityAutoConfiguration {
 		if (CollectionUtils.isEmpty(managers)) {
 			list.add(AuthenticatedReactiveAuthorizationManager.authenticated());
 		}
-		return new CompositeReactiveAuthorizationManager(list, authorizationConstraints.orderedStream().toList());
+		return new CompositeReactiveAuthorizationManager(list);
 	}
 
 

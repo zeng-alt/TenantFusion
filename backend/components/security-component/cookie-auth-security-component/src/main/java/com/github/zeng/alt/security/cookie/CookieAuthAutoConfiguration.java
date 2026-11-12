@@ -24,6 +24,7 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.web.authentication.logout.LogoutFilter;
@@ -102,7 +103,9 @@ public class CookieAuthAutoConfiguration {
 
     @Bean
     @ConditionalOnProperty(prefix = "security.cookie-auth", name = "validation", havingValue = "true")
-    public SecurityBuilderCustomizer authCookieSecurityCustomizer(CookieAuthProperties cookieAuthProperties, SessionManager sessionManager) {
+    public SecurityBuilderCustomizer authCookieSecurityCustomizer(
+            CookieAuthProperties cookieAuthProperties, SessionManager sessionManager, UserDetailsService users
+    ) {
         return http -> {
             if (Boolean.TRUE.equals(cookieAuthProperties.getCsrfEnabled())) {
                 http.csrf(csrf -> csrf.csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
@@ -112,7 +115,8 @@ public class CookieAuthAutoConfiguration {
             CookieAuthenticationFilter authFilter = new CookieAuthenticationFilter(
                     sessionManager,
                     cookieAuthProperties.getCookieName(),
-                    cookieAuthProperties.getLogin()
+                    cookieAuthProperties.getLogin(),
+                    users
             );
 
             http

@@ -16,6 +16,7 @@ import org.springframework.security.core.userdetails.*;
 import org.springframework.security.crypto.factory.PasswordEncoderFactories;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.provisioning.InMemoryUserDetailsManager;
+import reactor.core.publisher.Mono;
 
 import java.util.List;
 
@@ -44,12 +45,7 @@ public class SecurityAutoConfiguration {
 	@Bean
 	@ConditionalOnMissingBean
 	public ReactiveUserDetailsService reactiveUserDetailsService(PasswordEncoder passwordEncoder) {
-		UserDetails user = User
-				.withUsername("root")
-				.password(passwordEncoder.encode("123456"))
-				.roles("ADMIN")
-				.build();
-		return new MapReactiveUserDetailsService(user);
+		return username -> Mono.empty();
 	}
 
 	@Bean

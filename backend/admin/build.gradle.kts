@@ -100,6 +100,7 @@ dependencies {
     testImplementation(libs.spring.boot.starter.test)
     testImplementation(libs.spring.modulith.starter.test)
     testImplementation(libs.spring.security.test)
+    testImplementation(project(":backend:components:security-component:cookie-auth-security-component"))
     testImplementation(project(":backend:components:security-component:abac-security-component:spel-abac-security-component"))
 
     annotationProcessor(libs.lombok)

@@ -4,10 +4,15 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.zeng.alt.admin.AdminApplication;
 import com.github.zeng.alt.security.api.LoginHelper;
 import com.github.zeng.alt.security.api.SecurityUser;
+import com.github.zeng.alt.security.cookie.CookieAuthenticationFilter;
+import com.github.zeng.alt.security.cookie.CookieAuthProperties;
+import com.github.zeng.alt.security.cookie.CookieLoginHelper;
+import com.github.zeng.alt.security.cookie.SessionManager;
 import com.github.zeng.alt.security.jwt.JwtStorage;
 import com.github.zeng.alt.security.jwt.JwtTokenProvider;
 import com.github.zeng.alt.security.rbac.serve.repository.RbacResourceService;
 import com.github.zeng.alt.storage.StorageTemplate;
+import com.github.zeng.alt.admin.infrastructure.repository.UserRepository;
 import com.github.zeng.alt.tenant.api.TenantContextHolder;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
@@ -22,6 +27,11 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.mock.web.MockHttpServletRequest;
+import org.springframework.mock.web.MockHttpServletResponse;
+import jakarta.servlet.http.Cookie;
 import org.springframework.web.servlet.view.xslt.XsltView;
 import org.springframework.web.servlet.view.xslt.XsltViewResolver;
 import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerMapping;
@@ -40,6 +50,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -103,6 +114,10 @@ class AdminSecurityDockerTest {
         SecurityContextHolder.getContext().setAuthentication(
                 UsernamePasswordAuthenticationToken.authenticated(user, null, user.getAuthorities()));
         context.getBean(LoginHelper.class).logout("900001");
+        jdbc.update("delete from main_user_role where user_role_id = 900011");
+        jdbc.update("delete from main_policy_rule where policy_rule_id = 900013");
+        context.getBean(RbacResourceService.class).removeUserRole(List.of("900001"));
+        context.getBean(RbacResourceService.class).removeRolePermission(List.of("security-review-role"));
     }
 
     @AfterEach
@@ -120,6 +135,7 @@ class AdminSecurityDockerTest {
 
     @Test
     void shouldLoginThroughHttpPersistRedisCredentialsAndRevokeBothTokens() throws Exception {
+        grantAuthAdminPermission();
         final var login = login();
         final String access = context.getBean(ObjectMapper.class).readTree(login.body()).path("data")
                 .path("accessToken").asText();
@@ -136,6 +152,70 @@ class AdminSecurityDockerTest {
         assertThat(cache.hasToken(tokens.getAccessCacheKey(access))).isFalse();
         assertThat(cache.hasToken(tokens.getRefreshCacheKey(refresh))).isFalse();
         assertThat(send("GET", "/v1/auth/admin", access, "").statusCode()).isEqualTo(401);
+    }
+
+    @Test
+    void shouldRejectCustomAuthenticatedRouteWithoutPermission() throws Exception {
+        final String access = context.getBean(ObjectMapper.class).readTree(login().body()).path("data")
+                .path("accessToken").asText();
+        assertThat(send("GET", "/v1/auth/admin", access, "").statusCode()).isEqualTo(403);
+    }
+
+    @Test
+    void shouldApplyAbacPolicyToCustomAuthenticatedRoute() throws Exception {
+        grantAuthAdminPermission();
+        final String access = context.getBean(ObjectMapper.class).readTree(login().body()).path("data")
+                .path("accessToken").asText();
+        assertThat(send("GET", "/v1/auth/admin", access, "").statusCode()).isEqualTo(200);
+        jdbc.update("""
+                insert into main_policy_rule
+                    (policy_rule_id, permission_id, condition, is_pre_auth, tenant_by, is_deleted)
+                values (900013, 10054, 'false', true, 'master', false)
+                """);
+        assertThat(send("GET", "/v1/auth/admin", access, "").statusCode()).isEqualTo(403);
+        jdbc.update("delete from main_policy_rule where policy_rule_id = 900013");
+        assertThat(send("GET", "/v1/auth/admin", access, "").statusCode()).isEqualTo(200);
+    }
+
+    @Test
+    void shouldBindRedisCookieToDatabaseTenantAndRejectDisabledAccount() throws Exception {
+        final var sessions = new SessionManager(context.getBean(StorageTemplate.class), 86400);
+        final var user = (SecurityUser) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        final String sessionId = sessions.createSession(user);
+        final var filter = new CookieAuthenticationFilter(sessions, "SESSION", new CookieAuthProperties().getLogin(),
+                context.getBean(UserDetailsService.class));
+        final var request = new MockHttpServletRequest("GET", "/secured");
+        request.setCookies(new Cookie("SESSION", sessionId));
+        SecurityContextHolder.clearContext();
+        TenantContextHolder.setTenantId("attacker-tenant");
+        final var reached = new AtomicBoolean();
+        filter.doFilter(request, new MockHttpServletResponse(), (req, res) -> {
+            reached.set(true);
+            assertThat(TenantContextHolder.getTenantId()).isEqualTo("master");
+            assertThat(context.getBean(UserRepository.class).findById(900001L).get().getTenantBy()).isEqualTo("master");
+        });
+        assertThat(reached).isTrue();
+        assertThat(TenantContextHolder.getTenantId()).isNull();
+        jdbc.update("update main_user set is_enabled = false where user_id = 900001");
+        filter.doFilter(request, new MockHttpServletResponse(), (req, res) ->
+                assertThat(SecurityContextHolder.getContext().getAuthentication()).isNull());
+        assertThat(sessions.getSession(sessionId)).isNull();
+    }
+
+    @Test
+    void shouldRevokeAllUserCookieSessionsInRedisWithoutRevokingOtherTenant() {
+        final var sessions = new SessionManager(context.getBean(StorageTemplate.class), 86400);
+        final var user = (SecurityUser) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        final String first = sessions.createSession(user);
+        final String second = sessions.createSession(user);
+        final String foreign = sessions.createSession(SecurityUser.withUsername("foreign").id("900001")
+                .tenant("foreign").password("unused").build());
+        new CookieLoginHelper(context.getBean(AuthenticationManager.class), sessions, new CookieAuthProperties())
+                .logout("900001");
+        assertThat(sessions.getSession(first)).isNull();
+        assertThat(sessions.getSession(second)).isNull();
+        assertThat(sessions.getSession(foreign)).isNotNull();
+        sessions.removeSession(foreign);
     }
 
     @Test
@@ -205,6 +285,21 @@ class AdminSecurityDockerTest {
                 """);
         assertThat(response.statusCode()).isEqualTo(200);
         return response;
+    }
+
+    private void grantAuthAdminPermission() {
+        jdbc.update("""
+                insert into main_role (role_id, code, tenant_by, is_enabled, is_deleted)
+                values (900010, 'security-review-role', 'master', true, false) on conflict do nothing
+                """);
+        jdbc.update("""
+                insert into main_user_role (user_role_id, user_id, role_id, tenant_by, is_deleted)
+                values (900011, 900001, 900010, 'master', false)
+                """);
+        jdbc.update("""
+                insert into main_role_permission (role_permission_id, role_id, permission_id, tenant_by, is_deleted)
+                values (900012, 900010, 10054, 'master', false) on conflict do nothing
+                """);
     }
 
     private HttpResponse<String> send(String method, String path, String token, String body) throws Exception {

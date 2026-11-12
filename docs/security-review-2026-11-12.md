@@ -10,7 +10,7 @@
 - JWT/Cookie 模块可以共同装配，过滤器与 OpenAPI Bean 使用独立名称。
 - Cookie 验证默认启用 CSRF，GET 请求下发 `XSRF-TOKEN`，写请求需提交匹配的 `X-XSRF-TOKEN`；表单属性仍使用 XOR 编码。允许通过 `security.cookie-auth.csrf-enabled=false` 显式关闭，或由宿主 customizer 配置自己的策略。
 - 核心组件不再硬编码放行 `/login/**`、H2、租户 GraphQL/GraphiQL 和 actuator startup。宿主通过 `security.filter.ignore-url` 或有序授权 customizer 声明放行；实际登录过滤器仍处理其配置的登录端点。admin 的 H2 开发控制台由 dev 配置显式放行。
-- `LoginHelper.reset` 不再默认返回 `null`，Servlet 重载委托基础重载；未实现重签或按用户撤销时明确抛出 `UnsupportedOperationException`。Cookie 尚不支持按用户批量撤销，不再静默报告成功；JWT 支持该能力。既有 `getCurrentUser` 可空契约保持兼容。
+- `LoginHelper.reset` 不再默认返回 `null`，Servlet 重载委托基础重载；未实现重签或按用户撤销时明确抛出 `UnsupportedOperationException`。JWT 与 Cookie 现均支持按当前租户用户批量撤销，Cookie 的实现见下方追加修复。既有 `getCurrentUser` 可空契约保持兼容。
 - 会话 Cookie 的签发与清除共享名称、路径、域、SameSite 和安全属性，HTTPS 请求自动携带 Secure。JWT 两条 Refresh Cookie 签发路径都遵守 SameSite/Path/TTL；自定义 Refresh Header 用于刷新和登出撤销，刷新仍必须携带 Bearer Access Token。缓存撤销故障不再被吞掉。
 
 ## 接入变化
@@ -59,6 +59,21 @@ Cookie SPA 客户端先发 GET，读取 `XSRF-TOKEN`，再在 POST/PUT/PATCH/DEL
 - 运行配置、随机管理员密码和验证脚本位于 Git 忽略的 `backend/admin/build/local-native`，未提交凭证。验证码校验保持开启，数据库、Redis 与最终原生进程继续运行。
 
 ## 重复执行
+
+### 六项复查问题追加修复
+
+- Servlet 和 WebFlux 把必需 AND 约束放在 URL 授权之后执行，覆盖 customizer 的 `authenticated`、`permitAll` 等规则。基础授权拒绝时不执行约束，约束按顺序短路；保留原有 Composite 的公开构造契约。admin 原先仅要求登录的自定义路径现在也会执行宿主 ABAC/RBAC 约束，调用者需要满足已有权限与策略。
+- Cookie 认证从缓存取得可信租户后，清除请求头产生的数据库、schema、路由信息，再在该租户加载权威账户。每次请求复核 ID、租户和四项账户状态，并使用当前角色集合；查无账户或账户失效会删除会话，基础设施异常不会被吞掉，请求结束清除安全及租户上下文。宿主需要提供可查询当前账户的 `UserDetailsService`；旧三参数过滤器构造器保留但安全拒绝恢复会话，应改用四参数构造器。
+- Cookie 新会话 ID 使用 Base64 URL 编码的租户、用户范围加随机 UUID，仍通过原有会话 Cookie 和 `session:<sessionId>` 缓存访问；`logout(userId)` 只撤销当前租户该用户的所有会话。旧格式 Cookie 会话无法按用户定位，升级后失效，需要重新登录。无需数据库迁移；JWT 凭证格式不变。
+- Reactive 缺省用户服务改为空服务，移除 `root / 123456`，宿主提供的用户服务仍优先。
+- Servlet 白名单不再依赖非 Bean 上的调度注解；每次授权读取服务快照，只有路径集合变化才重新编译匹配器，新增和移除都在下一请求生效。
+- JWT 配置按 Base64 解码后的字节数校验。Access 至少 32 字节，单独 Refresh 至少 64 字节；签发端复用 Access 密钥签 HS512 Refresh 时，Access 也须达到 64 字节。非法编码和不足长度在绑定阶段拒绝，合法的 44/88 字符最小密钥可以正常使用。
+
+验证：先运行新增测试，确认旧实现失败，再修复并回归。最终相关测试共 335 项，失败、错误、跳过均为 0；其中 admin 77 项包含 9 项隔离 Docker 回归。覆盖核心安全、Cookie、JWT、RBAC、ABAC 和数据权限模块；`workflow:compileJava`、admin AOT 测试生成及编译通过。实际 PostgreSQL/Redis 验证包括自定义认证路径的权限和 ABAC 拒绝、Cookie 可信租户下的数据库读取、数据库停用后的 Cookie 拒绝、按租户用户撤销 Redis 会话。
+
+JaCoCo 0.8.13 对本轮重点类的行覆盖率：SessionManager、CookieLoginHelper、SecurityAutoConfiguration、JwtProperties 为 100%，CookieAuthenticationFilter 85.1%，WhiteListAuthorizationManager 94.4%，WebSecurityAutoConfiguration 80.0%，ReactiveSecurityAutoConfiguration 96.9%。报告位于 `build/reports/security-fixes`；这些数字不代表仓库整体覆盖率。本轮未重建 Native 可执行文件，JWT 配置 AOT 回归额外检查新校验 getter 的反射提示。
+
+### 回归命令
 
 Docker 脚本使用仅绑定本机的随机端口、临时 PostgreSQL 文件系统和独立 Redis，退出时自动删除本次容器：
 

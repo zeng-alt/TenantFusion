@@ -4,6 +4,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.zeng.alt.security.api.SecurityUser;
 import com.github.zeng.alt.security.core.SecurityAutoConfiguration;
 import com.github.zeng.alt.security.core.web.config.WebSecurityAutoConfiguration;
+import com.github.zeng.alt.tenant.api.TenantContextHolder;
+import com.github.zeng.alt.tenant.api.TenantRouting;
 import jakarta.servlet.http.Cookie;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -15,15 +17,20 @@ import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.web.FilterChainProxy;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.web.servlet.handler.HandlerMappingIntrospector;
 
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 
 /**
  * 验证 Cookie 认证的完整安全链默认拒绝无 CSRF token 的写请求。
@@ -32,12 +39,20 @@ import static org.mockito.Mockito.when;
  * @since 0.0.1-SNAPSHOT
  */
 class CookieSecurityTest {
+    private final AtomicReference<SecurityUser> currentUser = new AtomicReference<>(user());
     private final WebApplicationContextRunner runner = new WebApplicationContextRunner()
             .withConfiguration(AutoConfigurations.of(SecurityAutoConfiguration.class,
                     WebSecurityAutoConfiguration.class, CookieAuthAutoConfiguration.class))
             .withPropertyValues("security.username-login.enabled=false", "security.cookie-auth.validation=true")
             .withBean(ObjectMapper.class, ObjectMapper::new)
             .withBean(AuthenticationManager.class, () -> authentication -> authentication)
+            .withBean(UserDetailsService.class, () -> username -> {
+                assertThat(TenantContextHolder.getTenantId()).isEqualTo("t001");
+                if (currentUser.get() == null) {
+                    throw new UsernameNotFoundException(username);
+                }
+                return currentUser.get();
+            })
             .withBean(SessionManager.class, () -> {
                 final var sessions = mock(SessionManager.class);
                 when(sessions.getSession("valid-session")).thenReturn(SecurityUser.withUsername("review")
@@ -50,6 +65,7 @@ class CookieSecurityTest {
     @AfterEach
     void clearContext() {
         SecurityContextHolder.clearContext();
+        TenantContextHolder.clear();
     }
 
     @ParameterizedTest
@@ -94,6 +110,86 @@ class CookieSecurityTest {
                     request("POST"), new MockHttpServletResponse(), (req, res) -> reached.set(true));
             assertThat(reached).isTrue();
         });
+    }
+
+    @Test
+    void shouldBindAuthenticatedTenantAndDiscardUntrustedRouting() {
+        runner.run(context -> {
+            TenantContextHolder.setTenantId("attacker-tenant");
+            TenantContextHolder.setRouting(TenantRouting.none("attacker-tenant"));
+            TenantContextHolder.setDatabase("attacker-db");
+            TenantContextHolder.setSchema("attacker-schema");
+            final var reached = new AtomicBoolean();
+            new FilterChainProxy(context.getBean(SecurityFilterChain.class)).doFilter(
+                    request("GET"), new MockHttpServletResponse(), (req, res) -> {
+                        reached.set(true);
+                        assertThat(TenantContextHolder.getTenantId()).isEqualTo("t001");
+                        assertThat(TenantContextHolder.getRouting()).isNull();
+                        assertThat(TenantContextHolder.getDatabase()).isNull();
+                        assertThat(TenantContextHolder.getSchema()).isNull();
+                    });
+            assertThat(reached).isTrue();
+            assertThat(TenantContextHolder.getTenantId()).isNull();
+        });
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"disabled", "locked", "expired", "credentialsExpired", "deleted", "differentId", "differentTenant"})
+    void shouldRejectStaleSessionWhenAccountChanges(String change) {
+        final var user = user();
+        switch (change) {
+            case "disabled" -> user.setEnabled(false);
+            case "locked" -> user.setAccountNonLocked(false);
+            case "expired" -> user.setAccountNonExpired(false);
+            case "credentialsExpired" -> user.setCredentialsNonExpired(false);
+            case "differentId" -> user.setId("8");
+            default -> { }
+        }
+        currentUser.set(switch (change) {
+            case "deleted" -> null;
+            case "differentTenant" -> SecurityUser.withUsername("review").id("7")
+                    .tenant("other").password("unused").build();
+            default -> user;
+        });
+        runner.run(context -> {
+            final var response = new MockHttpServletResponse();
+            final var reached = new AtomicBoolean();
+            new FilterChainProxy(context.getBean(SecurityFilterChain.class)).doFilter(
+                    request("GET"), response, (req, res) -> reached.set(true));
+            assertThat(reached).isFalse();
+            assertThat(response.getStatus()).isEqualTo(401);
+            org.mockito.Mockito.verify(context.getBean(SessionManager.class)).removeSession("valid-session");
+            assertThat(TenantContextHolder.getTenantId()).isNull();
+        });
+    }
+
+    private static SecurityUser user() {
+        return SecurityUser.withUsername("review").id("7").tenant("t001").password("unused").build();
+    }
+
+    @Test
+    void shouldUseFreshRolesAndEraseLoadedCredentials() {
+        final var fresh = user();
+        fresh.getRoles().add(new SimpleGrantedAuthority("new-role"));
+        currentUser.set(fresh);
+        runner.run(context -> new FilterChainProxy(context.getBean(SecurityFilterChain.class)).doFilter(
+                request("GET"), new MockHttpServletResponse(), (req, res) -> {
+                    final var user = (SecurityUser) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+                    assertThat(user.getRoles()).extracting(role -> role.getAuthority()).containsExactly("new-role");
+                    assertThat(user.getPassword()).isNull();
+                }));
+    }
+
+    @Test
+    void shouldClearContextsWhenAccountLookupFails() {
+        runner.withAllowBeanDefinitionOverriding(true).withBean(UserDetailsService.class,
+                () -> username -> { throw new IllegalStateException("database unavailable"); }).run(context -> {
+                    assertThatThrownBy(() -> new FilterChainProxy(context.getBean(SecurityFilterChain.class)).doFilter(
+                            request("GET"), new MockHttpServletResponse(), (req, res) -> { }))
+                            .isInstanceOf(IllegalStateException.class).hasMessage("database unavailable");
+                    assertThat(SecurityContextHolder.getContext().getAuthentication()).isNull();
+                    assertThat(TenantContextHolder.getTenantId()).isNull();
+                });
     }
 
     private MockHttpServletRequest request(String method) {
