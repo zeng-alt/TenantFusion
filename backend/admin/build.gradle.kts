@@ -21,10 +21,8 @@ graalvmNative {
                 "-Duser.country=CN",
                 "-Duser.language=zh",
                 "-H:+AddAllCharsets",
-                "--trace-class-initialization=org.slf4j.LoggerFactory",
-                "--trace-class-initialization=org.apache.commons.logging.LogFactory",
-                "--trace-class-initialization=ch.qos.logback.classic.Logger",
-                "-H:ClassInitialization=org.apache.commons.logging.LogFactory:run_time",
+                // 日志与 Netty 分配器持有运行时状态，不能被 Netty 的包级 build_time 元数据提前初始化。
+                "--initialize-at-run-time=io.netty,org.slf4j,ch.qos.logback,org.apache.commons.logging.LogFactory",
             )
         }
     }

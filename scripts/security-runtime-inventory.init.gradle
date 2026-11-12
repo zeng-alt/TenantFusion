@@ -1,0 +1,37 @@
+import groovy.json.JsonOutput
+
+// 使用实际解析结果，包含 admin、workflow 与独立安全模块的传递运行时依赖。
+gradle.projectsEvaluated {
+    gradle.rootProject.tasks.register('securityRuntimeInventory') {
+        doLast {
+            def rows = []
+            gradle.rootProject.allprojects.findAll { p ->
+                p.path in [':backend:admin', ':backend:workflow'] ||
+                        p.path.startsWith(':backend:components:security-component:')
+            }.each { p ->
+                def configuration = p.configurations.findByName('runtimeClasspath')
+                if (configuration != null && configuration.canBeResolved) {
+                    configuration.resolvedConfiguration.resolvedArtifacts.each { artifact ->
+                        def id = artifact.moduleVersion.id
+                        if (id.group != 'com.github.zeng.alt') {
+                            rows << [project: p.path, name: id.group + ':' + id.name, version: id.version]
+                        }
+                    }
+                }
+            }
+            def coordinates = rows.collect { [name: it.name, version: it.version] }.unique()
+                    .sort { a, b -> (a.name + a.version) <=> (b.name + b.version) }
+            def components = coordinates.collect { c ->
+                def parts = c.name.split(':', 2)
+                [type: 'library', group: parts[0], name: parts[1], version: c.version,
+                 purl: 'pkg:maven/' + parts[0] + '/' + parts[1] + '@' + c.version]
+            }
+            def destination = gradle.rootProject.layout.buildDirectory.dir('reports/security').get().asFile
+            destination.mkdirs()
+            new File(destination, 'dependencies.json').text = JsonOutput.prettyPrint(JsonOutput.toJson(rows.unique()))
+            new File(destination, 'bom.cdx.json').text = JsonOutput.prettyPrint(JsonOutput.toJson(
+                    [bomFormat: 'CycloneDX', specVersion: '1.5', version: 1, components: components]))
+            logger.lifecycle('Security runtime inventory: {} coordinates in {}', coordinates.size(), destination)
+        }
+    }
+}

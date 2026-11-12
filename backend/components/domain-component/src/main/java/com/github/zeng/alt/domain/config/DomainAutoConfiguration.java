@@ -108,7 +108,7 @@ public class DomainAutoConfiguration {
     @ConditionalOnMissingBean(IUniqueCheckRepository.class)
     @ConditionalOnClass(name = "jakarta.persistence.EntityManager")
     @Role(BeanDefinition.ROLE_INFRASTRUCTURE)
-    public static IUniqueCheckRepository entityManagerUniqueCheckRepository(EntityManager entityManager) {
+    public static EntityManagerUniqueCheckRepository entityManagerUniqueCheckRepository(EntityManager entityManager) {
         return new EntityManagerUniqueCheckRepository(entityManager);
     }
 }
