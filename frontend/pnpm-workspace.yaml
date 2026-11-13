@@ -1,0 +1,7 @@
+allowBuilds:
+  '@carbon/grid': true
+  '@carbon/layout': true
+  esbuild: true
+  inferno: true
+  simple-git-hooks: true
+  vue-demi: true
