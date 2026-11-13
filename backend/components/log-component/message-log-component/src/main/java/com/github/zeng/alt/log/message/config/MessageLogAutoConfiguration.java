@@ -1,9 +1,8 @@
 package com.github.zeng.alt.log.message.config;
 
 import com.github.zeng.alt.log.message.consumer.MessageLogConsumer;
-import com.github.zeng.alt.log.message.consumer.MessageLogMessageHandler;
 import com.github.zeng.alt.log.message.producer.MessageLogProducer;
-import com.github.zeng.alt.message.MessageQueueTemplate;
+import com.github.zeng.alt.event.EventTemplate;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
@@ -29,7 +28,7 @@ import org.springframework.context.annotation.Bean;
  * @version 1.0
  */
 @AutoConfiguration
-@ConditionalOnBean(MessageQueueTemplate.class)
+@ConditionalOnBean(EventTemplate.class)
 public class MessageLogAutoConfiguration {
 
     /**
@@ -40,7 +39,7 @@ public class MessageLogAutoConfiguration {
     @Bean
     @ConditionalOnMissingBean
     @ConditionalOnProperty(name = "log.message.producer-enabled", havingValue = "true", matchIfMissing = true)
-    public MessageLogProducer messageLogProducer(MessageQueueTemplate messageQueue) {
+    public MessageLogProducer messageLogProducer(EventTemplate messageQueue) {
         return new MessageLogProducer(messageQueue);
     }
 
@@ -56,15 +55,4 @@ public class MessageLogAutoConfiguration {
         return new MessageLogConsumer(eventPublisher);
     }
 
-    /**
-     * 消息日志消费者桥接：将 {@code MessageLogConsumer} 注册为
-     * {@link com.github.zeng.alt.message.MessageHandler MessageHandler}，
-     * 由消息模块自动订阅 {@code log.oper} 主题。
-     */
-    @Bean
-    @ConditionalOnMissingBean
-    @ConditionalOnProperty(name = "log.message.consumer-enabled", havingValue = "true")
-    public MessageLogMessageHandler messageLogMessageHandler(MessageLogConsumer consumer) {
-        return new MessageLogMessageHandler(consumer);
-    }
 }

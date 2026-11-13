@@ -1,1 +1,1 @@
-com.github.zeng.alt.message.kafka.KafkaMessageAutoConfiguration
+com.github.zeng.alt.event.kafka.KafkaEventAutoConfiguration

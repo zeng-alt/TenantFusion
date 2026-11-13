@@ -1,6 +1,6 @@
 package com.github.zeng.alt.security.rbac.client.registrar;
 
-import com.github.zeng.alt.message.MessageQueueTemplate;
+import com.github.zeng.alt.event.EventTemplate;
 import com.github.zeng.alt.security.rbac.client.RouteTemplateRegistrar;
 import com.github.zeng.alt.security.rbac.client.collector.RouteTemplateCollector;
 import com.github.zeng.alt.security.rbac.client.properties.RbacClientProperties;
@@ -12,7 +12,7 @@ import java.util.List;
 /**
  * 微服务模式路由注册器。
  *
- * <p>通过 {@link MessageQueueTemplate} 将路由模板事件发送到消息队列，
+ * <p>通过 {@link EventTemplate} 将路由模板事件发送到消息队列，
  * 由 Serve 端的 {@link com.github.zeng.alt.security.rbac.serve.router.RouteTemplateManager} 接收并处理。
  * 适用于 Client 和 Serve 在不同 JVM 中的部署场景。</p>
  */
@@ -21,11 +21,11 @@ public class MessageRouteTemplateRegistrar extends RouteTemplateRegistrar {
 
     private static final String ROUTE_TEMPLATE_TOPIC = "route:template:path";
 
-    private final MessageQueueTemplate messageQueueTemplate;
+    private final EventTemplate messageQueueTemplate;
 
     public MessageRouteTemplateRegistrar(RouteTemplateCollector collector,
                                          RbacClientProperties properties,
-                                         MessageQueueTemplate messageQueueTemplate) {
+                                         EventTemplate messageQueueTemplate) {
         super(collector, properties);
         this.messageQueueTemplate = messageQueueTemplate;
     }
@@ -36,6 +36,6 @@ public class MessageRouteTemplateRegistrar extends RouteTemplateRegistrar {
         event.setContextPath(contextPath);
         event.setTemplates(templates);
         log.info("Sending {} route templates via message queue topic '{}'", templates.size(), ROUTE_TEMPLATE_TOPIC);
-        messageQueueTemplate.send(ROUTE_TEMPLATE_TOPIC, event);
+        messageQueueTemplate.to("route-template").publish(event);
     }
 }

@@ -1,6 +1,6 @@
 package com.github.zeng.alt.security.rbac.client.config;
 
-import com.github.zeng.alt.message.MessageQueueTemplate;
+import com.github.zeng.alt.event.EventTemplate;
 import com.github.zeng.alt.security.rbac.client.RouteTemplateRegistrar;
 import com.github.zeng.alt.security.rbac.client.collector.ReactiveRouteTemplateCollector;
 import com.github.zeng.alt.security.rbac.client.collector.RouteTemplateCollector;
@@ -92,7 +92,7 @@ public class RbacClientAutoConfiguration {
         }
 
         @Configuration
-        @ConditionalOnClass(MessageQueueTemplate.class)
+        @ConditionalOnClass(EventTemplate.class)
         @ConditionalOnMissingClass("com.github.zeng.alt.security.rbac.serve.router.RouteTemplateManager")
         @Slf4j
         public static class ServletMessage {
@@ -102,7 +102,7 @@ public class RbacClientAutoConfiguration {
             public MessageRouteTemplateRegistrar servletMessageRegistrar(
                     RouteTemplateCollector servletRouteTemplateCollector,
                     RbacClientProperties properties,
-                    MessageQueueTemplate messageQueueTemplate) {
+                    EventTemplate messageQueueTemplate) {
                 log.debug("Creating MessageRouteTemplateRegistrar for Servlet (microservices mode)");
                 return new MessageRouteTemplateRegistrar(
                         servletRouteTemplateCollector, properties, messageQueueTemplate);
@@ -144,7 +144,7 @@ public class RbacClientAutoConfiguration {
         }
 
         @Configuration
-        @ConditionalOnClass(MessageQueueTemplate.class)
+        @ConditionalOnClass(EventTemplate.class)
         @ConditionalOnMissingClass("com.github.zeng.alt.security.rbac.serve.router.RouteTemplateManager")
         @Slf4j
         public static class ReactiveMessage {
@@ -154,7 +154,7 @@ public class RbacClientAutoConfiguration {
             public MessageRouteTemplateRegistrar reactiveMessageRegistrar(
                     RouteTemplateCollector reactiveRouteTemplateCollector,
                     RbacClientProperties properties,
-                    MessageQueueTemplate messageQueueTemplate) {
+                    EventTemplate messageQueueTemplate) {
                 log.debug("Creating MessageRouteTemplateRegistrar for WebFlux (microservices mode)");
                 return new MessageRouteTemplateRegistrar(
                         reactiveRouteTemplateCollector, properties, messageQueueTemplate);

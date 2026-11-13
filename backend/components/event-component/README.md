@@ -1,64 +1,61 @@
-# 事件组件 (event-component)
+# 事件组件
 
-提供 Spring/Modulith/Namastack 事件上下文传播，以及 Redis、RabbitMQ、Kafka 传输适配。
-Gradle 模块已改名为 `event-component` / `api-event-component` / `*-event-component`。
-现有 `com.github.zeng.alt.message.*` 消息传输 API 保持兼容，新事件上下文 API 位于
-`com.github.zeng.alt.event.*`。
+`api-event-component` 提供统一的监听、发送和上下文契约。Kafka、RabbitMQ、Redis 适配器可同时存在，按逻辑 binding 选择，不使用全局唯一的消息模板。
 
-## 普通事件直接发布
+旧 `MessageListener`、`MessageHandler`、`MessageQueueTemplate`、消息包格式及隐式 Redis 外部化/订阅已移除，不提供兼容层。业务事件不需要继承或携带上下文字段。
 
-业务事件不需要继承基类、实现接口、增加 context 字段或改用专用发布器：
+## 监听与处理结果
 
 ```java
-@Externalized("orders.created::#{orderId}")
-public record OrderCreatedEvent(String orderId) {
+@EventSubscription(id = "inventory-order-created", binding = "orders")
+public EventOutcome onOrderCreated(OrderCreatedEvent event, EventDelivery delivery) {
+    if (inventoryService.isTemporarilyUnavailable()) {
+        return delivery.retry(Duration.ofSeconds(10));
+    }
+    if (!inventoryService.supports(event.productId())) {
+        return delivery.reject("商品不支持库存预留");
+    }
+    inventoryService.reserve(event);
+    return delivery.ack();
 }
-
-// 在业务事务中使用 Spring 原生 ApplicationEventPublisher。
-eventPublisher.publishEvent(new OrderCreatedEvent(orderId));
 ```
 
-`@EventListener`、`@TransactionalEventListener`、`@ApplicationModuleListener` 的类型化
-监听方法仍接收原来的业务类型。处理前恢复上下文，返回或抛异常后还原原线程。
-拦截顺序早于监听器事务，使数据库访问使用恢复后的租户。
+`EventDelivery` 的 `ack()` / `retry()` / `retry(Duration)` / `reject(reason)` 返回不可变的 `EventOutcome`，不会立即操作 Broker。必须把结果从监听方法返回。
 
-## 发布、存储、消费三层边界
+- `Acknowledged`：业务处理成功，适配器完成确认。
+- `Retry`：按策略安排重试；显式延迟表示最小等待时间。
+- `Rejected`：不再进行业务重试，转入配置的死信目的地，或显式配置的丢弃策略。
+- `void` 方法正常结束视为成功；异常进入同一个重试预算。
+- `EventOutcome` 方法返回 `null` 是处理失败，不会被确认为成功。
+- `max-attempts` 包含首次处理。异常重试与主动重试共用预算。
+- 不支持 `@Async`、Future 或响应式返回值，启动时拒绝。框架必须观察业务完成后才能确认。
 
-上下文固定在发布时，不能等监听器执行或重试时再从线程取值：
+方法支持普通泛型 payload、`org.springframework.messaging.Message<T>`、`@Header`、`@Headers`、`EventDelivery`、`EventContext` 和无参签名。一个方法最多一个 payload。
+`List<Order>` 表示业务负载本身是列表，不隐式开启 Kafka 批量消费。
 
-| 发布入口 | 捕获位置 | 保存位置 | 恢复位置 |
-|---|---|---|---|
-| `ApplicationEventPublisher` 普通内部事件 | `ApplicationEventMulticaster.multicastEvent` | 原事件的内存快照关联 | 单事件参数的 Spring 监听器方法 |
-| `ApplicationEventPublisher` + Modulith 持久化监听器 | 同上 | `EventSerializer` 的持久化包装 | 首次监听及数据库重放时的监听器方法 |
-| `ApplicationEventPublisher` + `@Externalized`（outbox 模式） | Spring 发布入口，然后由官方 recorder 调用 Outbox | Namastack 原生 `context` 列 | Outbox dispatch，包括重试和补偿 |
-| 直接 `Outbox.schedule(...)`，所有四种重载 | Namastack `OutboxContextProvider` | Namastack 原生 `context` 列 | 同一个 Outbox dispatch 适配器 |
+注解的 `id` 和 `binding` 支持 `${...}` 占位符。端点 ID 全局唯一，多个端点可以引用同一 binding；实际广播或竞争关系仍取决于消费组/队列配置。
 
-`EventContextAutoConfiguration` 只装配公共 SPI；`SpringEventContextConfiguration` 负责
-发布与监听边界，Modulith 与 Namastack 配置分别适配各自的存储和消费生命周期。
-原生 `ApplicationEventPublisher` 由容器提供，因此装饰它背后的广播器，业务无需替换发布器。
-已有 Modulith 或自定义广播器保留原实现；纯 Spring 应用显式注册 Spring 默认广播器，
-使其也经过发布入口的拦截。发布退出时和监听退出时分别还原当前线程。
+## 上下文
 
-普通异步单参数监听器即使使用没有 TaskDecorator 的执行器，也从事件关联读取发布快照。
-提交前切换用户/租户后，事务监听器仍读取发布时的值。
-无参异步监听器没有事件参数用于关联，需要为执行器配置下面的 TaskDecorator；
-无参事务监听器不属于当前适配范围。一次发布应创建独立的事件对象，不跨发布复用同一实例。
-
-直接 Outbox 发布无需 `@Externalized`：
+进入监听器前，框架从消息提取来源快照，恢复 `TenantContextHolder` 及独立的 `SecurityContextHolder`。方法结束、异常、重试和拒绝都会还原工作线程原来的上下文。
 
 ```java
-// 在业务事务中调用，自动捕获当前租户和用户。
-outbox.schedule(new OrderCreatedEvent(orderId), orderId);
-outbox.schedule(new OrderCreatedEvent(orderId), orderId, Map.of("business.source", "checkout"));
+String tenantId = TenantContextHolder.getTenantId();
+Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+String userId = UserContextHolder.getId();
+
+EventContext context = delivery.context();
+Option<String> tenant = context.attribute("request.tenantId");
+Map<String, String> attributes = context.attributes();
+Map<String, String> headers = context.headers();
 ```
 
-业务附加字段应使用自己的命名空间。Namastack 的合并契约是 `additionalContext` 覆盖
-Provider 的同名键，因此业务字段不要占用组件的 `request.*` 键。
+`EventContext` 还提供 `messageId()`、`listenerId()`、`retryCount()` 和 `nativeContext(Class<T>)`。只需要上下文的方法可直接声明 `EventContext` 参数，无需声明 `EventDelivery`。
+`retryCount` 是组件已安排的重试次数，从 0 开始，不代表 Broker 因断线等原因产生的全部重复投递次数。
 
-## 上下文扩展接口
+内置 `RequestEventContextHandler` 恢复租户 ID、database/schema、`TenantRouting`、用户 ID/用户名及 `SecurityUser`。密码、Token、角色权限不进入快照；身份快照不等同于完整登录会话。
 
-注册 `EventContextHandler` Bean 即可贡献上下文，框架通过
-`ObjectProvider<EventContextHandler>.orderedStream()` 收集并尊重 `@Order`：
+新增上下文通过 `EventContextHandler` Bean 贡献：
 
 ```java
 public interface EventContextHandler {
@@ -72,291 +69,24 @@ public interface EventContextHandler {
 }
 ```
 
-- `key()` 是稳定、唯一的命名空间。例如 `request`，持久化键形如 `request.tenantId`。
-- `capture()` 返回当前线程的字符串快照；没有上下文时返回空 Map。
-- `restore()` 接收本命名空间的字段，安装上下文，并返回还原原线程状态的 Scope。
-  空 Map 表示清除本次上下文，不应沿用处理线程上一个任务的值。
-- Scope 在处理完成后关闭，多贡献者按正序恢复、逆序还原。
+贡献者通过 `ObjectProvider.orderedStream()` 收集，按顺序恢复、逆序还原。空快照表示清除本次上下文，不能沿用线程上一次任务的身份。
 
-内置 `RequestEventContextHandler` 捕获租户 ID、database/schema、完整 `TenantRouting`
-路由及用户 ID/用户名。它恢复租户 ThreadLocal，并为本次处理安装独立的 SecurityContext，
-使 `UserContextHolder.getId()`、`getUsername()`、`getSecurityUser()`、`getTenant()` 可直接读取。
-恢复的 SecurityUser 同时包含快照中的 database/schema；密码、Token、角色权限不进入快照，
-重建的身份不携带 authorities。缺少用户 ID 或用户名的快照按无用户上下文处理。
-作用域退出时还原原来的 SecurityContext 对象，包括原认证凭据及权限，不修改共享上下文。
+Kafka/Rabbit 的 payload 是业务 JSON，元数据保存在 `alt-event-metadata` header；Redis 使用包含 payload 和元数据的 JSON 信封。读取负载按监听方法声明的类型进行，不根据网络消息加载 Java 类。
+没有组件元数据的 Kafka/Rabbit 消息按空上下文处理；外部生产者需要遵循该元数据协议才能传播上下文。
 
-`EventContextTemplate` 同时实现 Spring `TaskDecorator`。Boot 默认执行器会使用它；
-项目既有 `CompositeTaskDecorator` 会将它与其他装饰器组合。自行创建执行器的应用
-需要把它加入该执行器的 TaskDecorator 配置。
-
-## 持久化与重试
-
-### Spring Modulith 2.1.2
-
-此版本没有独立的业务 context 字段或 capture/restore SPI。
-组件通过官方 `EventSerializer` 扩展点装饰现有序列化器：
-
-```json
-{
-  "$alt.event.context": 1,
-  "context": { "request.tenantId": "tenant-a" },
-  "serialized": "{\"orderId\":\"123\"}"
-}
-```
-
-包装只存在于 `event_publication.serialized_event`，原事件类型、路由和监听签名不变。
-反序列化返回原业务对象；基础设施按对象身份临时关联快照，监听器执行时恢复。
-该关联使用弱引用，不延长事件生命周期，也不会让两个相等 record 共用上下文。
-读取数据库记录只建立关联，不会污染读取线程的 ThreadLocal。
-
-新适配器兼容旧的裸事件 JSON；旧记录没有来源上下文，恢复为空上下文。
-新记录的包装格式需要新适配器读取，部署时不要让旧版本实例消费新格式记录。
-
-### Namastack 1.7.3
-
-直接使用原生 `outbox_record.context`，业务 payload 保持原样。
-`OutboxContextProvider` 负责捕获，适配器在 `OutboxHandlerInvoker.dispatch` 与
-`OutboxFallbackHandlerInvoker.dispatch` 的可代理边界恢复和还原上下文。
-因此 typed Handler、lambda Handler、注解 Handler 均无需增加 metadata 参数：
+## 发送
 
 ```java
-@OutboxHandler
-public void deliver(OrderCreatedEvent event) {
-    // TenantContextHolder 已恢复，业务事件本身只有 orderId。
-}
+String messageId = eventTemplate.to("orders")
+        .key(orderId)
+        .header("source", "checkout")
+        .publish(event);
 ```
 
-dispatch 适配针对项目锁定的 1.7.3，升级 Namastack 时需要运行组件的真实重试与补偿测试。
-API 模块将 Modulith/Namastack 依赖声明为 `compileOnly`，不会强制启动持久化运行时。
+`publish` 时捕获当前上下文。默认生成消息 ID；已有稳定的业务事件 ID 时可调用 `.messageId(eventId)`。重试和死信转发保留 ID、上下文及业务 headers。
+普通发送不自动加入 Outbox，应在需要可靠持久化发布的业务流程中使用 Namastack。
 
-## Admin 装配与边界
-
-Admin 引入 `api-event-component` 和 `spring-modulith-starter-namastack`，开启
-`spring.modulith.events.externalization.mode=outbox`。Modulith 2.1.2 带入 Namastack 1.7.3 JDBC。
-`V0024` H2/PG Liquibase 脚本管理 Outbox 三张表，Namastack 自动建表关闭。
-
-业务写入与 Outbox 入队应在同一数据源的同一事务内。本次没有扩展跨租户数据库/schema
-的 Outbox 轮询；恢复处理上下文不等于扫描多个租户存储。
-Admin 尚需选择具体 Broker 或自定义 Outbox Handler。Rabbit Outbox 模式需要
-`spring.rabbitmq.publisher-confirm-type=correlated`。
-现有 Redis `DelegatingEventExternalizer` 和 `MessageQueueTemplate.send()` 保持原来的直接发送路径。
-
-参考：[Modulith EventSerializer](https://docs.spring.io/spring-modulith/reference/events.html#_event_serializer)、
-[Namastack Context Propagation](https://www.namastack.io/docs/reference/context-propagation/)。
-
----
-
-## 模块结构
-
-```
-event-component/
-├── api-event-component/                 # API 模块（必选）
-│   ├── Message<T>                          # 消息体
-│   ├── MessageQueueTemplate                # 统一收发模板
-│   ├── MessageSender                       # 发送接口
-│   ├── MessageListener<T>                  # 监听器函数式接口
-│   ├── MessageHandler<T>                   # 接口式订阅（类似 ApplicationListener）
-│   ├── annotation/@MessageListener         # 注解式订阅
-│   ├── codec/
-│   │   ├── MessagePacket                   # 拆包：消息传输单元（含分片）
-│   │   ├── MessagePacketCodec              # 编解码器接口
-│   │   └── JacksonMessagePacketCodec       # Jackson JSON 实现
-│   ├── config/MessageAutoConfiguration     # 自动配置
-│   └── subscription/
-│       └── MessageListenerBeanPostProcessor # 订阅注册器
-│
-├── redis-event-component/               # Redis 实现（可选）
-├── rabbit-event-component/              # RabbitMQ 实现（可选）
-└── kafka-event-component/               # Kafka 实现（可选）
-```
-
----
-
-## 快速开始
-
-### 1. 引入依赖
-
-选择一种实现模块引入：
-
-```kotlin
-// build.gradle.kts
-
-// Redis 实现
-implementation(project(":backend:components:event-component:redis-event-component"))
-// 或 RabbitMQ
-implementation(project(":backend:components:event-component:rabbit-event-component"))
-// 或 Kafka
-implementation(project(":backend:components:event-component:kafka-event-component"))
-```
-
-> 只引入 `api-event-component` 不会自动配置 `MessageQueueTemplate` Bean，必须配合一个实现包使用。
-
-### 2. 发送消息
-
-```java
-@Autowired
-private MessageQueueTemplate messageQueue;
-
-// 简单发送（仅负载）
-Order order = new Order().setId("123");
-messageQueue.send("order.created", order);
-
-// 带头部信息
-Map<String, String> headers = new HashMap<>();
-headers.put("source", "web");
-messageQueue.send("order.created", order, headers);
-
-// 发送完整 Message
-Message<Order> msg = new Message<>("order.created", order);
-msg.setHeaders(headers);
-messageQueue.send("order.created", msg);
-```
-
-### 3. 接收消息
-
-**拉模式（主动拉取）：**
-
-```java
-// 阻塞直到有消息
-Message<Order> msg = messageQueue.receive("order.created");
-
-// 带超时
-Message<Order> msg = messageQueue.receive("order.created", 5, TimeUnit.SECONDS);
-```
-
-**推模式（订阅）：** 见下方两种订阅方式。
-
----
-
-## 两种订阅方式
-
-### 方式一：接口式订阅（推荐）
-
-实现 `MessageHandler<T>` 接口，类似 Spring 的 `ApplicationListener`：
-
-```java
-@Component
-public class OrderCreatedHandler implements MessageHandler<Order> {
-
-    @Override
-    public String getTopic() {
-        return "order.created";
-    }
-
-    @Override
-    public void onMessage(Message<Order> message) {
-        Order order = message.getPayload();
-        System.out.println("收到订单: " + order.getId());
-    }
-}
-```
-
-> **优点：** 类型安全、编译期检查、无需反射、自然支持 AOT。
-
-### 方式二：注解式订阅
-
-使用 `@MessageListener` 标注任意方法：
-
-```java
-@Component
-public class OrderHandler {
-
-    // 只接收负载（最常用）
-    @MessageListener(topic = "order.created")
-    public void handleOrder(Order order) {
-        System.out.println("收到订单: " + order.getId());
-    }
-
-    // 接收完整 Message 对象
-    @MessageListener(topic = "order.paid")
-    public void handlePaid(Message<Order> message) {
-        System.out.println("消息 ID: " + message.getId());
-        System.out.println("订单号: " + message.getPayload().getId());
-    }
-
-    // 无参数（仅触发）
-    @MessageListener(topic = "order.refresh")
-    public void refreshCache() {
-        cacheManager.evictAll();
-    }
-
-    // 主题支持占位符
-    @MessageListener(topic = "${app.order.topic}")
-    public void handleWithConfig(Order order) { }
-}
-```
-
-> **注意：** 方法可以定义在任意 Spring Bean 中，支持 `@Component`、`@Service` 等。
-
-### 取消订阅
-
-```java
-// 编程式
-messageQueue.unsubscribe("order.created");
-```
-
----
-
-## 拆包机制 (MessagePacket)
-
-```
-发送：Message<T> → JacksonMessagePacketCodec.encodeMessage() → MessagePacket → JSON bytes → 中间件
-接收：中间件 bytes → JacksonMessagePacketCodec.decodeMessage() → Message<T>
-```
-
-`MessagePacket` 是消息的网络传输单元：
-
-| 字段 | 类型 | 说明 |
-|---|---|---|
-| `id` | `String` | 消息唯一 ID（UUID，自动生成） |
-| `topic` | `String` | 主题 / 路由键 |
-| `payload` | `byte[]` | 序列化后的负载字节 |
-| `payloadClassName` | `String` | 负载类全名，用于反序列化 |
-| `timestamp` | `long` | 创建时间戳（epoch millis） |
-| `headers` | `Map<String,String>` | 头部元数据 |
-| `totalParts` | `int` | 总分片数（大消息拆分，默认 1） |
-| `partIndex` | `int` | 当前分片索引（从 0 开始） |
-
-> 分片支持：当消息体积较大时，可将 `totalParts` 设为大于 1，并按 `partIndex` 分片发送。接收方按 `id` 聚合重组。
-
----
-
-## 各实现对比
-
-| 特性 | Redis | RabbitMQ | Kafka |
-|---|---|---|---|
-| 发送 | `RTopic.publish()` | `RabbitTemplate.convertAndSend()` | `KafkaTemplate.send()` |
-| 拉取 | `RBlockingDeque.poll()` | `RabbitTemplate.receive()` | `Consumer.poll()` |
-| 推送 | `RTopic.addListener()` | `SimpleMessageListenerContainer` | `ConcurrentMessageListenerContainer` |
-| 持久化 | ✅ Redis Stream（List 无） | ✅ | ✅ |
-| 广播 | ✅ Pub/Sub | ✅ Exchange | ✅ Consumer Group |
-| 顺序保证 | ❌ | ❌ | ✅ 分区内有序 |
-| 依赖 | Redisson | spring-boot-starter-amqp | spring-kafka |
-
-### 配置示例
-
-**Redis** (由 Redisson 自动配置)：
-
-```yaml
-spring:
-  data:
-    redis:
-      host: localhost
-      port: 6379
-```
-
-**RabbitMQ**：
-
-```yaml
-spring:
-  rabbitmq:
-    host: localhost
-    port: 5672
-    username: guest
-    password: guest
-```
-
-**Kafka**：
+## Kafka
 
 ```yaml
 spring:
@@ -366,62 +96,163 @@ spring:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: org.apache.kafka.common.serialization.ByteArraySerializer
     consumer:
-      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
-      value-deserializer: org.apache.kafka.common.serialization.ByteArrayDeserializer
+      auto-offset-reset: earliest
+alt:
+  event:
+    bindings:
+      orders:
+        transport: kafka
+        kafka:
+          topic: orders.created
+          group-id: inventory
+          retry-topic: inventory.orders.retry
+          concurrency: 3
+        retry:
+          max-attempts: 5
+          initial-delay: 1s
+          multiplier: 2
+          max-delay: 30s
+        failure:
+          action: dead-letter
+          destination: inventory.orders.dead
 ```
 
----
+topic、retry-topic 和死信 topic 由部署端或 KafkaAdmin 声明。不同消费组应使用独立 retry-topic。
 
-## API 一览
+适配器使用 `ConcurrentMessageListenerContainer` 和 `MANUAL_IMMEDIATE` 确认，关闭 auto commit。重试转发收到发送确认后才提交源 offset；转发失败保留源记录，不由默认 recoverer 跳过。
+重试记录带持久化的最早执行时间；未到期时使用容器 nack/pause。延迟精度受 poll timeout 影响。
 
-### MessageQueueTemplate
+当前统一接口使用独立重试 topic，会改变失败消息相对于后续消息的顺序；不提供跨 source/retry topic 的严格业务顺序保证。
+Kafka key 随重试保留。通过 `context.nativeContext(ConsumerRecord.class)` 可读取原生记录。
+
+## RabbitMQ
+
+```yaml
+spring:
+  rabbitmq:
+    publisher-confirm-type: correlated
+    publisher-returns: true
+    template:
+      mandatory: true
+alt:
+  event:
+    bindings:
+      orders:
+        transport: rabbit
+        rabbit:
+          queue: inventory.orders
+          exchange: orders
+          routing-key: created
+          retry-queue: inventory.orders.retry
+          prefetch: 50
+          concurrency: 2
+        retry:
+          max-attempts: 5
+          initial-delay: 1s
+        failure:
+          action: dead-letter
+          destination: inventory.orders.dead
+```
+
+主队列、exchange、binding 和失败队列由应用的 `Declarables` 或部署端声明；失败目的地是通过默认 exchange 路由的队列名称。
+重试队列由组件声明为 quorum queue，使用 TTL、默认 exchange 的死信路由及 at-least-once dead-lettering。已有同名队列必须符合此定义。
+延迟是最小等待时间，逐消息 TTL 可能受队头消息影响。
+
+容器采用 MANUAL 模式。重试/死信转发必须获得 publisher confirm 且没有 unroutable return，之后才 ACK 源消息。发送失败时 NACK 源消息以便重新投递。
+`EventContext.nativeContext` 可读取 AMQP `Message` 和当前 `Channel`。直接操作原生 Channel 会绕开统一确认契约，应仅用于明确的原生扩展。
+
+## Redis Streams
+
+```yaml
+alt:
+  event:
+    bindings:
+      orders:
+        transport: redis-stream
+        redis:
+          destination: orders.created
+          group: inventory
+          poll-interval: 200ms
+          claim-idle: 30s
+          batch-size: 50
+        retry:
+          max-attempts: 5
+          initial-delay: 1s
+        failure:
+          action: dead-letter
+          destination: inventory.orders.dead
+```
+
+使用 `StreamMessageListenerContainer`；成功后 XACK。组件创建消费组，从 `0-0` 开始读取已有消息。
+独立重试流命名为 `<destination>:retry:<group>`，不把某个消费组的重试重新广播给其他组。
+重试计数和最早执行时间保存在消息信封中，重启后通过 pending/claim 恢复。claim-idle 应大于正常业务处理时长；重试精度也受该阈值影响。
+Streams 的保留期限、裁剪和 Redis 持久化策略由部署配置管理。
+
+## Redis Pub/Sub
+
+```yaml
+alt:
+  event:
+    bindings:
+      notifications:
+        transport: redis-pubsub
+        redis:
+          destination: cache.invalidate
+        retry:
+          max-attempts: 1
+        failure:
+          action: drop
+```
+
+仅用于在线通知。支持同样的上下文恢复，但没有持久化确认、离线补投或可靠重试。可靠重试/死信配置在启动时被拒绝，应改用 Streams。
+`ack()` 在这里仅表示业务处理成功，不表示 Broker 保存了消费进度。
+
+## 事务、生命周期及原生扩展
+
+指定 `alt.event.bindings.<name>.transaction-manager` 可启用托管事务，值为已有 `PlatformTransactionManager` Bean 名称。
+上下文先恢复，再开启事务并调用业务代理：成功提交后才确认；Retry/Rejected 回滚参与当前事务的业务操作。独立 REQUIRES_NEW 事务不在这个回滚范围内。
+不指定该选项时，组件不替业务开启事务；监听方法返回 retry 并不会撤销此前独立提交的业务操作。
+
+数据库提交与 Broker 确认不是一个分布式原子事务，转发与源确认之间也可能重复投递，业务应使用稳定事件 ID 实现幂等。
+
+`EventSubscriptionTemplate.ids()` / `start(id)` / `stop(id)` 按端点管理订阅。
+`auto-startup: false` 可保留注册但不自动启动。
+
+原生扩展通过 `KafkaEventCustomizer`、`RabbitEventCustomizer`、`RedisEventCustomizer` Bean 贡献，收集时尊重 `@Order`。
+例如调整 Kafka poll timeout：
 
 ```java
-// ===== 发送 =====
-void send(String topic, T payload);
-void send(String topic, T payload, Map<String, String> headers);
-<T> void send(String topic, Message<T> message);
-
-// ===== 拉取 =====
-<T> Message<T> receive(String topic);                               // 阻塞
-<T> Message<T> receive(String topic, long timeout, TimeUnit unit);   // 带超时
-
-// ===== 订阅/取消 =====
-<T> void subscribe(String topic, MessageListener<T> listener);
-void unsubscribe(String topic);
+@Bean
+KafkaEventCustomizer kafkaPolling() {
+    return (endpoint, container) -> container.getContainerProperties().setPollTimeout(200);
+}
 ```
 
-### Message<T>
+统一接口保留确认模式的所有权，Customizer 不得改成自动确认。需要原生批量监听、特殊事务容器或其他专用协议时，可以使用框架的 `@KafkaListener` / `@RabbitListener`；同一方法不要再叠加 `@EventSubscription`。
 
-```java
-String getId();                       // 消息唯一 ID
-String getTopic();                    // 主题
-T getPayload();                       // 负载
-<R> R getPayloadAs(Class<R> type);    // 类型安全转换
-long getTimestamp();                  // 时间戳
-Map<String, String> getHeaders();     // 头部
+## Spring Modulith / Namastack
+
+已有 Spring 原生发布与持久化上下文适配继续生效：
+
+- 发布广播入口捕获快照，普通单事件参数监听器执行时恢复。
+- Modulith 2.1.2 的 `EventSerializer` 包装 `event_publication.serialized_event`，反序列化后仍返回原始业务类型；旧裸 JSON 可读取，新包装不能由旧适配器读取。
+- Namastack 1.7.3 使用原生 context 列，dispatch 和 fallback 执行时恢复上下文。
+- 自定义 `@OutboxHandler` 中调用 `EventTemplate`，会把恢复的上下文写入 Broker 消息。可通过 `.messageId(...)` 传入稳定业务事件 ID，使 Outbox 多次发送也使用相同 ID。
+
+Spring Modulith 自带的 Kafka/AMQP 外部化发送器并不自动使用本组件的传输元数据协议。如果使用统一监听器获取远程上下文，应由 Outbox Handler 调用 `EventTemplate`，或让发送器显式写入该协议的 header，不能只依赖 Outbox 数据库里的 context 列。
+旧 Redis 隐式 Pub/Sub 外部化和按远程类名重新发布的监听器已删除；应通过明确 binding 和业务类型的监听方法接入。
+
+普通 Spring 事件的内存快照关联按对象身份保存，每次发布应创建独立事件实例。无参事务监听器不在原有 Spring 事件适配范围；这与 `@EventSubscription` 的无参方法支持是两个独立入口。
+
+## 验证
+
+```bash
+./gradlew :backend:components:event-component:api-event-component:check \
+  :backend:components:event-component:kafka-event-component:check \
+  :backend:components:event-component:rabbit-event-component:check \
+  :backend:components:event-component:redis-event-component:check
 ```
 
----
-
-## GraalVM Native Image 支持
-
-所有模块均已配置：
-
-- `MessageRuntimeHints` — 注册所有 API 类型到反射白名单
-- 各实现模块的 `native-image.properties` — 配置 `--initialize-at-build-time`
-
-**注意事项：**
-- 注解式订阅 (`@MessageListener`) 通过 Spring `ReflectionUtils` 调用，AOT 会生成对应反射配置
-- 接口式订阅 (`MessageHandler`) 通过类型安全调用，**零反射**，AOT 最佳
-- 自定义负载类型需确保在反射配置中（Spring AOT 会自动处理 Bean 中出现的类型）
-
----
-
-## 设计原则
-
-1. **API/SPI 分离** — `api-event-component` 定义接口契约，实现包按需选择
-2. **拆包透明** — `MessagePacketCodec` 在模板内部自动完成，用户无感知
-3. **AOT 优先** — 接口式订阅零反射；注解式通过 Spring 受控反射调用
-4. **三种消费模式** — 发送、拉取（Pull）、推送（Push/Pub-Sub）
-5. **占用即用** — 引入实现依赖即可，`MessageAutoConfiguration` 自动装配
+Kafka 使用嵌入式 KRaft Broker；RabbitMQ 和 Redis 使用 Testcontainers，需要 Docker。
+四个模块的 check 都包含 JaCoCo 行覆盖率 80% 门槛。
+`EventSubscriptionAotProcessor` 注册具体监听方法和负载类型，`EventRuntimeHints` 注册传输信封。本次测试包括提示注册验证，不等同于完整 Native Image 验证。

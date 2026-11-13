@@ -1,3 +1,1 @@
-com.github.zeng.alt.message.redis.RedisMessageAutoConfiguration
-com.github.zeng.alt.message.redis.modulith.RedisEventExternalizerConfiguration
-com.github.zeng.alt.message.redis.modulith.RedisEventSubscriberConfiguration
+com.github.zeng.alt.event.redis.RedisEventAutoConfiguration

@@ -33,7 +33,7 @@ log-component/
 └── message-log-component/        # 消息队列（可选：多服务）
     ├── MessageLogProducer        # 本地事件 → 发送到 MQ
     ├── MessageLogConsumer        # 从 MQ 接收 → 重新发布
-    └── MessageLogMessageHandler  # 桥接 MessageHandler 接口
+    └── MessageLogConsumer        # @EventSubscription 消费 log-oper binding
 ```
 
 ---
@@ -234,7 +234,7 @@ Service A（业务服务）:
                                MessageLogProducer → MQ (log.oper topic)
 
 Service B（日志聚合服务）:
-MQ → MessageLogMessageHandler (MessageHandler)
+Broker → MessageLogConsumer (@EventSubscription)
       ↓
     MessageLogConsumer → re-publish Event (设置回流标记)
                           ↓
@@ -280,3 +280,5 @@ CREATE TABLE sys_oper_log (
 - `LogRuntimeHints` 已注册 `@Log` 注解和 `LogOperation` 的反射提示
 - `core-log-component` 使用 `@ConditionalOnWebApplication` 控制 Servlet 组件，非 Web 环境自动跳过
 - 所有支持组件均可通过 `@ConditionalOnMissingBean` 自定义替换
+
+消息日志发送和消费需要配置 `alt.event.bindings.log-oper`，指定 transport 及对应的队列/topic/stream。消费者启用后使用端点 `operation-log`；旧消息模板已移除。

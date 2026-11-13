@@ -1,1 +1,1 @@
-com.github.zeng.alt.message.rabbit.RabbitMessageAutoConfiguration
+com.github.zeng.alt.event.rabbit.RabbitEventAutoConfiguration

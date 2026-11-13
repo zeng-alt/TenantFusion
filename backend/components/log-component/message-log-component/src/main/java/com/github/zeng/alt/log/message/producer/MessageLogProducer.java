@@ -1,7 +1,7 @@
 package com.github.zeng.alt.log.message.producer;
 
 import com.github.zeng.alt.log.OperLogEvent;
-import com.github.zeng.alt.message.MessageQueueTemplate;
+import com.github.zeng.alt.event.EventTemplate;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.apachecommons.CommonsLog;
 import org.springframework.core.log.LogMessage;
@@ -11,7 +11,7 @@ import org.springframework.transaction.event.TransactionalEventListener;
 /**
  * 消息日志生产者。
  * <p>
- * 监听本地发布的 {@link OperLogEvent}，通过 {@link MessageQueueTemplate}
+ * 监听本地发布的 {@link OperLogEvent}，通过 {@link EventTemplate}
  * 转发到消息队列，供其他服务消费。
  * <p>
  * 使用内部标记避免重复转发从消息队列回流的日志事件。
@@ -39,7 +39,7 @@ public class MessageLogProducer {
         }
     }
 
-    private final MessageQueueTemplate messageQueue;
+    private final EventTemplate messageQueue;
 
     /**
      * 检查当前事件是否来自消息队列回流。
@@ -56,7 +56,7 @@ public class MessageLogProducer {
         }
 
         try {
-            messageQueue.send("log.oper", event);
+            messageQueue.to("log-oper").publish(event);
             log.debug(LogMessage.format("Sent OperLogEvent to message queue: title=%s", event.getTitle()));
         } catch (Exception e) {
             log.error("Failed to send OperLogEvent to message queue", e);

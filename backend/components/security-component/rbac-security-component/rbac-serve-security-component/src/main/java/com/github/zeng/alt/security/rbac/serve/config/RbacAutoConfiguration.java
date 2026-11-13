@@ -1,7 +1,7 @@
 package com.github.zeng.alt.security.rbac.serve.config;
 
 
-import com.github.zeng.alt.message.MessageQueueTemplate;
+import com.github.zeng.alt.security.rbac.serve.router.RouteTemplateEventListener;
 import com.github.zeng.alt.security.rbac.serve.RbacServeRuntimeHints;
 import com.github.zeng.alt.security.rbac.serve.repository.DefaultRbacResourceService;
 import com.github.zeng.alt.security.rbac.serve.repository.RbacResourceLoader;
@@ -9,10 +9,10 @@ import com.github.zeng.alt.security.rbac.serve.repository.RbacResourceService;
 import com.github.zeng.alt.security.rbac.serve.router.RouteTemplateManager;
 import com.github.zeng.alt.storage.StorageTemplate;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBooleanProperty;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ImportRuntimeHints;
 
@@ -40,14 +40,14 @@ import org.springframework.context.annotation.ImportRuntimeHints;
 public class RbacAutoConfiguration {
 
     @Bean
-    public RouteTemplateManager routeTemplateManager(ObjectProvider<MessageQueueTemplate> messageQueueTemplateProvider) {
-        MessageQueueTemplate template = messageQueueTemplateProvider.getIfAvailable();
-        if (template != null) {
-            log.debug("Creating RouteTemplateManager with MessageQueueTemplate (microservices mode)");
-            return new RouteTemplateManager(template);
-        }
-        log.debug("Creating RouteTemplateManager without MessageQueueTemplate (direct registration mode)");
+    public RouteTemplateManager routeTemplateManager() {
         return new RouteTemplateManager();
+    }
+
+    @Bean
+    @ConditionalOnProperty(prefix = "alt.event.bindings.route-template", name = "transport")
+    public RouteTemplateEventListener routeTemplateEventListener(RouteTemplateManager manager) {
+        return new RouteTemplateEventListener(manager);
     }
 
     @Bean

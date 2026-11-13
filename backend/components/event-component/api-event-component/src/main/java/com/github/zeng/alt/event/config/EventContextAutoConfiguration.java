@@ -20,7 +20,7 @@ import org.springframework.context.annotation.Role;
  * @since 0.0.1-SNAPSHOT
  */
 @AutoConfiguration
-@EnableAspectJAutoProxy
+@EnableAspectJAutoProxy(proxyTargetClass = true)
 @Import(SpringEventContextConfiguration.class)
 @Role(BeanDefinition.ROLE_INFRASTRUCTURE)
 public class EventContextAutoConfiguration {

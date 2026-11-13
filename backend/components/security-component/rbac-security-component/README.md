@@ -51,7 +51,7 @@ dependencies {
 
 #### 微服务模式（Microservices）
 
-Client 和 Serve 在不同进程。Client 通过消息队列发送 `RouteTemplateEvent`，Serve 通过 `MessageListener` 接收。
+Client 和 Serve 在不同进程。Client 通过消息队列发送 `RouteTemplateEvent`，Serve 通过 `@EventSubscription` 接收。
 
 **Client 侧：**
 ```kotlin
@@ -184,7 +184,7 @@ rbac:role:permissions:tenant_001:ROLE_admin → ["user:list", "order:create", "r
 │               │                                                 │   │
 │               └── 微服务模式                                     │   │
 │                   MessageRouteTemplateRegistrar                 │   │
-│                   → messageQueueTemplate.send(topic, event)     │   │
+│                   → eventTemplate.to("route-template").publish(event)     │   │
 │                                                                 │   │
 └─────────────────────────────────────────────────────────────────┘   │
                                                                       │
@@ -193,7 +193,7 @@ rbac:role:permissions:tenant_001:ROLE_admin → ["user:list", "order:create", "r
 ┌─────────────────────────────────────────────────────────────────────┐
 │                        Serve (鉴权中心)                              │
 │                                                                     │
-│  RouteTemplateManager (MessageListener)                             │
+│  RouteTemplateEventListener (@EventSubscription)                             │
 │       │                                                             │
 │       ├── onMessage(event)                                          │
 │       │   → RouteTemplateTrie.insert(template)                      │
@@ -441,8 +441,8 @@ POST /actuator/rbac
 |------|----------|------------|
 | Client & Serve | 同一 JVM | 不同 JVM |
 | 路由注册 | `DirectRouteTemplateRegistrar` 直接调用 | `MessageRouteTemplateRegistrar` 发消息 |
-| Serve 接收 | 同一 `RouteTemplateManager` 实例 | 通过 `MessageListener` 接收消息 |
-| 自动选择条件 | Classpath 有 `RouteTemplateManager` | Classpath 无 `RouteTemplateManager`，有 `MessageQueueTemplate` |
+| Serve 接收 | 同一 `RouteTemplateManager` 实例 | 通过 `@EventSubscription` 接收消息 |
+| 自动选择条件 | Classpath 有 `RouteTemplateManager` | Classpath 无 `RouteTemplateManager`，有 `EventTemplate` |
 | 数据存储 | 共享 `StorageTemplate` | 需共享存储（Redis/DB） |
 
 ---
@@ -463,7 +463,7 @@ POST /actuator/rbac
 rbac-client-security-component
   ├── api-security-component (SPI)
   ├── core-security-component (SecurityFilterChain)
-  ├── api-event-component (MessageQueueTemplate, compileOnly)
+  ├── api-event-component (EventTemplate, compileOnly)
   ├── rbac-serve-security-component (RouteTemplateManager, compileOnly)
   └── spring-boot-actuator (compileOnly)
 
@@ -471,7 +471,7 @@ rbac-serve-security-component
   ├── api-security-component (SPI)
   ├── core-security-component (AuthorizationManagerProvider)
   ├── api-storage-component (StorageTemplate)
-  ├── api-event-component (MessageQueueTemplate)
+  ├── api-event-component (EventTemplate)
   └── json-component
 ```
 
@@ -499,3 +499,5 @@ public UserDetailsService userDetailsService() {
     return username -> { ... };
 }
 ```
+
+微服务路由事件通过 `alt.event.bindings.route-template` 配置。Serve 配置该 binding 后注册 `rbac-route-template` 监听端点，本地 RouteTemplateManager 不再直接持有传输模板。

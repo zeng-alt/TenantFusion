@@ -3,7 +3,7 @@ package com.github.zeng.alt.event.internal;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.github.zeng.alt.message.exception.MessageException;
+import com.github.zeng.alt.event.EventException;
 import io.vavr.control.Try;
 import lombok.RequiredArgsConstructor;
 import org.springframework.modulith.events.core.EventSerializer;
@@ -34,7 +34,7 @@ public class ContextEventSerializer implements EventSerializer {
         envelope.set("context", envelopeMapper.valueToTree(new TreeMap<>(snapshots.capture(event))));
         envelope.put("serialized", delegate.serialize(event).toString());
         return Try.of(() -> envelopeMapper.writeValueAsString(envelope))
-                .getOrElseThrow(failure -> new MessageException("事件上下文序列化失败", failure));
+                .getOrElseThrow(failure -> new EventException("事件上下文序列化失败", failure));
     }
 
     @Override
