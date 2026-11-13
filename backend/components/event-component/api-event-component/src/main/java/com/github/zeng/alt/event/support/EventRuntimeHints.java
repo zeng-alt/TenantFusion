@@ -2,6 +2,7 @@ package com.github.zeng.alt.event.support;
 
 import com.github.zeng.alt.event.spi.EventMessageDto;
 import com.github.zeng.alt.event.spi.EventMetadataDto;
+
 import org.springframework.aot.hint.BindingReflectionHintsRegistrar;
 import org.springframework.aot.hint.RuntimeHints;
 import org.springframework.aot.hint.RuntimeHintsRegistrar;
@@ -15,7 +16,11 @@ import org.springframework.aot.hint.RuntimeHintsRegistrar;
 public class EventRuntimeHints implements RuntimeHintsRegistrar {
     @Override
     public void registerHints(RuntimeHints hints, ClassLoader classLoader) {
-        new BindingReflectionHintsRegistrar().registerReflectionHints(hints.reflection(),
-                EventMessageDto.class, EventMetadataDto.class, EventMetadataDto.RetryDto.class);
+        new BindingReflectionHintsRegistrar().registerReflectionHints(
+                hints.reflection(),
+                EventMessageDto.class,
+                EventMetadataDto.class,
+                EventMetadataDto.RetryDto.class
+        );
     }
 }

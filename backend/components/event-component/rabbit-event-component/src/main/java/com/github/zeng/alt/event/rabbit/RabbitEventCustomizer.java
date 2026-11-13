@@ -1,6 +1,7 @@
 package com.github.zeng.alt.event.rabbit;
 
 import com.github.zeng.alt.event.spi.EventEndpointDto;
+
 import org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer;
 
 /**

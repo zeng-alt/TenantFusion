@@ -1,6 +1,7 @@
 package com.github.zeng.alt.security.rbac.serve.router;
 
 import com.github.zeng.alt.event.annotation.EventSubscription;
+
 import lombok.RequiredArgsConstructor;
 
 /**

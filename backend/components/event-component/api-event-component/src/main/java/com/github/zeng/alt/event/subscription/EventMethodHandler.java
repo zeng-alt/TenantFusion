@@ -4,31 +4,37 @@ import com.github.zeng.alt.event.EventContext;
 import com.github.zeng.alt.event.EventDelivery;
 import com.github.zeng.alt.event.EventException;
 import com.github.zeng.alt.event.EventOutcome;
+import com.github.zeng.alt.event.config.EventBindingProperties;
+import com.github.zeng.alt.event.context.EventContextHandler;
 import com.github.zeng.alt.event.context.EventContextTemplate;
 import com.github.zeng.alt.event.spi.EventEndpointDto;
 import com.github.zeng.alt.event.spi.EventMessageDto;
 import com.github.zeng.alt.event.support.EventCodec;
 import com.github.zeng.alt.event.support.EventContextDto;
 import com.github.zeng.alt.event.support.EventDeliveryImpl;
+
 import io.vavr.control.Option;
 import io.vavr.control.Try;
-import org.springframework.aop.support.AopUtils;
-import org.springframework.core.ResolvableType;
-import org.springframework.core.convert.support.DefaultConversionService;
-import org.springframework.messaging.handler.annotation.ValueConstants;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.aop.support.AopUtils;
+import org.springframework.core.ResolvableType;
 import org.springframework.core.annotation.AnnotatedElementUtils;
+import org.springframework.core.convert.support.DefaultConversionService;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.handler.annotation.Header;
 import org.springframework.messaging.handler.annotation.Headers;
+import org.springframework.messaging.handler.annotation.ValueConstants;
 import org.springframework.messaging.support.GenericMessage;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.util.ReflectionUtils;
 import org.springframework.util.StringUtils;
+
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
+import java.lang.reflect.Type;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -48,8 +54,13 @@ public class EventMethodHandler {
     private final EventContextTemplate contexts;
     private final Option<TransactionTemplate> transaction;
 
-    public EventMethodHandler(Object bean, Method method, EventCodec codec,
-                              EventContextTemplate contexts, Option<TransactionTemplate> transaction) {
+    public EventMethodHandler(
+            Object bean,
+            Method method,
+            EventCodec codec,
+            EventContextTemplate contexts,
+            Option<TransactionTemplate> transaction
+    ) {
         if (method.getReturnType() != void.class && method.getReturnType() != EventOutcome.class) {
             throw new EventException("Event listener must return void or EventOutcome: " + method);
         }
@@ -69,27 +80,33 @@ public class EventMethodHandler {
         this.transaction = transaction;
     }
 
+    /**
+     * 在来源上下文和可选事务中执行监听器，退出作用域后返回 Broker 应执行的结果。
+     */
     public EventOutcome invoke(EventEndpointDto endpoint, EventMessageDto message, List<Object> nativeContexts) {
-        final var policy = endpoint.binding().getRetry();
+        final EventBindingProperties.Retry policy = endpoint.binding().getRetry();
         final var context = new EventContextDto(endpoint.id(), message.metadata(), nativeContexts);
         final var delivery = new EventDeliveryImpl(context, policy.delay(context.retryCount()));
-        try (final var scope = contexts.restore(context.attributes())) {
-            final EventOutcome outcome = Try.of(() -> transaction.map(template -> template.execute(status -> {
-                final EventOutcome handled = invokeMethod(message, delivery);
-                if (!(handled instanceof EventOutcome.Acknowledged)) {
-                    status.setRollbackOnly();
-                }
-                return handled;
-            })).getOrElse(() -> invokeMethod(message, delivery)))
-                    .getOrElseGet(failure -> {
-                        LOG.warn("Event listener {} failed for message {}", endpoint.id(), context.messageId(), failure);
-                        return new EventOutcome.Retry(policy.delay(context.retryCount()), failure.getClass().getSimpleName());
-                    });
+        try (final EventContextHandler.Scope scope = contexts.restore(context.attributes())) {
+            final EventOutcome outcome = Try.of(() -> invokeInTransaction(message, delivery)).getOrElseGet(failure -> {
+                LOG.warn("Event listener {} failed for message {}", endpoint.id(), context.messageId(), failure);
+                return new EventOutcome.Retry(policy.delay(context.retryCount()), failure.getClass().getSimpleName());
+            });
             if (outcome instanceof EventOutcome.Retry retry && context.retryCount() + 1 >= policy.getMaxAttempts()) {
                 return new EventOutcome.Rejected("Retry budget exhausted: " + retry.reason());
             }
             return outcome;
         }
+    }
+
+    private EventOutcome invokeInTransaction(EventMessageDto message, EventDelivery delivery) {
+        return transaction.map(template -> template.execute(status -> {
+            final EventOutcome outcome = invokeMethod(message, delivery);
+            if (!(outcome instanceof EventOutcome.Acknowledged)) {
+                status.setRollbackOnly();
+            }
+            return outcome;
+        })).getOrElse(() -> invokeMethod(message, delivery));
     }
 
     private EventOutcome invokeMethod(EventMessageDto message, EventDelivery delivery) {
@@ -111,25 +128,30 @@ public class EventMethodHandler {
             return delivery.context();
         }
         if (parameter.isAnnotationPresent(Header.class)) {
-            final Header header = parameter.getAnnotation(Header.class);
-            final String name = StringUtils.hasText(header.name()) ? header.name() : header.value();
-            final Option<String> value = Option.of(message.metadata().headers().get(name))
-                    .orElse(() -> Option.of(header.defaultValue())
-                            .filter(defaultValue -> !defaultValue.equals(ValueConstants.DEFAULT_NONE)));
-            if (value.isEmpty() && header.required()) {
-                throw new EventException("Missing event header: " + name);
-            }
-            return value.map(text -> DefaultConversionService.getSharedInstance()
-                    .convert(text, parameter.getType())).getOrNull();
+            return headerArgument(parameter, message.metadata().headers());
         }
         if (parameter.isAnnotationPresent(Headers.class)) {
             return message.metadata().headers();
         }
         if (parameter.getType() == Message.class) {
-            final var type = ResolvableType.forType(parameter.getParameterizedType()).getGeneric(0).getType();
+            final Type type = ResolvableType.forType(parameter.getParameterizedType()).getGeneric(0).getType();
             return new GenericMessage<>(codec.payload(message, type), Map.copyOf(message.metadata().headers()));
         }
         return codec.payload(message, parameter.getParameterizedType());
+    }
+
+    private Object headerArgument(Parameter parameter, Map<String, String> valueByName) {
+        final Header header = parameter.getAnnotation(Header.class);
+        final String name = StringUtils.hasText(header.name()) ? header.name() : header.value();
+        final Option<String> defaultValue = Option.of(header.defaultValue())
+                .filter(value -> !value.equals(ValueConstants.DEFAULT_NONE));
+        final Option<String> value = Option.of(valueByName.get(name)).orElse(defaultValue);
+        if (value.isEmpty() && header.required()) {
+            throw new EventException("Missing event header: " + name);
+        }
+        // Spring 的可选 @Header 参数以 null 表示缺失；仅在反射调用边界转换。
+        return value.map(text -> DefaultConversionService.getSharedInstance().convert(text, parameter.getType()))
+                .getOrNull();
     }
 
     private static boolean isPayload(Parameter parameter) {

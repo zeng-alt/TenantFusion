@@ -1,7 +1,5 @@
 package com.github.zeng.alt.event.redis;
 
-import com.github.zeng.alt.event.EventException;
-import com.github.zeng.alt.event.EventOutcome;
 import com.github.zeng.alt.event.config.EventBindingProperties;
 import com.github.zeng.alt.event.spi.EventConsumer;
 import com.github.zeng.alt.event.spi.EventEndpointDto;
@@ -10,11 +8,14 @@ import com.github.zeng.alt.event.spi.EventSubscriptionHandler;
 import com.github.zeng.alt.event.spi.EventTransportTemplate;
 import com.github.zeng.alt.event.support.EventCodec;
 import com.github.zeng.alt.event.support.EventSubscriptionHandlerImpl;
+
 import lombok.RequiredArgsConstructor;
+
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.listener.ChannelTopic;
 import org.springframework.data.redis.listener.RedisMessageListenerContainer;
 import org.springframework.util.Assert;
+
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 
@@ -28,29 +29,44 @@ import java.util.List;
 public class RedisPubSubEventTemplate implements EventTransportTemplate {
     private final StringRedisTemplate redis;
     private final EventCodec codec;
-    @Override public String transport() { return "redis-pubsub"; }
-    @Override public void validate(EventEndpointDto endpoint) {
-        Assert.hasText(endpoint.binding().getRedis().getDestination(), "redis.destination is required");
-        Assert.isTrue(endpoint.binding().getRetry().getMaxAttempts() == 1,
-                "Redis Pub/Sub cannot retry reliably; use redis-stream or set max-attempts=1");
-        Assert.isTrue(endpoint.binding().getFailure().getAction().equals("drop"),
-                "Redis Pub/Sub requires explicit failure.action=drop; use redis-stream for reliable delivery");
+
+    @Override
+    public String transport() {
+        return "redis-pubsub";
     }
-    @Override public EventSubscriptionHandler subscribe(EventEndpointDto endpoint, EventConsumer consumer) {
+
+    @Override
+    public void validate(EventEndpointDto endpoint) {
+        Assert.hasText(endpoint.binding().getRedis().getDestination(), "redis.destination is required");
+        Assert.isTrue(
+                endpoint.binding().getRetry().getMaxAttempts() == 1,
+                "Redis Pub/Sub cannot retry reliably; use redis-stream or set max-attempts=1"
+        );
+        Assert.isTrue(
+                endpoint.binding().getFailure().getAction().equals("drop"),
+                "Redis Pub/Sub requires explicit failure.action=drop; use redis-stream for reliable delivery"
+        );
+    }
+
+    @Override
+    public EventSubscriptionHandler subscribe(EventEndpointDto endpoint, EventConsumer consumer) {
         final var container = new RedisMessageListenerContainer();
         container.setConnectionFactory(redis.getRequiredConnectionFactory());
+        final var settlement = new RedisPubSubEventSettlementHandler();
         container.addMessageListener((message, pattern) -> {
-            final var event = codec.decode(message.getBody(), EventMessageDto.class);
-            final EventOutcome outcome = consumer.consume(event, List.of(message));
-            if (!(outcome instanceof EventOutcome.Acknowledged)) {
-                throw new EventException("Pub/Sub event was not processed successfully: " + event.metadata().id());
-            }
+            final EventMessageDto event = codec.decode(message.getBody(), EventMessageDto.class);
+            settlement.settle(event, consumer.consume(event, List.of(message)));
         }, new ChannelTopic(endpoint.binding().getRedis().getDestination()));
         container.afterPropertiesSet();
         return new EventSubscriptionHandlerImpl(container, endpoint.binding().isAutoStartup());
     }
-    @Override public void publish(EventBindingProperties binding, EventMessageDto message) {
+
+    @Override
+    public void publish(EventBindingProperties binding, EventMessageDto message) {
         Assert.hasText(binding.getRedis().getDestination(), "redis.destination is required");
-        redis.convertAndSend(binding.getRedis().getDestination(), new String(codec.encode(message), StandardCharsets.UTF_8));
+        redis.convertAndSend(
+                binding.getRedis().getDestination(),
+                new String(codec.encode(message), StandardCharsets.UTF_8)
+        );
     }
 }

@@ -16,6 +16,9 @@ import java.lang.annotation.Target;
 @Target(ElementType.METHOD)
 @Retention(RetentionPolicy.RUNTIME)
 public @interface EventSubscription {
+    /** 应用内唯一的监听端点 ID，支持 Spring 属性占位符。 */
     String id();
+
+    /** 对应 alt.event.bindings 下的逻辑绑定名，支持 Spring 属性占位符。 */
     String binding();
 }

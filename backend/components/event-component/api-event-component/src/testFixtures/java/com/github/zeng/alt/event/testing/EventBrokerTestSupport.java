@@ -1,5 +1,9 @@
 package com.github.zeng.alt.event.testing;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.awaitility.Awaitility.await;
+
+import com.github.zeng.alt.event.EventContext;
 import com.github.zeng.alt.event.EventDelivery;
 import com.github.zeng.alt.event.EventOutcome;
 import com.github.zeng.alt.event.EventTemplate;
@@ -9,6 +13,7 @@ import com.github.zeng.alt.event.config.EventContextAutoConfiguration;
 import com.github.zeng.alt.security.api.SecurityUser;
 import com.github.zeng.alt.security.api.UserContextHolder;
 import com.github.zeng.alt.tenant.api.TenantContextHolder;
+
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -18,9 +23,6 @@ import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.awaitility.Awaitility.await;
-
 /**
  * 三种 Broker 共用的黑盒业务观察；读取实际 Holder，不读取测试线程里的快照。
  *
@@ -28,20 +30,24 @@ import static org.awaitility.Awaitility.await;
  * @since 0.0.1-SNAPSHOT
  */
 public final class EventBrokerTestSupport {
-    private EventBrokerTestSupport() { }
+    private EventBrokerTestSupport() {
+    }
 
     public static ApplicationContextRunner runner(Listener listener) {
-        return new ApplicationContextRunner()
-                .withConfiguration(AutoConfigurations.of(EventContextAutoConfiguration.class, EventAutoConfiguration.class))
-                .withBean("listener", Listener.class, () -> listener)
-                .withPropertyValues("alt.event.bindings.test.retry.initial-delay=100ms",
-                        "alt.event.bindings.test.retry.max-attempts=3");
+        return new ApplicationContextRunner().withConfiguration(
+                AutoConfigurations.of(EventContextAutoConfiguration.class, EventAutoConfiguration.class)
+        ).withBean("listener", Listener.class, () -> listener).withPropertyValues(
+                "alt.event.bindings.test.retry.initial-delay=100ms",
+                "alt.event.bindings.test.retry.max-attempts=3"
+        );
     }
 
     public static String publish(EventTemplate events, String action) {
         TenantContextHolder.setTenantId("tenant-a");
-        UserContextHolder.set(UsernamePasswordAuthenticationToken.authenticated(
-                SecurityUser.withUsername("alice").id("42").build(), null, List.of()));
+        UserContextHolder.set(
+                UsernamePasswordAuthenticationToken
+                        .authenticated(SecurityUser.withUsername("alice").id("42").build(), null, List.of())
+        );
         try {
             return events.to("test").key("order-1").header("source", "contract-test").publish(new Payload(action));
         } finally {
@@ -51,7 +57,8 @@ public final class EventBrokerTestSupport {
     }
 
     public static void assertAttempts(Listener listener, String id, int count) {
-        await().atMost(Duration.ofSeconds(30)).untilAsserted(() -> assertThat(listener.observations(id)).hasSize(count));
+        await().atMost(Duration.ofSeconds(30))
+                .untilAsserted(() -> assertThat(listener.observations(id)).hasSize(count));
         assertThat(listener.observations(id)).allSatisfy(observation -> {
             assertThat(observation.tenant()).isEqualTo("tenant-a");
             assertThat(observation.userId()).isEqualTo("42");
@@ -67,15 +74,25 @@ public final class EventBrokerTestSupport {
      * @author zeng-alt
      * @since 0.0.1-SNAPSHOT
      */
-    public record Payload(String action) { }
+    public record Payload(
+            String action
+    ) {
+    }
 
     /**
      * 跨线程观察。
      * @author zeng-alt
      * @since 0.0.1-SNAPSHOT
      */
-    public record Observation(String id, int retryCount, String tenant, String userId, String username,
-                              String explicitTenant) { }
+    public record Observation(
+            String id,
+            int retryCount,
+            String tenant,
+            String userId,
+            String username,
+            String explicitTenant
+    ) {
+    }
 
     /**
      * 同一个注解与方法在三种 Broker 上运行。
@@ -87,17 +104,23 @@ public final class EventBrokerTestSupport {
 
         @EventSubscription(id = "contract-listener", binding = "test")
         public EventOutcome onEvent(Payload event, EventDelivery delivery) {
-            final var context = delivery.context();
-            observations.add(new Observation(context.messageId(), context.retryCount(),
-                    TenantContextHolder.getTenantId(), UserContextHolder.getId(),
-                    SecurityContextHolder.getContext().getAuthentication().getName(),
-                    context.attribute("request.tenantId").getOrElse("missing")));
+            final EventContext context = delivery.context();
+            observations.add(
+                    new Observation(
+                            context.messageId(),
+                            context.retryCount(),
+                            TenantContextHolder.getTenantId(),
+                            UserContextHolder.getId(),
+                            SecurityContextHolder.getContext().getAuthentication().getName(),
+                            context.attribute("request.tenantId").getOrElse("missing")
+                    )
+            );
             return switch (event.action()) {
-                case "ack" -> delivery.ack();
-                case "reject" -> delivery.reject("unsupported order");
-                case "fail" -> throw new IllegalStateException("temporary failure");
-                case "restart" -> context.retryCount() == 0 ? delivery.retry(Duration.ofSeconds(2)) : delivery.ack();
-                default -> context.retryCount() == 0 ? delivery.retry() : delivery.ack();
+            case "ack" -> delivery.ack();
+            case "reject" -> delivery.reject("unsupported order");
+            case "fail" -> throw new IllegalStateException("temporary failure");
+            case "restart" -> context.retryCount() == 0 ? delivery.retry(Duration.ofSeconds(2)) : delivery.ack();
+            default -> context.retryCount() == 0 ? delivery.retry() : delivery.ack();
             };
         }
 

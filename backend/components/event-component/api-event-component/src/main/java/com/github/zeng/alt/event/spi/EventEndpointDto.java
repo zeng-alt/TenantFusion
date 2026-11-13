@@ -8,4 +8,9 @@ import com.github.zeng.alt.event.config.EventBindingProperties;
  * @author zeng-alt
  * @since 0.0.1-SNAPSHOT
  */
-public record EventEndpointDto(String id, String bindingName, EventBindingProperties binding) { }
+public record EventEndpointDto(
+        String id,
+        String bindingName,
+        EventBindingProperties binding
+) {
+}

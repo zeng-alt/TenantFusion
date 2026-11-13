@@ -2,7 +2,9 @@ package com.github.zeng.alt.event.support;
 
 import com.github.zeng.alt.event.EventContext;
 import com.github.zeng.alt.event.spi.EventMetadataDto;
+
 import io.vavr.control.Option;
+
 import java.util.List;
 import java.util.Map;
 
@@ -17,14 +19,34 @@ public record EventContextDto(
         EventMetadataDto metadata,
         List<Object> nativeContexts
 ) implements EventContext {
-    public EventContextDto {
-        nativeContexts = List.copyOf(nativeContexts);
+    public EventContextDto(String listenerId, EventMetadataDto metadata, List<Object> nativeContexts) {
+        this.listenerId = listenerId;
+        this.metadata = metadata;
+        this.nativeContexts = List.copyOf(nativeContexts);
     }
-    @Override public String messageId() { return metadata.id(); }
-    @Override public int retryCount() { return metadata.retry().count(); }
-    @Override public Map<String, String> attributes() { return metadata.context(); }
-    @Override public Map<String, String> headers() { return metadata.headers(); }
-    @Override public <T> Option<T> nativeContext(Class<T> type) {
+
+    @Override
+    public String messageId() {
+        return metadata.id();
+    }
+
+    @Override
+    public int retryCount() {
+        return metadata.retry().count();
+    }
+
+    @Override
+    public Map<String, String> attributes() {
+        return metadata.context();
+    }
+
+    @Override
+    public Map<String, String> headers() {
+        return metadata.headers();
+    }
+
+    @Override
+    public <T> Option<T> nativeContext(Class<T> type) {
         return Option.ofOptional(nativeContexts.stream().filter(type::isInstance).map(type::cast).findFirst());
     }
 }

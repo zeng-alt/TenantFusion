@@ -8,15 +8,20 @@ import java.util.Objects;
  * @author zeng-alt
  * @since 0.0.1-SNAPSHOT
  */
-public record EventMessageDto(EventMetadataDto metadata, byte[] payload) {
-    public EventMessageDto {
-        Objects.requireNonNull(metadata, "metadata");
-        payload = payload.clone();
+public record EventMessageDto(
+        EventMetadataDto metadata,
+        byte[] payload
+) {
+    public EventMessageDto(EventMetadataDto metadata, byte[] payload) {
+        this.metadata = Objects.requireNonNull(metadata, "metadata");
+        this.payload = payload.clone();
     }
+
     @Override
     public byte[] payload() {
         return payload.clone();
     }
+
     public EventMessageDto withMetadata(EventMetadataDto metadata) {
         return new EventMessageDto(metadata, payload);
     }

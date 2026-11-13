@@ -12,6 +12,7 @@ public class EventException extends BaseException {
     public EventException(String message) {
         super(message);
     }
+
     public EventException(String message, Throwable cause) {
         super(message);
         initCause(cause);

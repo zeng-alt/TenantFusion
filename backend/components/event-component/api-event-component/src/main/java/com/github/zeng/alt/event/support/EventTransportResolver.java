@@ -4,9 +4,13 @@ import com.github.zeng.alt.event.EventException;
 import com.github.zeng.alt.event.config.EventBindingProperties;
 import com.github.zeng.alt.event.config.EventProperties;
 import com.github.zeng.alt.event.spi.EventTransportTemplate;
+
 import io.vavr.control.Option;
-import org.springframework.beans.factory.ObjectProvider;
+
 import lombok.RequiredArgsConstructor;
+
+import org.springframework.beans.factory.ObjectProvider;
+
 import java.util.List;
 
 /**
@@ -19,12 +23,14 @@ import java.util.List;
 public class EventTransportResolver {
     private final EventProperties properties;
     private final ObjectProvider<EventTransportTemplate> transports;
+
     public EventBindingProperties binding(String name) {
-        final var binding = Option.of(properties.getBindings().get(name))
+        final EventBindingProperties binding = Option.of(properties.getBindings().get(name))
                 .getOrElseThrow(() -> new EventException("Unknown event binding: " + name));
         binding.validate();
         return binding;
     }
+
     public EventTransportTemplate transport(String name) {
         final List<EventTransportTemplate> matches = transports.orderedStream()
                 .filter(template -> template.transport().equals(name)).toList();

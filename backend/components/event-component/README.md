@@ -35,6 +35,31 @@ public EventOutcome onOrderCreated(OrderCreatedEvent event, EventDelivery delive
 
 注解的 `id` 和 `binding` 支持 `${...}` 占位符。端点 ID 全局唯一，多个端点可以引用同一 binding；实际广播或竞争关系仍取决于消费组/队列配置。
 
+## 原生确认、重试与拒绝
+
+`EventDelivery` 创建业务处理意图，`EventOutcome` 承载结果；监听调用及托管事务结束后，
+由 `spi.EventSettlementHandler` 执行原生操作。该 SPI 属于传输适配层，不作为业务监听方法的参数。
+
+```java
+public interface EventSettlementHandler {
+    void ack();
+    void retry(EventMessageDto message, EventOutcome.Retry retry);
+    void reject(EventMessageDto message, EventOutcome.Rejected rejected);
+    // 默认方法统一分派结果，receive 只调用此入口。
+    void settle(EventMessageDto message, EventOutcome outcome);
+}
+```
+
+| 实现 | 确认 | 重试 / 拒绝 |
+| --- | --- | --- |
+| `KafkaEventSettlementHandler` | 提交原生 `Acknowledgment` | 重试或死信 topic 发送确认后提交源 offset；显式 drop 直接确认 |
+| `RabbitEventSettlementHandler` | `Channel.basicAck` | 重试或死信队列发布确认后 ACK；接收、转发失败调用 `requeue()` |
+| `RedisStreamEventSettlementHandler` | 源记录 `XACK` | 先 `XADD` 到重试流或死信流，成功后再 XACK |
+| `RedisPubSubEventSettlementHandler` | 无 Broker ACK | 不支持可靠重试；失败交给容器报告，不能补投 |
+
+可靠传输的处理器绑定当前投递的原生确认对象或记录，不跨消息共享。
+Kafka 和 RabbitMQ 重投复用各自 `EventTemplate` 的可靠发送方法，保留发送超时和 Broker 确认检查。
+
 ## 上下文
 
 进入监听器前，框架从消息提取来源快照，恢复 `TenantContextHolder` 及独立的 `SecurityContextHolder`。方法结束、异常、重试和拒绝都会还原工作线程原来的上下文。

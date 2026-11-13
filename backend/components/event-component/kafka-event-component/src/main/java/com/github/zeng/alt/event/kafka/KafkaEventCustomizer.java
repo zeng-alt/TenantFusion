@@ -1,6 +1,7 @@
 package com.github.zeng.alt.event.kafka;
 
 import com.github.zeng.alt.event.spi.EventEndpointDto;
+
 import org.springframework.kafka.listener.ConcurrentMessageListenerContainer;
 
 /**

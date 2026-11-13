@@ -1,5 +1,7 @@
 package com.github.zeng.alt.event.subscription;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.zeng.alt.event.EventDelivery;
 import com.github.zeng.alt.event.EventOutcome;
@@ -12,21 +14,22 @@ import com.github.zeng.alt.event.spi.EventMetadataDto;
 import com.github.zeng.alt.event.support.EventCodec;
 import com.github.zeng.alt.security.api.UserContextHolder;
 import com.github.zeng.alt.tenant.api.TenantContextHolder;
+
 import io.vavr.control.Option;
+
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.support.DefaultListableBeanFactory;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.datasource.DataSourceTransactionManager;
 import org.springframework.jdbc.datasource.DriverManagerDataSource;
+import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
-
-import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * 验证业务事务和上下文先于消费确认完成。
@@ -50,21 +53,27 @@ class EventMethodHandlerTest {
         jdbc.execute("delete from invocation_test");
         final var beans = new DefaultListableBeanFactory();
         beans.registerSingleton("request", new RequestEventContextHandler());
-        final var contexts = new EventContextTemplate(beans.getBeanProvider(
-                com.github.zeng.alt.event.context.EventContextHandler.class));
+        final var contexts = new EventContextTemplate(
+                beans.getBeanProvider(com.github.zeng.alt.event.context.EventContextHandler.class)
+        );
         final var codec = new EventCodec(new ObjectMapper());
         final var listener = new Listener(jdbc);
-        final var handler = new EventMethodHandler(listener,
-                Listener.class.getMethod("receive", Payload.class, EventDelivery.class), codec, contexts,
-                Option.of(new TransactionTemplate(new DataSourceTransactionManager(source))));
+        final var handler = new EventMethodHandler(
+                listener,
+                Listener.class.getMethod("receive", Payload.class, EventDelivery.class),
+                codec,
+                contexts,
+                Option.of(new TransactionTemplate(new DataSourceTransactionManager(source)))
+        );
         final var binding = new EventBindingProperties();
         final var endpoint = new EventEndpointDto("orders", "orders", binding);
-        final var metadata = EventMetadataDto.create(Map.of(
-                "request.tenantId", "origin", "request.userId", "42", "request.username", "alice"
-        ), Map.of());
+        final EventMetadataDto metadata = EventMetadataDto.create(
+                Map.of("request.tenantId", "origin", "request.userId", "42", "request.username", "alice"),
+                Map.of()
+        );
         final var message = new EventMessageDto(metadata, codec.encode(new Payload(1)));
         TenantContextHolder.setTenantId("worker");
-        final var originalSecurity = SecurityContextHolder.getContext();
+        final SecurityContext originalSecurity = SecurityContextHolder.getContext();
         assertThat(handler.invoke(endpoint, message, List.of())).isInstanceOf(EventOutcome.Retry.class);
         assertThat(jdbc.queryForObject("select count(*) from invocation_test", Integer.class)).isZero();
         assertThat(TenantContextHolder.getTenantId()).isEqualTo("worker");
@@ -101,5 +110,8 @@ class EventMethodHandlerTest {
      * @author zeng-alt
      * @since 0.0.1-SNAPSHOT
      */
-    public record Payload(int id) { }
+    public record Payload(
+            int id
+    ) {
+    }
 }
