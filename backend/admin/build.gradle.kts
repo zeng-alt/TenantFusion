@@ -105,6 +105,8 @@ dependencies {
     implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui")
     implementation(libs.spring.boot.starter.validation)
     implementation(libs.spring.modulith.starter.jpa)
+    implementation(project(":backend:components:event-component:api-event-component"))
+    implementation(libs.spring.modulith.starter.namastack)
 //    implementation(libs.spring.boot.starter.cache)
 //    implementation(libs.spring.boot.starter.data.redis)
 

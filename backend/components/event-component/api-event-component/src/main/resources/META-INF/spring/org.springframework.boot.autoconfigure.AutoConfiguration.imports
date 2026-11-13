@@ -1,0 +1,4 @@
+com.github.zeng.alt.message.config.MessageAutoConfiguration
+com.github.zeng.alt.event.config.EventContextAutoConfiguration
+com.github.zeng.alt.event.config.ModulithEventContextAutoConfiguration
+com.github.zeng.alt.event.config.NamastackEventContextAutoConfiguration

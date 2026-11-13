@@ -53,7 +53,7 @@ implementation(project(":backend:components:log-component:jpa-log-component"))
 implementation(project(":backend:components:log-component:core-log-component"))
 implementation(project(":backend:components:log-component:message-log-component"))
 // 选择一个消息实现
-implementation(project(":backend:components:message-component:redis-message-component"))
+implementation(project(":backend:components:event-component:redis-event-component"))
 ```
 
 > `api-log-component` 会被 `core-log-component` 自动传递依赖，无需手动引入。

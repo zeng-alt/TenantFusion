@@ -2,6 +2,10 @@
   port: 8080
 
 spring:
+  modulith:
+    events:
+      externalization:
+        mode: outbox
   http:
     converters:
       preferred-json-mapper: jackson2
@@ -14,6 +18,13 @@ spring:
 
 logging:
   register-shutdown-hook: false
+
+# Outbox 表结构由 Liquibase 管理，与业务写入共用数据源和事务。
+namastack:
+  outbox:
+    jdbc:
+      schema-initialization:
+        enabled: false
 
 # i18n configuration (default: file mode)
 #alt:

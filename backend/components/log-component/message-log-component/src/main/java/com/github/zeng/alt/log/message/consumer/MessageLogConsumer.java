@@ -15,7 +15,7 @@ import org.springframework.core.log.LogMessage;
  * 供 {@code jpa-log-component} 等本地处理器持久化。
  * <p>
  * 使用 {@link com.github.zeng.alt.message.annotation.MessageListener @MessageListener}
- * 注解的方式由 {@code api-message-component} 自动注册订阅。
+ * 注解的方式由 {@code api-event-component} 自动注册订阅。
  *
  * @author zengJiaJun
  * @since 2026-07-01

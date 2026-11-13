@@ -14,7 +14,7 @@ dependencies {
     api("jakarta.servlet:jakarta.servlet-api")
     api(project(":backend:components:security-component:core-security-component"))
     api(project(":backend:components:json-component"))
-    api(project(":backend:components:message-component:api-message-component"))
+    api(project(":backend:components:event-component:api-event-component"))
 
     compileOnly("org.springframework.boot:spring-boot-starter-web")
     compileOnly("org.springframework.boot:spring-boot-starter-webflux")

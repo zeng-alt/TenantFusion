@@ -5,6 +5,8 @@ hibernate-orm = "7.4.15.Final"
 graalvm-native = "1.1.14"
 graalvm-metadata = "1.1.18"
 spring-modulith = "2.1.2"
+# 与 spring-modulith-starter-namastack 2.1.2 带入的运行时保持一致。
+namastack = "1.7.3"
 operaton = "2.2.0"
 spring-cloud = "2025.1.3"
 
@@ -41,6 +43,10 @@ spring-boot-starter-test = { module = "org.springframework.boot:spring-boot-star
 
 spring-modulith-starter-core = { module = "org.springframework.modulith:spring-modulith-starter-core" }
 spring-modulith-starter-jpa = { module = "org.springframework.modulith:spring-modulith-starter-jpa" }
+spring-modulith-starter-namastack = { module = "org.springframework.modulith:spring-modulith-starter-namastack" }
+namastack-outbox-api = { module = "io.namastack:namastack-outbox-api", version.ref = "namastack" }
+namastack-outbox-core = { module = "io.namastack:namastack-outbox-core", version.ref = "namastack" }
+spring-modulith-events-core = { module = "org.springframework.modulith:spring-modulith-events-core" }
 spring-modulith-starter-test = { module = "org.springframework.modulith:spring-modulith-starter-test" }
 spring-modulith-events-amqp = { module = "org.springframework.modulith:spring-modulith-events-amqp" }
 spring-modulith-events-kafka = { module = "org.springframework.modulith:spring-modulith-events-kafka" }

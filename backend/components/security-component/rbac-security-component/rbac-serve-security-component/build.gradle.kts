@@ -12,7 +12,7 @@ dependencies {
     api(project(":backend:components:security-component:core-security-component"))
     api(project(":backend:components:json-component"))
     api(project(":backend:components:storage-component:api-storage-component"))
-    api(project(":backend:components:message-component:api-message-component"))
+    api(project(":backend:components:event-component:api-event-component"))
 
     annotationProcessor("org.springframework.boot:spring-boot-configuration-processor")
 

@@ -349,7 +349,7 @@ JUnit、Docker、启动、AOT、Native 均未在 Boot 4 下验证。
 
 ### `:backend:components:message-component:api-message-component:boot4ProbeMain`
 
-- [components/message-component/api-message-component/src/main/java/com/github/zeng/alt/message/codec/JacksonMessagePacketCodec.java](../backend/components/message-component/api-message-component/src/main/java/com/github/zeng/alt/message/codec/JacksonMessagePacketCodec.java#L3)
+- [components/message-component/api-message-component/src/main/java/com/github/zeng/alt/message/codec/JacksonMessagePacketCodec.java](../backend/components/event-component/api-event-component/src/main/java/com/github/zeng/alt/message/codec/JacksonMessagePacketCodec.java#L3)
 
 ### `:backend:components:oss-component:jpa-oss-component:boot4ProbeMain`
 

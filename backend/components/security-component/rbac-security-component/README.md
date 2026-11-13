@@ -57,7 +57,7 @@ Client 和 Serve 在不同进程。Client 通过消息队列发送 `RouteTemplat
 ```kotlin
 dependencies {
     implementation(project(":backend:components:security-component:rbac-security-component:rbac-client-security-component"))
-    implementation(project(":backend:components:message-component:redis-message-component")) // 或 kafka / rabbit
+    implementation(project(":backend:components:event-component:redis-event-component")) // 或 kafka / rabbit
     // 不引入 rbac-serve-security-component
 }
 ```
@@ -66,7 +66,7 @@ dependencies {
 ```kotlin
 dependencies {
     implementation(project(":backend:components:security-component:rbac-security-component:rbac-serve-security-component"))
-    implementation(project(":backend:components:message-component:redis-message-component")) // 与 Client 一致的消息实现
+    implementation(project(":backend:components:event-component:redis-event-component")) // 与 Client 一致的消息实现
 }
 ```
 
@@ -463,7 +463,7 @@ POST /actuator/rbac
 rbac-client-security-component
   ├── api-security-component (SPI)
   ├── core-security-component (SecurityFilterChain)
-  ├── api-message-component (MessageQueueTemplate, compileOnly)
+  ├── api-event-component (MessageQueueTemplate, compileOnly)
   ├── rbac-serve-security-component (RouteTemplateManager, compileOnly)
   └── spring-boot-actuator (compileOnly)
 
@@ -471,7 +471,7 @@ rbac-serve-security-component
   ├── api-security-component (SPI)
   ├── core-security-component (AuthorizationManagerProvider)
   ├── api-storage-component (StorageTemplate)
-  ├── api-message-component (MessageQueueTemplate)
+  ├── api-event-component (MessageQueueTemplate)
   └── json-component
 ```
 
