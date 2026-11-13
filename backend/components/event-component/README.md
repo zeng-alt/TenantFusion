@@ -254,5 +254,16 @@ Spring Modulith 自带的 Kafka/AMQP 外部化发送器并不自动使用本组�
 ```
 
 Kafka 使用嵌入式 KRaft Broker；RabbitMQ 和 Redis 使用 Testcontainers，需要 Docker。
+复用本地已有的无认证 Redis，并跳过 Kafka 时，可运行：
+
+```bash
+EVENT_TEST_REDIS_HOST=127.0.0.1 EVENT_TEST_REDIS_PORT=16379 ./gradlew \
+  :backend:components:event-component:api-event-component:check \
+  :backend:components:event-component:rabbit-event-component:check \
+  :backend:components:event-component:redis-event-component:check --rerun-tasks
+```
+
+Redis 测试仅删除自身随机命名的测试键；RabbitMQ 测试容器在结束后自动移除。
+指定外部 Redis 地址后，连接失败会使测试失败，不会回退到临时容器。
 四个模块的 check 都包含 JaCoCo 行覆盖率 80% 门槛。
 `EventSubscriptionAotProcessor` 注册具体监听方法和负载类型，`EventRuntimeHints` 注册传输信封。本次测试包括提示注册验证，不等同于完整 Native Image 验证。

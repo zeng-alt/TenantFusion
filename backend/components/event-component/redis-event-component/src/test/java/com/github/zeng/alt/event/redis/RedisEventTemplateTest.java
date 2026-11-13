@@ -2,16 +2,20 @@ package com.github.zeng.alt.event.redis;
 
 import com.github.zeng.alt.event.EventTemplate;
 import com.github.zeng.alt.event.support.EventCodec;
-import com.github.zeng.alt.event.spi.EventMetadataDto;
 import com.github.zeng.alt.event.testing.EventBrokerTestSupport;
 import com.github.zeng.alt.event.testing.EventBrokerTestSupport.Listener;
 import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import java.time.Duration;
 import java.util.UUID;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.List;
+import io.vavr.control.Option;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 import com.github.zeng.alt.event.spi.EventMessageDto;
@@ -29,10 +33,40 @@ import java.util.concurrent.atomic.AtomicReference;
  * @since 0.0.1-SNAPSHOT
  */
 class RedisEventTemplateTest {
+    private static final Option<String> EXTERNAL_HOST = Option.of(System.getenv("EVENT_TEST_REDIS_HOST"))
+            .filter(host -> !host.isBlank());
     private static final GenericContainer<?> BROKER = new GenericContainer<>(DockerImageName.parse("redis:7-alpine"))
             .withExposedPorts(6379);
-    @BeforeAll static void startBroker() { BROKER.start(); }
-    @AfterAll static void stopBroker() { BROKER.stop(); }
+    private final Set<String> destinations = new HashSet<>();
+
+    @BeforeAll
+    static void startBroker() {
+        if (EXTERNAL_HOST.isEmpty()) {
+            BROKER.start();
+        }
+    }
+
+    @AfterAll
+    static void stopBroker() {
+        if (EXTERNAL_HOST.isEmpty()) {
+            BROKER.stop();
+        }
+    }
+
+    @AfterEach
+    void deleteTestStreams() {
+        final var connection = connection();
+        try {
+            final var redis = new StringRedisTemplate(connection);
+            destinations.forEach(destination -> redis.delete(List.of(
+                    destination,
+                    destination + ":retry:orders",
+                    destination + ".dead"
+            )));
+        } finally {
+            connection.destroy();
+        }
+    }
 
     @Test
     void retriesStreamWithContextAndClearsPending() {
@@ -108,8 +142,8 @@ class RedisEventTemplateTest {
     }
 
     private ApplicationContextRunner runner(String stream, Listener listener) {
-        final var connection = new LettuceConnectionFactory(BROKER.getHost(), BROKER.getMappedPort(6379));
-        connection.afterPropertiesSet();
+        destinations.add(stream);
+        final var connection = connection();
         final var redis = new StringRedisTemplate(connection);
         return EventBrokerTestSupport.runner(listener)
                 .withConfiguration(AutoConfigurations.of(RedisEventAutoConfiguration.class))
@@ -121,5 +155,14 @@ class RedisEventTemplateTest {
                         "alt.event.bindings.test.redis.claim-idle=100ms",
                         "alt.event.bindings.test.redis.poll-interval=50ms",
                         "alt.event.bindings.test.failure.destination=" + stream + ".dead");
+    }
+
+    private LettuceConnectionFactory connection() {
+        final String host = EXTERNAL_HOST.getOrElse(BROKER::getHost);
+        final int port = EXTERNAL_HOST.map(ignored -> Option.of(System.getenv("EVENT_TEST_REDIS_PORT"))
+                .map(Integer::parseInt).getOrElse(6379)).getOrElse(() -> BROKER.getMappedPort(6379));
+        final var connection = new LettuceConnectionFactory(host, port);
+        connection.afterPropertiesSet();
+        return connection;
     }
 }
