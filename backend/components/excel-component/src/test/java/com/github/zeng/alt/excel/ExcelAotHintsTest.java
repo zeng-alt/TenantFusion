@@ -86,6 +86,28 @@ class ExcelAotHintsTest {
         assertThat(RuntimeHintsPredicates.resource().forResource("excel.properties")).accepts(hints);
     }
 
+    @Test
+    void registersRecordCanonicalConstructorAndAccessor() throws Exception {
+        final RuntimeHints hints = process(RecordController.class);
+        assertThat(RuntimeHintsPredicates.reflection().onConstructor(
+                ExcelRecordImportTest.UserDto.class.getDeclaredConstructor(String.class, int.class, String.class)
+        ).invoke()).accepts(hints);
+        assertThat(RuntimeHintsPredicates.reflection().onMethod(ExcelRecordImportTest.UserDto.class, "name").invoke())
+                .accepts(hints);
+    }
+
+    /**
+     * record 导入端点的 AOT 测试模型。
+     *
+     * @author zeng-alt
+     * @since 0.0.1-SNAPSHOT
+     */
+    static class RecordController {
+
+        void importRecords(@ExcelImport List<ExcelRecordImportTest.UserDto> rows) {
+        }
+    }
+
     private static RuntimeHints process(Class<?> controllerType) {
         DefaultListableBeanFactory beanFactory = new DefaultListableBeanFactory();
         beanFactory.registerBeanDefinition("controller", new RootBeanDefinition(controllerType));

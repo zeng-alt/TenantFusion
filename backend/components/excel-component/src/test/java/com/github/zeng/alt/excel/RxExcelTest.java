@@ -1,6 +1,7 @@
 package com.github.zeng.alt.excel;
 
 import com.github.zeng.alt.excel.read.ExcelReadSpec;
+import com.github.zeng.alt.excel.context.ExcelContextHandler;
 import com.github.zeng.alt.excel.rx.RxExcel;
 import com.github.zeng.alt.excel.write.ExcelWriteSpec;
 import io.reactivex.rxjava3.core.Flowable;
@@ -63,6 +64,7 @@ class RxExcelTest {
     @SuppressWarnings("unchecked")
     private static ExcelReadSpec<Integer> source(AtomicInteger parsed, CountDownLatch finished) {
         final ExcelReadSpec<Integer> spec = mock(ExcelReadSpec.class);
+        when(spec.captureContext()).thenReturn(ExcelContextHandler.Snapshot.empty());
         when(spec.consumeWhile(any())).thenAnswer(invocation -> {
             final Predicate<Integer> consumer = invocation.getArgument(0);
             try {

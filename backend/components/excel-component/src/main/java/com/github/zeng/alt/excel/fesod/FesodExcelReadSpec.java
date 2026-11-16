@@ -1,6 +1,8 @@
 package com.github.zeng.alt.excel.fesod;
 
 import com.github.zeng.alt.excel.config.ExcelBindingMode;
+import com.github.zeng.alt.excel.context.ExcelContextHandler;
+import com.github.zeng.alt.excel.context.ExcelContextTemplate;
 import com.github.zeng.alt.excel.dynamic.DynamicCell;
 import com.github.zeng.alt.excel.dynamic.DynamicColumn;
 import com.github.zeng.alt.excel.exception.ExcelReadException;
@@ -50,6 +52,7 @@ public class FesodExcelReadSpec<T> implements ExcelReadSpec<T> {
     private final Class<T> type;
     private final FesodExcelContext context;
     private final boolean dynamic;
+    private final ExcelContextHandler.Snapshot snapshot;
 
     private Object source;
     private Integer sheetNo = 0;
@@ -66,13 +69,30 @@ public class FesodExcelReadSpec<T> implements ExcelReadSpec<T> {
      * @param dynamic 是否按动态列读取
      */
     public FesodExcelReadSpec(Class<T> type, FesodExcelContext context, boolean dynamic) {
+        this(type, context, dynamic, context.properties().getContext().isEnabled()
+                ? ExcelContextTemplate.captureDefaults() : ExcelContextHandler.Snapshot.empty());
+    }
+
+    /** 创建带调用上下文的读取链。 */
+    public FesodExcelReadSpec(
+            Class<T> type,
+            FesodExcelContext context,
+            boolean dynamic,
+            ExcelContextHandler.Snapshot snapshot
+    ) {
         this.type = type;
         this.context = context;
         this.dynamic = dynamic;
+        this.snapshot = snapshot;
         this.headRowNumber = context.properties().getRead().getHeadRowNumber();
         this.i18nHead = context.properties().getRead().isI18nHead();
         this.binding = context.properties().getBinding();
         this.options = ExcelReadOptions.from(context.properties());
+    }
+
+    @Override
+    public ExcelContextHandler.Snapshot captureContext() {
+        return snapshot;
     }
 
     // ==================== 数据源 ====================
@@ -298,7 +318,7 @@ public class FesodExcelReadSpec<T> implements ExcelReadSpec<T> {
      * 也需要无模型。只有 engine 绑定的普通读取才让 fesod 自己建模型。
      */
     private boolean usesRawStringRows() {
-        return dynamic || i18nHead || binding.isReflective();
+        return dynamic || type.isRecord() || i18nHead || binding.isReflective();
     }
 
     @SuppressWarnings("unchecked")

@@ -2,6 +2,7 @@ package com.github.zeng.alt.excel.web;
 
 import io.vavr.control.Try;
 import com.github.zeng.alt.excel.write.ExcelWriteSpec;
+import com.github.zeng.alt.excel.context.ExcelContextHandler;
 
 import java.util.Iterator;
 import java.util.List;
@@ -54,6 +55,11 @@ public interface ExcelReactiveSupport {
      * @return 行流
      */
     Object streamOf(List<ExcelStreamSource> sources);
+
+    /** 使用调用入口捕获的上下文创建懒执行流。 */
+    default Object streamOf(List<ExcelStreamSource> sources, ExcelContextHandler.Snapshot snapshot) {
+        return snapshot.call(() -> streamOf(sources));
+    }
 
     /**
      * 把响应式值转成游标，供写出侧分批阻塞拉取。

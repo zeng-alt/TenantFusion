@@ -1,6 +1,7 @@
 package com.github.zeng.alt.excel.web;
 
 import com.github.zeng.alt.excel.ExcelTemplate;
+import com.github.zeng.alt.excel.context.ExcelContextHandler;
 import com.github.zeng.alt.excel.annotation.ExcelExport;
 import com.github.zeng.alt.excel.annotation.ExcelImport;
 import com.github.zeng.alt.excel.config.ExcelProperties;
@@ -28,6 +29,11 @@ public class ExcelWebSpecFactory {
 
     private final ExcelTemplate excelTemplate;
     private final ExcelProperties properties;
+
+    /** 在 Web 异步操作开始前捕获贡献者的上下文。 */
+    public ExcelContextHandler.Snapshot captureContext() {
+        return excelTemplate.captureContext();
+    }
 
     /**
      * 下载文件名里时间戳的格式，取自 {@code alt.excel.write.file-name-timestamp-pattern}。

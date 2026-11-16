@@ -1,9 +1,10 @@
 package com.github.zeng.alt.excel.web;
 
 import com.github.zeng.alt.excel.rx.RxExcel;
+import com.github.zeng.alt.excel.context.ExcelContextHandler;
+import com.github.zeng.alt.excel.context.ExcelContextTemplate;
 import com.github.zeng.alt.excel.write.ExcelWriteSpec;
 import io.reactivex.rxjava3.core.Flowable;
-import io.reactivex.rxjava3.schedulers.Schedulers;
 import io.vavr.control.Try;
 
 import java.util.ArrayList;
@@ -35,9 +36,14 @@ public class RxJavaExcelReactiveSupport implements ExcelReactiveSupport {
 
     @Override
     public Object streamOf(List<ExcelStreamSource> sources) {
+        return streamOf(sources, ExcelContextTemplate.captureDefaults());
+    }
+
+    @Override
+    public Object streamOf(List<ExcelStreamSource> sources, ExcelContextHandler.Snapshot snapshot) {
         List<Flowable<?>> streams = new ArrayList<>(sources.size());
         for (ExcelStreamSource source : sources) {
-            streams.add(lazyStream(source));
+            streams.add(lazyStream(source, snapshot));
         }
         return Flowable.concat(streams);
     }
@@ -57,8 +63,11 @@ public class RxJavaExcelReactiveSupport implements ExcelReactiveSupport {
     /**
      * {@code Flowable.using} 保证订阅时才 open、流终结时一定 close。
      */
-    private static Flowable<?> lazyStream(ExcelStreamSource source) {
-        return Flowable.using(() -> source, s -> RxExcel.stream(s.open()), ExcelStreamSource::close)
-                .subscribeOn(Schedulers.io(), false);
+    private static Flowable<?> lazyStream(ExcelStreamSource source, ExcelContextHandler.Snapshot snapshot) {
+        return Flowable.using(
+                () -> source,
+                current -> RxExcel.stream(() -> Try.of(current::open).get(), snapshot),
+                ExcelStreamSource::close
+        );
     }
 }

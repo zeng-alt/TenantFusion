@@ -1,6 +1,7 @@
 package com.github.zeng.alt.excel.web.reactive;
 
 import com.github.zeng.alt.excel.annotation.ExcelExport;
+import com.github.zeng.alt.excel.context.ExcelContextHandler;
 import com.github.zeng.alt.excel.config.ExcelProperties;
 import com.github.zeng.alt.excel.exception.ExcelWriteException;
 import com.github.zeng.alt.excel.web.ExcelDownloadHeaders;
@@ -84,25 +85,39 @@ public class ExcelExportResultHandler implements HandlerResultHandler, Ordered {
         Class<?> rowType = resolveRowType(annotation, returnType);
         applyHeaders(exchange, ExcelDownloadHeaders.of(annotation, returnType, specFactory.fileNameTimestampPattern()));
 
-        return Mono.using(
-                () -> ExcelUploadHelper.createTempFile(properties.getWeb().getTempDir()),
-                temp -> writeTempFile(temp, result.getReturnValue(), rowType, annotation)
-                        .then(Mono.defer(() -> send(exchange, temp))),
-                ExcelUploadHelper::deleteQuietly
-        ).subscribeOn(Schedulers.boundedElastic());
+        return ExcelReactiveContextHelper.capture(specFactory.captureContext(), properties.getContext().isEnabled())
+                .flatMap(snapshot -> Mono.using(
+                        () -> ExcelUploadHelper.createTempFile(properties.getWeb().getTempDir()),
+                        temp -> writeTempFile(temp, result.getReturnValue(), rowType, annotation, snapshot)
+                                .then(Mono.defer(() -> send(exchange, temp))),
+                        ExcelUploadHelper::deleteQuietly
+                ).subscribeOn(Schedulers.boundedElastic()));
     }
 
-    private Mono<Void> writeTempFile(Path temp, Object rows, Class<?> rowType, ExcelExport annotation) {
+    private Mono<Void> writeTempFile(
+            Path temp,
+            Object rows,
+            Class<?> rowType,
+            ExcelExport annotation,
+            ExcelContextHandler.Snapshot snapshot
+    ) {
         if (rows instanceof Mono<?> mono) {
             return mono.cast(Object.class).defaultIfEmpty(List.of())
-                    .flatMap(value -> writeTempFile(temp, value, rowType, annotation));
+                    .flatMap(value -> writeTempFile(temp, value, rowType, annotation, snapshot));
         }
-        return writeRows(temp, rows, rowType, annotation);
+        return writeRows(temp, rows, rowType, annotation, snapshot);
     }
 
-    private Mono<Void> writeRows(Path temp, Object rows, Class<?> rowType, ExcelExport annotation) {
+    private Mono<Void> writeRows(
+            Path temp,
+            Object rows,
+            Class<?> rowType,
+            ExcelExport annotation,
+            ExcelContextHandler.Snapshot snapshot
+    ) {
         return Mono.<Void>fromCallable(() -> {
-            try (OutputStream output = Files.newOutputStream(temp)) {
+            try (ExcelContextHandler.Scope scope = snapshot.restore();
+                 OutputStream output = Files.newOutputStream(temp)) {
                 final ExcelWriteSpec<Object> spec = specFactory.writeSpec(rowType, annotation)
                         .to(output).autoCloseStream(false);
                 write(spec, rows);

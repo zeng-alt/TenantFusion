@@ -52,10 +52,12 @@ public class ExcelRowBinder<T> {
      * @param headerByColumn 列下标 → 表头文本
      */
     public void bindHead(Map<Integer, String> headerByColumn) {
-        Map<Integer, ExcelFieldMeta> mapping = new LinkedHashMap<>();
+        final Map<Integer, ExcelFieldMeta> mapping = new LinkedHashMap<>();
+        accessor.getFields().stream().filter(field -> field.index() >= 0)
+                .forEach(field -> mapping.put(field.index(), field));
         headerByColumn.forEach((column, header) -> {
-            ExcelFieldMeta field = fieldByHeader.get(normalize(header));
-            if (field != null) {
+            final ExcelFieldMeta field = fieldByHeader.get(normalize(header));
+            if (field != null && field.index() < 0 && !mapping.containsKey(column)) {
                 mapping.put(column, field);
             }
         });
@@ -103,14 +105,14 @@ public class ExcelRowBinder<T> {
     }
 
     private T doBind(Map<Integer, String> valueByColumn) {
-        T target = accessor.instantiate();
+        final Map<String, Object> valueByField = new HashMap<>();
         fieldByColumn.forEach((column, field) -> {
             String text = valueByColumn.get(column);
             if (text != null && !text.isBlank()) {
-                accessor.write(target, field, convert(text.strip(), field));
+                valueByField.put(field.fieldName(), convert(text.strip(), field));
             }
         });
-        return target;
+        return accessor.instantiate(valueByField);
     }
 
     private Object convert(String text, ExcelFieldMeta field) {
@@ -122,7 +124,7 @@ public class ExcelRowBinder<T> {
     }
 
     private String describe(Throwable cause) {
-        String message = cause.getMessage();
+        final String message = org.springframework.core.NestedExceptionUtils.getMostSpecificCause(cause).getMessage();
         return message == null || message.isBlank()
                 ? "行数据无法绑定到 " + accessor.getType().getSimpleName()
                 : message;

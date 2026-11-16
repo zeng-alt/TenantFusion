@@ -200,7 +200,7 @@ public class FesodExcelWriteSpec<T> implements ExcelWriteSpec<T> {
 
     /** 是否由本组件自己做实体绑定：有实体类型、无运行期表头、绑定方式落到 reflective */
     private boolean usesReflectiveBinding() {
-        return type != null && head == null && binding.isReflective();
+        return type != null && head == null && (type.isRecord() || binding.isReflective());
     }
 
     /**

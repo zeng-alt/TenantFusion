@@ -48,6 +48,28 @@ public class UserImportService {
 失败明细一起交出来，由调用方决定整单驳回还是先入库好行。整份文件级别的失败
 （文件损坏、密码错误、未指定数据源）才抛 `ExcelReadException`。
 
+### record 行模型
+
+导入支持不可变 `record`，不需要无参构造器或 setter：
+
+```java
+public record UserImportDto(
+        @ExcelProperty("姓名") @NotBlank String name,
+        @ExcelProperty("年龄") @Min(1) int age
+) {
+}
+
+ExcelReadResult<UserImportDto> result = excelTemplate.read(UserImportDto.class)
+        .from(uploadPath)
+        .execute();
+```
+
+record 自动走规范构造器绑定（即使指定 `ENGINE`），支持表头别名、国际化表头、固定列索引、
+`@ExcelIgnore` 和 Bean Validation。列顺序不影响构造器参数顺序；缺失的引用值为 `null`，
+基本类型使用 Java 默认值。构造器抛出的异常作为坏行报告。
+类型转换沿用 Spring `ConversionService`，不执行 fesod 自定义 Converter 或格式注解；
+特殊日期/数值格式应注册 Spring Converter。注解端点的 record 构造器与访问器参与 AOT 注册。
+
 ### 批量导入
 
 `consumeBatch` 攒够一批才回调一次，内存占用是「一批」而不是整个文件。批量导入的
@@ -64,6 +86,54 @@ excelTemplate.read(UserImportCmd.class)
 末批不足 `batchSize` 也会回调（空文件不回调）；每批是独立快照，下游可以安全地
 异步持有。事务边界由调用方自己控制——把 `@Transactional` 标在接收批次的 service
 方法上，一批一个事务。
+
+### 错误 Excel 回写
+
+通过一次读取的报告，在原工作簿副本上高亮错误单元格、追加错误批注，并新建错误明细表：
+
+```java
+ExcelReadResult<UserImportDto> result = excelTemplate.read(UserImportDto.class)
+        .from(uploadPath)
+        .sheet("用户")
+        .execute();
+
+excelTemplate.writeErrors(result.toReport("users.xlsx"))
+        .from(uploadPath)
+        .sheet("用户")
+        .to(errorPath)
+        .execute()
+        .getOrElseThrow(cause -> new ExcelWriteException("错误文件生成失败", cause));
+```
+
+- 输入输出不能是同一个文件；原始值、公式、行列位置和原样式保留，高亮样式由原样式克隆。
+- 错误表包含工作表、行号、列号、字段、原始值、原因和错误代码；与已有表重名时追加序号。
+- 多条单元格错误合并到批注，已有批注保留。行级错误标记该行首格；无法定位行的错误只写入明细表。
+- 报告必须对应一个文件的一个工作表，`.sheet(...)` 与读取时一致；跨文件合并后的报告不能用于回写。
+- 使用 POI 在内存中打开原工作簿，适用于上传大小受控的反馈文件。输出沿用原工作簿格式；
+  `.password(...)` 用于打开加密输入，输出不保留输入文件加密。
+- 输入流执行后关闭；调用方输出流默认关闭，`.autoCloseStream(false)` 可保留。
+
+配置与单次链式覆盖均可用：
+
+```yaml
+alt:
+  excel:
+    error-report:
+      sheet-name: 错误明细
+      highlight: true
+      comments: true
+```
+
+也可贡献 `ExcelErrorWriteCustomizer` Bean，按 `@Order` 在属性默认值之后应用：
+
+```java
+@Bean
+ExcelErrorWriteCustomizer errorWorkbookDefaults() {
+    return spec -> spec.summarySheet("导入问题").comments(true);
+}
+```
+
+单次 `.summarySheet(...)` / `.highlight(...)` / `.comments(...)` 调用拥有最终优先级。
 
 ### 导出
 
@@ -496,11 +566,42 @@ customizer 是唯一的逃生舱。
 
 - `ExcelTemplate` 是无状态单例，可并发使用；每次调用现场造一段链，可变配置只落在那段链上。
 - 一段链只服务一次操作：终结步骤消费掉数据源后不要复用（输入流读完即废）。
-- `RxExcel.stream(...)` 默认在 `Schedulers.io()` 上解析。**ThreadLocal 上下文
-  （`SecurityContext`、租户上下文）不会跨调度器传递**，需要的值请在订阅前取出。
+- `RxExcel.stream(spec)` 在 `Schedulers.io()` 上恢复创建读取链时的上下文，解析和同步下游回调完成、失败或取消后还原工作线程原状态。
+- 自动传播可用的租户 ID、数据库、schema、完整 `TenantRouting`、已有 `Authentication` 及语言/时区。
+  `UserContextHolder` 与 `SecurityContextHolder` 读取同一个恢复后的认证；每次恢复创建独立的 `SecurityContext`。
+- WebFlux 注解集成还会读取 `ReactiveSecurityContextHolder`，在解析和写出边界恢复认证；租户及自定义贡献者在请求入口捕获。
+- `alt.excel.context.enabled=false` 可关闭 Spring 管理的传播。租户和 Spring Security API 是可选依赖，不会由 Excel 组件强制引入。
 - 流式上传会先落临时文件再解析——multipart 的原始存储在请求结束时就被容器回收了，
   懒订阅拿不到；临时文件在流终结（完成、出错、取消）时删除。
 - WebFlux 集成不在事件循环上做任何阻塞动作，解析与写出都在 `boundedElastic` 上。
+
+### 自定义上下文与额外调度切换
+
+贡献 `ExcelContextHandler` Bean 即可参与 `ExcelContextTemplate` 捕获，按 `@Order` 恢复、逆序还原。
+`capture()` 在调用线程执行，返回可重复恢复的快照；`restore()` 返回的作用域必须在同一线程关闭，
+负责还原之前的值，不能仅清空，也不能在 `close()` 抛异常。
+
+组件不安装全局调度 hook。业务自己增加的 `observeOn` / `publishOn` 或异步数据源，应在实际使用上下文的边界显式恢复：
+
+```java
+final ExcelContextHandler.Snapshot snapshot = excelTemplate.captureContext();
+
+// RxJava：在新增的 observeOn 后恢复下游回调上下文。
+RxExcel.withContext(RxExcel.stream(spec).observeOn(Schedulers.io()), snapshot)
+        .doOnNext(userService::create)
+        .subscribe();
+
+// WebFlux：在业务自行调度后的处理函数内恢复。
+rows.publishOn(reactor.core.scheduler.Schedulers.boundedElastic())
+        .map(row -> snapshot.call(() -> userService.create(row)));
+
+// 普通任务：交给已有线程池执行，不更改全局线程池配置。
+Runnable task = snapshot.decorate(() -> userService.importUsers(command));
+```
+
+`RxExcel.stream(factory)` 是非 Spring 静态入口，在调用时捕获内置上下文。
+需要遵守 Spring 配置开关或使用自定义贡献者时，使用 `RxExcel.stream(factory, excelTemplate.captureContext())`。
+快照仅供进程内执行，不序列化认证，也不从 Excel 内容构造租户或用户身份。
 
 ## 本次重写去掉了什么
 

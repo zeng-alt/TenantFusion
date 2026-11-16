@@ -70,7 +70,7 @@ public class ExcelImportArgumentResolver implements HandlerMethodArgumentResolve
         }
         List<MultipartFile> selected = annotation.merge() ? files : List.of(files.getFirst());
         if (reactiveSupport.supports(container)) {
-            return reactiveSupport.streamOf(streamSources(selected, rowType, annotation));
+            return reactiveSupport.streamOf(streamSources(selected, rowType, annotation), specFactory.captureContext());
         }
         ExcelReadResult<?> result = readAll(selected, rowType, annotation);
         if (ExcelReadResult.class.isAssignableFrom(container)) {

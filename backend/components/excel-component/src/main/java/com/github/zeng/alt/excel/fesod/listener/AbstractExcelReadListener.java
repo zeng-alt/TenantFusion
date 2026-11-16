@@ -274,6 +274,10 @@ public abstract class AbstractExcelReadListener<R, T> implements ReadListener<R>
             }
         });
         for (ExcelFieldMeta field : ExcelRowAccessor.of(rowType).getFields()) {
+            if (field.index() >= 0) {
+                columnByField.put(field.fieldName(), field.index());
+                continue;
+            }
             Integer column = columnByHeader.get(ExcelMessageHelper.resolve(field.headCode()).trim());
             if (column == null) {
                 column = columnByHeader.get(field.headCode().trim());

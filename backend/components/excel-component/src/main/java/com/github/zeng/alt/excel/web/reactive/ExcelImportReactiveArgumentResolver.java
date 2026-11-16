@@ -1,6 +1,7 @@
 package com.github.zeng.alt.excel.web.reactive;
 
 import com.github.zeng.alt.excel.annotation.ExcelImport;
+import com.github.zeng.alt.excel.context.ExcelContextHandler;
 import com.github.zeng.alt.excel.config.ExcelProperties;
 import com.github.zeng.alt.excel.exception.ExcelReadException;
 import com.github.zeng.alt.excel.exception.ExcelValidationException;
@@ -79,8 +80,9 @@ public class ExcelImportReactiveArgumentResolver implements HandlerMethodArgumen
                             .formatted(parameter.getParameterName(), container.getName())));
         }
         Class<?> rowType = rowTypeResolver.resolve(parameter, "@ExcelImport");
-        return resolveParts(parameter, exchange, annotation)
-                .flatMap(parts -> toArgument(parts, container, rowType, annotation));
+        return ExcelReactiveContextHelper.capture(specFactory.captureContext(), properties.getContext().isEnabled())
+                .flatMap(snapshot -> resolveParts(parameter, exchange, annotation)
+                        .flatMap(parts -> toArgument(parts, container, rowType, annotation, snapshot)));
     }
 
     /**
@@ -125,19 +127,24 @@ public class ExcelImportReactiveArgumentResolver implements HandlerMethodArgumen
 
     // ==================== 组装参数 ====================
 
-    private Mono<Object> toArgument(List<FilePart> parts, Class<?> container,
-                                    Class<?> rowType, ExcelImport annotation) {
+    private Mono<Object> toArgument(
+            List<FilePart> parts,
+            Class<?> container,
+            Class<?> rowType,
+            ExcelImport annotation,
+            ExcelContextHandler.Snapshot snapshot
+    ) {
         if (parts.isEmpty()) {
             return Mono.just(emptyValue(container));
         }
         List<FilePart> selected = annotation.merge() ? parts : List.of(parts.getFirst());
         if (reactiveSupport.supports(container)) {
-            return Mono.just(reactiveSupport.streamOf(streamSources(selected, rowType, annotation)));
+            return Mono.just(reactiveSupport.streamOf(streamSources(selected, rowType, annotation), snapshot));
         }
         if (Flux.class.isAssignableFrom(container)) {
-            return Mono.just(fluxOf(selected, rowType, annotation));
+            return Mono.just(fluxOf(selected, rowType, annotation, snapshot));
         }
-        return readAll(selected, rowType, annotation)
+        return readAll(selected, rowType, annotation, snapshot)
                 .flatMap(result -> toValue(result, container, selected));
     }
 
@@ -173,43 +180,60 @@ public class ExcelImportReactiveArgumentResolver implements HandlerMethodArgumen
 
     /** 全量读：解析放在 boundedElastic 上，读完即删临时文件 */
     @SuppressWarnings("unchecked")
-    private Mono<ExcelReadResult<Object>> readAll(List<FilePart> parts, Class<?> rowType, ExcelImport annotation) {
+    private Mono<ExcelReadResult<Object>> readAll(
+            List<FilePart> parts,
+            Class<?> rowType,
+            ExcelImport annotation,
+            ExcelContextHandler.Snapshot snapshot
+    ) {
         return Flux.fromIterable(parts)
                 .concatMap(part -> Mono.using(
                         () -> ExcelUploadHelper.createTempFile(properties.getWeb().getTempDir()),
-                        temp -> part.transferTo(temp).then(Mono.fromCallable(() ->
+                        temp -> part.transferTo(temp).then(Mono.fromCallable(() -> snapshot.call(() ->
                                 (ExcelReadResult<Object>) specFactory.readSpec(rowType, annotation)
-                                        .from(temp).execute()).subscribeOn(Schedulers.boundedElastic())),
+                                        .from(temp).execute())).subscribeOn(Schedulers.boundedElastic())),
                         ExcelUploadHelper::deleteQuietly
                 ).subscribeOn(Schedulers.boundedElastic()))
                 .reduce(ExcelReadResult.empty(), ExcelReadResults::merge);
     }
 
     /** 流式读：落盘、解析与取消共用同一临时文件生命周期。 */
-    private Flux<Object> fluxOf(List<FilePart> parts, Class<?> rowType, ExcelImport annotation) {
+    private Flux<Object> fluxOf(
+            List<FilePart> parts,
+            Class<?> rowType,
+            ExcelImport annotation,
+            ExcelContextHandler.Snapshot snapshot
+    ) {
         return Flux.fromIterable(parts).concatMap(part -> Flux.using(
                 () -> ExcelUploadHelper.createTempFile(properties.getWeb().getTempDir()),
-                temp -> part.transferTo(temp).thenMany(readFlux(temp, rowType, annotation)),
+                temp -> part.transferTo(temp).thenMany(readFlux(temp, rowType, annotation, snapshot)),
                 ExcelUploadHelper::deleteQuietly
         ).subscribeOn(Schedulers.boundedElastic()));
     }
 
-    private Flux<Object> readFlux(Path temp, Class<?> rowType, ExcelImport annotation) {
+    private Flux<Object> readFlux(
+            Path temp,
+            Class<?> rowType,
+            ExcelImport annotation,
+            ExcelContextHandler.Snapshot snapshot
+    ) {
         return Flux.<Object>create(sink -> {
             final ExcelDemandHelper demand = new ExcelDemandHelper();
             sink.onRequest(demand::request);
             sink.onCancel(demand::cancel);
-            specFactory.readSpec(rowType, annotation).from(temp).consumeWhile(row -> {
-                if (!demand.awaitDemand() || sink.isCancelled()) {
-                    return false;
-                }
-                sink.next(row);
-                return !sink.isCancelled();
-            }).onFailure(cause -> {
-                if (!sink.isCancelled()) {
-                    sink.error(cause);
-                }
-            }).onSuccess(count -> sink.complete());
+            try (ExcelContextHandler.Scope scope = snapshot.restore()) {
+                specFactory.readSpec(rowType, annotation).from(temp).consumeWhile(row -> {
+                    if (!demand.awaitDemand() || sink.isCancelled()) {
+                        return false;
+                    }
+                    sink.next(row);
+                    return !sink.isCancelled();
+                }).onFailure(cause -> {
+                    if (!sink.isCancelled()) {
+                        sink.error(cause);
+                    }
+                }).onSuccess(count -> sink.complete());
+            }
         }, FluxSink.OverflowStrategy.ERROR).subscribeOn(Schedulers.boundedElastic(), false);
     }
 

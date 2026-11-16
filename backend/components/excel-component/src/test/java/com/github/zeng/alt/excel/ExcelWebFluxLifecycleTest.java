@@ -3,6 +3,7 @@ package com.github.zeng.alt.excel;
 import com.github.zeng.alt.excel.annotation.ExcelExport;
 import com.github.zeng.alt.excel.annotation.ExcelImport;
 import com.github.zeng.alt.excel.config.ExcelProperties;
+import com.github.zeng.alt.excel.context.ExcelContextHandler;
 import com.github.zeng.alt.excel.read.ExcelReadSpec;
 import com.github.zeng.alt.excel.web.NoOpExcelReactiveSupport;
 import com.github.zeng.alt.excel.web.ExcelWebSpecFactory;
@@ -208,12 +209,14 @@ class ExcelWebFluxLifecycleTest {
     }
 
     private ExcelExportResultHandler exportHandler(ExcelWebSpecFactory factory) {
+        when(factory.captureContext()).thenReturn(ExcelContextHandler.Snapshot.empty());
         final ExcelProperties properties = new ExcelProperties();
         properties.getWeb().setTempDir(directory.toString());
         return new ExcelExportResultHandler(factory, new NoOpExcelReactiveSupport(), properties);
     }
 
     private ExcelImportReactiveArgumentResolver resolver(ExcelWebSpecFactory factory) {
+        when(factory.captureContext()).thenReturn(ExcelContextHandler.Snapshot.empty());
         final ExcelProperties properties = new ExcelProperties();
         properties.getWeb().setTempDir(directory.toString());
         return new ExcelImportReactiveArgumentResolver(factory, properties, new NoOpExcelReactiveSupport());

@@ -65,6 +65,40 @@ public class ExcelProperties {
     @NestedConfigurationProperty
     private final Web web = new Web();
 
+    @NestedConfigurationProperty
+    private final ErrorReport errorReport = new ErrorReport();
+
+    @NestedConfigurationProperty
+    private final Context context = new Context();
+
+    /**
+     * 组件管理的异步任务上下文传播。
+     *
+     * @author zeng-alt
+     * @since 0.0.1-SNAPSHOT
+     */
+    @Getter
+    @Setter
+    public static class Context {
+
+        private boolean enabled = true;
+    }
+
+    /**
+     * 错误工作簿的默认标记方式。
+     *
+     * @author zeng-alt
+     * @since 0.0.1-SNAPSHOT
+     */
+    @Getter
+    @Setter
+    public static class ErrorReport {
+
+        private String sheetName = "错误明细";
+        private boolean highlight = true;
+        private boolean comments = true;
+    }
+
     /**
      * 读取相关默认值。
      *

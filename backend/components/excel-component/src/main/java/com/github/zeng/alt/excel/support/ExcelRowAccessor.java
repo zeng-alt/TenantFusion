@@ -14,7 +14,9 @@ import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.lang.reflect.RecordComponent;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedHashMap;
@@ -22,6 +24,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.IntStream;
 
 /**
  * 行类型的反射元数据，一个类型解析一次、全局缓存。
@@ -51,11 +54,15 @@ public final class ExcelRowAccessor<T> {
     private final Class<T> type;
     private final Constructor<T> constructor;
     private final List<ExcelFieldMeta> fields;
+    private final List<String> constructorFields;
 
     private ExcelRowAccessor(Class<T> type, Constructor<T> constructor, List<ExcelFieldMeta> fields) {
         this.type = type;
         this.constructor = constructor;
         this.fields = fields;
+        this.constructorFields = type.isRecord()
+                ? Arrays.stream(type.getRecordComponents()).map(RecordComponent::getName).toList()
+                : List.of();
     }
 
     /**
@@ -118,11 +125,12 @@ public final class ExcelRowAccessor<T> {
      * @return fesod 的 head 结构，一列一个元素
      */
     public List<List<String>> head(List<ExcelFieldMeta> selected) {
-        List<List<String>> head = new ArrayList<>(selected.size());
-        for (ExcelFieldMeta field : selected) {
-            head.add(List.of(field.headCode()));
-        }
-        return head;
+        final Map<Integer, ExcelFieldMeta> fieldByColumn = columnLayout(selected);
+        final int width = fieldByColumn.keySet().stream().mapToInt(Integer::intValue).max().orElse(-1) + 1;
+        return IntStream.range(0, width).mapToObj(column -> {
+            final ExcelFieldMeta field = fieldByColumn.get(column);
+            return List.of(field == null ? "" : field.headCode());
+        }).toList();
     }
 
     /**
@@ -133,11 +141,29 @@ public final class ExcelRowAccessor<T> {
      * @return 值列表，缺 getter 的字段位置为 {@code null}
      */
     public List<Object> extract(T row, List<ExcelFieldMeta> selected) {
-        List<Object> values = new ArrayList<>(selected.size());
+        final Map<Integer, ExcelFieldMeta> fieldByColumn = columnLayout(selected);
+        final int width = fieldByColumn.keySet().stream().mapToInt(Integer::intValue).max().orElse(-1) + 1;
+        return IntStream.range(0, width).mapToObj(column -> {
+            final ExcelFieldMeta field = fieldByColumn.get(column);
+            return field == null ? null : readValue(field, row);
+        }).toList();
+    }
+
+    private Map<Integer, ExcelFieldMeta> columnLayout(List<ExcelFieldMeta> selected) {
+        final Map<Integer, ExcelFieldMeta> fieldByColumn = new LinkedHashMap<>();
+        selected.stream().filter(field -> field.index() >= 0)
+                .forEach(field -> fieldByColumn.put(field.index(), field));
+        int column = 0;
         for (ExcelFieldMeta field : selected) {
-            values.add(readValue(field, row));
+            if (field.index() >= 0) {
+                continue;
+            }
+            while (fieldByColumn.containsKey(column)) {
+                column++;
+            }
+            fieldByColumn.put(column++, field);
         }
-        return values;
+        return fieldByColumn;
     }
 
     /**
@@ -154,6 +180,23 @@ public final class ExcelRowAccessor<T> {
         } catch (ReflectiveOperationException e) {
             throw new ExcelReadException("无法实例化 " + type.getName(), e);
         }
+    }
+
+    /**
+     * 用已转换的字段值创建行；record 使用规范构造器，普通实体仍使用 setter。
+     * 缺失的引用参数为 null，基本类型参数使用 Java 默认值。
+     *
+     * @param valueByField 已转换的字段值
+     * @return 行实例
+     */
+    public T instantiate(Map<String, Object> valueByField) {
+        if (type.isRecord()) {
+            return BeanUtils.instantiateClass(constructor, constructorFields.stream().map(valueByField::get).toArray());
+        }
+        final T row = instantiate();
+        fields.stream().filter(field -> valueByField.containsKey(field.fieldName()))
+                .forEach(field -> write(row, field, valueByField.get(field.fieldName())));
+        return row;
     }
 
     /**
@@ -210,13 +253,16 @@ public final class ExcelRowAccessor<T> {
             return;
         }
         PropertyDescriptor descriptor = BeanUtils.getPropertyDescriptor(type, field.getName());
-        if (descriptor == null) {
+        if (descriptor == null && !type.isRecord()) {
             return;
         }
+        final Method readMethod = type.isRecord()
+                ? ReflectionUtils.findMethod(type, field.getName()) : descriptor.getReadMethod();
+        final Method writeMethod = type.isRecord() ? null : descriptor.getWriteMethod();
         // getter/setter 本身是 public，但声明它们的类可能是包私有的，
         // 那样跨包反射调用会抛 IllegalAccessException——常见于嵌套的 DTO
-        makeAccessible(descriptor.getReadMethod());
-        makeAccessible(descriptor.getWriteMethod());
+        makeAccessible(readMethod);
+        makeAccessible(writeMethod);
         // 父类字段先被访问到时不覆盖，与 doWithFields 的自上而下顺序无关
         target.putIfAbsent(field.getName(), new ExcelFieldMeta(
                 field.getName(),
@@ -225,8 +271,8 @@ public final class ExcelRowAccessor<T> {
                 property == null ? Integer.MAX_VALUE : property.order(),
                 declaration,
                 field.getType(),
-                descriptor.getReadMethod(),
-                descriptor.getWriteMethod()));
+                readMethod,
+                writeMethod));
     }
 
     private static void makeAccessible(Method method) {
@@ -238,7 +284,7 @@ public final class ExcelRowAccessor<T> {
     private static boolean isCandidate(Field field) {
         return !field.isSynthetic()
                 && !Modifier.isStatic(field.getModifiers())
-                && !Modifier.isFinal(field.getModifiers())
+                && (!Modifier.isFinal(field.getModifiers()) || field.getDeclaringClass().isRecord())
                 && field.getAnnotation(ExcelIgnore.class) == null;
     }
 
@@ -252,14 +298,17 @@ public final class ExcelRowAccessor<T> {
     }
 
     /**
-     * 无参构造器，没有则返回 {@code null}。
+     * 普通类型的无参构造器或 record 的规范构造器，没有则返回 {@code null}。
      * <p>
-     * 这里不抛异常：只导出的类型（record、只有全参构造器的 VO）用不到构造器，
+     * 这里不抛异常：只导出的类型（只有全参构造器的 VO）用不到构造器，
      * 缺了也该能正常导出；真正需要实例化时才在 {@link #instantiate()} 报错。
      */
     private static <T> Constructor<T> resolveConstructor(Class<T> type) {
         try {
-            Constructor<T> constructor = type.getDeclaredConstructor();
+            final Class<?>[] parameterTypes = type.isRecord()
+                    ? Arrays.stream(type.getRecordComponents()).map(RecordComponent::getType).toArray(Class<?>[]::new)
+                    : new Class<?>[0];
+            final Constructor<T> constructor = type.getDeclaredConstructor(parameterTypes);
             ReflectionUtils.makeAccessible(constructor);
             return constructor;
         } catch (NoSuchMethodException e) {

@@ -4,6 +4,10 @@ import com.github.zeng.alt.excel.dynamic.DynamicCell;
 import com.github.zeng.alt.excel.dynamic.DynamicColumn;
 import com.github.zeng.alt.excel.read.ExcelReadSpec;
 import com.github.zeng.alt.excel.write.ExcelFillSpec;
+import com.github.zeng.alt.excel.write.ExcelErrorWriteSpec;
+import com.github.zeng.alt.excel.read.ExcelErrorReport;
+import com.github.zeng.alt.excel.context.ExcelContextHandler;
+import com.github.zeng.alt.excel.context.ExcelContextTemplate;
 import com.github.zeng.alt.excel.write.ExcelWriteSpec;
 
 import java.util.List;
@@ -80,4 +84,12 @@ public interface ExcelTemplate {
      * @return 填充链
      */
     ExcelFillSpec fill(String templateLocation);
+
+    /** 为一次单工作表读取的错误生成带批注和明细表的工作簿副本。 */
+    ExcelErrorWriteSpec writeErrors(ExcelErrorReport report);
+
+    /** 捕获当前调用的上下文，可用于业务自定义的异步边界。 */
+    default ExcelContextHandler.Snapshot captureContext() {
+        return ExcelContextTemplate.captureDefaults();
+    }
 }

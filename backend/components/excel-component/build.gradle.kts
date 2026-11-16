@@ -39,6 +39,8 @@ dependencies {
     // RxJavaExcelReactiveSupport 需要它，且都在运行期按 classpath 条件装配。
     // 想用 Flowable 形状的导入导出，由使用方自己声明这个依赖。
     compileOnly(rootProject.libs.rxjava3)
+    compileOnly(project(":backend:components:tenant-component:api-tenant-component"))
+    compileOnly("org.springframework.security:spring-security-core")
 
     annotationProcessor(rootProject.libs.spring.boot.configuration.processor)
 
@@ -48,4 +50,6 @@ dependencies {
     testImplementation("io.projectreactor:reactor-test")
     testImplementation(rootProject.libs.spring.boot.starter.validation)
     testImplementation(rootProject.libs.rxjava3)
+    testImplementation(project(":backend:components:security-component:api-security-component"))
+    testImplementation("org.springframework.security:spring-security-core")
 }

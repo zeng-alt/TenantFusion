@@ -1,5 +1,8 @@
 package com.github.zeng.alt.excel.read;
 
+import com.github.zeng.alt.excel.context.ExcelContextHandler;
+import com.github.zeng.alt.excel.context.ExcelContextTemplate;
+
 import com.github.zeng.alt.excel.config.ExcelBindingMode;
 import io.vavr.control.Try;
 
@@ -40,6 +43,11 @@ import java.util.function.Predicate;
  * @version 1.0
  */
 public interface ExcelReadSpec<T> {
+
+    /** 返回创建读取链时捕获的上下文；自定义实现默认在调用时捕获内置上下文。 */
+    default ExcelContextHandler.Snapshot captureContext() {
+        return ExcelContextTemplate.captureDefaults();
+    }
 
     // ==================== 数据源 ====================
 

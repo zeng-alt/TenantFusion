@@ -2,11 +2,16 @@ package com.github.zeng.alt.excel.rx;
 
 import com.github.zeng.alt.excel.exception.ExcelReadException;
 import com.github.zeng.alt.excel.read.ExcelReadSpec;
+import com.github.zeng.alt.excel.context.ExcelContextHandler;
+import com.github.zeng.alt.excel.context.ExcelContextTemplate;
 import com.github.zeng.alt.excel.support.ExcelDemandHelper;
 import com.github.zeng.alt.excel.write.ExcelWriteSpec;
 import io.reactivex.rxjava3.core.BackpressureStrategy;
 import io.reactivex.rxjava3.core.Flowable;
 import io.reactivex.rxjava3.core.FlowableEmitter;
+import io.reactivex.rxjava3.core.FlowableSubscriber;
+import org.reactivestreams.Subscriber;
+import org.reactivestreams.Subscription;
 import io.reactivex.rxjava3.disposables.Disposable;
 import io.reactivex.rxjava3.schedulers.Schedulers;
 import io.vavr.control.Try;
@@ -44,15 +49,15 @@ public final class RxExcel {
      * <p>
      * SAX 回调在 IO 线程等待下游需求，最多持有一条尚未请求的行；取消会唤醒等待。
      * <p>
-     * 注意 ThreadLocal 上下文（{@code SecurityContext}、租户上下文）不会跨调度器
-     * 传递，需要的值请在订阅前取出。
+     * 在 IO 线程恢复读取链创建时的上下文，解析结束后还原原状态。
+     * 业务自行增加 observeOn 时，在其后通过 withContext 恢复消费者所需上下文。
      *
      * @param spec 已配置好数据源的读取链，只能订阅一次（输入流读完即废）
      * @param <T>  行类型
      * @return 行流
      */
     public static <T> Flowable<T> stream(ExcelReadSpec<T> spec) {
-        return stream(() -> spec);
+        return stream(() -> spec, spec.captureContext());
     }
 
     /**
@@ -63,10 +68,19 @@ public final class RxExcel {
      * @return 行流
      */
     public static <T> Flowable<T> stream(Supplier<ExcelReadSpec<T>> specFactory) {
+        return stream(specFactory, ExcelContextTemplate.captureDefaults());
+    }
+
+    /** 使用显式快照，支持 Spring 贡献者或业务自行保存的任务上下文。 */
+    public static <T> Flowable<T> stream(
+            Supplier<ExcelReadSpec<T>> specFactory,
+            ExcelContextHandler.Snapshot snapshot
+    ) {
         return Flowable.defer(() -> {
             final ExcelDemandHelper demand = new ExcelDemandHelper();
-            return Flowable.<T>create(emitter -> specFactory.get()
-                            .consumeWhile(row -> {
+            return Flowable.<T>create(emitter -> {
+                try (ExcelContextHandler.Scope scope = snapshot.restore()) {
+                    specFactory.get().consumeWhile(row -> {
                                 if (!demand.awaitDemand() || emitter.isCancelled()) {
                                     return false;
                                 }
@@ -74,7 +88,9 @@ public final class RxExcel {
                                 return !emitter.isCancelled();
                             })
                             .onFailure(cause -> failQuietly(emitter, cause))
-                            .onSuccess(count -> completeQuietly(emitter)), BackpressureStrategy.MISSING)
+                            .onSuccess(count -> completeQuietly(emitter));
+                }
+            }, BackpressureStrategy.MISSING)
                     .doOnRequest(demand::request)
                     .doOnCancel(demand::cancel)
                     // 请求必须直接唤醒解析线程，不能排在正在等待需求的同一 worker 后面。
@@ -102,6 +118,43 @@ public final class RxExcel {
             return spec.write(iterator);
         } finally {
             ((Disposable) iterator).dispose();
+        }
+    }
+
+    /** 在业务新增的 observeOn 之后恢复下游回调上下文，不修改全局调度器。 */
+    public static <T> Flowable<T> withContext(Flowable<T> rows, ExcelContextHandler.Snapshot snapshot) {
+        return rows.lift(subscriber -> new ContextSubscriber<>(subscriber, snapshot));
+    }
+
+    /**
+     * 信号作用域适配器。
+     *
+     * @author zeng-alt
+     * @since 0.0.1-SNAPSHOT
+     */
+    private record ContextSubscriber<T>(
+            Subscriber<? super T> subscriber,
+            ExcelContextHandler.Snapshot snapshot
+    ) implements FlowableSubscriber<T> {
+
+        @Override
+        public void onSubscribe(Subscription subscription) {
+            snapshot.decorate(() -> subscriber.onSubscribe(subscription)).run();
+        }
+
+        @Override
+        public void onNext(T row) {
+            snapshot.decorate(() -> subscriber.onNext(row)).run();
+        }
+
+        @Override
+        public void onError(Throwable failure) {
+            snapshot.decorate(() -> subscriber.onError(failure)).run();
+        }
+
+        @Override
+        public void onComplete() {
+            snapshot.decorate(subscriber::onComplete).run();
         }
     }
 

@@ -1,6 +1,12 @@
 package com.github.zeng.alt.excel.config;
 
 import com.github.zeng.alt.excel.ExcelTemplate;
+import com.github.zeng.alt.excel.context.ExcelContextHandler;
+import com.github.zeng.alt.excel.context.ExcelContextTemplate;
+import com.github.zeng.alt.excel.context.LocaleExcelContextHandler;
+import com.github.zeng.alt.excel.context.SecurityExcelContextHandler;
+import com.github.zeng.alt.excel.context.TenantExcelContextHandler;
+import com.github.zeng.alt.excel.write.ExcelErrorWriteCustomizer;
 import com.github.zeng.alt.excel.fesod.ExcelReadCustomizer;
 import com.github.zeng.alt.excel.fesod.ExcelWriteCustomizer;
 import com.github.zeng.alt.excel.fesod.FesodExcelContext;
@@ -61,8 +67,31 @@ public class ExcelAutoConfiguration {
 
     @Bean
     @ConditionalOnMissingBean(ExcelTemplate.class)
-    public ExcelTemplate excelTemplate(FesodExcelContext context) {
-        return new FesodExcelTemplate(context);
+    public ExcelTemplate excelTemplate(
+            FesodExcelContext context,
+            ExcelContextTemplate contexts,
+            ObjectProvider<ExcelErrorWriteCustomizer> errorCustomizers
+    ) {
+        return new FesodExcelTemplate(
+                context,
+                contexts::capture,
+                spec -> errorCustomizers.orderedStream().forEach(customizer -> customizer.customize(spec))
+        );
+    }
+
+    @Bean
+    @ConditionalOnMissingBean
+    public ExcelContextTemplate excelContextTemplate(
+            ObjectProvider<ExcelContextHandler> handlers,
+            ExcelProperties properties
+    ) {
+        return new ExcelContextTemplate(handlers, properties);
+    }
+
+    @Bean
+    @ConditionalOnMissingBean
+    public LocaleExcelContextHandler localeExcelContextHandler() {
+        return new LocaleExcelContextHandler();
     }
 
     @Bean
@@ -90,6 +119,40 @@ public class ExcelAutoConfiguration {
         @ConditionalOnMissingBean
         ExcelRowValidator excelRowValidator(Validator validator) {
             return new ExcelRowValidator(validator);
+        }
+    }
+
+    /**
+     * 租户 API 存在时才装配，非租户应用不增加运行时依赖。
+     *
+     * @author zeng-alt
+     * @since 0.0.1-SNAPSHOT
+     */
+    @Configuration(proxyBeanMethods = false)
+    @ConditionalOnClass(name = "com.github.zeng.alt.tenant.api.TenantContextHolder")
+    static class ExcelTenantContextConfiguration {
+
+        @Bean
+        @ConditionalOnMissingBean
+        TenantExcelContextHandler tenantExcelContextHandler() {
+            return new TenantExcelContextHandler();
+        }
+    }
+
+    /**
+     * Spring Security 存在时传播已有认证。
+     *
+     * @author zeng-alt
+     * @since 0.0.1-SNAPSHOT
+     */
+    @Configuration(proxyBeanMethods = false)
+    @ConditionalOnClass(name = "org.springframework.security.core.context.SecurityContextHolder")
+    static class ExcelSecurityContextConfiguration {
+
+        @Bean
+        @ConditionalOnMissingBean
+        SecurityExcelContextHandler securityExcelContextHandler() {
+            return new SecurityExcelContextHandler();
         }
     }
 }
