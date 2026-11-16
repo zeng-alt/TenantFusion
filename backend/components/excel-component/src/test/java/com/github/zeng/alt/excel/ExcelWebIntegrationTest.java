@@ -111,7 +111,7 @@ class ExcelWebIntegrationTest {
         // 前端画界面要用的三块：按行分组、按约束码计数、可直接显示的一句话
         assertThat(report.rows()).isNotEmpty();
         assertThat(report.codes()).containsKey("NotBlank");
-        assertThat(report.headline()).contains("users.xlsx").contains("未导入任何数据");
+        assertThat(report.headline()).contains("users.xlsx").contains("文件校验未通过");
     }
 
     @Test
@@ -219,7 +219,7 @@ class ExcelWebIntegrationTest {
         }
 
         @PostMapping("/excel/import-stream")
-        String importStream(@ExcelImport(value = "file", validate = false) Flowable<UserRow> rows) {
+        String importStream(@ExcelImport(value = "file", validate = 0) Flowable<UserRow> rows) {
             assertThat(rows.toList().blockingGet()).hasSize(2);
             return "ok";
         }

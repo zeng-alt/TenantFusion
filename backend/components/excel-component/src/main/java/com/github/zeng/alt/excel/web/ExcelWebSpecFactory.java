@@ -9,6 +9,7 @@ import com.github.zeng.alt.excel.dynamic.DynamicColumn;
 import com.github.zeng.alt.excel.read.ExcelReadSpec;
 import com.github.zeng.alt.excel.support.ExcelMessageHelper;
 import com.github.zeng.alt.excel.write.ExcelWriteSpec;
+import io.vavr.control.Option;
 import lombok.RequiredArgsConstructor;
 import org.springframework.util.StringUtils;
 
@@ -46,13 +47,20 @@ public class ExcelWebSpecFactory {
      */
     @SuppressWarnings("unchecked")
     public ExcelReadSpec<?> readSpec(Class<?> rowType, ExcelImport annotation) {
-        ExcelReadSpec<?> spec = annotation.dynamic()
+        final ExcelReadSpec<?> spec = annotation.dynamic()
                 ? excelTemplate.readDynamic((Class<DynamicColumn<DynamicCell>>) rowType)
                 : excelTemplate.read(rowType);
-        spec.validate(annotation.validate())
-                .validationGroups(annotation.validationGroups())
-                .onError(annotation.onError())
-                .i18nHead(annotation.i18nHead());
+        if (annotation.onError().length > 1) {
+            throw new IllegalArgumentException("@ExcelImport.onError 只能指定一种策略");
+        }
+        if (annotation.validate() >= 0) {
+            spec.validate(annotation.validate() == 1);
+        }
+        spec.validationGroups(annotation.validationGroups());
+        if (annotation.onError().length == 1) {
+            spec.onError(annotation.onError()[0]);
+        }
+        resolveI18nHead(annotation.i18nHead()).peek(spec::i18nHead);
         if (annotation.headRowNumber() >= 0) {
             spec.headRowNumber(annotation.headRowNumber());
         }
@@ -76,10 +84,15 @@ public class ExcelWebSpecFactory {
         if (annotation.autoWidth() >= 0) {
             spec.autoWidth(annotation.autoWidth() == 1);
         }
-        if (annotation.i18nHead() >= 0) {
-            spec.i18nHead(annotation.i18nHead() == 1);
-        }
+        resolveI18nHead(annotation.i18nHead()).peek(spec::i18nHead);
         return spec;
+    }
+
+    private static Option<Boolean> resolveI18nHead(boolean[] values) {
+        if (values.length > 1) {
+            throw new IllegalArgumentException("i18nHead 只能指定一个布尔值");
+        }
+        return values.length == 0 ? Option.none() : Option.some(values[0]);
     }
 
     /**

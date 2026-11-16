@@ -67,11 +67,11 @@ public record ExcelErrorReport(
     /**
      * 一句话摘要，适合直接放在提示条上。
      *
-     * @return 形如 {@code users.xlsx: 共 120 行，8 行有问题（已中断，未导入任何数据）}
+     * @return 解析与校验摘要，不代表业务持久化结果
      */
     public String headline() {
-        String scope = summary.aborted() ? "，已中断，未导入任何数据" : "，其余行已导入";
-        String truncated = summary.truncated() ? "，错误过多已截断" : "";
+        String scope = summary.aborted() ? "，文件校验未通过" : "，其余行解析成功";
+        String truncated = summary.truncated() ? "，达到读取上限已截断" : "";
         String prefix = fileName.isEmpty() ? "" : fileName + ": ";
         return "%s共 %d 行，%d 行有问题%s%s"
                 .formatted(prefix, summary.totalRows(), summary.errorRows(), truncated, scope);

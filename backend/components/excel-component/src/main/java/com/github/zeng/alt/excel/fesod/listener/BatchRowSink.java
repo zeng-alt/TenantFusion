@@ -31,7 +31,6 @@ public class BatchRowSink<T> implements ExcelRowSink<T> {
     @Override
     public void accept(T row) {
         buffer.add(row);
-        count++;
         if (buffer.size() >= batchSize) {
             flush();
         }
@@ -60,5 +59,6 @@ public class BatchRowSink<T> implements ExcelRowSink<T> {
         List<T> batch = buffer;
         buffer = new ArrayList<>(batchSize);
         consumer.accept(List.copyOf(batch));
+        count += batch.size();
     }
 }

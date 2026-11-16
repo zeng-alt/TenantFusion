@@ -20,6 +20,7 @@ import com.github.zeng.alt.excel.read.ExcelReadResult;
 import com.github.zeng.alt.excel.read.ExcelReadSummary;
 import com.github.zeng.alt.excel.read.ExcelReadSpec;
 import com.github.zeng.alt.excel.support.ExcelRowBinder;
+import com.github.zeng.alt.excel.support.ExcelReplayHelper;
 import io.vavr.control.Try;
 import org.apache.fesod.sheet.FesodSheet;
 import org.apache.fesod.sheet.enums.ReadDefaultReturnEnum;
@@ -187,21 +188,36 @@ public class FesodExcelReadSpec<T> implements ExcelReadSpec<T> {
     public Try<Long> consume(Consumer<T> consumer) {
         requireSource();
         ConsumerRowSink<T> sink = new ConsumerRowSink<>(consumer);
-        return runAndCount(createListener(sink));
+        return runConsumer(sink);
     }
 
     @Override
     public Try<Long> consumeWhile(Predicate<T> consumer) {
         requireSource();
         PredicateRowSink<T> sink = new PredicateRowSink<>(consumer);
-        return runAndCount(createListener(sink));
+        return runConsumer(sink);
     }
 
     @Override
     public Try<Long> consumeBatch(Consumer<List<T>> consumer) {
         requireSource();
         BatchRowSink<T> sink = new BatchRowSink<>(consumer, options.batchSize());
-        return runAndCount(createListener(sink));
+        return runConsumer(sink);
+    }
+
+    private Try<Long> runConsumer(ExcelRowSink<T> sink) {
+        if (options.policy() != ExcelErrorPolicy.COLLECT_ALL) {
+            return runAndCount(createListener(sink));
+        }
+        // 只暂存原始输入，不缓存解析后的行；业务回调仅在预检全部通过后执行。
+        return Try.withResources(() -> ExcelReplayHelper.open(source))
+                .of(replay -> {
+                    source = replay.getFile();
+                    final ConsumerRowSink<T> validation = new ConsumerRowSink<>(row -> { });
+                    return runAndCount(createListener(validation))
+                            .flatMap(count -> runAndCount(createListener(sink)));
+                })
+                .flatMap(outcome -> outcome);
     }
 
     /**

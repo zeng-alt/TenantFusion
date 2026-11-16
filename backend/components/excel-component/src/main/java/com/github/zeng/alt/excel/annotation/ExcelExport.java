@@ -80,9 +80,9 @@ public @interface ExcelExport {
     int autoWidth() default -1;
 
     /**
-     * 表头国际化，{@code -1} 表示取配置项 {@code alt.excel.write.i18n-head}。
+     * 表头国际化，不指定时取配置项 {@code alt.excel.write.i18n-head}。
      *
-     * @return 0 关闭、1 开启、-1 用默认
+     * @return 空数组沿用全局配置；显式指定 true 开启、false 关闭，只接受一个值
      */
-    int i18nHead() default -1;
+    boolean[] i18nHead() default {};
 }

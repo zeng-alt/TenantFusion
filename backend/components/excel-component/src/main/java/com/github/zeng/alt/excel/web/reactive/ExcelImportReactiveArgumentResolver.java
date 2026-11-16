@@ -6,6 +6,7 @@ import com.github.zeng.alt.excel.exception.ExcelReadException;
 import com.github.zeng.alt.excel.exception.ExcelValidationException;
 import com.github.zeng.alt.excel.read.ExcelReadResult;
 import com.github.zeng.alt.excel.read.ExcelReadResults;
+import com.github.zeng.alt.excel.support.ExcelDemandHelper;
 import com.github.zeng.alt.excel.web.ExcelReactiveSupport;
 import com.github.zeng.alt.excel.web.ExcelRowTypeResolver;
 import com.github.zeng.alt.excel.web.ExcelStreamSource;
@@ -21,6 +22,7 @@ import org.springframework.web.reactive.BindingContext;
 import org.springframework.web.reactive.result.method.HandlerMethodArgumentResolver;
 import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.FluxSink;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 
@@ -173,36 +175,42 @@ public class ExcelImportReactiveArgumentResolver implements HandlerMethodArgumen
     @SuppressWarnings("unchecked")
     private Mono<ExcelReadResult<Object>> readAll(List<FilePart> parts, Class<?> rowType, ExcelImport annotation) {
         return Flux.fromIterable(parts)
-                .concatMap(part -> spill(part).flatMap(temp -> Mono
-                        .fromCallable(() -> (ExcelReadResult<Object>) specFactory.readSpec(rowType, annotation)
-                                .from(temp.toFile())
-                                .execute())
-                        .subscribeOn(Schedulers.boundedElastic())
-                        .doFinally(signal -> ExcelUploadHelper.deleteQuietly(temp))))
+                .concatMap(part -> Mono.using(
+                        () -> ExcelUploadHelper.createTempFile(properties.getWeb().getTempDir()),
+                        temp -> part.transferTo(temp).then(Mono.fromCallable(() ->
+                                (ExcelReadResult<Object>) specFactory.readSpec(rowType, annotation)
+                                        .from(temp).execute()).subscribeOn(Schedulers.boundedElastic())),
+                        ExcelUploadHelper::deleteQuietly
+                ).subscribeOn(Schedulers.boundedElastic()))
                 .reduce(ExcelReadResult.empty(), ExcelReadResults::merge);
     }
 
-    /** 流式读：每个文件一段懒执行的 Flux，订阅时落盘、终结时删文件 */
+    /** 流式读：落盘、解析与取消共用同一临时文件生命周期。 */
     private Flux<Object> fluxOf(List<FilePart> parts, Class<?> rowType, ExcelImport annotation) {
-        return Flux.fromIterable(parts).concatMap(part -> Flux.usingWhen(
-                spill(part),
-                temp -> Flux.<Object>create(sink -> specFactory.readSpec(rowType, annotation)
-                                .from(temp.toFile())
-                                .consumeWhile(row -> {
-                                    sink.next(row);
-                                    return !sink.isCancelled();
-                                })
-                                .onFailure(sink::error)
-                                .onSuccess(count -> sink.complete()))
-                        .subscribeOn(Schedulers.boundedElastic()),
-                temp -> Mono.fromRunnable(() -> ExcelUploadHelper.deleteQuietly(temp))));
+        return Flux.fromIterable(parts).concatMap(part -> Flux.using(
+                () -> ExcelUploadHelper.createTempFile(properties.getWeb().getTempDir()),
+                temp -> part.transferTo(temp).thenMany(readFlux(temp, rowType, annotation)),
+                ExcelUploadHelper::deleteQuietly
+        ).subscribeOn(Schedulers.boundedElastic()));
     }
 
-    private Mono<Path> spill(FilePart part) {
-        String tempDir = properties.getWeb().getTempDir();
-        return Mono.fromCallable(() -> ExcelUploadHelper.createTempFile(tempDir))
-                .subscribeOn(Schedulers.boundedElastic())
-                .flatMap(temp -> part.transferTo(temp).thenReturn(temp));
+    private Flux<Object> readFlux(Path temp, Class<?> rowType, ExcelImport annotation) {
+        return Flux.<Object>create(sink -> {
+            final ExcelDemandHelper demand = new ExcelDemandHelper();
+            sink.onRequest(demand::request);
+            sink.onCancel(demand::cancel);
+            specFactory.readSpec(rowType, annotation).from(temp).consumeWhile(row -> {
+                if (!demand.awaitDemand() || sink.isCancelled()) {
+                    return false;
+                }
+                sink.next(row);
+                return !sink.isCancelled();
+            }).onFailure(cause -> {
+                if (!sink.isCancelled()) {
+                    sink.error(cause);
+                }
+            }).onSuccess(count -> sink.complete());
+        }, FluxSink.OverflowStrategy.ERROR).subscribeOn(Schedulers.boundedElastic(), false);
     }
 
     private List<ExcelStreamSource> streamSources(List<FilePart> parts, Class<?> rowType, ExcelImport annotation) {

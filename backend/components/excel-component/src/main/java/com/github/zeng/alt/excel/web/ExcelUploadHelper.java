@@ -1,8 +1,7 @@
 package com.github.zeng.alt.excel.web;
 
-import jakarta.validation.constraints.NotNull;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
+import io.vavr.control.Try;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.util.StringUtils;
 
 import java.io.IOException;
@@ -23,9 +22,8 @@ import java.nio.file.StandardCopyOption;
  * @since 2026年09月04日
  * @version 1.0
  */
+@Slf4j
 public final class ExcelUploadHelper {
-    @NotNull
-    private static final Log LOG = LogFactory.getLog(ExcelUploadHelper.class);
     private static final String TEMP_PREFIX = "excel-upload-";
     private static final String TEMP_SUFFIX = ".xlsx";
 
@@ -62,9 +60,13 @@ public final class ExcelUploadHelper {
      * @throws IOException 落盘失败
      */
     public static Path spill(InputStream content, String tempDir) throws IOException {
-        Path temp = createTempFile(tempDir);
+        final Path temp = Try.of(() -> createTempFile(tempDir))
+                .onFailure(cause -> Try.run(content::close)).get();
         try (InputStream source = content) {
             Files.copy(source, temp, StandardCopyOption.REPLACE_EXISTING);
+        } catch (IOException | RuntimeException | Error failure) {
+            deleteQuietly(temp);
+            throw failure;
         }
         return temp;
     }
@@ -80,7 +82,7 @@ public final class ExcelUploadHelper {
         try {
             Files.deleteIfExists(path);
         } catch (IOException e) {
-            LOG.warn("临时文件删除失败: " + path, e);
+            log.warn("临时文件删除失败: {}", path, e);
         }
     }
 

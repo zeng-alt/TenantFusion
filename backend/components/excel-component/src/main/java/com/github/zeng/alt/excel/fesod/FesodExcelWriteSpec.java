@@ -134,7 +134,7 @@ public class FesodExcelWriteSpec<T> implements ExcelWriteSpec<T> {
 
     @Override
     public Try<Long> write(Collection<T> rows) {
-        return Try.of(() -> doWrite(rows == null ? List.of() : rows));
+        return write((rows == null ? List.<T>of() : rows).iterator());
     }
 
     @Override
@@ -144,13 +144,6 @@ public class FesodExcelWriteSpec<T> implements ExcelWriteSpec<T> {
 
     // ==================== 内部 ====================
 
-    private long doWrite(Collection<T> rows) {
-        try (ExcelWriter writer = createBuilder().build()) {
-            writer.write(toWriterRows(rows), createSheet());
-            return rows.size();
-        }
-    }
-
     /**
      * 分批从游标拉数据写出，内存占用与总行数无关。
      *
@@ -158,33 +151,28 @@ public class FesodExcelWriteSpec<T> implements ExcelWriteSpec<T> {
      * @return 写出的行数
      */
     private long doWriteBatched(Iterator<T> rows) {
-        ExcelProperties.Write writeProperties = context.properties().getWrite();
-        int batchSize = Math.max(1, writeProperties.getBatchSize());
-        int perSheet = writeProperties.getMaxRowsPerSheet();
+        final ExcelProperties.Write writeProperties = context.properties().getWrite();
+        final int batchSize = Math.max(1, writeProperties.getBatchSize());
+        final int perSheet = writeProperties.getMaxRowsPerSheet();
         long count = 0L;
         try (ExcelWriter writer = createBuilder().build()) {
             int sheetNo = 0;
             WriteSheet sheet = createSheet(sheetNo);
-            long inSheet = 0L;
-            List<T> batch = new ArrayList<>(batchSize);
+            int inSheet = 0;
+            writer.write(List.of(), sheet);
             while (rows.hasNext()) {
-                batch.add(rows.next());
-                if (batch.size() < batchSize) {
-                    continue;
+                if (perSheet > 0 && inSheet == perSheet) {
+                    sheet = createSheet(++sheetNo);
+                    inSheet = 0;
+                }
+                final int capacity = perSheet > 0 ? Math.min(batchSize, perSheet - inSheet) : batchSize;
+                final List<T> batch = new ArrayList<>(capacity);
+                while (batch.size() < capacity && rows.hasNext()) {
+                    batch.add(rows.next());
                 }
                 writer.write(toWriterRows(batch), sheet);
                 count += batch.size();
                 inSheet += batch.size();
-                batch.clear();
-                if (perSheet > 0 && inSheet >= perSheet) {
-                    // 撞到单 sheet 上限就开新 sheet，否则超过 xlsx 的 1048576 行会直接抛异常
-                    sheet = createSheet(++sheetNo);
-                    inSheet = 0L;
-                }
-            }
-            if (!batch.isEmpty()) {
-                writer.write(toWriterRows(batch), sheet);
-                count += batch.size();
             }
         }
         return count;
@@ -213,10 +201,6 @@ public class FesodExcelWriteSpec<T> implements ExcelWriteSpec<T> {
     /** 是否由本组件自己做实体绑定：有实体类型、无运行期表头、绑定方式落到 reflective */
     private boolean usesReflectiveBinding() {
         return type != null && head == null && binding.isReflective();
-    }
-
-    private WriteSheet createSheet() {
-        return createSheet(0);
     }
 
     /**

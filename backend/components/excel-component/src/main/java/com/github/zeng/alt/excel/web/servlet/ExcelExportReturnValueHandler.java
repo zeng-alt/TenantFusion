@@ -75,7 +75,7 @@ public class ExcelExportReturnValueHandler implements HandlerMethodReturnValueHa
             return spec.write(List.of());
         }
         if (reactiveSupport.supports(returnValue.getClass())) {
-            return reactiveSupport.iterator(returnValue).flatMap(spec::write);
+            return reactiveSupport.write(spec, returnValue);
         }
         if (returnValue instanceof Collection<?> collection) {
             return spec.write(unchecked(collection));

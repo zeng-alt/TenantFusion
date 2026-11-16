@@ -205,7 +205,7 @@ class ExcelWebFluxIntegrationTest {
         }
 
         @PostMapping("/excel/import-flux")
-        Mono<String> importFlux(@ExcelImport(value = "file", validate = false) Flux<UserRow> rows) {
+        Mono<String> importFlux(@ExcelImport(value = "file", validate = 0) Flux<UserRow> rows) {
             return rows.collectList().map(list -> {
                 assertThat(list).hasSize(2);
                 return "ok";
@@ -213,7 +213,7 @@ class ExcelWebFluxIntegrationTest {
         }
 
         @PostMapping("/excel/import-flowable")
-        String importFlowable(@ExcelImport(value = "file", validate = false) Flowable<UserRow> rows) {
+        String importFlowable(@ExcelImport(value = "file", validate = 0) Flowable<UserRow> rows) {
             assertThat(rows.toList().blockingGet()).hasSize(2);
             return "ok";
         }

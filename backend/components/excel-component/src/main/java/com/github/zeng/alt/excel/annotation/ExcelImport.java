@@ -86,9 +86,9 @@ public @interface ExcelImport {
     /**
      * 是否对每行执行 Bean Validation。
      *
-     * @return true 表示校验
+     * @return -1 沿用全局配置，0 关闭，1 开启
      */
-    boolean validate() default true;
+    int validate() default -1;
 
     /**
      * Bean Validation 的校验分组。
@@ -108,15 +108,15 @@ public @interface ExcelImport {
      * {@code Flux<T>} / {@code Flowable<T>} 时，整单驳回只能靠抛
      * {@code ExcelValidationException} 表达。
      *
-     * @return 坏行策略
+     * @return 空数组沿用全局配置；覆盖时只能指定一种策略
      */
-    ExcelErrorPolicy onError() default ExcelErrorPolicy.SKIP_ROW;
+    ExcelErrorPolicy[] onError() default {};
 
     /**
      * 是否按国际化文本匹配表头，见
      * {@link com.github.zeng.alt.excel.read.ExcelReadSpec#i18nHead(boolean)}。
      *
-     * @return true 表示开启
+     * @return 空数组沿用全局配置；显式指定 true 开启、false 关闭，只接受一个值
      */
-    boolean i18nHead() default false;
+    boolean[] i18nHead() default {};
 }

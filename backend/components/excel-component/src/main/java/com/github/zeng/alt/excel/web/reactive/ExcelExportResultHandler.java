@@ -1,6 +1,7 @@
 package com.github.zeng.alt.excel.web.reactive;
 
 import com.github.zeng.alt.excel.annotation.ExcelExport;
+import com.github.zeng.alt.excel.config.ExcelProperties;
 import com.github.zeng.alt.excel.exception.ExcelWriteException;
 import com.github.zeng.alt.excel.web.ExcelDownloadHeaders;
 import com.github.zeng.alt.excel.web.ExcelReactiveSupport;
@@ -9,6 +10,7 @@ import com.github.zeng.alt.excel.web.ExcelUploadHelper;
 import com.github.zeng.alt.excel.web.ExcelWebSpecFactory;
 import com.github.zeng.alt.excel.write.ExcelWriteSpec;
 import lombok.RequiredArgsConstructor;
+import org.reactivestreams.Publisher;
 import org.springframework.core.MethodParameter;
 import org.springframework.core.Ordered;
 import org.springframework.core.io.buffer.DataBufferUtils;
@@ -23,10 +25,10 @@ import reactor.core.scheduler.Schedulers;
 import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
+import java.util.stream.Stream;
 
 /**
  * WebFlux 栈：把 {@link ExcelExport} 标注的方法返回值写成 Excel 附件下发。
@@ -58,6 +60,7 @@ public class ExcelExportResultHandler implements HandlerResultHandler, Ordered {
 
     private final ExcelWebSpecFactory specFactory;
     private final ExcelReactiveSupport reactiveSupport;
+    private final ExcelProperties properties;
     private final ExcelRowTypeResolver rowTypeResolver = new ExcelRowTypeResolver();
 
     @Override
@@ -81,77 +84,62 @@ public class ExcelExportResultHandler implements HandlerResultHandler, Ordered {
         Class<?> rowType = resolveRowType(annotation, returnType);
         applyHeaders(exchange, ExcelDownloadHeaders.of(annotation, returnType, specFactory.fileNameTimestampPattern()));
 
-        return toRows(result.getReturnValue())
-                .flatMap(rows -> writeTempFile(rows, rowType, annotation))
-                .flatMap(temp -> sendAndDelete(exchange, temp));
+        return Mono.using(
+                () -> ExcelUploadHelper.createTempFile(properties.getWeb().getTempDir()),
+                temp -> writeTempFile(temp, result.getReturnValue(), rowType, annotation)
+                        .then(Mono.defer(() -> send(exchange, temp))),
+                ExcelUploadHelper::deleteQuietly
+        ).subscribeOn(Schedulers.boundedElastic());
     }
 
-    // ==================== 返回值 → 行集合 ====================
-
-    /**
-     * 把各种返回值形状归一成一个行集合。
-     * <p>
-     * {@code Flux}/{@code Mono} 用 {@code collectList} 而不是阻塞拉取——在响应式栈里
-     * 数据源本身就是非阻塞的，没有理由把它变成阻塞游标。{@code Flowable} 形状
-     * 交给 {@link ExcelReactiveSupport} 转游标，那是可选依赖的边界。
-     */
-    private Mono<Collection<Object>> toRows(Object returnValue) {
-        if (returnValue == null) {
-            return Mono.just(List.of());
+    private Mono<Void> writeTempFile(Path temp, Object rows, Class<?> rowType, ExcelExport annotation) {
+        if (rows instanceof Mono<?> mono) {
+            return mono.cast(Object.class).defaultIfEmpty(List.of())
+                    .flatMap(value -> writeTempFile(temp, value, rowType, annotation));
         }
-        if (returnValue instanceof Flux<?> flux) {
-            return flux.collectList().map(ExcelExportResultHandler::unchecked);
-        }
-        if (returnValue instanceof Mono<?> mono) {
-            return mono.flatMap(value -> toRows(value)).defaultIfEmpty(List.of());
-        }
-        if (returnValue instanceof Collection<?> collection) {
-            return Mono.just(unchecked(collection));
-        }
-        if (returnValue instanceof Iterator<?> iterator) {
-            return Mono.just(drain(iterator));
-        }
-        if (reactiveSupport.supports(returnValue.getClass())) {
-            return Mono.fromCallable(() -> drain(reactiveSupport.iterator(returnValue)
-                            .getOrElseThrow(cause -> new ExcelWriteException("响应式返回值无法转成游标", cause))))
-                    .subscribeOn(Schedulers.boundedElastic());
-        }
-        return Mono.error(new ExcelWriteException(
-                "@ExcelExport 只支持 Collection<T> / Iterator<T> / Mono<Collection<T>> / Flux<T> / Flowable<T> 返回值，实际是 "
-                        + returnValue.getClass().getName()));
+        return writeRows(temp, rows, rowType, annotation);
     }
 
-    // ==================== 写出与下发 ====================
-
-    private Mono<Path> writeTempFile(Collection<Object> rows, Class<?> rowType, ExcelExport annotation) {
-        return Mono.fromCallable(() -> {
-                    Path temp = ExcelUploadHelper.createTempFile(null);
-                    try (OutputStream output = Files.newOutputStream(temp)) {
-                        ExcelWriteSpec<Object> spec = specFactory.writeSpec(rowType, annotation);
-                        spec.to(output)
-                                .autoCloseStream(false)
-                                .write(rows)
-                                .getOrElseThrow(cause -> new ExcelWriteException("Excel 导出失败", cause));
-                    }
-                    return temp;
-                })
-                .subscribeOn(Schedulers.boundedElastic());
+    private Mono<Void> writeRows(Path temp, Object rows, Class<?> rowType, ExcelExport annotation) {
+        return Mono.<Void>fromCallable(() -> {
+            try (OutputStream output = Files.newOutputStream(temp)) {
+                final ExcelWriteSpec<Object> spec = specFactory.writeSpec(rowType, annotation)
+                        .to(output).autoCloseStream(false);
+                write(spec, rows);
+            }
+            return null;
+        }).subscribeOn(Schedulers.boundedElastic());
     }
 
-    private Mono<Void> sendAndDelete(ServerWebExchange exchange, Path temp) {
-        exchange.getResponse().getHeaders().setContentLength(sizeOf(temp));
-        return exchange.getResponse()
-                .writeWith(DataBufferUtils.read(temp, exchange.getResponse().bufferFactory(), BUFFER_SIZE))
-                .doFinally(signal -> ExcelUploadHelper.deleteQuietly(temp));
-    }
-
-    private static long sizeOf(Path temp) {
-        try {
-            return Files.size(temp);
-        } catch (Exception e) {
-            // 取不到就不设 Content-Length，交给分块传输
-            return -1L;
+    @SuppressWarnings("unchecked")
+    private void write(ExcelWriteSpec<Object> spec, Object rows) {
+        if (rows instanceof Publisher<?> publisher
+                && (rows instanceof Flux<?> || reactiveSupport.supports(rows.getClass()))) {
+            // toStream 的预取固定为 64；关闭游标会取消上游，包括写出失败和请求取消。
+            try (Stream<?> stream = Flux.from(publisher).toStream(64)) {
+                spec.write((Iterator<Object>) stream.iterator())
+                        .getOrElseThrow(cause -> new ExcelWriteException("Excel 导出失败", cause));
+            }
+            return;
         }
+        final Iterator<?> iterator = switch (rows) {
+            case null -> List.of().iterator();
+            case Collection<?> collection -> collection.iterator();
+            case Iterator<?> cursor -> cursor;
+            default -> throw new ExcelWriteException("@ExcelExport 不支持返回类型: " + rows.getClass().getName());
+        };
+        spec.write((Iterator<Object>) iterator)
+                .getOrElseThrow(cause -> new ExcelWriteException("Excel 导出失败", cause));
+    }
+
+    private Mono<Void> send(ServerWebExchange exchange, Path temp) {
+        return Mono.fromCallable(() -> Files.size(temp))
+                .flatMap(size -> {
+                    exchange.getResponse().getHeaders().setContentLength(size);
+                    return exchange.getResponse().writeWith(
+                            DataBufferUtils.read(temp, exchange.getResponse().bufferFactory(), BUFFER_SIZE)
+                    );
+                });
     }
 
     // ==================== 杂项 ====================
@@ -177,14 +165,4 @@ public class ExcelExportResultHandler implements HandlerResultHandler, Ordered {
         return rowType;
     }
 
-    private static Collection<Object> drain(Iterator<?> iterator) {
-        List<Object> rows = new ArrayList<>();
-        iterator.forEachRemaining(rows::add);
-        return rows;
-    }
-
-    @SuppressWarnings("unchecked")
-    private static Collection<Object> unchecked(Collection<?> collection) {
-        return (Collection<Object>) collection;
-    }
 }

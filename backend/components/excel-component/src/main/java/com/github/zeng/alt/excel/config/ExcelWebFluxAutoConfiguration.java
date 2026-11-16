@@ -55,13 +55,17 @@ public class ExcelWebFluxAutoConfiguration {
      *
      * @param specFactory     读写链工厂
      * @param reactiveSupport RxJava 适配
+     * @param properties      临时目录配置
      * @return 结果处理器
      */
     @Bean
     @ConditionalOnMissingBean
     public ExcelExportResultHandler excelExportResultHandler(
-            ExcelWebSpecFactory specFactory, ExcelReactiveSupport reactiveSupport) {
-        return new ExcelExportResultHandler(specFactory, reactiveSupport);
+            ExcelWebSpecFactory specFactory,
+            ExcelReactiveSupport reactiveSupport,
+            ExcelProperties properties
+    ) {
+        return new ExcelExportResultHandler(specFactory, reactiveSupport, properties);
     }
 
     /**

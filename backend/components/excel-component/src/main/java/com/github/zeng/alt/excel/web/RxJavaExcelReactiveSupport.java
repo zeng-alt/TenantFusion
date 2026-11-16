@@ -1,6 +1,7 @@
 package com.github.zeng.alt.excel.web;
 
 import com.github.zeng.alt.excel.rx.RxExcel;
+import com.github.zeng.alt.excel.write.ExcelWriteSpec;
 import io.reactivex.rxjava3.core.Flowable;
 import io.reactivex.rxjava3.schedulers.Schedulers;
 import io.vavr.control.Try;
@@ -47,11 +48,17 @@ public class RxJavaExcelReactiveSupport implements ExcelReactiveSupport {
         return Try.of(() -> ((Flowable<Object>) reactiveValue).blockingIterable().iterator());
     }
 
+    @Override
+    @SuppressWarnings("unchecked")
+    public Try<Long> write(ExcelWriteSpec<Object> spec, Object reactiveValue) {
+        return RxExcel.write(spec, (Flowable<Object>) reactiveValue);
+    }
+
     /**
      * {@code Flowable.using} 保证订阅时才 open、流终结时一定 close。
      */
     private static Flowable<?> lazyStream(ExcelStreamSource source) {
         return Flowable.using(() -> source, s -> RxExcel.stream(s.open()), ExcelStreamSource::close)
-                .subscribeOn(Schedulers.io());
+                .subscribeOn(Schedulers.io(), false);
     }
 }

@@ -188,7 +188,7 @@ class ExcelErrorPolicyTest {
                     .contains("users.xlsx")
                     .contains("共 5 行")
                     .contains("2 行有问题")
-                    .contains("未导入任何数据");
+                    .contains("文件校验未通过");
         });
     }
 
@@ -229,7 +229,7 @@ class ExcelErrorPolicyTest {
 
             assertThat(result.errors()).hasSizeLessThanOrEqualTo(6);
             assertThat(result.summary().truncated()).isTrue();
-            assertThat(result.toReport("big.xlsx").headline()).contains("错误过多已截断");
+            assertThat(result.toReport("big.xlsx").headline()).contains("达到读取上限已截断");
         });
     }
 

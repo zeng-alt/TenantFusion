@@ -2,14 +2,17 @@ package com.github.zeng.alt.excel.rx;
 
 import com.github.zeng.alt.excel.exception.ExcelReadException;
 import com.github.zeng.alt.excel.read.ExcelReadSpec;
+import com.github.zeng.alt.excel.support.ExcelDemandHelper;
 import com.github.zeng.alt.excel.write.ExcelWriteSpec;
 import io.reactivex.rxjava3.core.BackpressureStrategy;
 import io.reactivex.rxjava3.core.Flowable;
 import io.reactivex.rxjava3.core.FlowableEmitter;
+import io.reactivex.rxjava3.disposables.Disposable;
 import io.reactivex.rxjava3.schedulers.Schedulers;
 import io.vavr.control.Try;
 
 import java.util.List;
+import java.util.Iterator;
 import java.util.function.Supplier;
 
 /**
@@ -39,8 +42,7 @@ public final class RxExcel {
      * 通过 {@link ExcelReadSpec#consumeWhile} 把信号传下去，立刻停止解析剩余行，
      * 不会把整份文件读完。
      * <p>
-     * 背压策略是 {@code BUFFER}：数据源是 POI 的 SAX 解析，没法按 {@code requested()}
-     * 暂停在任意行，速度差由缓冲承担。
+     * SAX 回调在 IO 线程等待下游需求，最多持有一条尚未请求的行；取消会唤醒等待。
      * <p>
      * 注意 ThreadLocal 上下文（{@code SecurityContext}、租户上下文）不会跨调度器
      * 传递，需要的值请在订阅前取出。
@@ -61,15 +63,23 @@ public final class RxExcel {
      * @return 行流
      */
     public static <T> Flowable<T> stream(Supplier<ExcelReadSpec<T>> specFactory) {
-        return Flowable.<T>create(emitter -> specFactory.get()
-                        .consumeWhile(row -> {
-                            emitter.onNext(row);
-                            return !emitter.isCancelled();
-                        })
-                        .onFailure(cause -> failQuietly(emitter, cause))
-                        .onSuccess(count -> completeQuietly(emitter)),
-                BackpressureStrategy.BUFFER)
-                .subscribeOn(Schedulers.io());
+        return Flowable.defer(() -> {
+            final ExcelDemandHelper demand = new ExcelDemandHelper();
+            return Flowable.<T>create(emitter -> specFactory.get()
+                            .consumeWhile(row -> {
+                                if (!demand.awaitDemand() || emitter.isCancelled()) {
+                                    return false;
+                                }
+                                emitter.onNext(row);
+                                return !emitter.isCancelled();
+                            })
+                            .onFailure(cause -> failQuietly(emitter, cause))
+                            .onSuccess(count -> completeQuietly(emitter)), BackpressureStrategy.MISSING)
+                    .doOnRequest(demand::request)
+                    .doOnCancel(demand::cancel)
+                    // 请求必须直接唤醒解析线程，不能排在正在等待需求的同一 worker 后面。
+                    .subscribeOn(Schedulers.io(), false);
+        });
     }
 
     /**
@@ -84,12 +94,20 @@ public final class RxExcel {
      * @return 写出的行数；IO 层面的失败包在 {@code Try} 里
      */
     public static <T> Try<Long> write(ExcelWriteSpec<T> spec, Flowable<T> rows) {
-        return rows == null ? spec.write(List.of()) : spec.write(rows.blockingIterable().iterator());
+        if (rows == null) {
+            return spec.write(List.of());
+        }
+        final Iterator<T> iterator = rows.blockingIterable(64).iterator();
+        try {
+            return spec.write(iterator);
+        } finally {
+            ((Disposable) iterator).dispose();
+        }
     }
 
     private static <T> void failQuietly(FlowableEmitter<T> emitter, Throwable cause) {
         if (!emitter.isCancelled()) {
-            emitter.onError(new ExcelReadException("Excel 解析失败", cause));
+            emitter.tryOnError(new ExcelReadException("Excel 解析失败", cause));
         }
     }
 

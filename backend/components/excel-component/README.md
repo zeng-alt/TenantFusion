@@ -170,8 +170,9 @@ excelTemplate.writeHead(rows.getFirst().dynamicHead())
 - **不阻塞事件循环**。Excel 读写是阻塞动作，WebFlux 集成把它们全部放到
   `Schedulers.boundedElastic()` 上。
 - **导出走临时文件**。WebFlux 下先在 `boundedElastic` 上把工作簿写到临时文件，
-  再用 `DataBufferUtils.read` 分块推给响应（内存占用与文件大小无关），
-  响应终结时删文件。直接往响应的 `DataBuffer` 上挤既会阻塞事件循环、也拿不到背压。
+  `Flux` / `Flowable` 通过预取 64 行的游标分批写出，不收集完整列表；集合也遵守分批与分 sheet 上限。
+  再用 `DataBufferUtils.read` 分块推给响应，完成、失败或取消时关闭游标并删除临时文件。
+  临时目录同样使用 `alt.excel.web.temp-dir`。
 - **上传落盘**。两栈的流式形状都先把上传落到临时文件——原始存储在请求结束时就被
   容器回收，而流是懒执行的。目录用 `alt.excel.web.temp-dir` 配。
 
@@ -206,6 +207,9 @@ Flowable<UserImportCmd> rows = RxExcel.stream(
 // 写：按 batch-size 分批阻塞拉取，阻塞发生在链路最外层的终结步骤
 RxExcel.write(excelTemplate.write(UserVO.class).to(outputStream), userService.streamAll());
 ```
+
+流式读取在 IO 线程等待下游需求，最多额外持有一条未请求的行；取消订阅会唤醒等待并结束读取。
+写出侧在成功、失败时均释放响应式游标，避免上游继续生产。
 
 Web 层的 `Flowable` 形状（两种栈都支持）经 `ExcelReactiveSupport` 适配：有 rxjava
 时自动装 `RxJavaExcelReactiveSupport`，没有则装 `NoOpExcelReactiveSupport`，
@@ -251,11 +255,11 @@ excelTemplate.read(UserImportCmd.class).from(file)
 | 策略 | 读到哪 | 好行 | 适用 |
 | --- | --- | --- | --- |
 | `SKIP_ROW`（默认） | 整个文件 | 照常返回 | 部分成功，让用户订正坏行后补传 |
-| `FAIL_FAST` | **首个坏行即停** | 丢弃 | 大文件 + 「有一行错就不该导」，最省资源 |
-| `COLLECT_ALL` | 整个文件 | 丢弃 | **最常用**：一次列出所有问题，用户不用改一行传一次 |
+| `FAIL_FAST` | **首个坏行即停** | 已解析行保留在结果中，文件判为失败 | 尽早停止并返回首个错误 |
+| `COLLECT_ALL` | 整个文件（受读取上限约束） | 已解析行保留在结果中，存在错误时文件判为失败 | 一次列出所有问题 |
 
-后两者都是整单驳回，区别只在中断时机。三种策略下 `execute()` 都**不抛异常**，
-结局在 `result.isAborted()` 里：
+后两者在有坏行时标记文件校验失败。`execute()` 对坏行返回错误明细；文件损坏、IO 失败等仍抛异常。
+校验结局在 `result.isAborted()` 里，调用方应检查它再执行写库：
 
 ```java
 ExcelReadResult<UserImportCmd> result = excelTemplate.read(UserImportCmd.class)
@@ -265,6 +269,12 @@ ExcelReadResult<UserImportCmd> result = excelTemplate.read(UserImportCmd.class)
 
 return result.toEither("users.xlsx").fold(this::renderReport, userService::batchCreate);
 ```
+
+`consume` / `consumeWhile` / `consumeBatch` 及流式导入采用以下语义：
+
+- `COLLECT_ALL` 先预检整个文件，通过后再重读并触发业务回调。坏文件不触发回调；输入流会暂存到临时文件，用完删除，内存不缓存整份数据。
+- `SKIP_ROW` 和 `FAIL_FAST` 边读边消费，已经执行的回调不会撤销。
+- 业务回调异常立即返回失败，不按坏行跳过。组件不控制数据库事务，第二阶段的业务失败也不承诺自动回滚。
 
 `maxErrors` 限制明细条数（默认 1000，防坏文件刷爆内存），触顶会在
 `summary().truncated()` 上打标记。
@@ -289,7 +299,7 @@ return result.toEither("users.xlsx").fold(this::renderReport, userService::batch
 - `rows()` —— 按行号分组，用于「展开某行看全部问题」和预览表格里加红框
 - `codes()` —— 各约束码出现次数，用于「3 处缺必填项、2 处格式错误」这类分类摘要
 - `summary()` —— 总行数 / 出错行数 / 有效行数 / 是否截断 / 是否整单驳回
-- `headline()` —— 一句话摘要，直接放提示条
+- `headline()` —— 解析/校验摘要，不表示已入库或已回滚
 
 Web 层的形状决定错误怎么传出去：
 
@@ -361,7 +371,7 @@ user.name=姓名
 | `alt.excel.write.auto-width` | `true` | 列宽自适应 |
 | `alt.excel.write.i18n-head` | `true` | 表头国际化替换 |
 | `alt.excel.write.in-memory` | `false` | 全内存生成，大数据量务必保持 `false` |
-| `alt.excel.write.batch-size` | `2000` | 从游标写出时的分批大小 |
+| `alt.excel.write.batch-size` | `2000` | 集合及游标写出的分批大小 |
 | `alt.excel.write.max-rows-per-sheet` | `1000000` | 单 sheet 行数上限，超出自动开新 sheet；`-1` 不分 |
 | `alt.excel.write.file-name-timestamp-pattern` | `yyyyMMddHHmmss` | 下载文件名的时间戳格式 |
 
@@ -373,6 +383,13 @@ user.name=姓名
 | `alt.excel.web.temp-dir` | 系统临时目录 | 流式上传落盘的目录 |
 
 ### 三层覆盖
+
+`@ExcelImport.validate` 采用三态开关：`-1` 继承配置，`0` 关闭，`1` 开启。
+旧调用中的 `validate = false/true` 需改为 `validate = 0/1`。
+导入、导出注解统一写 `i18nHead = false/true`，不填写时继承各自的全局配置。
+`i18nHead` 内部用空数组表示未指定，显式设置只接受一个布尔值；旧的 `0/1` 写法需改为 `false/true`。
+`onError` 未指定时继承配置；显式覆盖仍写 `onError = ExcelErrorPolicy.SKIP_ROW`，只能指定一种策略。
+`validationGroups` 非空时仍隐式开启校验。
 
 每个行为都能在三个层次上表达，越靠内层优先级越高：
 

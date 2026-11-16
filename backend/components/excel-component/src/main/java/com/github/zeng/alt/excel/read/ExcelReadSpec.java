@@ -227,6 +227,10 @@ public interface ExcelReadSpec<T> {
 
     /**
      * 逐行消费，只要副作用。内存占用与文件大小无关。
+     * <p>
+     * {@code COLLECT_ALL} 先完整校验，再重读并调用消费者；输入流会暂存到临时文件。
+     * 校验失败不会调用消费者。其他策略会边读边消费，已经产生的业务副作用不会回滚。
+     * 消费者自身抛出的异常始终返回失败，不按坏行跳过。
      *
      * @param consumer 每行的处理逻辑
      * @return 成功消费的行数；IO 或解析层面的失败包在 {@code Try} 里
@@ -238,6 +242,7 @@ public interface ExcelReadSpec<T> {
      * <p>
      * {@code consumer} 返回 {@code false} 时停止解析剩余行——本组件的响应式适配
      * （{@code RxExcel.stream}）就是靠它把下游的取消信号传下来，不至于把整份文件读完。
+     * {@code COLLECT_ALL} 同 {@link #consume(Consumer)}，先预检整个文件再下发行。
      *
      * @param consumer 每行的处理逻辑，返回 {@code false} 表示不再需要后续行
      * @return 实际消费的行数；IO 或解析层面的失败包在 {@code Try} 里
@@ -249,6 +254,7 @@ public interface ExcelReadSpec<T> {
      * <p>
      * 每 {@link #batchSize(int)} 行回调一次，最后不足一批的余量也会回调一次
      * （空文件不回调）。内存占用是「一批」而不是「整个文件」。
+     * {@code COLLECT_ALL} 同 {@link #consume(Consumer)}，预检通过前不触发任何批次。
      * <p>
      * 批量导入的瓶颈几乎总在下游写库，逐行 {@code consume} 做一万次 insert 和
      * 五百行一批做二十次差一到两个数量级：

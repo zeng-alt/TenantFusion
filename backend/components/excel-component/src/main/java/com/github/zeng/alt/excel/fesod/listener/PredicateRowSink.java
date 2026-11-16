@@ -29,10 +29,10 @@ public class PredicateRowSink<T> implements ExcelRowSink<T> {
         if (cancelled) {
             return;
         }
-        count++;
         if (!consumer.test(row)) {
             cancelled = true;
         }
+        count++;
     }
 
     @Override

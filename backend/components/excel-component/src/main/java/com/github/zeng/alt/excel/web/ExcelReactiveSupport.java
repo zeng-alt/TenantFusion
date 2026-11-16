@@ -1,6 +1,7 @@
 package com.github.zeng.alt.excel.web;
 
 import io.vavr.control.Try;
+import com.github.zeng.alt.excel.write.ExcelWriteSpec;
 
 import java.util.Iterator;
 import java.util.List;
@@ -64,4 +65,9 @@ public interface ExcelReactiveSupport {
      * @return 行游标
      */
     Try<Iterator<Object>> iterator(Object reactiveValue);
+
+    /** 写出响应式行并在终结或失败时释放订阅。 */
+    default Try<Long> write(ExcelWriteSpec<Object> spec, Object reactiveValue) {
+        return iterator(reactiveValue).flatMap(spec::write);
+    }
 }

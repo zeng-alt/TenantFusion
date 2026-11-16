@@ -11,6 +11,7 @@ import com.github.zeng.alt.excel.support.ExcelMessageHelper;
 import com.github.zeng.alt.excel.support.ExcelRowAccessor;
 import com.github.zeng.alt.excel.support.ExcelRowValidator;
 import io.vavr.control.Either;
+import io.vavr.control.Try;
 import org.apache.fesod.sheet.context.AnalysisContext;
 import org.apache.fesod.sheet.exception.ExcelDataConvertException;
 import org.apache.fesod.sheet.metadata.data.ReadCellData;
@@ -55,6 +56,7 @@ public abstract class AbstractExcelReadListener<R, T> implements ReadListener<R>
     private final Map<String, Integer> columnByField = new HashMap<>();
     private final Set<Integer> errorRows = new HashSet<>();
     private int totalRows;
+    private int lastRowIndex = Integer.MIN_VALUE;
     private boolean truncated;
     private boolean limitExceeded;
 
@@ -99,10 +101,9 @@ public abstract class AbstractExcelReadListener<R, T> implements ReadListener<R>
 
     @Override
     public void invoke(R raw, AnalysisContext context) {
-        if (exceedsRowLimit(context)) {
+        if (!beginRow(context)) {
             return;
         }
-        totalRows++;
         toRow(raw, context)
                 .peekLeft(reason -> recordRowError(reason, context))
                 .peek(row -> emit(row, context));
@@ -114,16 +115,18 @@ public abstract class AbstractExcelReadListener<R, T> implements ReadListener<R>
      * 超限只记一条错误就停，不逐行报——一份一百万行的文件报一百万条错等于没报。
      * 之后 {@link #hasNext} 会看到 {@link #limitExceeded} 从而结束解析。
      */
-    private boolean exceedsRowLimit(AnalysisContext context) {
-        if (!options.hasRowLimit() || totalRows < options.maxRows()) {
-            return false;
+    private boolean beginRow(AnalysisContext context) {
+        final int rowIndex = rowIndexOf(context);
+        if (rowIndex == lastRowIndex) {
+            return !limitExceeded;
         }
-        if (!limitExceeded) {
+        lastRowIndex = rowIndex;
+        totalRows++;
+        if (options.hasRowLimit() && totalRows > options.maxRows()) {
             limitExceeded = true;
-            addError(ExcelRowError.ofRow(rowIndexOf(context),
-                    "数据行数超过上限 %d，已停止解析".formatted(options.maxRows())));
+            recordRowError("数据行数超过上限 %d，已停止解析".formatted(options.maxRows()), context);
         }
-        return true;
+        return !limitExceeded;
     }
 
     @Override
@@ -133,19 +136,24 @@ public abstract class AbstractExcelReadListener<R, T> implements ReadListener<R>
             throw exception;
         }
         if (exception instanceof ExcelDataConvertException convert) {
-            recordCellError(convert);
-        } else {
-            recordRowError(exception.getMessage(), context);
+            if (beginRow(context)) {
+                recordCellError(convert);
+            }
+            return;
         }
+        throw exception;
     }
 
     @Override
     public void doAfterAllAnalysed(AnalysisContext context) {
-        sink.complete();
+        Try.run(sink::complete).getOrElseThrow(cause -> new ExcelReadException("Excel 消费回调失败", cause));
     }
 
     @Override
     public boolean hasNext(AnalysisContext context) {
+        if (Thread.currentThread().isInterrupted()) {
+            throw new ExcelReadException("Excel 读取已取消");
+        }
         if (sink.isCancelled() || limitExceeded) {
             return false;
         }
@@ -200,7 +208,8 @@ public abstract class AbstractExcelReadListener<R, T> implements ReadListener<R>
     private void emit(T row, AnalysisContext context) {
         List<ExcelViolation> violations = validate(row);
         if (violations.isEmpty()) {
-            sink.accept(row);
+            Try.run(() -> sink.accept(row))
+                    .getOrElseThrow(cause -> new ExcelReadException("Excel 消费回调失败", cause));
             return;
         }
         int rowIndex = rowIndexOf(context);
