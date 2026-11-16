@@ -1,210 +1,140 @@
 package com.github.zeng.alt.config.client;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.json.JsonMapper;
+import com.github.zeng.alt.config.ConfigTemplate;
+import com.github.zeng.alt.config.model.ConfigChangedKey;
 import com.github.zeng.alt.config.model.ConfigItemDTO;
-import lombok.extern.apachecommons.CommonsLog;
-
-import java.io.*;
-import java.nio.charset.StandardCharsets;
+import io.vavr.control.Option;
+import io.vavr.control.Try;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.util.StringUtils;
 
-@CommonsLog
+@Slf4j
 public class ConfigCacheManager {
-
-    private final Map<String, ConfigItemDTO> cache = new ConcurrentHashMap<>();
     private final Path cacheFile;
-    private boolean initialized = false;
+    @Getter
+    private final String appCode;
+    private final ObjectMapper mapper;
+    private volatile Map<ConfigChangedKey, ConfigItemDTO> snapshot = Map.of();
+    private volatile boolean initialized;
 
     public ConfigCacheManager(String cacheDir, String appCode) {
-        if (cacheDir != null && !cacheDir.isBlank()) {
-            this.cacheFile = Paths.get(cacheDir, appCode + "-config-cache.json");
-        } else {
-            String userHome = System.getProperty("user.home", ".");
-            this.cacheFile = Paths.get(userHome, ".config-cache", appCode + "-config-cache.json");
-        }
+        this(cacheDir, appCode, new JsonMapper());
+    }
+
+    public ConfigCacheManager(String cacheDir, String appCode, ObjectMapper mapper) {
+        this.mapper = mapper;
+        this.appCode = appCode;
+        final Path directory = StringUtils.hasText(cacheDir)
+                ? Path.of(cacheDir) : Path.of(System.getProperty("user.home", "."), ".config-cache");
+        this.cacheFile = directory.resolve(appCode + "-config-cache.json");
         loadFromDisk();
     }
 
-    public void updateAll(List<ConfigItemDTO> items) {
-        for (ConfigItemDTO item : items) {
-            if (item != null) {
-                cache.put(item.getDataId(), item);
-            }
-        }
-        saveToDisk();
-        initialized = true;
+    /** 合并增量配置；远程完整快照使用 replaceAll。 */
+    public synchronized void updateAll(List<ConfigItemDTO> items) {
+        final Map<ConfigChangedKey, ConfigItemDTO> merged = new HashMap<>(snapshot);
+        items.forEach(item -> merged.put(key(item), copy(item)));
+        store(merged);
     }
 
-    public void update(String dataId, ConfigItemDTO item) {
-        if (item != null) {
-            cache.put(dataId, item);
+    /** 替换完整快照，包含删除和空快照。 */
+    public synchronized void replaceAll(List<ConfigItemDTO> items) {
+        store(items.stream().collect(Collectors.toMap(this::key, this::copy)));
+    }
+
+    public synchronized void update(String dataId, ConfigItemDTO item) {
+        final Map<ConfigChangedKey, ConfigItemDTO> updated = new HashMap<>(snapshot);
+        if (item == null) {
+            updated.remove(new ConfigChangedKey(dataId, ConfigTemplate.DEFAULT_GROUP));
         } else {
-            cache.remove(dataId);
+            updated.put(new ConfigChangedKey(dataId, key(item).getGroup()), copy(item));
         }
-        saveToDisk();
+        store(updated);
     }
 
+    /** 兼容旧接口；缺失时返回 null。新代码使用 ConfigTemplate。 */
     public ConfigItemDTO get(String dataId) {
-        return cache.get(dataId);
+        return get(dataId, ConfigTemplate.DEFAULT_GROUP);
     }
 
     public ConfigItemDTO get(String dataId, String group) {
-        return cache.values().stream()
-                .filter(c -> c.getDataId().equals(dataId) && c.getGroup().equals(group))
-                .findFirst()
-                .orElse(null);
+        return find(dataId, group).getOrNull();
     }
 
+    public Option<ConfigItemDTO> find(String dataId, String group) {
+        return Option.of(snapshot.get(new ConfigChangedKey(
+            dataId,
+            Option.of(group).getOrElse(ConfigTemplate.DEFAULT_GROUP)
+        ))).map(this::copy);
+    }
+
+    /** 旧批量接口限定默认分组，避免以 dataId 为键时丢失同名配置。 */
     public Map<String, ConfigItemDTO> getAll() {
-        return Collections.unmodifiableMap(new HashMap<>(cache));
+        return snapshot.values().stream()
+                .filter(item -> ConfigTemplate.DEFAULT_GROUP.equals(item.getGroup()))
+                .collect(Collectors.toUnmodifiableMap(ConfigItemDTO::getDataId, this::copy));
     }
 
     public boolean isInitialized() {
         return initialized;
     }
 
-    private void saveToDisk() {
-        try {
+    Map<ConfigChangedKey, ConfigItemDTO> getSnapshot() {
+        return snapshot;
+    }
+
+    private ConfigChangedKey key(ConfigItemDTO item) {
+        return new ConfigChangedKey(
+            item.getDataId(),
+            Option.of(item.getGroup()).getOrElse(ConfigTemplate.DEFAULT_GROUP)
+        );
+    }
+
+    private ConfigItemDTO copy(ConfigItemDTO item) {
+        final var copy = new ConfigItemDTO(item.getDataId(), key(item).getGroup(), item.getContent(), item.getFormat());
+        copy.setConfigId(item.getConfigId());
+        copy.setVersion(item.getVersion());
+        copy.setAppCode(item.getAppCode());
+        return copy;
+    }
+
+    private void store(Map<ConfigChangedKey, ConfigItemDTO> items) {
+        snapshot = Map.copyOf(items);
+        initialized = true;
+        Try.run(() -> {
             Files.createDirectories(cacheFile.getParent());
-            try (BufferedWriter writer = Files.newBufferedWriter(cacheFile, StandardCharsets.UTF_8)) {
-                StringBuilder json = new StringBuilder("[");
-                boolean first = true;
-                for (ConfigItemDTO item : cache.values()) {
-                    if (!first) json.append(",");
-                    json.append(toJson(item));
-                    first = false;
-                }
-                json.append("]");
-                writer.write(json.toString());
-            }
-        } catch (IOException e) {
-            log.warn("Failed to save config cache to disk: " + e.getMessage());
-        }
+            mapper.writeValue(cacheFile.toFile(), snapshot.values());
+        }).onFailure(error -> log.warn(
+            "Unable to save config cache at {} ({})",
+            cacheFile,
+            error.getClass().getSimpleName()
+        ));
     }
 
     private void loadFromDisk() {
         if (!Files.exists(cacheFile)) {
             return;
         }
-        try {
-            String content = Files.readString(cacheFile, StandardCharsets.UTF_8);
-            if (content.isBlank() || content.equals("[]")) return;
-
-            String trimmed = content.substring(1, content.length() - 1);
-            String[] items = splitJsonArray(trimmed);
-            for (String item : items) {
-                ConfigItemDTO dto = parseJson(item);
-                if (dto != null) {
-                    cache.put(dto.getDataId(), dto);
-                }
-            }
-            initialized = true;
-            log.info("Loaded " + cache.size() + " configs from local cache: " + cacheFile);
-        } catch (IOException e) {
-            log.warn("Failed to load config cache from disk: " + e.getMessage());
-        }
-    }
-
-    private String toJson(ConfigItemDTO item) {
-        return "{\"configId\":" + item.getConfigId()
-                + ",\"dataId\":\"" + escapeJson(item.getDataId())
-                + "\",\"group\":\"" + escapeJson(item.getGroup())
-                + "\",\"content\":\"" + escapeJson(item.getContent())
-                + "\",\"format\":\"" + escapeJson(item.getFormat())
-                + "\",\"version\":" + item.getVersion()
-                + ",\"appCode\":\"" + escapeJson(item.getAppCode()) + "\"}";
-    }
-
-    private ConfigItemDTO parseJson(String json) {
-        try {
-            ConfigItemDTO dto = new ConfigItemDTO();
-            dto.setConfigId(extractLong(json, "configId"));
-            dto.setDataId(extractString(json, "dataId"));
-            dto.setGroup(extractString(json, "group"));
-            dto.setContent(extractString(json, "content"));
-            dto.setFormat(extractString(json, "format"));
-            dto.setVersion(extractInt(json, "version"));
-            dto.setAppCode(extractString(json, "appCode"));
-            return dto;
-        } catch (Exception e) {
-            log.warn("Failed to parse cached config entry: " + e.getMessage());
-            return null;
-        }
-    }
-
-    private String[] splitJsonArray(String trimmed) {
-        List<String> result = new ArrayList<>();
-        int depth = 0;
-        int start = 0;
-        for (int i = 0; i < trimmed.length(); i++) {
-            char c = trimmed.charAt(i);
-            if (c == '{') depth++;
-            if (c == '}') depth--;
-            if (depth == 0 && c == '}') {
-                result.add(trimmed.substring(start, i + 1));
-                start = i + 2;
-            }
-        }
-        return result.toArray(new String[0]);
-    }
-
-    private String escapeJson(String s) {
-        if (s == null) return "";
-        return s.replace("\\", "\\\\").replace("\"", "\\\"")
-                .replace("\n", "\\n").replace("\r", "\\r").replace("\t", "\\t");
-    }
-
-    private String extractString(String json, String key) {
-        int idx = json.indexOf("\"" + key + "\":\"");
-        if (idx < 0) {
-            idx = json.indexOf("\"" + key + "\":");
-            if (idx < 0) return "";
-            int start = json.indexOf('"', idx + key.length() + 3);
-            if (start < 0) return "";
-            int end = json.indexOf('"', start + 1);
-            return end > start ? json.substring(start + 1, end) : "";
-        }
-        int start = idx + key.length() + 4;
-        StringBuilder sb = new StringBuilder();
-        for (int i = start; i < json.length(); i++) {
-            char c = json.charAt(i);
-            if (c == '\\' && i + 1 < json.length()) {
-                char next = json.charAt(i + 1);
-                if (next == '"') { sb.append('"'); i++; }
-                else if (next == 'n') { sb.append('\n'); i++; }
-                else if (next == 'r') { sb.append('\r'); i++; }
-                else if (next == 't') { sb.append('\t'); i++; }
-                else if (next == '\\') { sb.append('\\'); i++; }
-                else sb.append(c);
-            } else if (c == '"') {
-                break;
-            } else {
-                sb.append(c);
-            }
-        }
-        return sb.toString();
-    }
-
-    private long extractLong(String json, String key) {
-        String s = extractString(json, key);
-        if (s.isEmpty()) {
-            int idx = json.indexOf("\"" + key + "\":");
-            if (idx < 0) return 0;
-            int start = idx + key.length() + 3;
-            int end = json.indexOf(',', start);
-            if (end < 0) end = json.indexOf('}', start);
-            if (end < 0) return 0;
-            try { return Long.parseLong(json.substring(start, end).trim()); }
-            catch (NumberFormatException e) { return 0; }
-        }
-        try { return Long.parseLong(s); }
-        catch (NumberFormatException e) { return 0; }
-    }
-
-    private int extractInt(String json, String key) {
-        return (int) extractLong(json, key);
+        Try.of(() -> mapper.readValue(cacheFile.toFile(), new TypeReference<List<ConfigItemDTO>>() {}))
+                .map(items -> items.stream().collect(Collectors.toUnmodifiableMap(this::key, this::copy)))
+                .onSuccess(items -> {
+                    snapshot = items;
+                    initialized = true;
+                })
+                .onFailure(error -> log.warn(
+                    "Unable to load config cache at {} ({})",
+                    cacheFile,
+                    error.getClass().getSimpleName()
+                ));
     }
 }

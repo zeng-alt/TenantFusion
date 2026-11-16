@@ -1,17 +1,23 @@
 package com.github.zeng.alt.config.server.listener;
 
-import org.springframework.stereotype.Component;
-import org.springframework.web.context.request.async.DeferredResult;
-
+import com.github.zeng.alt.config.event.ConfigDataChangedEvent;
+import com.github.zeng.alt.config.model.ConfigItemDTO;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
+import org.springframework.transaction.event.TransactionPhase;
+import org.springframework.transaction.event.TransactionalEventListener;
+import org.springframework.web.context.request.async.DeferredResult;
 
-@Component
 public class ConfigLongPollManager {
 
     private final Map<String, List<DeferredResult<List<String>>>> pollRequests = new ConcurrentHashMap<>();
+
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT, fallbackExecution = true)
+    public void onConfigDataChanged(ConfigDataChangedEvent event) {
+        notifyClients(event.getAppCode(), event.getItems().stream().map(ConfigItemDTO::getDataId).distinct().toList());
+    }
 
     public void register(String appCode, DeferredResult<List<String>> deferredResult) {
         pollRequests.computeIfAbsent(appCode, k -> new CopyOnWriteArrayList<>())

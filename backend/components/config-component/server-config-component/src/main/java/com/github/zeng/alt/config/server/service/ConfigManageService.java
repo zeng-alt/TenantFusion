@@ -1,25 +1,48 @@
 package com.github.zeng.alt.config.server.service;
 
 import com.github.zeng.alt.config.model.ConfigItemDTO;
-import com.github.zeng.alt.config.server.entity.ConfigInfoEntity;
-
+import com.github.zeng.alt.config.storage.model.ConfigAppDto;
+import com.github.zeng.alt.config.storage.model.ConfigEntryDto;
+import com.github.zeng.alt.config.server.model.ConfigAppCmd;
+import com.github.zeng.alt.config.server.model.ConfigCreateCmd;
+import com.github.zeng.alt.config.server.model.ConfigUpdateCmd;
+import io.vavr.control.Either;
 import java.util.List;
 
 public interface ConfigManageService {
+    Either<String, ConfigAppDto> createApp(ConfigAppCmd command);
 
-    ConfigInfoEntity createConfig(Long appId, String dataId, String group, String content, String format, String description);
+    Either<String, ConfigAppDto> getApp(String appCode);
 
-    ConfigInfoEntity updateConfig(Long configId, String content, String description, String operator);
+    List<ConfigAppDto> listApps();
 
-    ConfigInfoEntity getConfig(Long appId, String dataId, String group);
+    Either<String, ConfigEntryDto> create(ConfigCreateCmd command);
+
+    Either<String, ConfigEntryDto> update(Long configId, ConfigUpdateCmd command);
+
+    Either<String, Long> delete(Long configId);
+
+    /** 兼容旧参数签名；新代码使用 create(ConfigCreateCmd)。 */
+    ConfigEntryDto createConfig(
+        Long appId,
+        String dataId,
+        String group,
+        String content,
+        String format,
+        String description
+    );
+
+    ConfigEntryDto updateConfig(Long configId, String content, String description, String operator);
+
+    ConfigEntryDto getConfig(Long appId, String dataId, String group);
 
     List<ConfigItemDTO> getConfigs(Long appId, List<String> dataIds);
 
     List<ConfigItemDTO> getAllConfigs(Long appId);
 
-    List<ConfigInfoEntity> listByAppId(Long appId);
+    List<ConfigEntryDto> listByAppId(Long appId);
 
     void deleteConfig(Long configId);
 
-    ConfigItemDTO toDTO(ConfigInfoEntity entity);
+    ConfigItemDTO toDTO(ConfigEntryDto entity);
 }

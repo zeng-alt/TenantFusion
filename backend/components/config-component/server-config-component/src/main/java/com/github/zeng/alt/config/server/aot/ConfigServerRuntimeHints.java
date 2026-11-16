@@ -1,29 +1,31 @@
 package com.github.zeng.alt.config.server.aot;
 
-import com.github.zeng.alt.config.server.entity.*;
-import org.springframework.aot.hint.MemberCategory;
+import com.github.zeng.alt.config.model.ConfigItemDTO;
+import com.github.zeng.alt.config.storage.model.ConfigAppDto;
+import com.github.zeng.alt.config.storage.model.ConfigEntryDto;
+import com.github.zeng.alt.config.storage.model.ConfigHistoryDto;
+import com.github.zeng.alt.config.storage.model.ConfigReleaseDto;
+import org.springframework.aot.hint.BindingReflectionHintsRegistrar;
 import org.springframework.aot.hint.RuntimeHints;
 import org.springframework.aot.hint.RuntimeHintsRegistrar;
 
+/**
+ * 中立配置模型的 Native Image 提示。
+ *
+ * @author zeng-alt
+ * @since 0.0.1-SNAPSHOT
+ */
 public class ConfigServerRuntimeHints implements RuntimeHintsRegistrar {
-
     @Override
-    public void registerHints(RuntimeHints hints, ClassLoader classLoader) {
-        registerType(hints,
-                ConfigAppEntity.class,
-                ConfigInfoEntity.class,
-                ConfigHistoryEntity.class,
-                ConfigReleaseEntity.class,
-                ConfigClientInstanceEntity.class);
-    }
-
-    private static void registerType(RuntimeHints hints, Class<?>... classes) {
-        for (Class<?> clazz : classes) {
-            hints.reflection().registerType(clazz,
-                    MemberCategory.INTROSPECT_DECLARED_METHODS,
-                    MemberCategory.DECLARED_FIELDS,
-                    MemberCategory.INVOKE_DECLARED_CONSTRUCTORS,
-                    MemberCategory.INVOKE_DECLARED_METHODS);
-        }
+    public void registerHints(RuntimeHints hints, ClassLoader loader) {
+        hints.resources().registerPattern("db/config/*.sql");
+        new BindingReflectionHintsRegistrar().registerReflectionHints(
+            hints.reflection(),
+            ConfigItemDTO.class,
+            ConfigAppDto.class,
+            ConfigEntryDto.class,
+            ConfigHistoryDto.class,
+            ConfigReleaseDto.class
+        );
     }
 }

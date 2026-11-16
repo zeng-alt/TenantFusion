@@ -1,75 +1,87 @@
 package com.github.zeng.alt.config.client;
 
-import com.github.zeng.alt.config.model.ConfigItemDTO;
-import lombok.extern.apachecommons.CommonsLog;
-import org.springframework.boot.context.event.ApplicationReadyEvent;
-import org.springframework.context.event.EventListener;
-import org.springframework.web.client.RestTemplate;
+import com.github.zeng.alt.config.ConfigException;
+import com.github.zeng.alt.config.ConfigSourceTemplate;
+import io.vavr.control.Option;
+import io.vavr.control.Try;
+import java.time.Duration;
+import java.time.Instant;
+import java.util.concurrent.ScheduledFuture;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.context.SmartLifecycle;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-
-@CommonsLog
-public class ConfigStartupInitializer {
-
-    private final ConfigCacheManager cacheManager;
+@Slf4j
+@RequiredArgsConstructor
+public class ConfigStartupInitializer implements SmartLifecycle {
+    private final ConfigRemoteTemplate remote;
+    private final ConfigSubscriber subscriber;
     private final ConfigClientProperties properties;
-    private final RestTemplate restTemplate;
+    private final ObjectProvider<ConfigSourceTemplate> localSources;
+    private final ThreadPoolTaskScheduler scheduler = new ThreadPoolTaskScheduler();
+    private Option<ScheduledFuture<?>> polling = Option.none();
+    private volatile boolean running;
 
-    public ConfigStartupInitializer(ConfigCacheManager cacheManager,
-                                    ConfigClientProperties properties,
-                                    RestTemplate restTemplate) {
-        this.cacheManager = cacheManager;
-        this.properties = properties;
-        this.restTemplate = restTemplate;
-    }
-
-    @EventListener(ApplicationReadyEvent.class)
-    public void onApplicationReady() {
-        if (!properties.isEnabled()) {
+    @Override
+    public void start() {
+        if (running || !properties.isRefreshEnabled()) {
             return;
         }
-        log.info("Initializing config client for appCode=" + properties.getAppCode());
+        running = true;
+        synchronize();
+        scheduler.setThreadNamePrefix("config-sync-");
+        scheduler.setDaemon(true);
+        scheduler.initialize();
+        final long interval = localSources.getIfAvailable() == null
+                ? properties.getRetryDelayMs() : properties.getRefreshIntervalMs();
+        polling = Option.some(scheduler.scheduleWithFixedDelay(
+            this::poll,
+            Instant.now().plusMillis(interval),
+            Duration.ofMillis(interval)
+        ));
+    }
 
-        if (cacheManager.isInitialized()) {
-            log.info("Config cache already initialized from local disk, skipping initial fetch");
-            return;
+    @Override
+    public void stop() {
+        running = false;
+        polling.peek(task -> task.cancel(true));
+        polling = Option.none();
+        scheduler.shutdown();
+    }
+
+    @Override
+    public boolean isRunning() {
+        return running;
+    }
+
+    private void poll() {
+        // 本地发布由事务提交事件立即通知；定时校准覆盖同数据库其他实例的发布。
+        if (localSources.getIfAvailable() == null) {
+            Try.run(remote::awaitChanges).onFailure(this::logFailure);
         }
-
-        try {
-            String url = properties.getServerAddr() + "/api/config/fetch?appCode=" + properties.getAppCode();
-            @SuppressWarnings("unchecked")
-            Map<String, Object> response = restTemplate.getForObject(url, Map.class);
-            if (response != null && response.containsKey("data")) {
-                @SuppressWarnings("unchecked")
-                List<Map<String, Object>> dataList = (List<Map<String, Object>>) response.get("data");
-                if (dataList != null) {
-                    List<ConfigItemDTO> items = dataList.stream().map(this::mapToDTO).toList();
-                    cacheManager.updateAll(items);
-                    log.info("Initial config fetch complete: " + items.size() + " configs loaded");
-                }
-            }
-        } catch (Exception e) {
-            log.warn("Initial config fetch failed (server may not be ready yet), using local cache: " + e.getMessage());
-            if (!cacheManager.isInitialized()) {
-                log.warn("No local cache available, config values will be empty until first successful fetch");
-            }
+        if (running) {
+            synchronize();
         }
     }
 
-    private ConfigItemDTO mapToDTO(Map<String, Object> map) {
-        ConfigItemDTO dto = new ConfigItemDTO();
-        Object configId = map.get("configId");
-        if (configId instanceof Number num) dto.setConfigId(num.longValue());
-        dto.setDataId((String) map.get("dataId"));
-        dto.setGroup((String) map.get("group"));
-        dto.setContent((String) map.get("content"));
-        dto.setFormat((String) map.get("format"));
-        Object version = map.get("version");
-        if (version instanceof Number num) dto.setVersion(num.intValue());
-        dto.setAppCode(properties.getAppCode());
-        return dto;
+    private void synchronize() {
+        Try.of(() -> Option.of(localSources.getIfAvailable())
+                .map(source -> source.getAll(properties.getAppCode()).getOrElseThrow(ConfigException::new))
+                .getOrElse(remote::getAll))
+                .onSuccess(items -> {
+                    if (running) {
+                        subscriber.acceptSnapshot(items);
+                    }
+                }).onFailure(this::logFailure);
+    }
+
+    private void logFailure(Throwable error) {
+        log.warn(
+            "Config synchronization failed for app={}; retaining cached values ({})",
+            properties.getAppCode(),
+            error.getClass().getSimpleName()
+        );
     }
 }
