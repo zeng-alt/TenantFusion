@@ -11,6 +11,7 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter")
     implementation("org.springframework.boot:spring-boot-autoconfigure")
     implementation("org.springframework:spring-tx")
+    implementation(rootProject.libs.vavr)
 
     testImplementation("org.springframework.boot:spring-boot-starter-test")
 }

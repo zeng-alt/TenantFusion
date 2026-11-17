@@ -8,7 +8,7 @@
 | `core-log-component` | AOP、Jackson 3 字段过滤、请求与身份解析、事件发布 |
 | `jpa-log-component` | MapStruct 映射及独立事务持久化 |
 | `ip2region-log-component` | 可选的 IPv4/IPv6 离线 IP 归属地查询 |
-| `message-log-component` | 通过 event-component 发送或接收操作日志 |
+| `message-log-component` | 通过 event-component 发送或接收操作与登录日志 |
 
 ## 引入依赖
 
@@ -83,9 +83,17 @@ alt:
 
 操作和登录日志使用独立写事务，覆盖无事务调用、成功操作、失败操作以及外层业务事务回滚。记录的是方法执行结果，不是外层事务的最终提交状态；外层回滚后仍可能存在状态为成功的方法执行记录。
 
-事件在当前线程同步处理。JPA 持久化失败会传播到发布边界：本地 `@Log` 拦截器会隔离它；MQ 消费时会交给 event-component 的失败处理策略，避免将未保存的日志当作消费成功。登录日志沿用失败隔离行为，保存失败不会打断登录处理。
+事件在当前线程同步处理。JPA 持久化失败会传播到发布边界：本地 `@Log` 拦截器会隔离它；MQ 消费时会交给 event-component 的失败处理策略，避免将未保存的日志当作消费成功。登录日志也在认证发布入口隔离失败，保存失败不会打断登录处理；MQ 登录日志消费失败则向消息框架传播，由绑定的重试和死信策略处理。
 
 日志包含租户 ID、操作者、方法名、操作时间、耗时、成功/失败状态及错误消息。租户默认取 `TenantContextHolder.getTenantId()`，操作者取 `UserContextHolder.getUsername()`。
+
+## 登录来源、租户与时间
+
+Cookie 与 JWT 的登录成功、失败处理器均发布 `LoginInfoEvent`，自动装配的 `LoginHelper.login()` 也会发布一次登录事件。JSON、表单和自定义用户名参数均受支持；过滤器在认证前保存用户名和请求租户，认证过程清理上下文后仍可记录失败日志。事件不携带密码或令牌。
+
+成功日志优先取认证结果 `SecurityUser.getTenantName()`，未提供时回退到请求已解析的租户；失败日志使用认证前的请求租户。不单独读取未经租户组件解析的请求头，无法确定租户时记录空字符串。手动构造 Cookie 处理器或 Cookie/JWT LoginHelper 时，使用带 `ApplicationEventPublisher` 的新构造器以启用审计；旧构造器保留原行为。
+
+源端设置 `loginTime`，MQ 传递和 JPA 保存均保留该时间；旧版本或手动事件缺少时间时才使用保存时刻。租户、IP、地点、浏览器、操作系统随消息负载传递；消费端按缺失字段补全地点和客户端信息。当前登录日志表已有租户与时间列，无需新增迁移。
 
 ## 登录 IP 与登录地点
 
@@ -116,7 +124,7 @@ IP 来源仍由登录处理器采集；反向代理部署请通过宿主的转�
 
 ## 登录浏览器与操作系统
 
-JWT 登录成功、失败处理器均采集请求的 `User-Agent`。日志组件使用 ua-parser 统一解析为 `browser` 和 `os`，由 MapStruct 映射后保存到 `sys_logininfor`。默认显示名称和解析到的版本，例如 `Chrome 131.0.0` / `Windows 10`。原始 User-Agent 只随事件传递，不直接存入登录日志表。
+Cookie 与 JWT 登录成功、失败处理器均采集请求的 `User-Agent`。日志组件使用 ua-parser 统一解析为 `browser` 和 `os`，由 MapStruct 映射后保存到 `sys_logininfor`。默认显示名称和解析到的版本，例如 `Chrome 131.0.0` / `Windows 10`。原始 User-Agent 只随事件传递，不直接存入登录日志表。
 
 缺失、未知或解析失败时，相应字段为空，登录记录仍会保存。事件来源可以直接提供浏览器或系统字段，默认只补齐缺失的字段；也可贡献 `UserAgentResolver` Bean 自定义解析。admin 已提供 H2/PG 的 V0026 增量迁移，列表与详情均展示浏览器和操作系统，历史记录显示 `-`。
 
@@ -139,7 +147,29 @@ log.message.consumer-enabled: false
 # log.message.consumer-enabled: true
 ```
 
-发送和消费需要配置 `alt.event.bindings.log-oper`，指定 transport 及对应的队列、topic 或 stream；消费者端点 ID 为 `operation-log`。
+按需配置以下 binding，只有配置了相应 `transport` 才注册该类日志的生产者/消费者；仅配置原有 `log-oper` 的应用不会启用登录日志分发。
+
+| 日志 | binding | 消费端点 ID |
+|---|---|---|
+| 操作日志 | `log-oper` | `operation-log` |
+| 登录日志 | `log-login` | `login-log` |
+
+例如，使用 `redis-event-component` 分发登录日志时，发送端和消费端均配置：
+
+```yaml
+alt:
+  event:
+    bindings:
+      log-login:
+        transport: redis-stream
+        redis:
+          destination: audit:login
+          group: login-log-writers
+        failure:
+          destination: audit:login:dead-letter
+```
+
+消费者还需设置 `log.message.consumer-enabled=true`。操作日志可配置独立的 `log-oper` stream；Kafka 或 Rabbit 使用各自的 topic/group 或 exchange/queue 配置，详见 [event-component](../event-component/README.md)。
 
 消费回流事件会在本地立即处理，生产者会跳过它，同一服务同时启用发送和接收也不会把收到的事件重新发送。发送是同步的独立动作，不与业务数据库事务组成原子提交；Broker 发送失败记录诊断信息。
 
@@ -159,6 +189,6 @@ JPA 实体为 `sys_oper_log`、`sys_logininfor`；主键列是 `id`，由 Snowfl
   :backend:components:log-component:message-log-component:check
 ```
 
-测试覆盖注解解析、日志失败隔离、Jackson 3、参数/响应开关、敏感字段过滤、三类应用装配、H2/JPA 事务回滚隔离及消息回流。三个实现模块的业务代码行覆盖率门槛为 80%，不计 Lombok 数据模型和生成的 mapper。
+测试覆盖注解解析、日志失败隔离、Jackson 3、参数/响应开关、敏感字段过滤、三类应用装配、H2/JPA 事务回滚隔离、登录日志源端时间保留、MQ 实际编解码、租户上下文恢复及消费回流。三个实现模块的业务代码行覆盖率门槛为 80%，不计 Lombok 数据模型和生成的 mapper。
 
 Native hints 包含组件日志事件的绑定元数据、`ua_parser/regexes.yaml` 与 `classpath:ip2region/*.xdb` 资源；自定义 classpath 数据目录与宿主业务 DTO 需提供相应资源或绑定提示。此次验证为 JVM 测试，未执行 native-image 构建。

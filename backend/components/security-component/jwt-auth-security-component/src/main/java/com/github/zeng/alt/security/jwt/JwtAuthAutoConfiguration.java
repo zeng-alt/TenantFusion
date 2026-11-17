@@ -99,10 +99,11 @@ public class JwtAuthAutoConfiguration {
             AuthenticationManager authenticationManager,
             JwtTokenProvider jwtTokenProvider,
             JwtStorage jwtStorage,
-            JwtProperties jwtProperties) {
-
+            JwtProperties jwtProperties,
+            ApplicationEventPublisher eventPublisher
+    ) {
         return new JwtLoginHelper(
-                authenticationManager, jwtTokenProvider, jwtStorage, jwtProperties);
+                authenticationManager, jwtTokenProvider, jwtStorage, jwtProperties, eventPublisher);
     }
 
     @Bean("jwtAuthenticationSecurityCustomizer")

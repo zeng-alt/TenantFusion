@@ -42,7 +42,7 @@ public class LogPersistenceServiceImpl implements LogPersistenceService {
     @Override
     @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
     public void create(LoginInfoEvent event) {
-        final LoginLogEntity entity = mapper.toEntity(event, LocalDateTime.now());
+        final LoginLogEntity entity = mapper.toEntity(event, Option.of(event.getLoginTime()).getOrElse(LocalDateTime::now));
         if (!StringUtils.hasText(entity.getLoginLocation())) {
             entity.setLoginLocation(Try.of(() -> locations.resolve(event.getIp()))
                     .onFailure(error -> log.warn("Failed to resolve login location", error))

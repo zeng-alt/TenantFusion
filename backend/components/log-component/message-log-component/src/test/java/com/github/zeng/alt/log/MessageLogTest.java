@@ -90,6 +90,7 @@ class MessageLogTest {
 
     private ApplicationContextRunner runner(EventTemplate template) {
         return new ApplicationContextRunner().withConfiguration(AutoConfigurations.of(MessageLogAutoConfiguration.class))
+                .withPropertyValues("alt.event.bindings.log-oper.transport=fake")
                 .withBean(EventTemplate.class, () -> template).withUserConfiguration(Transactions.class);
     }
 

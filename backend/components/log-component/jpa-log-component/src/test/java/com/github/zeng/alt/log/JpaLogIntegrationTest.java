@@ -7,6 +7,7 @@ import io.vavr.control.Option;
 import com.github.zeng.alt.event.EventTemplate;
 import com.github.zeng.alt.log.message.config.MessageLogAutoConfiguration;
 import com.github.zeng.alt.log.message.consumer.MessageLogConsumer;
+import com.github.zeng.alt.log.message.consumer.LoginMessageLogConsumer;
 import com.github.zeng.alt.log.core.config.LogAutoConfiguration;
 import com.github.zeng.alt.log.jpa.config.JpaLogAutoConfiguration;
 import com.github.zeng.alt.log.jpa.repository.LogRepository;
@@ -54,7 +55,9 @@ class JpaLogIntegrationTest {
             login.setUsername("alice");
             login.setStatus("0");
             context.publishEvent(login);
-            assertThat(context.getBean(LoginLogRepository.class).findAll()).hasSize(1);
+            final var logins = context.getBean(LoginLogRepository.class).findAll();
+            assertThat(logins).hasSize(1);
+            assertThat(logins.getFirst().getLoginTime()).isNotNull();
         });
     }
 
@@ -104,7 +107,10 @@ class JpaLogIntegrationTest {
     void storesConsumedMessagesAndPropagatesDatabaseFailures() {
         runner().withConfiguration(AutoConfigurations.of(MessageLogAutoConfiguration.class))
                 .withBean(EventTemplate.class, () -> org.mockito.Mockito.mock(EventTemplate.class))
-                .withPropertyValues("log.message.producer-enabled=false", "log.message.consumer-enabled=true")
+                .withPropertyValues(
+                        "log.message.producer-enabled=false", "log.message.consumer-enabled=true",
+                        "alt.event.bindings.log-oper.transport=fake"
+                )
                 .run(context -> {
                     final var consumer = context.getBean(MessageLogConsumer.class);
                     final OperLogEvent invalid = new OperLogEvent();
@@ -115,6 +121,34 @@ class JpaLogIntegrationTest {
                     consumer.onOperLog(valid);
                     assertThat(context.getBean(LogRepository.class).findAll().getFirst().getTitle())
                             .isEqualTo("consumed");
+                });
+    }
+
+    @Test
+    void consumesLoginMessagesWithTheirOriginalMetadataAndPropagatesPersistenceFailure() {
+        runner().withConfiguration(AutoConfigurations.of(MessageLogAutoConfiguration.class))
+                .withBean(EventTemplate.class, () -> org.mockito.Mockito.mock(EventTemplate.class))
+                .withPropertyValues(
+                        "log.message.producer-enabled=false", "log.message.consumer-enabled=true",
+                        "alt.event.bindings.log-login.transport=fake"
+                ).run(context -> {
+                    final var consumer = context.getBean(LoginMessageLogConsumer.class);
+                    final LoginInfoEvent event = new LoginInfoEvent();
+                    event.setUsername("x".repeat(300));
+                    assertThatThrownBy(() -> consumer.onLoginLog(event)).isInstanceOf(RuntimeException.class);
+                    event.setUsername("alice");
+                    event.setTenantId("tenant-a");
+                    event.setLoginTime(java.time.LocalDateTime.of(2024, 1, 2, 3, 4, 5));
+                    event.setIp("113.92.157.29");
+                    event.setBrowser("Chrome 131");
+                    event.setOs("Windows 10");
+                    consumer.onLoginLog(event);
+                    final var saved = context.getBean(LoginLogRepository.class).findAll().getFirst();
+                    assertThat(saved.getTenantId()).isEqualTo("tenant-a");
+                    assertThat(saved.getLoginTime()).isEqualTo(event.getLoginTime());
+                    assertThat(saved.getIp()).isEqualTo(event.getIp());
+                    assertThat(saved.getBrowser()).isEqualTo(event.getBrowser());
+                    assertThat(saved.getOs()).isEqualTo(event.getOs());
                 });
     }
 

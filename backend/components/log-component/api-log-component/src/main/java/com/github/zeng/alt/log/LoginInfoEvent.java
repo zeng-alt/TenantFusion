@@ -4,6 +4,7 @@ import lombok.Data;
 
 import java.io.Serial;
 import java.io.Serializable;
+import java.time.LocalDateTime;
 
 /**
  * 登录事件
@@ -54,6 +55,9 @@ public class LoginInfoEvent implements Serializable {
 
     /** 操作系统名称和版本。 */
     private String os;
+
+    /** 登录发生时间，由源端设置，避免 MQ 消费延迟改变日志时间。 */
+    private LocalDateTime loginTime;
 
     /**
      * 其他参数

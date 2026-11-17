@@ -1,6 +1,7 @@
 package com.github.zeng.alt.security.jwt;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.zeng.alt.security.core.web.support.LoginLogHandler;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.http.MediaType;
@@ -30,7 +31,7 @@ public class JwtLoginFilter extends UsernamePasswordAuthenticationFilter {
     /**
      * 存放本次尝试登录的用户名，供登录失败处理器记录日志使用。
      */
-    public static final String LOGIN_USERNAME_ATTRIBUTE = "loginUsername";
+    public static final String LOGIN_USERNAME_ATTRIBUTE = LoginLogHandler.USERNAME_ATTRIBUTE;
 
     private final ObjectMapper objectMapper;
 
@@ -40,7 +41,7 @@ public class JwtLoginFilter extends UsernamePasswordAuthenticationFilter {
 
     @Override
     public Authentication attemptAuthentication(HttpServletRequest request, HttpServletResponse response) {
-        // 支持 JSON 格式的登录请求
+        LoginLogHandler.captureAttempt(request, request.getParameter(getUsernameParameter()));
         if (request.getContentType() != null
                 && request.getContentType().toLowerCase().contains(MediaType.APPLICATION_JSON_VALUE)) {
             try {
@@ -49,12 +50,13 @@ public class JwtLoginFilter extends UsernamePasswordAuthenticationFilter {
                         request.getInputStream(), Map.class);
                 String username = String.valueOf(credentials.getOrDefault(getUsernameParameter(), ""));
                 String password = String.valueOf(credentials.getOrDefault(getPasswordParameter(), ""));
+                LoginLogHandler.captureAttempt(request, username);
                 // 提取 rememberMe 参数
                 Object rememberMe = credentials.get("rememberMe");
                 if (rememberMe != null) {
                     request.setAttribute("rememberMe", "true".equals(String.valueOf(rememberMe)) || Boolean.TRUE.equals(rememberMe));
                 }
-                request.setAttribute(LOGIN_USERNAME_ATTRIBUTE, username);
+
                 UsernamePasswordAuthenticationToken authRequest =
                         UsernamePasswordAuthenticationToken.unauthenticated(username, password);
                 setDetails(request, authRequest);
@@ -68,7 +70,6 @@ public class JwtLoginFilter extends UsernamePasswordAuthenticationFilter {
         if (rememberMe != null) {
             request.setAttribute("rememberMe", "true".equals(rememberMe) || "on".equals(rememberMe));
         }
-        request.setAttribute(LOGIN_USERNAME_ATTRIBUTE, request.getParameter(getUsernameParameter()));
         return super.attemptAuthentication(request, response);
     }
 }

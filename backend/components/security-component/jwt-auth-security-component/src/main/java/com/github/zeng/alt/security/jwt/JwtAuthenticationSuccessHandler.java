@@ -2,8 +2,8 @@ package com.github.zeng.alt.security.jwt;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.zeng.alt.api.rest.RestResponse;
-import com.github.zeng.alt.log.LoginInfoEvent;
 import com.github.zeng.alt.security.api.SecurityUser;
+import com.github.zeng.alt.security.core.web.support.LoginLogHandler;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
@@ -33,14 +33,7 @@ public class JwtAuthenticationSuccessHandler implements AuthenticationSuccessHan
     public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response,
                                         Authentication authentication) throws IOException {
         SecurityUser securityUser = (SecurityUser) authentication.getPrincipal();
-
-        LoginInfoEvent event = new LoginInfoEvent();
-        event.setUsername(securityUser.getUsername());
-        event.setStatus("0");
-        event.setMessage("登录成功");
-        event.setIp(request.getRemoteAddr());
-        event.setUserAgent(request.getHeader("User-Agent"));
-        eventPublisher.publishEvent(event);
+        new LoginLogHandler(eventPublisher).success(request, securityUser);
 
         String token = jwtTokenProvider.createToken(securityUser);
         String cacheKey = jwtTokenProvider.getAccessCacheKey(token);

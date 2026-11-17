@@ -8,6 +8,8 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-autoconfigure")
     implementation("org.springframework:spring-web")
     implementation("io.projectreactor:reactor-core")
+    implementation(project(":backend:components:log-component:api-log-component"))
+    implementation(rootProject.libs.vavr)
     api("jakarta.servlet:jakarta.servlet-api")
 //    implementation("org.springframework:spring-webmvc")
 //    implementation("org.springframework:spring-reactive")

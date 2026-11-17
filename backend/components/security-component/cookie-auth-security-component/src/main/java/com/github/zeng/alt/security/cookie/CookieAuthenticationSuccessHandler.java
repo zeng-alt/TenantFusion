@@ -3,9 +3,11 @@ package com.github.zeng.alt.security.cookie;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.zeng.alt.api.rest.RestResponse;
 import com.github.zeng.alt.security.api.SecurityUser;
+import com.github.zeng.alt.security.core.web.support.LoginLogHandler;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.security.core.Authentication;
@@ -29,11 +31,24 @@ public class CookieAuthenticationSuccessHandler implements AuthenticationSuccess
     private final SessionManager sessionManager;
     private final ObjectMapper objectMapper;
     private final CookieAuthProperties cookieAuthProperties;
+    private final ApplicationEventPublisher eventPublisher;
+
+    /**
+     * 保留手动构造的兼容入口；需要登录审计时请传入 ApplicationEventPublisher。
+     */
+    public CookieAuthenticationSuccessHandler(
+            SessionManager sessionManager,
+            ObjectMapper objectMapper,
+            CookieAuthProperties cookieAuthProperties
+    ) {
+        this(sessionManager, objectMapper, cookieAuthProperties, event -> { });
+    }
 
     @Override
     public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response,
                                         Authentication authentication) throws IOException {
         SecurityUser securityUser = (SecurityUser) authentication.getPrincipal();
+        new LoginLogHandler(eventPublisher).success(request, securityUser);
         String sessionId = sessionManager.createSession(securityUser);
 
         response.addCookie(CookieHelper.create(cookieAuthProperties, request, sessionId,

@@ -21,6 +21,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -64,15 +65,20 @@ public class CookieAuthAutoConfiguration {
     public CookieAuthenticationSuccessHandler cookieAuthenticationSuccessHandler(
             SessionManager sessionManager,
             ObjectMapper objectMapper,
-            CookieAuthProperties cookieAuthProperties) {
-        return new CookieAuthenticationSuccessHandler(sessionManager, objectMapper, cookieAuthProperties);
+            CookieAuthProperties cookieAuthProperties,
+            ApplicationEventPublisher eventPublisher
+    ) {
+        return new CookieAuthenticationSuccessHandler(sessionManager, objectMapper, cookieAuthProperties, eventPublisher);
     }
 
     @Bean
     @ConditionalOnMissingBean
     @ConditionalOnProperty(prefix = "security.cookie-auth", name = "authentication", havingValue = "true")
-    public CookieAuthenticationFailureHandler cookieAuthenticationFailureHandler(ObjectMapper objectMapper) {
-        return new CookieAuthenticationFailureHandler(objectMapper);
+    public CookieAuthenticationFailureHandler cookieAuthenticationFailureHandler(
+            ObjectMapper objectMapper,
+            ApplicationEventPublisher eventPublisher
+    ) {
+        return new CookieAuthenticationFailureHandler(objectMapper, eventPublisher);
     }
 
     @Bean
@@ -97,8 +103,10 @@ public class CookieAuthAutoConfiguration {
     public CookieLoginHelper cookieLoginHelper(
             AuthenticationManager authenticationManager,
             SessionManager sessionManager,
-            CookieAuthProperties cookieAuthProperties) {
-        return new CookieLoginHelper(authenticationManager, sessionManager, cookieAuthProperties);
+            CookieAuthProperties cookieAuthProperties,
+            ApplicationEventPublisher eventPublisher
+    ) {
+        return new CookieLoginHelper(authenticationManager, sessionManager, cookieAuthProperties, eventPublisher);
     }
 
     @Bean

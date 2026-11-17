@@ -1,9 +1,11 @@
 package com.github.zeng.alt.security.cookie;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.zeng.alt.security.core.web.support.LoginLogHandler;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ProblemDetail;
@@ -27,10 +29,20 @@ import java.nio.charset.StandardCharsets;
 public class CookieAuthenticationFailureHandler implements AuthenticationFailureHandler {
 
     private final ObjectMapper objectMapper;
+    private final ApplicationEventPublisher eventPublisher;
+
+    /**
+     * 保留手动构造的兼容入口；需要登录审计时请传入 ApplicationEventPublisher。
+     */
+    public CookieAuthenticationFailureHandler(ObjectMapper objectMapper) {
+        this(objectMapper, event -> { });
+    }
 
     @Override
     public void onAuthenticationFailure(HttpServletRequest request, HttpServletResponse response,
                                         AuthenticationException exception) throws IOException {
+        new LoginLogHandler(eventPublisher).failure(request, exception);
+
         ProblemDetail problemDetail = ProblemDetail.forStatus(600);
         problemDetail.setTitle("用户未登录或者cookie无效/过期");
         problemDetail.setDetail(exception.getMessage());

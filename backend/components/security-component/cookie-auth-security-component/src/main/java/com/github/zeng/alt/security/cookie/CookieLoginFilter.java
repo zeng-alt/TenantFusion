@@ -1,6 +1,7 @@
 package com.github.zeng.alt.security.cookie;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.zeng.alt.security.core.web.support.LoginLogHandler;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.http.MediaType;
@@ -32,6 +33,7 @@ public class CookieLoginFilter extends UsernamePasswordAuthenticationFilter {
 
     @Override
     public Authentication attemptAuthentication(HttpServletRequest request, HttpServletResponse response) {
+        LoginLogHandler.captureAttempt(request, request.getParameter(getUsernameParameter()));
         if (request.getContentType() != null
                 && request.getContentType().toLowerCase().contains(MediaType.APPLICATION_JSON_VALUE)) {
             try {
@@ -40,6 +42,7 @@ public class CookieLoginFilter extends UsernamePasswordAuthenticationFilter {
                         request.getInputStream(), Map.class);
                 String username = credentials.getOrDefault(getUsernameParameter(), "");
                 String password = credentials.getOrDefault(getPasswordParameter(), "");
+                LoginLogHandler.captureAttempt(request, username);
                 UsernamePasswordAuthenticationToken authRequest =
                         UsernamePasswordAuthenticationToken.unauthenticated(username, password);
                 setDetails(request, authRequest);

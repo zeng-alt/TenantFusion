@@ -4,15 +4,15 @@ import com.github.zeng.alt.security.api.LoginHelper;
 import com.github.zeng.alt.security.api.LoginResponse;
 import com.github.zeng.alt.security.api.SecurityUser;
 import com.github.zeng.alt.security.api.UserContextHolder;
+import com.github.zeng.alt.security.core.web.support.LoginLogHandler;
 import io.vavr.control.Option;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.apachecommons.CommonsLog;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.Authentication;
 import org.springframework.util.StringUtils;
 
 import java.util.Arrays;
@@ -26,6 +26,17 @@ public class JwtLoginHelper implements LoginHelper {
     private final JwtTokenProvider jwtTokenProvider;
     private final JwtStorage jwtStorage;
     private final JwtProperties jwtProperties;
+    private final ApplicationEventPublisher eventPublisher;
+
+    /** 保留手动构造入口；需要登录审计时请传入 ApplicationEventPublisher。 */
+    public JwtLoginHelper(
+            AuthenticationManager authenticationManager,
+            JwtTokenProvider jwtTokenProvider,
+            JwtStorage jwtStorage,
+            JwtProperties jwtProperties
+    ) {
+        this(authenticationManager, jwtTokenProvider, jwtStorage, jwtProperties, event -> { });
+    }
 
     @Override
     public String name() {
@@ -73,10 +84,8 @@ public class JwtLoginHelper implements LoginHelper {
 
     @Override
     public LoginResponse login(String username, String password, boolean rememberMe) {
-        UsernamePasswordAuthenticationToken authRequest =
-                UsernamePasswordAuthenticationToken.unauthenticated(username, password);
-        Authentication authenticated = authenticationManager.authenticate(authRequest);
-        SecurityUser user = (SecurityUser) authenticated.getPrincipal();
+        final SecurityUser user = new LoginLogHandler(eventPublisher)
+                .authenticate(authenticationManager, username, password);
 
         String jwt = jwtTokenProvider.createToken(user);
         String cacheKey = jwtTokenProvider.getAccessCacheKey(jwt);
