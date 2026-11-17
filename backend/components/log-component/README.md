@@ -1,284 +1,130 @@
 # 日志模块 (log-component)
 
-操作日志记录组件，通过 `@Log` 注解自动记录用户操作日志，支持 **JPA 持久化** 和 **消息队列分发** 两种输出方式。
+通过 `@Log` 记录方法执行结果。核心模块采集元数据并发布本地事件；JPA 和消息模块按需引入。
 
----
+| 模块 | 职责 |
+|---|---|
+| `api-log-component` | `@Log`、操作日志事件、登录日志事件和枚举 |
+| `core-log-component` | AOP、Jackson 3 字段过滤、请求与身份解析、事件发布 |
+| `jpa-log-component` | MapStruct 映射及独立事务持久化 |
+| `message-log-component` | 通过 event-component 发送或接收操作日志 |
 
-## 模块结构
-
-```
-log-component/
-├── api-log-component/            # API 模块（必选）
-│   ├── @Log                      # 操作日志注解
-│   ├── OperLogEvent              # 操作日志事件
-│   ├── LoginInfoEvent            # 登录日志事件
-│   ├── BusinessType              # 业务操作类型枚举
-│   ├── BusinessStatus            # 操作状态枚举
-│   └── OperatorType              # 操作人类别枚举
-│
-├── core-log-component/           # 核心模块（必选）
-│   ├── LogMethodInterceptor      # @Log AOP 拦截器
-│   ├── LogHandler / DefaultLogHandler    # 日志处理器 → 发布事件
-│   ├── LogRecordFactory          # OperLogEvent 构建工厂
-│   ├── UserResolver / DefaultUserResolver          # 用户解析
-│   ├── IpResolver / ServletIpResolver              # IP 解析
-│   ├── RequestResolver / ServletRequestResolver    # 请求解析
-│   └── RequestParameterResolver / Default...       # 参数序列化
-│
-├── jpa-log-component/            # JPA 持久化（可选：单服务常用）
-│   ├── LogEntity                 # sys_oper_log 实体
-│   ├── LogRepository             # JPA Repository
-│   └── LogEventPersistenceListener  # 事件监听 → 存库
-│
-└── message-log-component/        # 消息队列（可选：多服务）
-    ├── MessageLogProducer        # 本地事件 → 发送到 MQ
-    ├── MessageLogConsumer        # 从 MQ 接收 → 重新发布
-    └── MessageLogConsumer        # @EventSubscription 消费 log-oper binding
-```
-
----
-
-## 快速开始
-
-### 1. 引入依赖
+## 引入依赖
 
 ```kotlin
-// build.gradle.kts
-
-// 单服务模式（核心 + JPA 持久化）
 implementation(project(":backend:components:log-component:core-log-component"))
+// 本地持久化按需引入
 implementation(project(":backend:components:log-component:jpa-log-component"))
-
-// 多服务模式（核心 + 消息队列）
-implementation(project(":backend:components:log-component:core-log-component"))
-implementation(project(":backend:components:log-component:message-log-component"))
-// 选择一个消息实现
-implementation(project(":backend:components:event-component:redis-event-component"))
 ```
 
-> `api-log-component` 会被 `core-log-component` 自动传递依赖，无需手动引入。
+核心模块自行注册 Advisor 代理基础设施，无需为了启用日志而引入 JPA。Servlet、非 Web 和 WebFlux 应用均可启动。
+Servlet 应用自动采集 URI、HTTP 方法、IP 和 query/form 参数；其他环境采集方法参数及当前线程的身份、租户上下文。
+WebFlux 的装配兼容不代表订阅完成日志：当前 `@Log` 记录同步方法的返回或抛错，不跟踪 Publisher 的异步完成状态。
 
-### 2. 使用 `@Log` 注解
+## 使用注解
 
 ```java
-@RestController
-@RequestMapping("/system/user")
-public class UserController {
-
-    @Log(title = "用户管理", businessType = BusinessType.INSERT)
-    @PostMapping
-    public AjaxResult add(@RequestBody SysUser user) {
-        // 业务逻辑...
-        return success();
-    }
-
-    @Log(title = "用户管理", businessType = BusinessType.DELETE)
-    @DeleteMapping("/{ids}")
-    public AjaxResult remove(@PathVariable Long[] ids) {
-        return success();
-    }
-
-    @Log(title = "用户管理", businessType = BusinessType.UPDATE,
-         isSaveRequestData = false)   // 不保存请求参数
-    @PutMapping
-    public AjaxResult edit(@RequestBody SysUser user) {
-        return success();
-    }
-
-    @Log(title = "用户管理", businessType = BusinessType.EXPORT,
-         isSaveResponseData = false)  // 不保存响应结果
-    @GetMapping("/export")
-    public void export(HttpServletResponse response) {
-        // 导出逻辑...
-    }
+@Log(title = "更新用户", businessType = BusinessType.UPDATE,
+     excludeParamNames = {"privateField"}, isSaveResponseData = false)
+public String update(UserCmd command) {
+    return "ok";
 }
 ```
 
-### 3. 查看自动保存的日志
+支持在接口或实现方法上声明注解，兼容 JDK 代理和类代理。通过 Spring Bean 代理调用才会拦截，同类自调用沿用 Spring AOP 的语义。
 
-引入 `jpa-log-component` 后，日志会自动写入 `sys_oper_log` 表。
+| 参数 | 默认值 | 说明 |
+|---|---|---|
+| `title` | `""` | 操作名称 |
+| `businessType` | `OTHER` | INSERT、UPDATE、DELETE、GRANT、EXPORT、IMPORT 等 |
+| `operatorType` | `MANAGE` | 操作者类型 |
+| `isSaveRequestData` | `true` | 是否记录请求与方法参数 |
+| `isSaveResponseData` | `true` | 是否记录返回值；与请求开关独立 |
+| `excludeParamNames` | `{}` | 本次操作额外排除的字段名，作用于请求和响应 |
 
-### 4. 多服务场景
+## Jackson 3 与字段过滤
+
+默认参数、结果序列化使用 Boot 4 的 `tools.jackson.databind.json.JsonMapper`，复用 json-component 的日期、大数和业务注解规则。宿主可贡献 `JsonMapperBuilderCustomizer` 或 Jackson 3 Module Bean。
+
+请求参数记录为 JSON 对象：包含 query/form 参数和按实现方法参数名绑定的实参，二者同时保留。多值 HTTP 参数输出为数组。Servlet 请求/响应、上传文件、流和 Publisher 等框架参数不参与序列化。
+
+字段过滤作用于嵌套对象及数组，按字段名忽略大小写匹配。默认排除 `password`、`oldPassword`、`newPassword`、`confirmPassword`、`token`、`accessToken`、`refreshToken`、`authorization` 和 `secret`。`@Log.excludeParamNames` 在默认集合上追加。
+
+宿主可替换全局排除集合，例如：
 
 ```yaml
-# 业务服务 application.yml（仅发送到消息队列）
-log.message.producer-enabled: true      # 默认 true
-log.message.consumer-enabled: false     # 默认 false
-
-# 日志聚合服务 application.yml（接收并保存到 DB）
-log.message.producer-enabled: false
-log.message.consumer-enabled: true
+alt:
+  log:
+    excluded-fields:
+      - password
+      - oldPassword
+      - newPassword
+      - confirmPassword
+      - token
+      - accessToken
+      - refreshToken
+      - authorization
+      - secret
+      - internalCode
 ```
 
----
+该列表替换默认集合；仅按名称过滤字段，不识别任意字符串里的凭据。返回值本身是凭据的接口应关闭响应记录。
 
-## @Log 注解参数
+序列化某个值失败时，该值记录为空字符串，其他元数据仍会发布。日志解析或处理失败会记录诊断信息，不改变业务返回值和原异常。
 
-| 参数 | 类型 | 默认值 | 说明 |
-|---|---|---|---|
-| `title` | `String` | `""` | 操作模块名称（如"用户管理"） |
-| `businessType` | `BusinessType` | `OTHER` | 业务操作类型 |
-| `operatorType` | `OperatorType` | `MANAGE` | 操作人类别 |
-| `isSaveRequestData` | `boolean` | `true` | 是否保存请求参数 |
-| `isSaveResponseData` | `boolean` | `true` | 是否保存响应结果 |
-| `excludeParamNames` | `String[]` | `{}` | 排除的请求参数名 |
+## 事件与事务
 
-### BusinessType 枚举
-
-| 值 | 说明 |
-|---|---|
-| `OTHER` | 其它 |
-| `INSERT` | 新增 |
-| `UPDATE` | 修改 |
-| `DELETE` | 删除 |
-| `GRANT` | 授权 |
-| `EXPORT` | 导出 |
-| `IMPORT` | 导入 |
-| `FORCE` | 强退 |
-| `CLEAN` | 清空 |
-
-### OperatorType 枚举
-
-| 值 | 说明 |
-|---|---|
-| `OTHER` | 其它 |
-| `MANAGE` | 后台用户 |
-| `MOBILE` | 手机端用户 |
-
----
-
-## OperLogEvent 事件字段
-
-`DefaultLogHandler` 将拦截到的日志信息封装为 `OperLogEvent`，通过 `ApplicationEventPublisher` 发布。
-
-| 字段 | 类型 | 说明 | 来源 |
-|---|---|---|---|
-| `operId` | `Long` | 主键 | 自动生成 |
-| `tenantId` | `String` | 租户ID | `UserContextHolder` |
-| `title` | `String` | 操作模块 | `@Log.title` |
-| `businessType` | `Integer` | 业务类型 | `@Log.businessType` |
-| `method` | `String` | 请求方法全名 | AOP 拦截 |
-| `requestMethod` | `String` | HTTP 方法 | `ServletRequestResolver` |
-| `operatorType` | `Integer` | 操作类别 | `@Log.operatorType` |
-| `operName` | `String` | 操作人员 | `UserResolver` |
-| `deptName` | `String` | 部门名称 | 可扩展 |
-| `operUrl` | `String` | 请求 URL | `ServletRequestResolver` |
-| `operIp` | `String` | 操作 IP | `IpResolver` |
-| `operLocation` | `String` | 操作地点 | 可扩展 |
-| `operParam` | `String` | 请求参数(JSON) | `RequestParameterResolver` |
-| `jsonResult` | `String` | 响应结果(JSON) | AOP 拦截 |
-| `status` | `Integer` | 0正常 / 1异常 | 自动判断 |
-| `errorMsg` | `String` | 错误消息 | 异常捕获 |
-| `operTime` | `LocalDateTime` | 操作时间 | 自动 |
-| `costTime` | `Long` | 耗时(ms) | AOP 计时 |
-
----
-
-## 自定义扩展
-
-### 自定义日志处理器
-
-```java
-@Component
-public class MyLogHandler implements LogHandler {
-    @Override
-    public void handle(LogInvocation invocation) {
-        // 自定义处理逻辑：如发送到 Elasticsearch
-        OperLogEvent event = logRecordFactory.create(invocation);
-        elasticsearchClient.index(event);
-    }
-}
+```text
+@Log → 构建 OperLogEvent → 发布本地事件
+                              ├─ JPA 监听器 → LogPersistenceService → REQUIRES_NEW 保存
+                              └─ 消息生产者 → EventTemplate.to("log-oper").publish(...)
 ```
 
-### 自定义用户解析
+操作和登录日志使用独立写事务，覆盖无事务调用、成功操作、失败操作以及外层业务事务回滚。记录的是方法执行结果，不是外层事务的最终提交状态；外层回滚后仍可能存在状态为成功的方法执行记录。
 
-```java
-@Component
-public class MyUserResolver implements UserResolver {
-    @Override
-    public String currentUser() {
-        // 从 Token / Header 中获取用户名
-        return MyContextHolder.getUsername();
-    }
-}
+事件在当前线程同步处理。JPA 持久化失败会传播到发布边界：本地 `@Log` 拦截器会隔离它；MQ 消费时会交给 event-component 的失败处理策略，避免将未保存的日志当作消费成功。登录日志沿用失败隔离行为，保存失败不会打断登录处理。
+
+日志包含租户 ID、操作者、方法名、操作时间、耗时、成功/失败状态及错误消息。租户默认取 `TenantContextHolder.getTenantId()`，操作者取 `UserContextHolder.getUsername()`。
+
+## 多服务部署
+
+```kotlin
+implementation(project(":backend:components:log-component:message-log-component"))
+// 按部署需要选择 event-component 的 Redis、Kafka 或 Rabbit 实现
 ```
 
-> 自定义实现注册为 Spring Bean 后，`@ConditionalOnMissingBean` 会自动替换默认实现。
+业务服务默认启用生产者，消费者默认关闭。日志聚合服务开启消费并引入 JPA 模块：
 
----
+```yaml
+# 业务服务
+log.message.producer-enabled: true
+log.message.consumer-enabled: false
 
-## 数据流架构
-
-### 单服务模式
-
-```
-@Log
-  ↓
-LogMethodInterceptor (AOP)
-  ↓
-DefaultLogRecordFactory → 构建 OperLogEvent
-  ↓
-DefaultLogHandler → publishEvent(OperLogEvent)
-  ↓
-LogEventPersistenceListener (@TransactionalEventListener)
-  ↓
-LogRepository.save() → sys_oper_log 表
+# 日志聚合服务（配置于另一个应用）
+# log.message.producer-enabled: false
+# log.message.consumer-enabled: true
 ```
 
-### 多服务模式
+发送和消费需要配置 `alt.event.bindings.log-oper`，指定 transport 及对应的队列、topic 或 stream；消费者端点 ID 为 `operation-log`。
 
-```
-Service A（业务服务）:
-@Log → 拦截 → DefaultLogHandler → publish Event
-                                      ↓
-                               MessageLogProducer → MQ (log.oper topic)
+消费回流事件会在本地立即处理，生产者会跳过它，同一服务同时启用发送和接收也不会把收到的事件重新发送。发送是同步的独立动作，不与业务数据库事务组成原子提交；Broker 发送失败记录诊断信息。
 
-Service B（日志聚合服务）:
-Broker → MessageLogConsumer (@EventSubscription)
-      ↓
-    MessageLogConsumer → re-publish Event (设置回流标记)
-                          ↓
-                   LogEventPersistenceListener → DB
-```
+## 扩展与兼容
 
-> 回流标记由 `MessageLogProducer.setFromMessage()` / `isFromMessage()` 控制，
-> 防止"收到 → 转发 → 再收到 → 再转发"的无限循环。
+可贡献 `UserResolver`、`TenantResolver`、`IpResolver`、`RequestResolver`、`RequestParameterResolver`、`LogRecordFactory` 或 `LogHandler` Bean，替换相应默认行为。JPA 层可贡献 `LogPersistenceService`。
 
----
+`TenantResolver.currentTenant()` 使用 Vavr `Option<String>` 表示是否存在租户。其余既有 SPI 保留原签名，包括 `LogHandler` / `LogRecordFactory` 的历史 checked 异常声明；默认实现使用 Jackson 3。直接构造默认 Factory 或参数 Resolver 的代码需要使用新的构造器依赖，建议通过 SPI Bean 扩展。
 
-## 数据库表结构
+JPA 实体为 `sys_oper_log`、`sys_logininfor`；主键列是 `id`，由 SnowflakeId 生成，不使用数据库 AUTO_INCREMENT。生产数据库应由宿主提供匹配实体的迁移脚本。
 
-```sql
-CREATE TABLE sys_oper_log (
-    oper_id        BIGINT AUTO_INCREMENT PRIMARY KEY,
-    tenant_id      VARCHAR(20),
-    title          VARCHAR(50)    COMMENT '操作模块',
-    business_type  INT            COMMENT '业务类型',
-    method         VARCHAR(200)   COMMENT '方法名',
-    request_method VARCHAR(10)    COMMENT '请求方式',
-    operator_type  INT            COMMENT '操作类别',
-    oper_name      VARCHAR(50)    COMMENT '操作人员',
-    dept_name      VARCHAR(50)    COMMENT '部门名称',
-    oper_url       VARCHAR(255)   COMMENT '请求URL',
-    oper_ip        VARCHAR(128)   COMMENT '主机地址',
-    oper_location  VARCHAR(255)   COMMENT '操作地点',
-    oper_param     TEXT           COMMENT '请求参数',
-    json_result    TEXT           COMMENT '返回参数',
-    status         INT            COMMENT '操作状态',
-    error_msg      TEXT           COMMENT '错误消息',
-    oper_time      DATETIME       COMMENT '操作时间',
-    cost_time      BIGINT         COMMENT '消耗时间(ms)'
-);
+## 验证
+
+```shell
+./gradlew :backend:components:log-component:core-log-component:check \
+  :backend:components:log-component:jpa-log-component:check \
+  :backend:components:log-component:message-log-component:check
 ```
 
-> 若使用 Liquibase / Flyway，可在项目中添加此表结构变更脚本。
+测试覆盖注解解析、日志失败隔离、Jackson 3、参数/响应开关、敏感字段过滤、三类应用装配、H2/JPA 事务回滚隔离及消息回流。三个实现模块的业务代码行覆盖率门槛为 80%，不计 Lombok 数据模型和生成的 mapper。
 
----
-
-## GraalVM Native Image 支持
-
-- `LogRuntimeHints` 已注册 `@Log` 注解和 `LogOperation` 的反射提示
-- `core-log-component` 使用 `@ConditionalOnWebApplication` 控制 Servlet 组件，非 Web 环境自动跳过
-- 所有支持组件均可通过 `@ConditionalOnMissingBean` 自定义替换
-
-消息日志发送和消费需要配置 `alt.event.bindings.log-oper`，指定 transport 及对应的队列/topic/stream。消费者启用后使用端点 `operation-log`；旧消息模板已移除。
+Native hints 包含组件日志事件的绑定元数据；宿主业务 DTO 仍需提供相应绑定提示。此次验证为 JVM 测试，未执行 native-image 构建。

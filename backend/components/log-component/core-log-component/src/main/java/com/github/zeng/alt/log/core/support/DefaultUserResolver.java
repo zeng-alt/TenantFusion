@@ -1,6 +1,7 @@
 package com.github.zeng.alt.log.core.support;
 
 import com.github.zeng.alt.security.api.UserContextHolder;
+import io.vavr.control.Option;
 
 /**
  * 从 {@link UserContextHolder} 获取当前用户。
@@ -10,13 +11,8 @@ import com.github.zeng.alt.security.api.UserContextHolder;
  * @version 1.0
  */
 public class DefaultUserResolver implements UserResolver {
-
     @Override
     public String currentUser() {
-        try {
-            return UserContextHolder.getUsername();
-        } catch (Exception e) {
-            return null;
-        }
+        return Option.of(UserContextHolder.getUsername()).getOrElse("");
     }
 }

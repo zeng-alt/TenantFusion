@@ -5,8 +5,7 @@ import com.github.zeng.alt.event.EventTemplate;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.apachecommons.CommonsLog;
 import org.springframework.core.log.LogMessage;
-import org.springframework.transaction.event.TransactionPhase;
-import org.springframework.transaction.event.TransactionalEventListener;
+import org.springframework.context.event.EventListener;
 
 /**
  * 消息日志生产者。
@@ -48,7 +47,7 @@ public class MessageLogProducer {
         return Boolean.TRUE.equals(FROM_MESSAGE.get());
     }
 
-    @TransactionalEventListener(phase = TransactionPhase.BEFORE_COMMIT)
+    @EventListener
     public void onOperLog(OperLogEvent event) {
         // 跳过从消息队列回流的事件，防止循环
         if (isFromMessage()) {

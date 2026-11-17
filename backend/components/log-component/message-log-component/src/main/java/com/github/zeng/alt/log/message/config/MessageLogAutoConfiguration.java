@@ -3,6 +3,7 @@ package com.github.zeng.alt.log.message.config;
 import com.github.zeng.alt.log.message.consumer.MessageLogConsumer;
 import com.github.zeng.alt.log.message.producer.MessageLogProducer;
 import com.github.zeng.alt.event.EventTemplate;
+import com.github.zeng.alt.event.config.EventAutoConfiguration;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
@@ -27,7 +28,7 @@ import org.springframework.context.annotation.Bean;
  * @since 2026-07-01
  * @version 1.0
  */
-@AutoConfiguration
+@AutoConfiguration(after = EventAutoConfiguration.class)
 @ConditionalOnBean(EventTemplate.class)
 public class MessageLogAutoConfiguration {
 

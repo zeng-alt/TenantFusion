@@ -1,6 +1,5 @@
 package com.github.zeng.alt.log.core.config;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.zeng.alt.log.Log;
 import com.github.zeng.alt.log.core.aot.LogRuntimeHints;
 import com.github.zeng.alt.log.core.handler.DefaultLogHandler;
@@ -10,20 +9,30 @@ import com.github.zeng.alt.log.core.handler.LogRecordFactory;
 import com.github.zeng.alt.log.core.interceptor.LogMethodInterceptor;
 import com.github.zeng.alt.log.core.operation.AnnotationLogOperationSource;
 import com.github.zeng.alt.log.core.operation.LogOperationSource;
-import com.github.zeng.alt.log.core.support.*;
+import com.github.zeng.alt.log.core.support.DefaultRequestParameterResolver;
+import com.github.zeng.alt.log.core.support.DefaultUserResolver;
+import com.github.zeng.alt.log.core.support.IpResolver;
+import com.github.zeng.alt.log.core.support.LogValueHelper;
+import com.github.zeng.alt.log.core.support.RequestParameterResolver;
+import com.github.zeng.alt.log.core.support.RequestResolver;
+import com.github.zeng.alt.log.core.support.TenantResolver;
+import com.github.zeng.alt.log.core.support.UserResolver;
+import com.github.zeng.alt.tenant.api.TenantContextHolder;
+import io.vavr.control.Option;
 import org.springframework.aop.Advisor;
 import org.springframework.aop.support.annotation.AnnotationMatchingPointcut;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.boot.jackson.autoconfigure.JacksonAutoConfiguration;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Import;
 import org.springframework.context.annotation.ImportRuntimeHints;
-import org.springframework.context.annotation.Lazy;
 import org.springframework.context.annotation.Role;
+import tools.jackson.databind.json.JsonMapper;
 
 /**
  * 日志模块自动配置。
@@ -36,25 +45,17 @@ import org.springframework.context.annotation.Role;
  * @since 2026-07-01
  * @version 1.0
  */
-@AutoConfiguration
+@AutoConfiguration(after = JacksonAutoConfiguration.class)
+@Import({ServletLogConfiguration.class, LogAutoProxyRegistrar.class})
+@EnableConfigurationProperties(LogProperties.class)
 @ImportRuntimeHints(LogRuntimeHints.class)
 @Role(BeanDefinition.ROLE_INFRASTRUCTURE)
 public class LogAutoConfiguration {
-
-    // ========== AOP 拦截 ==========
-
     @Bean
     @Role(BeanDefinition.ROLE_INFRASTRUCTURE)
-    public Advisor logAdvisor(
-            ObjectProvider<LogHandler> handler,
-            ObjectProvider<LogOperationSource> source) {
-
-        return new LogMethodInterceptor(
-                handler,
-                source,
-                new AnnotationMatchingPointcut(null, Log.class, true),
-                10
-        );
+    @ConditionalOnMissingBean(name = "logAdvisor")
+    public Advisor logAdvisor(ObjectProvider<LogHandler> handler, ObjectProvider<LogOperationSource> source) {
+        return new LogMethodInterceptor(handler, source, new AnnotationMatchingPointcut(null, Log.class, true), 10);
     }
 
     @Bean
@@ -64,14 +65,10 @@ public class LogAutoConfiguration {
         return new AnnotationLogOperationSource();
     }
 
-    // ========== 日志处理器 ==========
-
     @Bean
     @Role(BeanDefinition.ROLE_INFRASTRUCTURE)
     @ConditionalOnMissingBean(LogHandler.class)
-    public LogHandler defaultLogHandler(
-            LogRecordFactory factory,
-            ApplicationEventPublisher publisher) {
+    public LogHandler defaultLogHandler(LogRecordFactory factory, ApplicationEventPublisher publisher) {
         return new DefaultLogHandler(factory, publisher);
     }
 
@@ -82,42 +79,61 @@ public class LogAutoConfiguration {
             IpResolver ipResolver,
             RequestResolver requestResolver,
             RequestParameterResolver parameterResolver,
-            ObjectProvider<ObjectMapper> objectMapper) {
+            TenantResolver tenantResolver,
+            LogValueHelper values
+    ) {
         return new DefaultLogRecordFactory(
-                userResolver, ipResolver,
-                requestResolver, parameterResolver,
-                objectMapper);
+                userResolver,
+                ipResolver,
+                requestResolver,
+                parameterResolver,
+                tenantResolver,
+                values
+        );
     }
 
-    // ========== 支持组件（Web 环境） ==========
+    @Bean
+    @ConditionalOnMissingBean
+    public LogValueHelper logValueHelper(JsonMapper mapper, LogProperties properties) {
+        return new LogValueHelper(mapper, properties);
+    }
 
     @Bean
-    @ConditionalOnWebApplication(type = ConditionalOnWebApplication.Type.SERVLET)
     @ConditionalOnMissingBean(IpResolver.class)
-    public IpResolver servletIpResolver() {
-        return new ServletIpResolver();
+    public IpResolver emptyIpResolver() {
+        return () -> "";
     }
 
     @Bean
-    @ConditionalOnWebApplication(type = ConditionalOnWebApplication.Type.SERVLET)
     @ConditionalOnMissingBean(RequestResolver.class)
-    public RequestResolver servletRequestResolver() {
-        return new ServletRequestResolver();
+    public RequestResolver emptyRequestResolver() {
+        return new RequestResolver() {
+            @Override
+            public String requestURI() {
+                return "";
+            }
+            @Override
+            public String method() {
+                return "";
+            }
+        };
     }
 
     @Bean
-    @ConditionalOnWebApplication(type = ConditionalOnWebApplication.Type.SERVLET)
     @ConditionalOnMissingBean(RequestParameterResolver.class)
-    public RequestParameterResolver defaultRequestParameterResolver(ObjectProvider<ObjectMapper> objectMapper) {
-        return new DefaultRequestParameterResolver(objectMapper);
+    public RequestParameterResolver defaultRequestParameterResolver(RequestResolver requestResolver, LogValueHelper values) {
+        return new DefaultRequestParameterResolver(requestResolver, values);
     }
 
-    // ========== 用户解析器（需要 security-api） ==========
-
     @Bean
-    @ConditionalOnClass(name = "com.github.zeng.alt.security.api.UserContextHolder")
     @ConditionalOnMissingBean(UserResolver.class)
     public UserResolver defaultUserResolver() {
         return new DefaultUserResolver();
+    }
+
+    @Bean
+    @ConditionalOnMissingBean(TenantResolver.class)
+    public TenantResolver defaultTenantResolver() {
+        return () -> Option.of(TenantContextHolder.getTenantId());
     }
 }

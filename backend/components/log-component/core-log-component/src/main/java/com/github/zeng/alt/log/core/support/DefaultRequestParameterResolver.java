@@ -1,16 +1,19 @@
 package com.github.zeng.alt.log.core.support;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.zeng.alt.log.core.operation.LogInvocation;
-import lombok.extern.apachecommons.CommonsLog;
-import org.aopalliance.intercept.MethodInvocation;
-import org.springframework.beans.factory.ObjectProvider;
-import org.springframework.web.context.request.RequestContextHolder;
-import org.springframework.web.context.request.ServletRequestAttributes;
-
 import jakarta.servlet.http.HttpServletRequest;
-import java.lang.reflect.Method;
-import java.util.*;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.io.Reader;
+import java.io.Writer;
+import java.lang.reflect.Parameter;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.stream.IntStream;
+import lombok.RequiredArgsConstructor;
+import org.springframework.aop.support.AopUtils;
+import org.springframework.util.ClassUtils;
+import org.springframework.web.multipart.MultipartFile;
 
 /**
  * 默认请求参数解析器，从 {@link HttpServletRequest} 获取参数并序列化为 JSON。
@@ -19,57 +22,33 @@ import java.util.*;
  * @since 2026-07-01
  * @version 1.0
  */
-@CommonsLog
+@RequiredArgsConstructor
 public class DefaultRequestParameterResolver implements RequestParameterResolver {
-
-    private final ObjectProvider<ObjectMapper> provider;
-
-    public DefaultRequestParameterResolver(ObjectProvider<ObjectMapper> provider) {
-        this.provider = provider;
-    }
-
-    public ObjectMapper getMapper() {
-        return provider.getObject();
-    }
+    private final RequestResolver requestResolver;
+    private final LogValueHelper values;
 
     @Override
     public String resolve(LogInvocation invocation) {
-        try {
-            // 优先从请求中获取参数
-            ServletRequestAttributes attrs = (ServletRequestAttributes)
-                    RequestContextHolder.currentRequestAttributes();
-            HttpServletRequest request = attrs.getRequest();
-            Map<String, String[]> paramMap = request.getParameterMap();
+        final Map<String, Object> parameters = new LinkedHashMap<>(requestResolver.parameters());
+        final Parameter[] declarations = AopUtils.getMostSpecificMethod(
+                invocation.getInvocation().getMethod(),
+                invocation.getInvocation().getThis().getClass()
+        ).getParameters();
+        final Object[] arguments = invocation.getInvocation().getArguments();
+        IntStream.range(0, declarations.length).filter(index -> recordable(arguments[index]))
+                .forEach(index -> parameters.put(declarations[index].getName(), arguments[index]));
+        return values.toJson(parameters, invocation.getOperation().getExcludeParams());
+    }
 
-            if (paramMap.isEmpty()) {
-                // 尝试从方法参数获取
-                MethodInvocation methodInvocation = invocation.getInvocation();
-                Method method = methodInvocation.getMethod();
-                Object[] args = methodInvocation.getArguments();
-                if (args != null && args.length > 0) {
-                    return getMapper().writeValueAsString(args);
-                }
-                return null;
-            }
-
-            // 排除不需要的参数
-            String[] excludeParams = invocation.getOperation().getExcludeParams();
-            Set<String> excludeSet = excludeParams != null
-                    ? new HashSet<>(Arrays.asList(excludeParams))
-                    : Collections.emptySet();
-
-            Map<String, String> filtered = new LinkedHashMap<>();
-            for (Map.Entry<String, String[]> entry : paramMap.entrySet()) {
-                if (excludeSet.contains(entry.getKey())) continue;
-                String[] values = entry.getValue();
-                filtered.put(entry.getKey(),
-                        values != null ? String.join(",", values) : null);
-            }
-
-            return getMapper().writeValueAsString(filtered);
-        } catch (Exception e) {
-            log.warn("Resolve request parameter failed", e);
-            return null;
+    private boolean recordable(Object value) {
+        if (value instanceof InputStream || value instanceof OutputStream || value instanceof Reader
+                || value instanceof Writer || value instanceof MultipartFile || value instanceof MultipartFile[]) {
+            return false;
         }
+        return value == null || ClassUtils.getAllInterfacesForClassAsSet(value.getClass()).stream()
+                .map(Class::getName).noneMatch(name -> name.startsWith("jakarta.servlet.")
+                        || name.equals("org.springframework.validation.Errors")
+                        || name.equals("org.springframework.web.server.ServerWebExchange")
+                        || name.equals("org.reactivestreams.Publisher"));
     }
 }

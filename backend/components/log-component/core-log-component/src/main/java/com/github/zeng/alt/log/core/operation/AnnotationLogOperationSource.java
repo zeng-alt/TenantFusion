@@ -2,10 +2,11 @@ package com.github.zeng.alt.log.core.operation;
 
 
 import com.github.zeng.alt.log.Log;
+import java.lang.reflect.Method;
+import org.springframework.aop.support.AopUtils;
+import org.springframework.core.BridgeMethodResolver;
 import org.springframework.core.annotation.AnnotatedElementUtils;
 import org.springframework.lang.Nullable;
-
-import java.lang.reflect.Method;
 
 public class AnnotationLogOperationSource
     extends AbstractFallbackLogOperationSource {
@@ -30,18 +31,12 @@ public class AnnotationLogOperationSource
         Method method,
         @Nullable Class<?> targetClass) {
 
-        // 方法优先
-        Log log = AnnotatedElementUtils.findMergedAnnotation(method, Log.class);
+        final Method specific = BridgeMethodResolver.findBridgedMethod(AopUtils.getMostSpecificMethod(method, targetClass));
+        final Log log = AnnotatedElementUtils.findMergedAnnotation(specific, Log.class);
         if (log != null) {
             return log;
         }
-
-        // 再查类
-        if (targetClass != null) {
-            return AnnotatedElementUtils.findMergedAnnotation(targetClass, Log.class);
-        }
-
-        return null;
+        return AnnotatedElementUtils.findMergedAnnotation(method, Log.class);
     }
 
     protected LogOperation convert(Log log) {
