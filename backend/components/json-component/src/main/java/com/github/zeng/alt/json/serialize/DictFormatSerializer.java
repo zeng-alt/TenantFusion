@@ -9,13 +9,13 @@ import com.fasterxml.jackson.databind.jsontype.TypeSerializer;
 import com.fasterxml.jackson.databind.ser.ContextualSerializer;
 import com.fasterxml.jackson.databind.ser.std.StdSerializer;
 import com.github.zeng.alt.api.base.BaseEnum;
+import com.github.zeng.alt.json.internal.DictValueHelper;
 import com.github.zeng.alt.json.annotation.DictFormat;
 import com.github.zeng.alt.json.spi.DictServiceHolder;
 import com.github.zeng.alt.json.spi.IDictEnum;
 import com.github.zeng.alt.json.spi.IDictTranslateService;
 
 import java.io.IOException;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 
@@ -56,46 +56,8 @@ public class DictFormatSerializer extends StdSerializer<Object> implements Conte
         if (ann == null) {
             return this;
         }
-        Map<String, String> map = buildEnumMap(ann.enumClass());
-        return new DictFormatSerializer(ann.dictType(), map);
-    }
-
-    /**
-     * 预构建枚举 code→label 映射。支持三种枚举形式（按优先级）：
-     * <ol>
-     *   <li>{@link IDictEnum}：使用 {@link IDictEnum#getCode()}（为 null 时回退到 {@link Enum#name()}）</li>
-     *   <li>{@link BaseEnum}：使用 {@link BaseEnum#getCode()}（转为字符串）</li>
-     *   <li>普通枚举：使用 {@link Enum#name()} 作为 code 和 label</li>
-     * </ol>
-     */
-    private static Map<String, String> buildEnumMap(Class<? extends Enum<?>> enumClass) {
-        if (enumClass == DictFormat.NoDictEnum.class) {
-            return null;
-        }
-        Enum<?>[] constants = enumClass.getEnumConstants();
-        if (constants == null || constants.length == 0) {
-            return null;
-        }
-        Map<String, String> map = new HashMap<>(constants.length);
-        for (Enum<?> constant : constants) {
-            String code;
-            String label;
-            if (constant instanceof IDictEnum de) {
-                code = de.getCode();
-                if (code == null) {
-                    code = constant.name();
-                }
-                label = de.getLabel();
-            } else if (constant instanceof BaseEnum be) {
-                code = String.valueOf(be.getCode());
-                label = be.getLabel();
-            } else {
-                code = constant.name();
-                label = constant.name();
-            }
-            map.put(code, label);
-        }
-        return Map.copyOf(map);
+        final Map<String, String> map = DictValueHelper.enumLabels(ann.enumClass());
+        return new DictFormatSerializer(ann.dictType(), map.isEmpty() ? null : map);
     }
 
     @Override

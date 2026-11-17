@@ -17,6 +17,6 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.FIELD, ElementType.METHOD})
 @JacksonAnnotationsInside
-@JsonSerialize(using = NullToEmptySerializer.class)
+@JsonSerialize(using = NullToEmptySerializer.class, nullsUsing = NullToEmptySerializer.class)
 public @interface NullToEmpty {
 }

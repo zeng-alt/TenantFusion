@@ -1,6 +1,6 @@
 # JSON 组件模块 (json-component)
 
-Jackson 序列化定制模块，提供企业级自定义注解和 SPI 扩展，包括数据脱敏、字典翻译、字段加密、精度控制、Null 值处理等。兼容 GraalVM Native Image。
+Spring Boot 4 默认使用 Jackson 3，同时保留 Jackson 2 兼容入口。两套映射器共用现有业务注解和 SPI，支持脱敏、字典翻译、字段加解密、数值精度、日期格式和空值处理。版本由项目的 Spring Boot BOM 管理。
 
 ## 模块结构
 
@@ -49,6 +49,40 @@ implementation(project(":backend:components:json-component"))
 ```
 
 模块自动注册，无需手动 `@Import` 或 `@EnableXxx`。
+
+### Jackson 3 默认入口与 Jackson 2 兼容
+
+MVC 消息转换器和 WebFlux 编解码器默认使用 Jackson 3，与 [Spring Boot 4 的默认行为](https://docs.spring.io/spring-boot/reference/features/json.html) 一致。
+业务代码通过构造器注入 `tools.jackson.databind.json.JsonMapper`，组件会自动注册业务模块：
+
+```java
+@RequiredArgsConstructor
+@Service
+public class PaymentService {
+    private final JsonMapper jsonMapper; // tools.jackson.databind.json.JsonMapper
+}
+```
+
+原有 `JacksonHelper` 的构造器、返回值和 `getObjectMapper()` 类型保持兼容，仍使用 `com.fasterxml.jackson.databind.ObjectMapper`（Jackson 2）。两套 mapper 可同时注入；不要互换其 Module、JsonNode 或序列化器类型。
+
+需要 HTTP 显式切回 Jackson 2 时，在宿主应用中配置：
+
+```yaml
+spring:
+  http:
+    converters:
+      preferred-json-mapper: jackson2 # MVC
+    codecs:
+      preferred-json-mapper: jackson2 # WebFlux
+```
+
+默认值为 `jackson`。宿主的 `spring.jackson.*` 配置和 Jackson 3 的 `JsonMapperBuilderCustomizer` 仍由 Boot 应用；扩展时贡献 customizer 或 `JacksonModule` Bean 即可。
+
+### Vavr
+
+Jackson 3 原生适配支持 `Option`（普通值或 null）、`Either`（`["left"|"right", value]`）、`Lazy`、`Tuple0`～`Tuple8`、`CharSeq`，以及 List / Array / Vector / Stream / Queue / PriorityQueue / Set / Map 家族，支持嵌套泛型反序列化。排序集合按元素或 key 的自然顺序重建，不传输自定义比较器。该适配不提供函数、Multimap 或任意 Vavr 类型的 Java 对象二进制序列化。
+
+Jackson 2 继续使用既有的 `vavr-jackson 0.x`。官方 `vavr-jackson 1.x` 面向 Jackson 3，但复用了相同的依赖坐标和 Java 包名，不能直接与 0.x 同时引入；因此 Jackson 3 适配使用本组件独立的 `VavrJacksonModule`。
 
 ### 全局效果
 
@@ -189,8 +223,5 @@ public class MyEncryptService implements IEncryptService {
 
 ## GraalVM Native Image 支持
 
-- 所有序列化器继承 `StdSerializer`，标注 `@JacksonStdImpl`，Jackson 可静态分析
-- `ContextualSerializer` 在 `createContextual` 阶段预构建映射（如 `code→label`），运行时零反射
-- 全局序列化器（`BigNumberConverter`、日期格式）直接注册到 `JavaTimeModule`
-- SPI holder 使用 `ObjectProvider.ifAvailable` 可选注入，无实现时不会导致启动失败
-- 无需额外 RuntimeHints 注册
+组件注册默认配置资源及 Jackson 2 注解序列化器的构造器 hints。Jackson 3 的业务序列化器直接构造实例，Vavr 集合通过静态工厂重建。
+宿主需要为动态解析的 DTO、泛型内容类型及 `@DictFormat(enumClass = ...)` 引用的业务枚举提供绑定反射元数据，例如 `@RegisterReflectionForBinding`。本次验证覆盖 JVM 测试，未执行 native-image 构建。

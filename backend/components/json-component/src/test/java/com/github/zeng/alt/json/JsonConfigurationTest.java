@@ -4,6 +4,20 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.zeng.alt.json.annotation.PhoneDesensitize;
 import io.vavr.control.Option;
 import org.junit.jupiter.api.Test;
+import org.springframework.aot.hint.RuntimeHints;
+import org.springframework.aot.hint.predicate.RuntimeHintsPredicates;
+import com.github.zeng.alt.json.serialize.SensitiveSerializer;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
+import org.springframework.core.ResolvableType;
+import org.springframework.http.MediaType;
+import org.springframework.http.codec.ServerCodecConfigurer;
+import org.springframework.http.codec.EncoderHttpMessageWriter;
+import org.springframework.http.codec.json.JacksonJsonEncoder;
+import org.springframework.http.codec.json.Jackson2JsonEncoder;
+import org.springframework.http.converter.json.JacksonJsonHttpMessageConverter;
+import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
+import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerAdapter;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.jackson.autoconfigure.JacksonAutoConfiguration;
 import org.springframework.boot.jackson2.autoconfigure.Jackson2AutoConfiguration;
@@ -28,7 +42,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 
 /**
- * 验证 Boot 4 中 Jackson 2 兼容配置及两个 Web 栈使用现有 JSON 契约。
+ * 验证 Boot 4 默认使用 Jackson 3，并支持显式选择 Jackson 2。
  *
  * @author zeng-alt
  * @since 0.0.1-SNAPSHOT
@@ -38,6 +52,14 @@ class JsonConfigurationTest {
     private static final AutoConfigurations JSON_CONFIGURATIONS = AutoConfigurations.of(
             JsonConfiguration.class, Jackson2AutoConfiguration.class, JacksonAutoConfiguration.class
     );
+
+    @Test
+    void registersNativeResourcesAndLegacySerializerConstructors() {
+        final RuntimeHints hints = new RuntimeHints();
+        new JsonRuntimeHints().registerHints(hints, getClass().getClassLoader());
+        assertThat(RuntimeHintsPredicates.resource().forResource("alt-json-defaults.properties").test(hints)).isTrue();
+        assertThat(hints.reflection().getTypeHint(SensitiveSerializer.class)).isNotNull();
+    }
 
     @Test
     void registersBusinessModulesAlongsideJackson3AndSupportsDateRoundTrip() {
@@ -51,9 +73,12 @@ class JsonConfigurationTest {
         });
     }
 
-    @Test
-    void servletHttpUsesConfiguredBusinessMapperWhenJackson3IsAlsoPresent() {
+    @ParameterizedTest
+    @ValueSource(strings = {"default", "jackson2"})
+    void servletHttpUsesJackson3ByDefaultAndCanSelectJackson2(String preferred) {
         new WebApplicationContextRunner()
+                .withPropertyValues(preferred.equals("default") ? new String[0]
+                        : new String[]{"spring.http.converters.preferred-json-mapper=" + preferred})
                 .withConfiguration(JSON_CONFIGURATIONS)
                 .withConfiguration(AutoConfigurations.of(
                         HttpMessageConvertersAutoConfiguration.class, WebMvcAutoConfiguration.class
@@ -61,20 +86,36 @@ class JsonConfigurationTest {
                 .withUserConfiguration(EndpointConfiguration.class)
                 .run(context -> {
                     assertThat(context).hasNotFailed();
+                    final var converter = context.getBean(RequestMappingHandlerAdapter.class).getMessageConverters()
+                            .stream().filter(candidate -> candidate.canWrite(Payload.class, MediaType.APPLICATION_JSON))
+                            .findFirst().orElseThrow();
+                    assertThat(converter).isInstanceOf(preferred.equals("default")
+                            ? JacksonJsonHttpMessageConverter.class : MappingJackson2HttpMessageConverter.class);
                     final String json = MockMvcBuilders.webAppContextSetup(context).build()
                             .perform(get("/json-contract")).andReturn().getResponse().getContentAsString();
                     assertPayload(context.getBean(ObjectMapper.class), json);
                 });
     }
 
-    @Test
-    void reactiveHttpUsesConfiguredBusinessMapperWhenJackson3IsAlsoPresent() {
+    @ParameterizedTest
+    @ValueSource(strings = {"default", "jackson2"})
+    void reactiveHttpUsesJackson3ByDefaultAndCanSelectJackson2(String preferred) {
         new ReactiveWebApplicationContextRunner()
+                .withPropertyValues(preferred.equals("default") ? new String[0]
+                        : new String[]{"spring.http.codecs.preferred-json-mapper=" + preferred})
                 .withConfiguration(JSON_CONFIGURATIONS)
                 .withConfiguration(AutoConfigurations.of(CodecsAutoConfiguration.class, WebFluxAutoConfiguration.class))
                 .withUserConfiguration(EndpointConfiguration.class)
                 .run(context -> {
                     assertThat(context).hasNotFailed();
+                    final var writer = context.getBean(ServerCodecConfigurer.class).getWriters().stream()
+                            .filter(candidate -> candidate.canWrite(
+                                    ResolvableType.forClass(Payload.class), MediaType.APPLICATION_JSON
+                            )).findFirst().orElseThrow();
+                    assertThat(writer).isInstanceOf(EncoderHttpMessageWriter.class);
+                    assertThat(((EncoderHttpMessageWriter<?>) writer).getEncoder()).isInstanceOf(
+                            preferred.equals("default") ? JacksonJsonEncoder.class : Jackson2JsonEncoder.class
+                    );
                     final String json = WebTestClient.bindToApplicationContext(context).build()
                             .get().uri("/json-contract").exchange().expectStatus().isOk()
                             .expectBody(String.class).returnResult().getResponseBody();
