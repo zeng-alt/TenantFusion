@@ -69,6 +69,10 @@ spring:
 #   表级   -> table-tenant-component，且实体需标 @TenantScope(table = true)
 #   混合   -> hybrid-tenant-component（改为逐租户读 main_tenant.isolation_mode）
 alt:
+  log:
+    ip2region:
+      ipv4-database: ${IP2REGION_IPV4_DATABASE:}
+      ipv6-database: ${IP2REGION_IPV6_DATABASE:}
   tenant:
     enabled: true
     mode: ROW

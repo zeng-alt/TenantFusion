@@ -41,6 +41,7 @@ public class JwtAuthenticationFailureHandler implements AuthenticationFailureHan
         event.setStatus("1");
         event.setMessage(exception.getMessage());
         event.setIp(request.getRemoteAddr());
+        event.setUserAgent(request.getHeader("User-Agent"));
         eventPublisher.publishEvent(event);
 
         ProblemDetail problemDetail = ProblemDetail.forStatus(600);

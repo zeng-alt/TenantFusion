@@ -1,6 +1,9 @@
 package com.github.zeng.alt.log;
 
 import com.github.zeng.alt.json.JsonConfiguration;
+import com.github.zeng.alt.log.core.support.IpLocationResolver;
+import com.github.zeng.alt.log.core.support.UserAgentResolver;
+import io.vavr.control.Option;
 import com.github.zeng.alt.event.EventTemplate;
 import com.github.zeng.alt.log.message.config.MessageLogAutoConfiguration;
 import com.github.zeng.alt.log.message.consumer.MessageLogConsumer;
@@ -113,6 +116,107 @@ class JpaLogIntegrationTest {
                     assertThat(context.getBean(LogRepository.class).findAll().getFirst().getTitle())
                             .isEqualTo("consumed");
                 });
+    }
+
+    @Test
+    void recordsTheOriginalIpAndItsLocation() {
+        runner().withBean(IpLocationResolver.class, () -> ip -> Option.some("中国 广东省 深圳市"))
+                .run(context -> {
+                    final LoginInfoEvent event = new LoginInfoEvent();
+                    event.setUsername("alice");
+                    event.setIp("113.92.157.29");
+                    context.publishEvent(event);
+                    final var saved = context.getBean(LoginLogRepository.class).findAll().getFirst();
+                    assertThat(saved.getIp()).isEqualTo("113.92.157.29");
+                    assertThat(saved.getLoginLocation())
+                            .isEqualTo("中国 广东省 深圳市");
+                });
+    }
+
+    @Test
+    void stillRecordsLoginWhenLocationLookupFails() {
+        runner().withBean(IpLocationResolver.class, () -> ip -> { throw new IllegalStateException("lookup failed"); })
+                .run(context -> {
+                    final LoginInfoEvent event = new LoginInfoEvent();
+                    event.setUsername("alice");
+                    event.setIp("113.92.157.29");
+                    context.publishEvent(event);
+                    final var saved = context.getBean(LoginLogRepository.class).findAll().getFirst();
+                    assertThat(saved.getIp()).isEqualTo("113.92.157.29");
+                    assertThat(saved.getLoginLocation())
+                            .isEqualTo("");
+                });
+    }
+
+    @Test
+    void keepsALocationAlreadyProvidedByTheLoginSource() {
+        final IpLocationResolver resolver = org.mockito.Mockito.mock(IpLocationResolver.class);
+        runner().withBean(IpLocationResolver.class, () -> resolver).run(context -> {
+            final LoginInfoEvent event = new LoginInfoEvent();
+            event.setIp("113.92.157.29");
+            event.setLoginLocation("provided location");
+            context.publishEvent(event);
+            final var saved = context.getBean(LoginLogRepository.class).findAll().getFirst();
+            assertThat(saved.getLoginLocation()).isEqualTo("provided location");
+            org.mockito.Mockito.verifyNoInteractions(resolver);
+        });
+    }
+
+    @Test
+    void recordsBrowserAndOperatingSystemFromTheLoginUserAgent() {
+        runner().run(context -> {
+            final LoginInfoEvent event = new LoginInfoEvent();
+            event.setUsername("alice");
+            event.setUserAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+                    + "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36");
+            context.publishEvent(event);
+            final var saved = context.getBean(LoginLogRepository.class).findAll().getFirst();
+            assertThat(saved.getBrowser()).isEqualTo("Chrome 131.0.0");
+            assertThat(saved.getOs()).isEqualTo("Windows 10");
+        });
+    }
+
+    @Test
+    void keepsLoginRecordsWhenClientParsingFails() {
+        runner().withBean(UserAgentResolver.class, () -> agent -> { throw new IllegalStateException("parse failed"); })
+                .run(context -> {
+                    final LoginInfoEvent event = new LoginInfoEvent();
+                    event.setUsername("alice");
+                    context.publishEvent(event);
+                    final var saved = context.getBean(LoginLogRepository.class).findAll().getFirst();
+                    assertThat(saved.getUsername()).isEqualTo("alice");
+                    assertThat(saved.getBrowser()).isEmpty();
+                    assertThat(saved.getOs()).isEmpty();
+                });
+    }
+
+    @Test
+    void keepsProvidedClientMetadataWithoutParsing() {
+        final UserAgentResolver resolver = org.mockito.Mockito.mock(UserAgentResolver.class);
+        runner().withBean(UserAgentResolver.class, () -> resolver).run(context -> {
+            final LoginInfoEvent event = new LoginInfoEvent();
+            event.setBrowser("custom browser");
+            event.setOs("custom OS");
+            context.publishEvent(event);
+            final var saved = context.getBean(LoginLogRepository.class).findAll().getFirst();
+            assertThat(saved.getBrowser()).isEqualTo("custom browser");
+            assertThat(saved.getOs()).isEqualTo("custom OS");
+            org.mockito.Mockito.verifyNoInteractions(resolver);
+        });
+    }
+
+    @Test
+    void fillsOnlyMissingClientMetadata() {
+        runner().run(context -> {
+            final LoginInfoEvent event = new LoginInfoEvent();
+            event.setBrowser("custom browser");
+            event.setUserAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+                    + "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36");
+            context.publishEvent(event);
+            final var saved = context.getBean(LoginLogRepository.class).findAll().getFirst();
+            assertThat(saved.getBrowser()).isEqualTo("custom browser");
+            assertThat(saved.getOs()).isEqualTo("Windows 10");
+        });
     }
 
     private ApplicationContextRunner runner() {

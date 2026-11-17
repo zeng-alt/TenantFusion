@@ -43,6 +43,15 @@ public class LoginLogEntity implements Serializable {
     @Column(length = 128)
     private String ip;
 
+    /** 登录地点 */
+    private String loginLocation;
+
+    /** 浏览器名称和版本 */
+    private String browser;
+
+    /** 操作系统名称和版本 */
+    private String os;
+
     /** 登录状态（0成功 1失败） */
     private String status;
 

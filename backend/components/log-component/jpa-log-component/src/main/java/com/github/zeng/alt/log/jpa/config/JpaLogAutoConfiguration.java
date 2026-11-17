@@ -1,5 +1,7 @@
 package com.github.zeng.alt.log.jpa.config;
 
+import com.github.zeng.alt.log.core.support.IpLocationResolver;
+import com.github.zeng.alt.log.core.support.UserAgentResolver;
 import com.github.zeng.alt.log.jpa.entity.LogEntity;
 import com.github.zeng.alt.log.jpa.event.LogEventPersistenceListener;
 import com.github.zeng.alt.log.jpa.event.LoginLogEventPersistenceListener;
@@ -45,9 +47,11 @@ public class JpaLogAutoConfiguration {
     public LogPersistenceService logPersistenceService(
             LogRepository operations,
             LoginLogRepository logins,
-            JpaLogMapper mapper
+            JpaLogMapper mapper,
+            IpLocationResolver locations,
+            UserAgentResolver userAgents
     ) {
-        return new LogPersistenceServiceImpl(operations, logins, mapper);
+        return new LogPersistenceServiceImpl(operations, logins, mapper, locations, userAgents);
     }
 
     @Bean

@@ -3,6 +3,7 @@ package com.github.zeng.alt.log.core.aot;
 import com.github.zeng.alt.log.Log;
 import com.github.zeng.alt.log.LoginInfoEvent;
 import com.github.zeng.alt.log.OperLogEvent;
+import com.github.zeng.alt.log.core.model.LoginClientDto;
 import com.github.zeng.alt.log.core.operation.LogOperation;
 import org.springframework.aot.hint.BindingReflectionHintsRegistrar;
 import org.springframework.aot.hint.MemberCategory;
@@ -21,8 +22,9 @@ public class LogRuntimeHints implements RuntimeHintsRegistrar {
     public void registerHints(RuntimeHints hints, ClassLoader classLoader) {
 
         new BindingReflectionHintsRegistrar().registerReflectionHints(
-                hints.reflection(), OperLogEvent.class, LoginInfoEvent.class
+                hints.reflection(), OperLogEvent.class, LoginInfoEvent.class, LoginClientDto.class
         );
+        hints.resources().registerPattern("ua_parser/regexes.yaml");
         hints.reflection()
                 .registerType(
                         Log.class,

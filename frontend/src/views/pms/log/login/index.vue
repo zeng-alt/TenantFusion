@@ -3,7 +3,7 @@
     <MeCrud
       ref="$table"
       v-model:query-items="queryItems"
-      :scroll-x="1200"
+      :scroll-x="1800"
       :columns="columns"
       :get-data="api.read"
     >
@@ -41,6 +41,15 @@
         </n-descriptions-item>
         <n-descriptions-item label="IP地址">
           {{ detail.ip || '-' }}
+        </n-descriptions-item>
+        <n-descriptions-item label="浏览器">
+          {{ detail.browser || '-' }}
+        </n-descriptions-item>
+        <n-descriptions-item label="操作系统">
+          {{ detail.os || '-' }}
+        </n-descriptions-item>
+        <n-descriptions-item label="登录地点" :span="2">
+          {{ detail.loginLocation || '-' }}
         </n-descriptions-item>
         <n-descriptions-item label="登录状态">
           <NTag :type="detail.status === '0' ? 'success' : 'error'" size="small">
@@ -90,6 +99,9 @@ function handleDetail(row) {
 const columns = [
   { title: '用户名', key: 'username', width: 160, ellipsis: { tooltip: true } },
   { title: 'IP地址', key: 'ip', width: 180, ellipsis: { tooltip: true }, render: row => row.ip || '-' },
+  { title: '登录地点', key: 'loginLocation', width: 220, ellipsis: { tooltip: true }, render: row => row.loginLocation || '-' },
+  { title: '浏览器', key: 'browser', width: 200, ellipsis: { tooltip: true }, render: row => row.browser || '-' },
+  { title: '操作系统', key: 'os', width: 180, ellipsis: { tooltip: true }, render: row => row.os || '-' },
   {
     title: '登录状态',
     key: 'status',

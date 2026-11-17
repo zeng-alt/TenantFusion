@@ -7,6 +7,7 @@
 | `api-log-component` | `@Log`、操作日志事件、登录日志事件和枚举 |
 | `core-log-component` | AOP、Jackson 3 字段过滤、请求与身份解析、事件发布 |
 | `jpa-log-component` | MapStruct 映射及独立事务持久化 |
+| `ip2region-log-component` | 可选的 IPv4/IPv6 离线 IP 归属地查询 |
 | `message-log-component` | 通过 event-component 发送或接收操作日志 |
 
 ## 引入依赖
@@ -86,6 +87,39 @@ alt:
 
 日志包含租户 ID、操作者、方法名、操作时间、耗时、成功/失败状态及错误消息。租户默认取 `TenantContextHolder.getTenantId()`，操作者取 `UserContextHolder.getUsername()`。
 
+## 登录 IP 与登录地点
+
+登录事件保留 `ip` 原值，`loginLocation` 单独记录归属地。默认 JPA 保存时，若事件未提供地点则调用 `IpLocationResolver` 补全；失败或未命中时保存空字符串，仍保留登录记录和 IP。历史记录不会被自动回填。
+
+引入可选适配器即可使用 ip2region，admin 应用已引入：
+
+```kotlin
+implementation(project(":backend:components:log-component:ip2region-log-component"))
+```
+
+从 [ip2region 官方数据目录](https://github.com/lionsoul2014/ip2region/tree/master/data) 获取对应的 `ip2region_v4.xdb` / `ip2region_v6.xdb`，部署到本地目录后配置：
+
+```yaml
+alt:
+  log:
+    ip2region:
+      enabled: true
+      ipv4-database: file:/opt/ip2region/ip2region_v4.xdb
+      ipv6-database: file:/opt/ip2region/ip2region_v6.xdb # 可选
+```
+
+admin 也可通过 `IP2REGION_IPV4_DATABASE` / `IP2REGION_IPV6_DATABASE` 环境变量设置上述资源地址。支持 `file:` 与 `classpath:`（例如 `classpath:ip2region/ip2region_v4.xdb`）。xdb 不随组件打包，也不会在运行时联网下载；更新文件后重启服务加载。
+
+适配器启动时将数据载入内存，使用 ip2region 官方查询服务；输出形如 `中国 广东省 深圳市 电信`。IPv4/IPv6 可分别配置，数据库缺失、损坏或地址无法定位均不会阻断登录日志。可通过 `alt.log.ip2region.enabled=false` 关闭，或贡献自己的 `IpLocationResolver` Bean 替换。JPA 宿主需添加 `sys_logininfor.login_location VARCHAR(255)`；admin 已提供 H2/PG 的 V0025 增量迁移。
+
+IP 来源仍由登录处理器采集；反向代理部署请通过宿主的转发头配置传递客户端 IP。ip2region 用于查询地址归属地，不负责识别代理链。
+
+## 登录浏览器与操作系统
+
+JWT 登录成功、失败处理器均采集请求的 `User-Agent`。日志组件使用 ua-parser 统一解析为 `browser` 和 `os`，由 MapStruct 映射后保存到 `sys_logininfor`。默认显示名称和解析到的版本，例如 `Chrome 131.0.0` / `Windows 10`。原始 User-Agent 只随事件传递，不直接存入登录日志表。
+
+缺失、未知或解析失败时，相应字段为空，登录记录仍会保存。事件来源可以直接提供浏览器或系统字段，默认只补齐缺失的字段；也可贡献 `UserAgentResolver` Bean 自定义解析。admin 已提供 H2/PG 的 V0026 增量迁移，列表与详情均展示浏览器和操作系统，历史记录显示 `-`。
+
 ## 多服务部署
 
 ```kotlin
@@ -127,4 +161,4 @@ JPA 实体为 `sys_oper_log`、`sys_logininfor`；主键列是 `id`，由 Snowfl
 
 测试覆盖注解解析、日志失败隔离、Jackson 3、参数/响应开关、敏感字段过滤、三类应用装配、H2/JPA 事务回滚隔离及消息回流。三个实现模块的业务代码行覆盖率门槛为 80%，不计 Lombok 数据模型和生成的 mapper。
 
-Native hints 包含组件日志事件的绑定元数据；宿主业务 DTO 仍需提供相应绑定提示。此次验证为 JVM 测试，未执行 native-image 构建。
+Native hints 包含组件日志事件的绑定元数据、`ua_parser/regexes.yaml` 与 `classpath:ip2region/*.xdb` 资源；自定义 classpath 数据目录与宿主业务 DTO 需提供相应资源或绑定提示。此次验证为 JVM 测试，未执行 native-image 构建。

@@ -23,7 +23,11 @@ fesod = "2.0.2-incubating"
 mapstruct = "1.6.3"
 jpa-search-helper = "3.6.4"
 rxjava3 = "3.1.11"
+ip2region = "3.3.8"
+uap-java = "1.6.1"
 [libraries]
+uap-java = { module = "com.github.ua-parser:uap-java", version.ref = "uap-java" }
+ip2region = { module = "org.lionsoul:ip2region", version.ref = "ip2region" }
 spring-modulith-bom = { module = "org.springframework.modulith:spring-modulith-bom", version.ref = "spring-modulith" }
 
 liquibase-core = { module = "org.liquibase:liquibase-core" }

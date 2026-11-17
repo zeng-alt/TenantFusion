@@ -39,6 +39,7 @@ public class JwtAuthenticationSuccessHandler implements AuthenticationSuccessHan
         event.setStatus("0");
         event.setMessage("登录成功");
         event.setIp(request.getRemoteAddr());
+        event.setUserAgent(request.getHeader("User-Agent"));
         eventPublisher.publishEvent(event);
 
         String token = jwtTokenProvider.createToken(securityUser);

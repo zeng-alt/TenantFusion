@@ -13,6 +13,7 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-jackson")
     implementation("org.springframework:spring-aop")
     implementation(rootProject.libs.vavr)
+    implementation(rootProject.libs.uap.java)
     annotationProcessor("org.springframework.boot:spring-boot-configuration-processor")
     testImplementation("org.springframework.boot:spring-boot-starter-test")
     testImplementation("org.springframework.boot:spring-boot-starter-webflux")

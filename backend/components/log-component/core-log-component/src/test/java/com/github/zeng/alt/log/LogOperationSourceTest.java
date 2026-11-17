@@ -5,6 +5,7 @@ import com.github.zeng.alt.log.core.operation.AnnotationLogOperationSource;
 import com.github.zeng.alt.log.core.operation.LogOperation;
 import org.junit.jupiter.api.Test;
 import org.springframework.aot.hint.RuntimeHints;
+import org.springframework.aot.hint.predicate.RuntimeHintsPredicates;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -33,6 +34,7 @@ class LogOperationSourceTest {
         new LogRuntimeHints().registerHints(hints, getClass().getClassLoader());
         assertThat(hints.reflection().getTypeHint(OperLogEvent.class)).isNotNull();
         assertThat(hints.reflection().getTypeHint(LoginInfoEvent.class)).isNotNull();
+        assertThat(RuntimeHintsPredicates.resource().forResource("ua_parser/regexes.yaml").test(hints)).isTrue();
     }
 
     interface Action {

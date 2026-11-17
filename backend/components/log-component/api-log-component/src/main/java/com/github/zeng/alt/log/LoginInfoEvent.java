@@ -43,6 +43,18 @@ public class LoginInfoEvent implements Serializable {
      */
     private String ip;
 
+    /** 登录地点，可由调用方提供或在持久化时通过 IP 解析。 */
+    private String loginLocation;
+
+    /** 登录请求的 User-Agent，供日志组件解析，不直接落库。 */
+    private String userAgent;
+
+    /** 浏览器名称和版本。 */
+    private String browser;
+
+    /** 操作系统名称和版本。 */
+    private String os;
+
     /**
      * 其他参数
      */

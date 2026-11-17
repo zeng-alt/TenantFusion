@@ -10,12 +10,15 @@ import com.github.zeng.alt.log.core.interceptor.LogMethodInterceptor;
 import com.github.zeng.alt.log.core.operation.AnnotationLogOperationSource;
 import com.github.zeng.alt.log.core.operation.LogOperationSource;
 import com.github.zeng.alt.log.core.support.DefaultRequestParameterResolver;
+import com.github.zeng.alt.log.core.support.DefaultUserAgentResolver;
 import com.github.zeng.alt.log.core.support.DefaultUserResolver;
+import com.github.zeng.alt.log.core.support.IpLocationResolver;
 import com.github.zeng.alt.log.core.support.IpResolver;
 import com.github.zeng.alt.log.core.support.LogValueHelper;
 import com.github.zeng.alt.log.core.support.RequestParameterResolver;
 import com.github.zeng.alt.log.core.support.RequestResolver;
 import com.github.zeng.alt.log.core.support.TenantResolver;
+import com.github.zeng.alt.log.core.support.UserAgentResolver;
 import com.github.zeng.alt.log.core.support.UserResolver;
 import com.github.zeng.alt.tenant.api.TenantContextHolder;
 import io.vavr.control.Option;
@@ -33,6 +36,7 @@ import org.springframework.context.annotation.Import;
 import org.springframework.context.annotation.ImportRuntimeHints;
 import org.springframework.context.annotation.Role;
 import tools.jackson.databind.json.JsonMapper;
+import ua_parser.Parser;
 
 /**
  * 日志模块自动配置。
@@ -129,6 +133,18 @@ public class LogAutoConfiguration {
     @ConditionalOnMissingBean(UserResolver.class)
     public UserResolver defaultUserResolver() {
         return new DefaultUserResolver();
+    }
+
+    @Bean
+    @ConditionalOnMissingBean(UserAgentResolver.class)
+    public UserAgentResolver userAgentResolver() {
+        return new DefaultUserAgentResolver(new Parser());
+    }
+
+    @Bean
+    @ConditionalOnMissingBean(IpLocationResolver.class)
+    public IpLocationResolver emptyIpLocationResolver() {
+        return ip -> Option.none();
     }
 
     @Bean

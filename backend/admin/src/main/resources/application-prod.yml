@@ -90,6 +90,10 @@ security:
 # 而 master 是超管租户会绕过判别条件，因此开与不开的实际行为一致；
 # 保持一致是为了避免两个环境的隔离语义出现分叉。
 alt:
+  log:
+    ip2region:
+      ipv4-database: ${IP2REGION_IPV4_DATABASE:}
+      ipv6-database: ${IP2REGION_IPV6_DATABASE:}
   tenant:
     enabled: true
     mode: ROW
