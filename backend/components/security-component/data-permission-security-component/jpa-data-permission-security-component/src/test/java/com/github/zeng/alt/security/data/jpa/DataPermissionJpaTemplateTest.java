@@ -145,6 +145,16 @@ class DataPermissionJpaTemplateTest {
         assertThat(template.query(Account.class).permission("read").exists().get()).isTrue();
     }
 
+    @Test
+    void keepsNativeQueriesWorkingInPersistenceUnitsWithoutAnnotatedResources() {
+        assertThat(entityManager.createNativeQuery("select count(*) from PermissionAccount", Long.class)
+                .getSingleResult()).isEqualTo(4L);
+        try (final var counts = entityManager.createNativeQuery("select count(*) from PermissionAccount", Long.class)
+                .getResultStream()) {
+            assertThat(counts.toList()).containsExactly(4L);
+        }
+    }
+
     private DataPermissionJpaTemplate template(DataPermissionQuery scope) {
         return new DataPermissionJpaTemplate(entityManager, r -> p -> () -> Either.right(scope), properties());
     }
