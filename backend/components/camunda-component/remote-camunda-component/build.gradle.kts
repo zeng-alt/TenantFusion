@@ -9,7 +9,7 @@ dependencies {
 
     implementation("org.springframework.boot:spring-boot-autoconfigure")
     implementation("org.springframework:spring-webflux")
-    implementation("com.fasterxml.jackson.core:jackson-databind")
+    implementation("tools.jackson.core:jackson-databind")
 
     annotationProcessor(rootProject.libs.spring.boot.configuration.processor)
 

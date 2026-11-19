@@ -1,7 +1,7 @@
 package com.github.zeng.alt.security.core.reactive.config;
 
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 import com.github.zeng.alt.security.api.ReactiveAuthorizationConstraint;
 import com.github.zeng.alt.security.api.ReactiveAuthorizationManagerProvider;
 import com.github.zeng.alt.security.api.WhiteListService;
@@ -16,7 +16,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication;
 import org.springframework.context.annotation.Bean;
-import org.springframework.http.converter.json.Jackson2ObjectMapperBuilder;
+import tools.jackson.databind.json.JsonMapper;
 import org.springframework.security.authorization.AuthenticatedReactiveAuthorizationManager;
 import org.springframework.security.authorization.ReactiveAuthorizationManager;
 import org.springframework.security.authorization.AuthorizationDecision;
@@ -114,14 +114,14 @@ public class ReactiveSecurityAutoConfiguration {
 	@ConditionalOnMissingBean
 	public ServerAccessDeniedHandler serverAccessDeniedHandler(ObjectProvider<ObjectMapper> objectMappers) {
 		return DefaultReactiveAccessDeniedHandler.handler(
-				objectMappers.getIfAvailable(() -> Jackson2ObjectMapperBuilder.json().build()));
+				objectMappers.getIfAvailable(() -> JsonMapper.builder().build()));
 	}
 
 	@Bean
 	@ConditionalOnMissingBean
 	public ServerAuthenticationEntryPoint serverAuthenticationEntryPoint(ObjectProvider<ObjectMapper> objectMappers) {
 		return DefaultReactiveAuthenticationEntryPoint.handler(
-				objectMappers.getIfAvailable(() -> Jackson2ObjectMapperBuilder.json().build()));
+				objectMappers.getIfAvailable(() -> JsonMapper.builder().build()));
 	}
 
 }

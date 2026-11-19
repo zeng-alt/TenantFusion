@@ -6,7 +6,7 @@ import com.sun.net.httpserver.HttpServer;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.http.converter.autoconfigure.HttpMessageConvertersAutoConfiguration;
-import org.springframework.boot.jackson2.autoconfigure.Jackson2AutoConfiguration;
+import org.springframework.boot.jackson.autoconfigure.JacksonAutoConfiguration;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.cloud.openfeign.FeignAutoConfiguration;
 
@@ -42,7 +42,7 @@ class RemoteEngineAutoConfigurationTest {
             new ApplicationContextRunner()
                     .withConfiguration(AutoConfigurations.of(RemoteEngineAutoConfiguration.class,
                             FeignAutoConfiguration.class, HttpMessageConvertersAutoConfiguration.class,
-                            Jackson2AutoConfiguration.class))
+                            JacksonAutoConfiguration.class))
                     .withPropertyValues("feign.client.config.default.url=http://127.0.0.1:"
                             + server.getAddress().getPort() + "/engine-rest")
                     .run(context -> {

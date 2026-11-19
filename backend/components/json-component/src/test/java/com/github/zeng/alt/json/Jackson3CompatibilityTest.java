@@ -25,7 +25,6 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.jackson.autoconfigure.JacksonAutoConfiguration;
-import org.springframework.boot.jackson2.autoconfigure.Jackson2AutoConfiguration;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -72,16 +71,12 @@ class Jackson3CompatibilityTest {
     }
 
     @Test
-    void retainsTheJackson2MapperAndItsAnnotationContract() {
+    void helperUsesTheBootJackson3Mapper() {
         runner().withUserConfiguration(Services.class).run(context -> {
-            final var mapper = context.getBean(com.fasterxml.jackson.databind.ObjectMapper.class);
-            final var json = mapper.readTree(mapper.writeValueAsString(new Payload()));
-            assertThat(json.get("phone").asText()).isEqualTo("138####5678");
-            assertThat(json.get("status").asText()).isEqualTo("启用");
-            assertThat(json.get("secret").asText()).isEqualTo("enc:value");
-            assertThat(json.get("empty").asText()).isEmpty();
-            assertThat(json.get("fallback").asText()).isEqualTo("N/A");
-            assertThat(json.get("zero").intValue()).isZero();
+            final JacksonHelper helper = context.getBean(JacksonHelper.class);
+            assertThat(helper.getObjectMapper()).isSameAs(context.getBean(JsonMapper.class));
+            assertThat(helper.parseObject(helper.toJsonString(new Payload()), tools.jackson.databind.JsonNode.class)
+                    .get("phone").asString()).isEqualTo("138####5678");
         });
     }
 
@@ -106,14 +101,12 @@ class Jackson3CompatibilityTest {
             final BigInteger value = BigInteger.ONE.shiftLeft(64);
             final JsonMapper mapper = context.getBean(JsonMapper.class);
             assertThat(mapper.readTree(mapper.writeValueAsString(value)).isString()).isTrue();
-            final var legacy = context.getBean(com.fasterxml.jackson.databind.ObjectMapper.class);
-            assertThat(legacy.readTree(legacy.writeValueAsString(value)).isTextual()).isTrue();
         });
     }
 
     private ApplicationContextRunner runner() {
         return new ApplicationContextRunner().withConfiguration(AutoConfigurations.of(
-                JsonConfiguration.class, JacksonAutoConfiguration.class, Jackson2AutoConfiguration.class
+                JsonConfiguration.class, JacksonAutoConfiguration.class
         ));
     }
 

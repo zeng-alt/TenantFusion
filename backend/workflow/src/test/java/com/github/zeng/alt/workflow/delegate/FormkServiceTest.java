@@ -1,7 +1,8 @@
 package com.github.zeng.alt.workflow.delegate;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
+import tools.jackson.databind.json.JsonMapper;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.node.ObjectNode;
 import com.github.zeng.alt.json.JacksonHelper;
 import com.github.zeng.alt.workflow.model.GlobalFormDataSubmitCmd;
 import com.github.zeng.alt.workflow.model.GlobalFormDataVO;
@@ -29,14 +30,14 @@ class FormkServiceTest {
     private FormkService formkService;
     private DelegateExecution execution;
     private ArgumentCaptor<GlobalFormDataSubmitCmd> cmdCaptor;
-    private ObjectMapper objectMapper;
+    private JsonMapper objectMapper;
     private Map<String, Object> localVariables;
 
     @BeforeEach
     @SuppressWarnings("unchecked")
     void setUp() {
-        objectMapper = new ObjectMapper();
-        ObjectProvider<ObjectMapper> provider = mock(ObjectProvider.class);
+        objectMapper = JsonMapper.builder().build();
+        ObjectProvider<JsonMapper> provider = mock(ObjectProvider.class);
         when(provider.getObject()).thenReturn(objectMapper);
 
         globalFormDataService = mock(GlobalFormDataService.class);

@@ -1,16 +1,14 @@
 package com.github.zeng.alt.json.serialize;
 
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.databind.BeanProperty;
-import com.fasterxml.jackson.databind.JsonSerializer;
-import com.fasterxml.jackson.databind.SerializerProvider;
-import com.fasterxml.jackson.databind.annotation.JacksonStdImpl;
-import com.fasterxml.jackson.databind.jsontype.TypeSerializer;
-import com.fasterxml.jackson.databind.ser.ContextualSerializer;
-import com.fasterxml.jackson.databind.ser.std.StdSerializer;
+import tools.jackson.core.JsonGenerator;
+import tools.jackson.databind.BeanProperty;
+import tools.jackson.databind.ValueSerializer;
+import tools.jackson.databind.SerializationContext;
+import tools.jackson.databind.annotation.JacksonStdImpl;
+import tools.jackson.databind.jsontype.TypeSerializer;
+import tools.jackson.databind.ser.std.StdSerializer;
 import com.github.zeng.alt.json.annotation.DecimalFormat;
 
-import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 
@@ -20,7 +18,7 @@ import java.math.RoundingMode;
  * @version 1.0
  */
 @JacksonStdImpl
-public class DecimalFormatSerializer extends StdSerializer<BigDecimal> implements ContextualSerializer {
+public class DecimalFormatSerializer extends StdSerializer<BigDecimal> {
 
     private final int scale;
     private final RoundingMode roundingMode;
@@ -38,7 +36,7 @@ public class DecimalFormatSerializer extends StdSerializer<BigDecimal> implement
     }
 
     @Override
-    public JsonSerializer<?> createContextual(SerializerProvider prov, BeanProperty property) {
+    public ValueSerializer<?> createContextual(SerializationContext prov, BeanProperty property) {
         DecimalFormat ann = property != null
                 ? property.getAnnotation(DecimalFormat.class)
                 : null;
@@ -49,7 +47,7 @@ public class DecimalFormatSerializer extends StdSerializer<BigDecimal> implement
     }
 
     @Override
-    public void serialize(BigDecimal value, JsonGenerator gen, SerializerProvider provider) throws IOException {
+    public void serialize(BigDecimal value, JsonGenerator gen, SerializationContext provider) {
         if (value == null) {
             gen.writeNull();
             return;
@@ -61,8 +59,8 @@ public class DecimalFormatSerializer extends StdSerializer<BigDecimal> implement
     }
 
     @Override
-    public void serializeWithType(BigDecimal value, JsonGenerator gen, SerializerProvider provider,
-                                  TypeSerializer typeSer) throws IOException {
+    public void serializeWithType(BigDecimal value, JsonGenerator gen, SerializationContext provider,
+                                  TypeSerializer typeSer) {
         serialize(value, gen, provider);
     }
 }

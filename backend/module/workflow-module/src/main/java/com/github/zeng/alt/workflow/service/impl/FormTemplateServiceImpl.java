@@ -1,8 +1,8 @@
 package com.github.zeng.alt.workflow.service.impl;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 import com.github.zeng.alt.api.exception.BaseException;
 import com.github.zeng.alt.api.rest.PageRestResponse;
 import com.github.zeng.alt.form.schema.DslFormSchemaConverter;
@@ -323,7 +323,7 @@ public class FormTemplateServiceImpl implements FormTemplateService {
         }
         try {
             return objectMapper.readTree(definition);
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             return null;
         }
     }
@@ -340,7 +340,7 @@ public class FormTemplateServiceImpl implements FormTemplateService {
         }
         try {
             return objectMapper.writeValueAsString(objectMapper.readTree(definition));
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             throw new BaseException("表单定义不是合法的 JSON: " + e.getOriginalMessage());
         }
     }

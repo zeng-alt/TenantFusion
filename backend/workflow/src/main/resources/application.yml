@@ -4,9 +4,9 @@ server:
 spring:
   http:
     converters:
-      preferred-json-mapper: jackson2
+      preferred-json-mapper: jackson
     codecs:
-      preferred-json-mapper: jackson2
+      preferred-json-mapper: jackson
   application:
     name: workflow-application
   profiles:

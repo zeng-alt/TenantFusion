@@ -1,6 +1,7 @@
 package com.github.zeng.alt.admin.infrastructure.security;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
 import com.github.zeng.alt.admin.infrastructure.entity.User;
 import com.github.zeng.alt.admin.query.api.UserQueryService;
 import com.github.zeng.alt.admin.infrastructure.repository.RoleRepository;
@@ -116,7 +117,7 @@ class JwtAccountStatusTest {
                         "security.jwt-auth.validation=true",
                         "security.jwt-auth.base64-secret=" + Base64.getEncoder().encodeToString(secret))
                 .withBean(SecurityProperties.class, SecurityProperties::new)
-                .withBean(ObjectMapper.class, ObjectMapper::new)
+                .withBean(ObjectMapper.class, () -> JsonMapper.builder().build())
                 .withBean(JwtStorage.class, () -> storage)
                 .withBean(AuthenticationManager.class, () -> authentication -> authentication)
                 .withBean(UserDetailsService.class, () -> new UserDetailsServiceImpl(users,

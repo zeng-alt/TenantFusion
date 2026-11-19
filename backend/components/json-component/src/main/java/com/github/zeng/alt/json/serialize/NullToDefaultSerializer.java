@@ -1,16 +1,14 @@
 package com.github.zeng.alt.json.serialize;
 
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.databind.BeanProperty;
-import com.fasterxml.jackson.databind.JsonSerializer;
-import com.fasterxml.jackson.databind.SerializerProvider;
-import com.fasterxml.jackson.databind.annotation.JacksonStdImpl;
-import com.fasterxml.jackson.databind.jsontype.TypeSerializer;
-import com.fasterxml.jackson.databind.ser.ContextualSerializer;
-import com.fasterxml.jackson.databind.ser.std.StdSerializer;
+import tools.jackson.core.JsonGenerator;
+import tools.jackson.databind.BeanProperty;
+import tools.jackson.databind.ValueSerializer;
+import tools.jackson.databind.SerializationContext;
+import tools.jackson.databind.annotation.JacksonStdImpl;
+import tools.jackson.databind.jsontype.TypeSerializer;
+import tools.jackson.databind.ser.std.StdSerializer;
 import com.github.zeng.alt.json.annotation.NullToDefault;
 
-import java.io.IOException;
 
 /**
  * @author zengJiaJun
@@ -18,7 +16,7 @@ import java.io.IOException;
  * @version 1.0
  */
 @JacksonStdImpl
-public class NullToDefaultSerializer extends StdSerializer<String> implements ContextualSerializer {
+public class NullToDefaultSerializer extends StdSerializer<String> {
 
     private final String defaultValue;
 
@@ -33,7 +31,7 @@ public class NullToDefaultSerializer extends StdSerializer<String> implements Co
     }
 
     @Override
-    public JsonSerializer<?> createContextual(SerializerProvider prov, BeanProperty property) {
+    public ValueSerializer<?> createContextual(SerializationContext prov, BeanProperty property) {
         NullToDefault ann = property != null
                 ? property.getAnnotation(NullToDefault.class)
                 : null;
@@ -44,13 +42,13 @@ public class NullToDefaultSerializer extends StdSerializer<String> implements Co
     }
 
     @Override
-    public void serialize(String value, JsonGenerator gen, SerializerProvider provider) throws IOException {
+    public void serialize(String value, JsonGenerator gen, SerializationContext provider) {
         gen.writeString(value != null ? value : defaultValue);
     }
 
     @Override
-    public void serializeWithType(String value, JsonGenerator gen, SerializerProvider provider,
-                                  TypeSerializer typeSer) throws IOException {
+    public void serializeWithType(String value, JsonGenerator gen, SerializationContext provider,
+                                  TypeSerializer typeSer) {
         serialize(value, gen, provider);
     }
 }

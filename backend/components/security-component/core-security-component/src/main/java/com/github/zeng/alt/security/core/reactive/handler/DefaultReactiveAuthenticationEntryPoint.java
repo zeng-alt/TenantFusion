@@ -1,11 +1,11 @@
 package com.github.zeng.alt.security.core.reactive.handler;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ProblemDetail;
-import org.springframework.http.converter.json.Jackson2ObjectMapperBuilder;
+import tools.jackson.databind.json.JsonMapper;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.web.server.ServerAuthenticationEntryPoint;
 import org.springframework.web.server.ServerWebExchange;
@@ -21,7 +21,7 @@ public class DefaultReactiveAuthenticationEntryPoint implements ServerAuthentica
     private final ObjectMapper objectMapper;
 
     DefaultReactiveAuthenticationEntryPoint() {
-        this(Jackson2ObjectMapperBuilder.json().build());
+        this(JsonMapper.builder().build());
     }
 
     @Override

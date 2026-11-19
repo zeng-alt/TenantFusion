@@ -26,11 +26,11 @@ class LogAutoConfigurationTest {
     );
 
     @Test
-    void startsWithoutAServletContainerAndWithoutAJackson2Mapper() {
+    void startsWithoutAServletContainer() {
         new ApplicationContextRunner().withConfiguration(CONFIGURATIONS)
                 .withClassLoader(new FilteredClassLoader("jakarta.servlet"))
                 .run(context -> assertThat(context).hasNotFailed().hasSingleBean(LogRecordFactory.class)
-                        .hasSingleBean(JsonMapper.class).doesNotHaveBean(com.fasterxml.jackson.databind.ObjectMapper.class));
+                        .hasSingleBean(JsonMapper.class));
     }
 
     @Test

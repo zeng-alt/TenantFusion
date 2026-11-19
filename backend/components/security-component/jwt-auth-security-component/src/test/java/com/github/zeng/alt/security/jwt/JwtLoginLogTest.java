@@ -1,6 +1,8 @@
 package com.github.zeng.alt.security.jwt;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.json.JsonMapper;
+import tools.jackson.databind.ObjectMapper;
 import com.github.zeng.alt.log.LoginInfoEvent;
 import com.github.zeng.alt.security.api.SecurityUser;
 import com.github.zeng.alt.tenant.api.TenantContextHolder;
@@ -14,6 +16,7 @@ import org.mockito.ArgumentCaptor;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
+import org.springframework.security.authentication.AuthenticationServiceException;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 
@@ -33,6 +36,16 @@ class JwtLoginLogTest {
     private static final String USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
             + "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36";
 
+    @Test
+    void rejectsMalformedJsonAsAnAuthenticationFailure() {
+        final var request = new MockHttpServletRequest();
+        request.setContentType("application/json");
+        request.setContent("{".getBytes(StandardCharsets.UTF_8));
+        final var filter = new JwtLoginFilter(JsonMapper.builder().build());
+        assertThatThrownBy(() -> filter.attemptAuthentication(request, new MockHttpServletResponse()))
+                .isInstanceOf(AuthenticationServiceException.class).hasCauseInstanceOf(JacksonException.class);
+    }
+
     @AfterEach
     void clearTenant() {
         TenantContextHolder.clear();
@@ -47,7 +60,7 @@ class JwtLoginLogTest {
         final var handler = new JwtAuthenticationSuccessHandler(
                 tokens,
                 mock(JwtStorage.class),
-                new ObjectMapper().findAndRegisterModules(),
+                JsonMapper.builder().findAndAddModules().build(),
                 new JwtProperties(),
                 publisher
         );
@@ -77,7 +90,7 @@ class JwtLoginLogTest {
         request.addHeader("User-Agent", USER_AGENT);
         request.setAttribute(JwtLoginFilter.LOGIN_USERNAME_ATTRIBUTE, "alice");
         TenantContextHolder.setTenantId("tenant-attempt");
-        new JwtAuthenticationFailureHandler(new ObjectMapper().findAndRegisterModules(), publisher).onAuthenticationFailure(
+        new JwtAuthenticationFailureHandler(JsonMapper.builder().findAndAddModules().build(), publisher).onAuthenticationFailure(
                 request,
                 new MockHttpServletResponse(),
                 new BadCredentialsException("bad credentials")
@@ -104,14 +117,14 @@ class JwtLoginLogTest {
             request.addParameter("account", "alice");
             request.addParameter("credential", "secret");
         }
-        final var filter = new JwtLoginFilter(new ObjectMapper());
+        final var filter = new JwtLoginFilter(JsonMapper.builder().build());
         filter.setUsernameParameter("account");
         filter.setPasswordParameter("credential");
         filter.setAuthenticationManager(authentication -> {
             TenantContextHolder.clear();
             throw new BadCredentialsException("bad credentials");
         });
-        filter.setAuthenticationFailureHandler(new JwtAuthenticationFailureHandler(new ObjectMapper(), publisher));
+        filter.setAuthenticationFailureHandler(new JwtAuthenticationFailureHandler(JsonMapper.builder().build(), publisher));
         TenantContextHolder.setTenantId("tenant-attempt");
         filter.doFilter(request, new MockHttpServletResponse(), (req, response) -> { });
         final var event = ArgumentCaptor.forClass(LoginInfoEvent.class);
@@ -148,7 +161,7 @@ class JwtLoginLogTest {
         final var user = SecurityUser.withUsername("alice").build();
         final var tokens = mock(JwtTokenProvider.class);
         when(tokens.createToken(user)).thenReturn("access-token");
-        final var mapper = new ObjectMapper().findAndRegisterModules();
+        final var mapper = JsonMapper.builder().findAndAddModules().build();
         final var success = new MockHttpServletResponse();
         new JwtAuthenticationSuccessHandler(tokens, mock(JwtStorage.class), mapper, new JwtProperties(), unavailable)
                 .onAuthenticationSuccess(new MockHttpServletRequest(), success,

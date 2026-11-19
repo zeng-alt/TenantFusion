@@ -1,6 +1,6 @@
 package com.github.zeng.alt.security.cookie;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 import com.github.zeng.alt.security.core.web.support.LoginLogHandler;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;

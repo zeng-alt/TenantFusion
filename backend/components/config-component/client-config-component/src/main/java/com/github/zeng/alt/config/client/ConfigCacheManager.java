@@ -1,8 +1,8 @@
 package com.github.zeng.alt.config.client;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.json.JsonMapper;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
 import com.github.zeng.alt.config.ConfigTemplate;
 import com.github.zeng.alt.config.model.ConfigChangedKey;
 import com.github.zeng.alt.config.model.ConfigItemDTO;

@@ -1,6 +1,6 @@
 package com.github.zeng.alt.form.schema;
 
-import com.fasterxml.jackson.databind.JsonNode;
+import tools.jackson.databind.JsonNode;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -119,7 +119,7 @@ public class DslParser {
         }
         if (node.isObject()) {
             java.util.LinkedHashMap<String, Object> map = new java.util.LinkedHashMap<>();
-            node.fields().forEachRemaining(entry -> map.put(entry.getKey(), toJavaValue(entry.getValue())));
+            node.properties().forEach(entry -> map.put(entry.getKey(), toJavaValue(entry.getValue())));
             return map;
         }
         return node.asText();

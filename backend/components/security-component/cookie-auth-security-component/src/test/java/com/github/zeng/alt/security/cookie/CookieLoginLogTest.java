@@ -1,6 +1,8 @@
 package com.github.zeng.alt.security.cookie;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.json.JsonMapper;
+import tools.jackson.databind.ObjectMapper;
 import com.github.zeng.alt.log.LoginInfoEvent;
 import com.github.zeng.alt.security.api.SecurityUser;
 import com.github.zeng.alt.security.core.properties.UsernameLoginProperties;
@@ -20,6 +22,7 @@ import org.springframework.context.event.EventListener;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.AuthenticationServiceException;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -37,6 +40,16 @@ import static org.mockito.Mockito.when;
  */
 class CookieLoginLogTest {
     private static final String USER_AGENT = "test-agent";
+
+    @Test
+    void rejectsMalformedJsonAsAnAuthenticationFailure() {
+        final var request = new MockHttpServletRequest();
+        request.setContentType("application/json");
+        request.setContent("{".getBytes(StandardCharsets.UTF_8));
+        final var filter = new CookieLoginFilter(JsonMapper.builder().build());
+        assertThatThrownBy(() -> filter.attemptAuthentication(request, new MockHttpServletResponse()))
+                .isInstanceOf(AuthenticationServiceException.class).hasCauseInstanceOf(JacksonException.class);
+    }
 
     @AfterEach
     void clearTenant() {
@@ -159,7 +172,7 @@ class CookieLoginLogTest {
         when(sessions.createSession(org.mockito.ArgumentMatchers.any())).thenReturn("session-id");
         return new WebApplicationContextRunner().withConfiguration(AutoConfigurations.of(CookieAuthAutoConfiguration.class))
                 .withPropertyValues("security.cookie-auth.authentication=true", "security.cookie-auth.validation=true")
-                .withBean(ObjectMapper.class, () -> new ObjectMapper().findAndRegisterModules())
+                .withBean(ObjectMapper.class, () -> JsonMapper.builder().findAndAddModules().build())
                 .withBean(SessionManager.class, () -> sessions)
                 .withBean(AuthenticationManager.class, () -> authenticationManager)
                 .withBean(UserDetailsService.class, () -> mock(UserDetailsService.class))

@@ -11,7 +11,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.ImportAutoConfiguration;
 import org.springframework.boot.http.codec.autoconfigure.CodecsAutoConfiguration;
-import org.springframework.boot.jackson2.autoconfigure.Jackson2AutoConfiguration;
+import org.springframework.boot.jackson.autoconfigure.JacksonAutoConfiguration;
 import org.springframework.boot.validation.autoconfigure.ValidationAutoConfiguration;
 import org.springframework.boot.webflux.autoconfigure.HttpHandlerAutoConfiguration;
 import org.springframework.boot.webflux.autoconfigure.WebFluxAutoConfiguration;
@@ -182,7 +182,7 @@ class ExcelWebFluxIntegrationTest {
             HttpHandlerAutoConfiguration.class,
             WebFluxAutoConfiguration.class,
             CodecsAutoConfiguration.class,
-            Jackson2AutoConfiguration.class,
+            JacksonAutoConfiguration.class,
             ValidationAutoConfiguration.class,
             ExcelAutoConfiguration.class,
             ExcelWebAutoConfiguration.class,

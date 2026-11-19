@@ -1,6 +1,6 @@
 package com.github.zeng.alt.workflow.controller;
 
-import com.fasterxml.jackson.databind.JsonNode;
+import tools.jackson.databind.JsonNode;
 import com.github.zeng.alt.api.rest.PageRestResponse;
 import com.github.zeng.alt.api.rest.RestResponse;
 import com.github.zeng.alt.workflow.model.FormTemplateCreateCmd;

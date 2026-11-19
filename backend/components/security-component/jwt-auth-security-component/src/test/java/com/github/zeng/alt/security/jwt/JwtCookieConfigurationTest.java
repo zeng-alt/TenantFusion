@@ -1,6 +1,6 @@
 package com.github.zeng.alt.security.jwt;
 
-import org.springframework.http.converter.json.Jackson2ObjectMapperBuilder;
+import tools.jackson.databind.json.JsonMapper;
 import com.github.zeng.alt.security.api.SecurityUser;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.AfterEach;
@@ -64,7 +64,7 @@ class JwtCookieConfigurationTest {
         final var request = secureRequest();
         request.setParameter("rememberMe", "true");
         final var response = new MockHttpServletResponse();
-        new JwtAuthenticationSuccessHandler(tokens, storage, Jackson2ObjectMapperBuilder.json().build(), properties,
+        new JwtAuthenticationSuccessHandler(tokens, storage, JsonMapper.builder().build(), properties,
                 mock(ApplicationEventPublisher.class)).onAuthenticationSuccess(request, response,
                         UsernamePasswordAuthenticationToken.authenticated(user, null, user.getAuthorities()));
         assertCookie(response.getCookie(properties.getRefreshCookieName()));

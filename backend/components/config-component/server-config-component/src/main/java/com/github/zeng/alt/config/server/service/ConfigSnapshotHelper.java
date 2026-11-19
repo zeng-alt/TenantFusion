@@ -1,7 +1,7 @@
 package com.github.zeng.alt.config.server.service;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.ObjectMapper;
 import com.github.zeng.alt.config.ConfigException;
 import com.github.zeng.alt.config.model.ConfigItemDTO;
 import com.github.zeng.alt.config.storage.model.ConfigEntryDto;

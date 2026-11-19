@@ -1,6 +1,6 @@
 package com.github.zeng.alt.oss.jpa;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 import com.github.zeng.alt.oss.jpa.entity.OssFileEntity;
 import com.github.zeng.alt.oss.jpa.testapp.OssJpaTestApplication;
 import com.github.zeng.alt.oss.jpa.repository.OssFileRepository;

@@ -1,6 +1,7 @@
 package com.github.zeng.alt.security.jwt;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
 import com.github.zeng.alt.security.api.SecurityUser;
 import com.github.zeng.alt.security.core.SecurityAutoConfiguration;
 import com.github.zeng.alt.security.core.web.config.WebSecurityAutoConfiguration;
@@ -81,7 +82,7 @@ class AuthenticationModulesAutoConfigurationTest {
                         "security.cookie-auth.validation=true", "security.jwt-auth.authentication=" + authentication,
                         "security.cookie-auth.authentication=" + authentication,
                         "security.jwt-auth.base64-secret=" + Base64.getEncoder().encodeToString(secret))
-                .withBean(ObjectMapper.class, ObjectMapper::new)
+                .withBean(ObjectMapper.class, () -> JsonMapper.builder().build())
                 .withBean(AuthenticationManager.class, () -> request -> request)
                 .withBean(UserDetailsService.class, () -> username -> user())
                 .withBean(JwtStorage.class, () -> storage)

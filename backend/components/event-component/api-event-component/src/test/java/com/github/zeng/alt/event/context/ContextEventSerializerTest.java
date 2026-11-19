@@ -1,6 +1,7 @@
 package com.github.zeng.alt.event.context;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
+import tools.jackson.databind.ObjectMapper;
 import com.github.zeng.alt.event.internal.ContextEventSerializer;
 import com.github.zeng.alt.event.internal.EventContextHelper;
 import com.github.zeng.alt.tenant.api.TenantContextHolder;
@@ -79,7 +80,7 @@ class ContextEventSerializerTest {
     }
 
     private static EventSerializer delegate() {
-        final var mapper = new ObjectMapper();
+        final var mapper = JsonMapper.builder().build();
         final var delegate = mock(EventSerializer.class);
         when(delegate.serialize(any())).thenAnswer(invocation -> mapper.writeValueAsString(invocation.getArgument(0)));
         when(delegate.deserialize(any(), eq(BusinessEvent.class))).thenAnswer(invocation ->

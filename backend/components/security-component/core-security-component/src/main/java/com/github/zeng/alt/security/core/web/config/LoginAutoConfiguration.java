@@ -1,6 +1,6 @@
 package com.github.zeng.alt.security.core.web.config;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 import com.github.zeng.alt.security.core.properties.UsernameLoginProperties;
 import com.github.zeng.alt.security.core.web.handler.DefaultLoginFailureHandler;
 import com.github.zeng.alt.security.core.web.SecurityBuilderCustomizer;

@@ -1,8 +1,9 @@
 package com.github.zeng.alt.form.schema;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -17,7 +18,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 class DslDataValidatorTest {
 
-    private final ObjectMapper objectMapper = new ObjectMapper();
+    private final ObjectMapper objectMapper = JsonMapper.builder().build();
     private DslDataValidator validator;
 
     @BeforeEach
@@ -25,7 +26,7 @@ class DslDataValidatorTest {
         validator = new DslDataValidator(new DslParser(), new DslExprEvaluator());
     }
 
-    private JsonNode definition() throws JsonProcessingException {
+    private JsonNode definition() throws JacksonException {
         return objectMapper.readTree("""
                 {
                   "version": 1,
@@ -58,7 +59,7 @@ class DslDataValidatorTest {
     }
 
     @Test
-    void validDataNoErrors() throws JsonProcessingException {
+    void validDataNoErrors() throws JacksonException {
         Map<String, Object> data = Map.of(
                 "name", "张三",
                 "age", 20,
@@ -68,48 +69,48 @@ class DslDataValidatorTest {
     }
 
     @Test
-    void requiredMessageWins() throws JsonProcessingException {
+    void requiredMessageWins() throws JacksonException {
         Map<String, Object> data = Map.of("age", 20, "gender", "M");
         Map<String, String> errors = validator.validate(definition(), data);
         assertThat(errors).containsEntry("name", "姓名必填");
     }
 
     @Test
-    void minRuleRejectsTooSmall() throws JsonProcessingException {
+    void minRuleRejectsTooSmall() throws JacksonException {
         Map<String, Object> data = Map.of("name", "张三", "age", 16, "gender", "M");
         Map<String, String> errors = validator.validate(definition(), data);
         assertThat(errors).containsEntry("age", "不能小于 18");
     }
 
     @Test
-    void numberRuleRejectsNonNumeric() throws JsonProcessingException {
+    void numberRuleRejectsNonNumeric() throws JacksonException {
         Map<String, Object> data = Map.of("name", "张三", "age", "abc", "gender", "M");
         Map<String, String> errors = validator.validate(definition(), data);
         assertThat(errors).containsEntry("age", "请输入数字");
     }
 
     @Test
-    void patternRuleCustomMessage() throws JsonProcessingException {
+    void patternRuleCustomMessage() throws JacksonException {
         Map<String, Object> data = Map.of("name", "张三", "age", 20, "phone", "123", "gender", "M");
         Map<String, String> errors = validator.validate(definition(), data);
         assertThat(errors).containsEntry("phone", "手机号格式不正确");
     }
 
     @Test
-    void oneOfRuleRejectsUnknownValue() throws JsonProcessingException {
+    void oneOfRuleRejectsUnknownValue() throws JacksonException {
         Map<String, Object> data = Map.of("name", "张三", "age", 20, "gender", "X");
         Map<String, String> errors = validator.validate(definition(), data);
         assertThat(errors).containsEntry("gender", "不在允许的选项范围内");
     }
 
     @Test
-    void visibleIfHidesFieldWhenFalse() throws JsonProcessingException {
+    void visibleIfHidesFieldWhenFalse() throws JacksonException {
         Map<String, Object> data = Map.of("name", "张三", "age", 20, "gender", "M");
         assertThat(validator.validate(definition(), data)).doesNotContainKeys("street");
     }
 
     @Test
-    void visibleIfExposesFieldWhenTrue() throws JsonProcessingException {
+    void visibleIfExposesFieldWhenTrue() throws JacksonException {
         Map<String, Object> data = Map.of("name", "张三", "age", 20, "gender", "F");
         Map<String, String> errors = validator.validate(definition(), data);
         assertThat(errors).containsEntry("street", "街道必填");

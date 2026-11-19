@@ -1,6 +1,7 @@
 package com.github.zeng.alt.workflow.service;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
+import tools.jackson.databind.ObjectMapper;
 import com.github.zeng.alt.camunda.engine.api.repository.ProcessDefinitionApi;
 import com.github.zeng.alt.camunda.engine.api.task.TaskApi;
 import com.github.zeng.alt.camunda.engine.api.task.TaskInfo;
@@ -26,7 +27,7 @@ class WorkflowFormResolverTest {
     @ParameterizedTest
     @ValueSource(strings = {"camunda", "operaton"})
     void resolvesGlobalFormPropertiesFromEitherNamespace(String vendor) {
-        final var resolver = new GlobalFormResolver(mock(), mock(), new ObjectMapper());
+        final var resolver = new GlobalFormResolver(mock(), mock(), JsonMapper.builder().build());
         final var form = resolver.resolve(bpmn(vendor));
 
         assertThat(form).isNotNull();
@@ -51,7 +52,7 @@ class WorkflowFormResolverTest {
                 mock(),
                 mock(),
                 mock(),
-                new ObjectMapper()
+                JsonMapper.builder().build()
         );
 
         final var forms = resolver.resolveByTaskId("task-1");

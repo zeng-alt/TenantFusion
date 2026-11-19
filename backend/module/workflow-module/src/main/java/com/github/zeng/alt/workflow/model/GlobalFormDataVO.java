@@ -1,8 +1,8 @@
 package com.github.zeng.alt.workflow.model;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 import com.github.zeng.alt.workflow.entity.GlobalFormDataEntity;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Builder;
@@ -93,7 +93,7 @@ public class GlobalFormDataVO implements Serializable {
         }
         try {
             return objectMapper.readTree(data);
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             return null;
         }
     }

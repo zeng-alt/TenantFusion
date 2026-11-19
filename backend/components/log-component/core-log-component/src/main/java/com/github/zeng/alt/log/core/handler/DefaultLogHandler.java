@@ -1,6 +1,6 @@
 package com.github.zeng.alt.log.core.handler;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
+import tools.jackson.core.JacksonException;
 import com.github.zeng.alt.log.OperLogEvent;
 import com.github.zeng.alt.log.core.operation.LogInvocation;
 import lombok.RequiredArgsConstructor;
@@ -15,7 +15,7 @@ public class DefaultLogHandler
     private final ApplicationEventPublisher publisher;
 
     @Override
-    public void handle(LogInvocation invocation) throws JsonProcessingException {
+    public void handle(LogInvocation invocation) throws JacksonException {
 
         OperLogEvent event =
                 factory.create(invocation);

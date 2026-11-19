@@ -1,6 +1,7 @@
 package com.github.zeng.alt.event.redis;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
+import tools.jackson.databind.ObjectMapper;
 import com.github.zeng.alt.event.EventOutcome;
 import com.github.zeng.alt.event.config.EventBindingProperties;
 import com.github.zeng.alt.event.spi.EventMessageDto;
@@ -42,7 +43,7 @@ class RedisStreamEventSettlementHandlerTest {
     @SuppressWarnings("unchecked")
     private final StreamOperations<String, String, String> streams = mock(StreamOperations.class);
     private final EventBindingProperties binding = new EventBindingProperties();
-    private final EventCodec codec = new EventCodec(new ObjectMapper());
+    private final EventCodec codec = new EventCodec(JsonMapper.builder().build());
     private final MapRecord<String, String, String> record = MapRecord.create("orders", Map.of("event", "{}"))
             .withId(RecordId.of("1-0"));
     private final EventMessageDto message = new EventMessageDto(

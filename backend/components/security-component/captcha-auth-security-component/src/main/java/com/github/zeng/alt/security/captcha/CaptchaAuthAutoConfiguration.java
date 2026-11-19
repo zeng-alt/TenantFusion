@@ -1,6 +1,7 @@
 package com.github.zeng.alt.security.captcha;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
 import com.github.zeng.alt.captcha.core.CaptchaTemplate;
 import com.github.zeng.alt.security.core.web.SecurityBuilderCustomizer;
 import org.springframework.beans.factory.ObjectProvider;
@@ -26,7 +27,7 @@ public class CaptchaAuthAutoConfiguration {
             CaptchaAuthProperties properties,
             ObjectProvider<ObjectMapper> objectMapperProvider) {
         return http -> {
-            ObjectMapper objectMapper = objectMapperProvider.getIfAvailable(ObjectMapper::new);
+            ObjectMapper objectMapper = objectMapperProvider.getIfAvailable(() -> JsonMapper.builder().build());
             CaptchaAuthenticationFilter filter = new CaptchaAuthenticationFilter(
                     captchaTemplate, properties, objectMapper);
             http.addFilterBefore(filter, UsernamePasswordAuthenticationFilter.class);

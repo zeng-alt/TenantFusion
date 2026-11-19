@@ -1,6 +1,7 @@
 package com.github.zeng.alt.event.config;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
+import tools.jackson.databind.ObjectMapper;
 import com.github.zeng.alt.event.EventTemplate;
 import com.github.zeng.alt.event.context.EventContextTemplate;
 import com.github.zeng.alt.event.spi.EventTransportTemplate;
@@ -36,7 +37,7 @@ public class EventAutoConfiguration {
     @Bean
     @ConditionalOnMissingBean
     public EventCodec eventCodec(ObjectProvider<ObjectMapper> mappers) {
-        return new EventCodec(mappers.getIfAvailable(() -> new ObjectMapper().findAndRegisterModules()));
+        return new EventCodec(mappers.getIfAvailable(() -> JsonMapper.builder().findAndAddModules().build()));
     }
 
     @Bean

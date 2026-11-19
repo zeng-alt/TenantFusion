@@ -1,7 +1,7 @@
 package com.github.zeng.alt.storage.redisson;
 
-import com.fasterxml.jackson.core.Version;
-import com.fasterxml.jackson.databind.Module;
+import tools.jackson.core.Version;
+import tools.jackson.databind.JacksonModule;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -12,7 +12,7 @@ import java.time.LocalTime;
  * @version 1.0
  * @since 2024年10月16日 16:41
  */
-public class Jdk8DateModule extends Module {
+public class Jdk8DateModule extends JacksonModule {
     @Override
     public String getModuleName() {
         return "Jdk8DateModule";
@@ -25,8 +25,8 @@ public class Jdk8DateModule extends Module {
 
     @Override
     public void setupModule(SetupContext context) {
-        context.setMixInAnnotations(LocalDateTime.class, UseTypeInfo.class);
-        context.setMixInAnnotations(LocalDate.class, UseTypeInfo.class);
-        context.setMixInAnnotations(LocalTime.class, UseTypeInfo.class);
+        context.setMixIn(LocalDateTime.class, UseTypeInfo.class);
+        context.setMixIn(LocalDate.class, UseTypeInfo.class);
+        context.setMixIn(LocalTime.class, UseTypeInfo.class);
     }
 }

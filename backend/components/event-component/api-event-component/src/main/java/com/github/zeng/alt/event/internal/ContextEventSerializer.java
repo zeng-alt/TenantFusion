@@ -1,8 +1,9 @@
 package com.github.zeng.alt.event.internal;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 import com.github.zeng.alt.event.EventException;
 import io.vavr.control.Try;
 import lombok.RequiredArgsConstructor;
@@ -25,7 +26,7 @@ public class ContextEventSerializer implements EventSerializer {
 
     private final EventSerializer delegate;
     private final EventContextHelper snapshots;
-    private final ObjectMapper envelopeMapper = new ObjectMapper();
+    private final ObjectMapper envelopeMapper = JsonMapper.builder().build();
 
     @Override
     public Object serialize(Object event) {

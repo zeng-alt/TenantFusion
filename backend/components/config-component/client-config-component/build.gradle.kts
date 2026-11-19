@@ -11,7 +11,7 @@ dependencies {
     implementation("org.springframework:spring-web")
     implementation("org.springframework:spring-tx")
     implementation("org.springframework.boot:spring-boot-starter-validation")
-    implementation("com.fasterxml.jackson.core:jackson-databind")
+    implementation("tools.jackson.core:jackson-databind")
     implementation("org.slf4j:slf4j-api")
     implementation(rootProject.libs.spring.cloud.context)
 }

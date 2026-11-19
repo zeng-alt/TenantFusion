@@ -24,7 +24,7 @@ import tools.jackson.databind.introspect.Annotated;
 import tools.jackson.databind.introspect.NopAnnotationIntrospector;
 
 /**
- * 让现有业务注解直接作用于 Jackson 3，不改变 Jackson 2 的注解契约。
+ * 为 Jackson 3 补充业务注解的空值处理与转换行为。
  *
  * @author zeng-alt
  * @since 0.0.1-SNAPSHOT

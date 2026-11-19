@@ -2,9 +2,12 @@ package com.github.zeng.alt.storage.redisson;
 
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.PropertyAccessor;
-import com.fasterxml.jackson.databind.Module;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.jsontype.impl.LaissezFaireSubTypeValidator;
+import tools.jackson.databind.JacksonModule;
+import tools.jackson.databind.DefaultTyping;
+import tools.jackson.core.StreamWriteFeature;
+import tools.jackson.databind.DeserializationFeature;
+import tools.jackson.databind.SerializationFeature;
+import tools.jackson.databind.jsontype.BasicPolymorphicTypeValidator;
 import com.github.zeng.alt.storage.*;
 import com.github.zeng.alt.storage.redisson.suepr.*;
 import lombok.RequiredArgsConstructor;
@@ -12,19 +15,18 @@ import lombok.extern.apachecommons.CommonsLog;
 import org.redisson.api.RedissonClient;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.codec.CompositeCodec;
-import org.redisson.codec.JsonJacksonCodec;
+import org.redisson.codec.JsonJackson3Codec;
 import org.redisson.spring.starter.RedissonAutoConfigurationCustomizer;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
-import org.springframework.boot.jackson2.autoconfigure.Jackson2ObjectMapperBuilderCustomizer;
+import org.springframework.boot.jackson.autoconfigure.JsonMapperBuilderCustomizer;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ImportRuntimeHints;
-import org.springframework.http.converter.json.Jackson2ObjectMapperBuilder;
+import tools.jackson.databind.json.JsonMapper;
 
-import java.util.List;
 import java.util.Objects;
 
 /**
@@ -47,7 +49,7 @@ public class RedissonStorageAutoConfiguration {
 
 
     @Bean
-    public RedissonAutoConfigurationCustomizer redissonCustomizer(JsonJacksonCodec jsonCodec, KeyPrefixStrategy keyPrefixStrategy) {
+    public RedissonAutoConfigurationCustomizer redissonCustomizer(JsonJackson3Codec jsonCodec, KeyPrefixStrategy keyPrefixStrategy) {
         return config -> {
             // 组合序列化 key 使用 String 内容使用通用 json 格式
             CompositeCodec codec = new CompositeCodec(StringCodec.INSTANCE, jsonCodec, jsonCodec);
@@ -94,20 +96,23 @@ public class RedissonStorageAutoConfiguration {
 
     @Bean
     @ConditionalOnMissingBean
-    public JsonJacksonCodec jsonJacksonCodec(ObjectProvider<Module> modules, List<Jackson2ObjectMapperBuilderCustomizer> customizers) {
-        Jackson2ObjectMapperBuilder builder = new Jackson2ObjectMapperBuilder();
-        for (Jackson2ObjectMapperBuilderCustomizer customizer : customizers) {
-            customizer.customize(builder);
-        }
+    public JsonJackson3Codec jsonJacksonCodec(
+            ObjectProvider<JacksonModule> modules,
+            ObjectProvider<JsonMapperBuilderCustomizer> customizers
+    ) {
+        final JsonMapper.Builder builder = JsonMapper.builder();
+        customizers.orderedStream().forEach(customizer -> customizer.customize(builder));
+        builder.addModules(modules.orderedStream().toList());
         NullValueBuilderCustomizer.INSTANCE.customize(builder);
-        ObjectMapper objectMapper = builder.build();
-        objectMapper.registerModules(modules);
-        objectMapper.registerModule(new Jdk8DateModule());
-        objectMapper.setVisibility(PropertyAccessor.ALL, JsonAutoDetect.Visibility.ANY);
-//			// 指定序列化输入的类型，类必须是非final修饰的。序列化时将对象全类名一起保存下来
-        objectMapper.activateDefaultTyping(LaissezFaireSubTypeValidator.instance, ObjectMapper.DefaultTyping.NON_FINAL);
-
-        return new JsonJacksonCodec(objectMapper);
+        builder.addModule(new Jdk8DateModule())
+                .changeDefaultVisibility(visibility -> visibility.withVisibility(
+                        PropertyAccessor.ALL, JsonAutoDetect.Visibility.ANY))
+                .activateDefaultTypingAsProperty(BasicPolymorphicTypeValidator.builder().allowIfBaseType(Object.class).build(),
+                        DefaultTyping.NON_FINAL, "@class")
+                .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+                .disable(SerializationFeature.FAIL_ON_EMPTY_BEANS)
+                .disable(StreamWriteFeature.AUTO_CLOSE_TARGET);
+        return new JsonJackson3Codec(builder.build());
     }
 
 

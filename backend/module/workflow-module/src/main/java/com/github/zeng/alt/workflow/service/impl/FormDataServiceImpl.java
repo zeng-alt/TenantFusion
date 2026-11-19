@@ -1,10 +1,10 @@
 package com.github.zeng.alt.workflow.service.impl;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
+import tools.jackson.core.JacksonException;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.node.ObjectNode;
 import com.github.zeng.alt.api.exception.BaseException;
 import com.github.zeng.alt.api.rest.PageRestResponse;
 import com.github.zeng.alt.form.schema.DslDataValidator;
@@ -196,7 +196,7 @@ public class FormDataServiceImpl implements FormDataService {
         }
         try {
             return objectMapper.readTree(definition);
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             return null;
         }
     }
@@ -303,7 +303,7 @@ public class FormDataServiceImpl implements FormDataService {
         }
         try {
             return objectMapper.readTree(data);
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             throw new BaseException("表单数据不是合法的 JSON: " + e.getOriginalMessage());
         }
     }
@@ -331,7 +331,7 @@ public class FormDataServiceImpl implements FormDataService {
             return incoming;
         }
         ObjectNode merged = (ObjectNode) base.deepCopy();
-        incoming.fields().forEachRemaining(entry -> merged.set(entry.getKey(), entry.getValue()));
+        incoming.properties().forEach(entry -> merged.set(entry.getKey(), entry.getValue()));
         return merged;
     }
 
@@ -347,7 +347,7 @@ public class FormDataServiceImpl implements FormDataService {
         }
         try {
             return objectMapper.writeValueAsString(node);
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             throw new BaseException("表单数据序列化失败: " + e.getOriginalMessage());
         }
     }

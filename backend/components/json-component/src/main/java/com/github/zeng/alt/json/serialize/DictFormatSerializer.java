@@ -1,13 +1,12 @@
 package com.github.zeng.alt.json.serialize;
 
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.databind.BeanProperty;
-import com.fasterxml.jackson.databind.JsonSerializer;
-import com.fasterxml.jackson.databind.SerializerProvider;
-import com.fasterxml.jackson.databind.annotation.JacksonStdImpl;
-import com.fasterxml.jackson.databind.jsontype.TypeSerializer;
-import com.fasterxml.jackson.databind.ser.ContextualSerializer;
-import com.fasterxml.jackson.databind.ser.std.StdSerializer;
+import tools.jackson.core.JsonGenerator;
+import tools.jackson.databind.BeanProperty;
+import tools.jackson.databind.ValueSerializer;
+import tools.jackson.databind.SerializationContext;
+import tools.jackson.databind.annotation.JacksonStdImpl;
+import tools.jackson.databind.jsontype.TypeSerializer;
+import tools.jackson.databind.ser.std.StdSerializer;
 import com.github.zeng.alt.api.base.BaseEnum;
 import com.github.zeng.alt.json.internal.DictValueHelper;
 import com.github.zeng.alt.json.annotation.DictFormat;
@@ -15,7 +14,6 @@ import com.github.zeng.alt.json.spi.DictServiceHolder;
 import com.github.zeng.alt.json.spi.IDictEnum;
 import com.github.zeng.alt.json.spi.IDictTranslateService;
 
-import java.io.IOException;
 import java.util.Map;
 import java.util.Objects;
 
@@ -31,7 +29,7 @@ import java.util.Objects;
  * </ul>
  */
 @JacksonStdImpl
-public class DictFormatSerializer extends StdSerializer<Object> implements ContextualSerializer {
+public class DictFormatSerializer extends StdSerializer<Object> {
 
     private final String dictType;
     private final Map<String, String> enumLabelMap;
@@ -49,7 +47,7 @@ public class DictFormatSerializer extends StdSerializer<Object> implements Conte
     }
 
     @Override
-    public JsonSerializer<?> createContextual(SerializerProvider prov, BeanProperty property) {
+    public ValueSerializer<?> createContextual(SerializationContext prov, BeanProperty property) {
         DictFormat ann = property != null
                 ? property.getAnnotation(DictFormat.class)
                 : null;
@@ -61,7 +59,7 @@ public class DictFormatSerializer extends StdSerializer<Object> implements Conte
     }
 
     @Override
-    public void serialize(Object value, JsonGenerator gen, SerializerProvider provider) throws IOException {
+    public void serialize(Object value, JsonGenerator gen, SerializationContext provider) {
         if (value == null) {
             gen.writeNull();
             return;
@@ -91,8 +89,8 @@ public class DictFormatSerializer extends StdSerializer<Object> implements Conte
     }
 
     @Override
-    public void serializeWithType(Object value, JsonGenerator gen, SerializerProvider provider,
-                                  TypeSerializer typeSer) throws IOException {
+    public void serializeWithType(Object value, JsonGenerator gen, SerializationContext provider,
+                                  TypeSerializer typeSer) {
         serialize(value, gen, provider);
     }
 }

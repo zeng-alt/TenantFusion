@@ -1,5 +1,6 @@
 package com.github.zeng.alt.event.rabbit;
 
+import tools.jackson.databind.json.JsonMapper;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
@@ -11,7 +12,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 import com.github.zeng.alt.event.EventException;
 import com.github.zeng.alt.event.EventOutcome;
 import com.github.zeng.alt.event.config.EventBindingProperties;
@@ -57,7 +58,7 @@ class RabbitEventSettlementTest {
         final var transport = new RabbitEventTemplate(
                 publisher,
                 mock(AmqpAdmin.class),
-                new EventCodec(new ObjectMapper()),
+                new EventCodec(JsonMapper.builder().build()),
                 beans.getBeanProvider(RabbitEventCustomizer.class)
         );
         final var binding = new EventBindingProperties();

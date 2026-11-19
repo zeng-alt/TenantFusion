@@ -1,11 +1,10 @@
 package com.github.zeng.alt.json.serialize;
 
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.databind.SerializerProvider;
-import com.fasterxml.jackson.databind.annotation.JacksonStdImpl;
-import com.fasterxml.jackson.databind.ser.std.NumberSerializer;
+import tools.jackson.core.JsonGenerator;
+import tools.jackson.databind.SerializationContext;
+import tools.jackson.databind.annotation.JacksonStdImpl;
+import tools.jackson.databind.ser.jdk.NumberSerializer;
 
-import java.io.IOException;
 import java.math.BigInteger;
 
 /**
@@ -35,7 +34,7 @@ public class BigNumberConverter extends NumberSerializer {
     }
 
     @Override
-    public void serialize(Number value, JsonGenerator g, SerializerProvider provider) throws IOException {
+    public void serialize(Number value, JsonGenerator g, SerializationContext provider) {
         if (isSafeInteger(value)) {
             super.serialize(value, g, provider);
         } else {

@@ -1,8 +1,9 @@
 package com.github.zeng.alt.form.schema;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -15,7 +16,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 class DslFormSchemaConverterTest {
 
-    private final ObjectMapper objectMapper = new ObjectMapper();
+    private final ObjectMapper objectMapper = JsonMapper.builder().build();
     private DslFormSchemaConverter converter;
 
     @BeforeEach
@@ -23,12 +24,12 @@ class DslFormSchemaConverterTest {
         converter = new DslFormSchemaConverter(objectMapper);
     }
 
-    private JsonNode convert(String definition) throws JsonProcessingException {
+    private JsonNode convert(String definition) throws JacksonException {
         return converter.convert(objectMapper.readTree(definition));
     }
 
     @Test
-    void mapsScalarFieldTypes() throws JsonProcessingException {
+    void mapsScalarFieldTypes() throws JacksonException {
         JsonNode schema = convert("""
                 {
                   "root": { "category": "container", "type": "group", "dataType": "object", "children": [
@@ -49,7 +50,7 @@ class DslFormSchemaConverterTest {
     }
 
     @Test
-    void mapsDateWithPattern() throws JsonProcessingException {
+    void mapsDateWithPattern() throws JacksonException {
         JsonNode schema = convert("""
                 {
                   "root": { "category": "container", "type": "group", "dataType": "object", "children": [
@@ -65,7 +66,7 @@ class DslFormSchemaConverterTest {
     }
 
     @Test
-    void mapsEnumStaticAndDynamicOptions() throws JsonProcessingException {
+    void mapsEnumStaticAndDynamicOptions() throws JacksonException {
         JsonNode schema = convert("""
                 {
                   "root": { "category": "container", "type": "group", "dataType": "object", "children": [
@@ -88,7 +89,7 @@ class DslFormSchemaConverterTest {
     }
 
     @Test
-    void mapsObjectAndArrayContainers() throws JsonProcessingException {
+    void mapsObjectAndArrayContainers() throws JacksonException {
         JsonNode schema = convert("""
                 {
                   "root": { "category": "container", "type": "group", "dataType": "object", "children": [
@@ -110,7 +111,7 @@ class DslFormSchemaConverterTest {
     }
 
     @Test
-    void flattensLayoutAndSkipsStatic() throws JsonProcessingException {
+    void flattensLayoutAndSkipsStatic() throws JacksonException {
         JsonNode schema = convert("""
                 {
                   "root": { "category": "container", "type": "group", "dataType": "object", "children": [

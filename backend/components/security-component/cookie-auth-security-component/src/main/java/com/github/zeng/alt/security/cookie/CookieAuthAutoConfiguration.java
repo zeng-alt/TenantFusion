@@ -1,6 +1,7 @@
 package com.github.zeng.alt.security.cookie;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
 import com.github.zeng.alt.security.core.properties.LoginProperties;
 import com.github.zeng.alt.security.core.properties.LogoutProperties;
 import com.github.zeng.alt.security.core.properties.UsernameLoginProperties;
@@ -145,7 +146,7 @@ public class CookieAuthAutoConfiguration {
             ObjectProvider<AuthenticationManager> authenticationManagerProvider) {
 
         return http -> {
-            ObjectMapper objectMapper = objectMapperProvider.getIfAvailable(ObjectMapper::new);
+            ObjectMapper objectMapper = objectMapperProvider.getIfAvailable(() -> JsonMapper.builder().build());
             AuthenticationManager authenticationManager = authenticationManagerProvider.getIfAvailable();
             if (authenticationManager == null) {
                 throw new IllegalStateException(

@@ -1,8 +1,8 @@
 package com.github.zeng.alt.workflow.service;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 import com.github.zeng.alt.camunda.engine.api.history.HistoricVariableInfo;
 import com.github.zeng.alt.camunda.engine.api.history.HistoryApi;
 import com.github.zeng.alt.camunda.engine.api.repository.ProcessDefinitionApi;
@@ -272,7 +272,7 @@ public class TaskFormResolver {
         }
         try {
             return objectMapper.readTree(definition);
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             return null;
         }
     }

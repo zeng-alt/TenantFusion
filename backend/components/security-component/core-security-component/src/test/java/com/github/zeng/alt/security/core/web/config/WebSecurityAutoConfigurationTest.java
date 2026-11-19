@@ -1,6 +1,7 @@
 package com.github.zeng.alt.security.core.web.config;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
 import com.github.zeng.alt.security.api.AuthorizationConstraint;
 import com.github.zeng.alt.security.api.AuthorizationManagerProvider;
 import com.github.zeng.alt.security.api.WhiteListService;
@@ -51,7 +52,7 @@ class WebSecurityAutoConfigurationTest {
             .withConfiguration(AutoConfigurations.of(WebSecurityAutoConfiguration.class))
             .withPropertyValues("security.username-login.enabled=false")
             .withBean(SecurityProperties.class, SecurityProperties::new)
-            .withBean(ObjectMapper.class, ObjectMapper::new)
+            .withBean(ObjectMapper.class, () -> JsonMapper.builder().build())
             .withBean("mvcHandlerMappingIntrospector", HandlerMappingIntrospector.class, HandlerMappingIntrospector::new)
             .withBean(AuthenticationManager.class, () -> authentication -> authentication)
             .withBean(WhiteListService.class, () -> () -> Set.of("/public"));

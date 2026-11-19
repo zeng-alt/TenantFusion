@@ -16,7 +16,7 @@ import org.springframework.aot.hint.RuntimeHints;
 import org.springframework.aot.hint.RuntimeHintsRegistrar;
 
 /**
- * 注册组件资源以及 Jackson 2 通过业务注解实例化的序列化器。
+ * 注册组件资源以及 Jackson 3 通过业务注解实例化的序列化器。
  *
  * @author zeng-alt
  * @since 0.0.1-SNAPSHOT

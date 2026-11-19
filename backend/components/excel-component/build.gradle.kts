@@ -8,7 +8,7 @@ dependencies {
     testImplementation("org.springframework.boot:spring-boot-starter-webflux-test")
     testImplementation("org.springframework.boot:spring-boot-web-server")
     testImplementation("org.springframework.boot:spring-boot-servlet")
-    testImplementation("org.springframework.boot:spring-boot-jackson2")
+    testImplementation("org.springframework.boot:spring-boot-jackson")
     testImplementation("org.springframework.boot:spring-boot-http-converter")
     testImplementation("org.springframework.boot:spring-boot-http-codec")
     compileOnly("org.springframework.boot:spring-boot-webmvc")

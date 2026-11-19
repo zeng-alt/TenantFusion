@@ -1,14 +1,14 @@
 package com.github.zeng.alt.json;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.core.JacksonException;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
 import com.github.zeng.alt.api.exception.UtilException;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.util.ObjectUtils;
 import org.springframework.util.StringUtils;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -19,7 +19,7 @@ import java.util.Map;
  * @since 2026年07月11日
  * @version 1.0
  */
-public record JacksonHelper(ObjectProvider<ObjectMapper> provider) {
+public record JacksonHelper(ObjectProvider<JsonMapper> provider) {
 
 	
 	public String toJsonString(Object object) {
@@ -29,7 +29,7 @@ public record JacksonHelper(ObjectProvider<ObjectMapper> provider) {
 		try {
 			return provider.getObject().writeValueAsString(object);
 		}
-		catch (JsonProcessingException e) {
+		catch (JacksonException e) {
 			throw new UtilException(e);
 		}
 	}
@@ -77,7 +77,7 @@ public record JacksonHelper(ObjectProvider<ObjectMapper> provider) {
 			return provider.getObject().readValue(text,
 					provider.getObject().getTypeFactory().constructCollectionType(List.class, clazz));
 		}
-		catch (IOException e) {
+		catch (JacksonException e) {
 			throw new UtilException(e);
 		}
 	}

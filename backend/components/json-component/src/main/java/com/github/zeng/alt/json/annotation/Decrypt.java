@@ -1,7 +1,7 @@
 package com.github.zeng.alt.json.annotation;
 
 import com.fasterxml.jackson.annotation.JacksonAnnotationsInside;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import tools.jackson.databind.annotation.JsonDeserialize;
 import com.github.zeng.alt.json.serialize.DecryptDeserializer;
 
 import java.lang.annotation.ElementType;

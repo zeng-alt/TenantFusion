@@ -1,6 +1,6 @@
 package com.github.zeng.alt.event.support;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 import com.github.zeng.alt.event.EventException;
 import com.github.zeng.alt.event.spi.EventMessageDto;
 import com.github.zeng.alt.event.spi.EventMetadataDto;

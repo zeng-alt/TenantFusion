@@ -1,8 +1,9 @@
 package com.github.zeng.alt.event.support;
 
+import tools.jackson.databind.json.JsonMapper;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 import com.github.zeng.alt.event.EventException;
 import com.github.zeng.alt.event.spi.EventMessageDto;
 import com.github.zeng.alt.event.spi.EventMetadataDto;
@@ -20,7 +21,7 @@ import java.util.Map;
  */
 class EventCodecTest {
 
-    private final EventCodec codec = new EventCodec(new ObjectMapper());
+    private final EventCodec codec = new EventCodec(JsonMapper.builder().build());
 
     @Test
     void rejectsJsonNullInsteadOfReturningNull() {

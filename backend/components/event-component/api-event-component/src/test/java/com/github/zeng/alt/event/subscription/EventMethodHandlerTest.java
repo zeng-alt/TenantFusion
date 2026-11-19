@@ -1,8 +1,9 @@
 package com.github.zeng.alt.event.subscription;
 
+import tools.jackson.databind.json.JsonMapper;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 import com.github.zeng.alt.event.EventDelivery;
 import com.github.zeng.alt.event.EventOutcome;
 import com.github.zeng.alt.event.config.EventBindingProperties;
@@ -56,7 +57,7 @@ class EventMethodHandlerTest {
         final var contexts = new EventContextTemplate(
                 beans.getBeanProvider(com.github.zeng.alt.event.context.EventContextHandler.class)
         );
-        final var codec = new EventCodec(new ObjectMapper());
+        final var codec = new EventCodec(JsonMapper.builder().build());
         final var listener = new Listener(jdbc);
         final var handler = new EventMethodHandler(
                 listener,

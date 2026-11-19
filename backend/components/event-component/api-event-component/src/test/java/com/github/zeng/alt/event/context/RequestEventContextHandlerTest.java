@@ -1,7 +1,8 @@
 package com.github.zeng.alt.event.context;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.ObjectMapper;
 import com.github.zeng.alt.security.api.SecurityUser;
 import com.github.zeng.alt.security.api.UserContextHolder;
 import com.github.zeng.alt.tenant.api.TenantContextHolder;
@@ -43,7 +44,7 @@ class RequestEventContextHandlerTest {
         TenantContextHolder.setTenantId("origin");
         TenantContextHolder.setDatabase("database");
         TenantContextHolder.setSchema("schema");
-        final var mapper = new ObjectMapper();
+        final var mapper = JsonMapper.builder().build();
         final String serialized = mapper.writeValueAsString(handler.capture());
         final Map<String, String> snapshotByKey = mapper.readValue(serialized, new TypeReference<>() {});
         assertThat(serialized).doesNotContain("secret", "access-token", "ROLE_ADMIN");

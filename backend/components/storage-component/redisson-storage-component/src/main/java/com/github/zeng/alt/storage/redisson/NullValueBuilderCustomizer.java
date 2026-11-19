@@ -1,21 +1,22 @@
 package com.github.zeng.alt.storage.redisson;
 
 
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.databind.DeserializationContext;
-import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
-import org.springframework.boot.jackson2.autoconfigure.Jackson2ObjectMapperBuilderCustomizer;
+import tools.jackson.core.JsonParser;
+import tools.jackson.databind.DeserializationContext;
+import tools.jackson.databind.deser.std.StdDeserializer;
+import org.springframework.boot.jackson.autoconfigure.JsonMapperBuilderCustomizer;
 import org.springframework.cache.support.NullValue;
-import org.springframework.http.converter.json.Jackson2ObjectMapperBuilder;
+import tools.jackson.databind.json.JsonMapper;
 
-public final class NullValueBuilderCustomizer implements Jackson2ObjectMapperBuilderCustomizer {
+public final class NullValueBuilderCustomizer implements JsonMapperBuilderCustomizer {
 
     public static final NullValueBuilderCustomizer INSTANCE = new NullValueBuilderCustomizer();
 
     @Override
-    public void customize(Jackson2ObjectMapperBuilder builder) {
-        builder.mixIn(NullValue.class, UseTypeInfo.class);
-        builder.deserializers(NullValueDeserializer.INSTANCE);
+    public void customize(JsonMapper.Builder builder) {
+        builder.addMixIn(NullValue.class, UseTypeInfo.class);
+        builder.addModule(new tools.jackson.databind.module.SimpleModule("alt-cache-null")
+                .addDeserializer(NullValue.class, NullValueDeserializer.INSTANCE));
     }
 
     public static class NullValueDeserializer extends StdDeserializer<NullValue> {

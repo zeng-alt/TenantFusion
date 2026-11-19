@@ -8,9 +8,9 @@ spring:
         mode: outbox
   http:
     converters:
-      preferred-json-mapper: jackson2
+      preferred-json-mapper: jackson
     codecs:
-      preferred-json-mapper: jackson2
+      preferred-json-mapper: jackson
   application:
     name: admin-application
   profiles:

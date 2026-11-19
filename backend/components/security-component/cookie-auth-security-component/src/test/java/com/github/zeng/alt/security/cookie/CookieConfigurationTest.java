@@ -1,9 +1,9 @@
 package com.github.zeng.alt.security.cookie;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 import com.github.zeng.alt.security.api.SecurityUser;
 import org.junit.jupiter.api.Test;
-import org.springframework.http.converter.json.Jackson2ObjectMapperBuilder;
+import tools.jackson.databind.json.JsonMapper;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -32,7 +32,7 @@ class CookieConfigurationTest {
         final var request = new MockHttpServletRequest();
         request.setSecure(true);
         final var response = new MockHttpServletResponse();
-        final ObjectMapper mapper = Jackson2ObjectMapperBuilder.json().build();
+        final ObjectMapper mapper = JsonMapper.builder().build();
         new CookieAuthenticationSuccessHandler(sessions, mapper, properties).onAuthenticationSuccess(request, response,
                 UsernamePasswordAuthenticationToken.authenticated(user, null, user.getAuthorities()));
         final var cookie = response.getCookie("CUSTOM_SESSION");

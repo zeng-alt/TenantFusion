@@ -21,14 +21,13 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.jackson.autoconfigure.JacksonAutoConfiguration;
-import org.springframework.boot.jackson2.autoconfigure.Jackson2AutoConfiguration;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import tools.jackson.databind.json.JsonMapper;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * 两个 Jackson 版本共用的业务注解边界契约。
+ * Jackson 3 的业务注解边界契约。
  *
  * @author zeng-alt
  * @since 0.0.1-SNAPSHOT
@@ -36,12 +35,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 class JsonAnnotationContractTest {
     @ParameterizedTest
     @MethodSource("masks")
-    void masksFieldsIdenticallyAcrossVersions(Object value, String expected) {
+    void masksFieldsWithTheExistingContract(Object value, String expected) {
         runner().run(context -> {
             final var modern = context.getBean(JsonMapper.class);
-            final var legacy = context.getBean(com.fasterxml.jackson.databind.ObjectMapper.class);
             assertThat(modern.readTree(modern.writeValueAsString(value)).get("value").asString()).isEqualTo(expected);
-            assertThat(legacy.readTree(legacy.writeValueAsString(value)).get("value").asText()).isEqualTo(expected);
         });
     }
 
@@ -67,15 +64,17 @@ class JsonAnnotationContractTest {
         EncryptServiceHolder.setService(null);
         runner().run(context -> {
             final var modern = context.getBean(JsonMapper.class);
-            final var legacy = context.getBean(com.fasterxml.jackson.databind.ObjectMapper.class);
             final var payload = new NonNullValues("name", "remark", 12, "plain", "raw", new BigDecimal("1.234"));
             final String json = modern.writeValueAsString(payload);
-            assertThat(modern.readTree(json)).isEqualTo(modern.readTree(legacy.writeValueAsString(payload)));
-            assertThat(modern.readTree(json).get("secret").asString()).isEqualTo("plain");
+            final var values = modern.readTree(json);
+            assertThat(values.get("name").asString()).isEqualTo("name");
+            assertThat(values.get("remark").asString()).isEqualTo("remark");
+            assertThat(values.get("count").asInt()).isEqualTo(12);
+            assertThat(values.get("amount").asString()).isEqualTo("1.234");
+            assertThat(values.get("secret").asString()).isEqualTo("plain");
             assertThat(modern.readValue("{\"value\":\"plain\"}", Secret.class).value()).isEqualTo("plain");
             assertThat(modern.readValue("{\"value\":\"\"}", Secret.class).value()).isEmpty();
             assertThat(modern.readValue("{\"value\":null}", Secret.class).value()).isNull();
-            assertThat(legacy.readValue("{\"value\":\"plain\"}", Secret.class).value()).isEqualTo("plain");
             final var dictionaries = modern.readTree(modern.writeValueAsString(new Dictionaries("1", "missing", "A")));
             assertThat(dictionaries.get("known").asString()).isEqualTo("启用");
             assertThat(dictionaries.get("unknown").asString()).isEqualTo("missing");
@@ -85,7 +84,7 @@ class JsonAnnotationContractTest {
 
     private ApplicationContextRunner runner() {
         return new ApplicationContextRunner().withConfiguration(AutoConfigurations.of(
-                JsonConfiguration.class, JacksonAutoConfiguration.class, Jackson2AutoConfiguration.class
+                JsonConfiguration.class, JacksonAutoConfiguration.class
         ));
     }
 

@@ -1,7 +1,7 @@
 package com.github.zeng.alt.config.client;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.json.JsonMapper;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
 import com.github.zeng.alt.config.ConfigException;
 import com.github.zeng.alt.config.ConfigSourceTemplate;
 import com.github.zeng.alt.config.ConfigTemplate;

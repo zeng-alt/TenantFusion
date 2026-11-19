@@ -1,13 +1,12 @@
 package com.github.zeng.alt.json.serialize;
 
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.databind.DeserializationContext;
-import com.fasterxml.jackson.databind.annotation.JacksonStdImpl;
-import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
+import tools.jackson.core.JsonParser;
+import tools.jackson.databind.DeserializationContext;
+import tools.jackson.databind.annotation.JacksonStdImpl;
+import tools.jackson.databind.deser.std.StdDeserializer;
 import com.github.zeng.alt.json.spi.EncryptServiceHolder;
 import com.github.zeng.alt.json.spi.IEncryptService;
 
-import java.io.IOException;
 
 /**
  * @author zengJiaJun
@@ -24,8 +23,8 @@ public class DecryptDeserializer extends StdDeserializer<String> {
     }
 
     @Override
-    public String deserialize(JsonParser p, DeserializationContext ctxt) throws IOException {
-        String value = p.getValueAsString();
+    public String deserialize(JsonParser p, DeserializationContext ctxt) {
+        String value = p.getString();
         if (value == null || value.isEmpty()) {
             return value;
         }

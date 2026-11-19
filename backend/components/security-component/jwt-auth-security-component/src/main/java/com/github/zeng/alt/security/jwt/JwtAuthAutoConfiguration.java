@@ -1,6 +1,7 @@
 package com.github.zeng.alt.security.jwt;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
 import com.github.zeng.alt.security.core.properties.LoginProperties;
 import com.github.zeng.alt.security.core.properties.UsernameLoginProperties;
 import com.github.zeng.alt.security.core.web.SecurityBuilderCustomizer;
@@ -64,7 +65,7 @@ public class JwtAuthAutoConfiguration {
             ApplicationEventPublisher eventPublisher)
     {
 
-        ObjectMapper objectMapper = objectMapperProvider.getIfAvailable(ObjectMapper::new);
+        ObjectMapper objectMapper = objectMapperProvider.getIfAvailable(() -> JsonMapper.builder().build());
         return new JwtAuthenticationSuccessHandler(jwtTokenProvider, jwtStorage, objectMapper, jwtProperties, eventPublisher);
     }
 
@@ -74,7 +75,7 @@ public class JwtAuthAutoConfiguration {
     public JwtAuthenticationFailureHandler jwtAuthenticationFailureHandler(
             ObjectProvider<ObjectMapper> objectMapperProvider,
             ApplicationEventPublisher eventPublisher) {
-        ObjectMapper objectMapper = objectMapperProvider.getIfAvailable(ObjectMapper::new);
+        ObjectMapper objectMapper = objectMapperProvider.getIfAvailable(() -> JsonMapper.builder().build());
         return new JwtAuthenticationFailureHandler(objectMapper, eventPublisher);
     }
 
@@ -89,7 +90,7 @@ public class JwtAuthAutoConfiguration {
     @ConditionalOnMissingBean
     @ConditionalOnProperty(prefix = "security.jwt-auth", name = "authentication", havingValue = "true")
     public JwtLogoutSuccessHandler jwtLogoutSuccessHandler(ObjectProvider<ObjectMapper> objectMapperProvider) {
-        ObjectMapper objectMapper = objectMapperProvider.getIfAvailable(ObjectMapper::new);
+        ObjectMapper objectMapper = objectMapperProvider.getIfAvailable(() -> JsonMapper.builder().build());
         return new JwtLogoutSuccessHandler(objectMapper);
     }
 
@@ -141,7 +142,7 @@ public class JwtAuthAutoConfiguration {
 
         return http -> {
 
-            ObjectMapper objectMapper = objectMapperProvider.getIfAvailable(ObjectMapper::new);
+            ObjectMapper objectMapper = objectMapperProvider.getIfAvailable(() -> JsonMapper.builder().build());
             AuthenticationManager authenticationManager = authenticationManagerProvider.getIfAvailable();
             if (authenticationManager == null) {
                 throw new IllegalStateException(

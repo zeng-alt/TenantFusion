@@ -1,7 +1,7 @@
 package com.github.zeng.alt.workflow.service.impl;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
 import com.github.zeng.alt.api.exception.BaseException;
 import com.github.zeng.alt.api.rest.PageRestResponse;
 import com.github.zeng.alt.workflow.entity.GlobalFormDataEntity;
@@ -117,7 +117,7 @@ public class GlobalFormDataServiceImpl implements GlobalFormDataService {
         }
         try {
             return objectMapper.writeValueAsString(definition);
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             log.warn("序列化全局表单定义失败: " + definition.getType(), e);
             return null;
         }
@@ -135,7 +135,7 @@ public class GlobalFormDataServiceImpl implements GlobalFormDataService {
         }
         try {
             return objectMapper.writeValueAsString(objectMapper.readTree(data));
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             throw new BaseException("表单数据不是合法的 JSON: " + e.getOriginalMessage());
         }
     }

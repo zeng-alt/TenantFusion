@@ -1,12 +1,11 @@
 package com.github.zeng.alt.json.serialize;
 
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.databind.SerializerProvider;
-import com.fasterxml.jackson.databind.annotation.JacksonStdImpl;
-import com.fasterxml.jackson.databind.jsontype.TypeSerializer;
-import com.fasterxml.jackson.databind.ser.std.StdSerializer;
+import tools.jackson.core.JsonGenerator;
+import tools.jackson.databind.SerializationContext;
+import tools.jackson.databind.annotation.JacksonStdImpl;
+import tools.jackson.databind.jsontype.TypeSerializer;
+import tools.jackson.databind.ser.std.StdSerializer;
 
-import java.io.IOException;
 
 /**
  * @author zengJiaJun
@@ -23,13 +22,13 @@ public class NullToEmptySerializer extends StdSerializer<String> {
     }
 
     @Override
-    public void serialize(String value, JsonGenerator gen, SerializerProvider provider) throws IOException {
+    public void serialize(String value, JsonGenerator gen, SerializationContext provider) {
         gen.writeString(value != null ? value : "");
     }
 
     @Override
-    public void serializeWithType(String value, JsonGenerator gen, SerializerProvider provider,
-                                  TypeSerializer typeSer) throws IOException {
+    public void serializeWithType(String value, JsonGenerator gen, SerializationContext provider,
+                                  TypeSerializer typeSer) {
         serialize(value, gen, provider);
     }
 }

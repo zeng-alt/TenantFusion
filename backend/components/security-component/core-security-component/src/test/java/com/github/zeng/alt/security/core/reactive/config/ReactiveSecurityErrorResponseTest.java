@@ -1,7 +1,8 @@
 package com.github.zeng.alt.security.core.reactive.config;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
+import tools.jackson.databind.json.JsonMapper;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.SerializationFeature;
 import com.github.zeng.alt.security.api.ReactiveAuthorizationManagerProvider;
 import com.github.zeng.alt.security.api.WhiteListService;
 import com.github.zeng.alt.security.core.properties.SecurityProperties;
@@ -50,7 +51,7 @@ class ReactiveSecurityErrorResponseTest {
         new ReactiveWebApplicationContextRunner()
                 .withConfiguration(AutoConfigurations.of(ReactiveSecurityAutoConfiguration.class))
                 .withUserConfiguration(DenyAllProvider.class)
-                .withBean(ObjectMapper.class, () -> new ObjectMapper().enable(SerializationFeature.INDENT_OUTPUT))
+                .withBean(ObjectMapper.class, () -> JsonMapper.builder().enable(SerializationFeature.INDENT_OUTPUT).build())
                 .withBean(SecurityProperties.class, SecurityProperties::new)
                 .withBean(WhiteListService.class, () -> Set::of)
                 .run(context -> {
@@ -70,7 +71,7 @@ class ReactiveSecurityErrorResponseTest {
                             .isEqualTo(MediaType.APPLICATION_PROBLEM_JSON);
                     final String body = exchange.getResponse().getBodyAsString().block();
                     assertThat(body).contains("\n");
-                    final var problem = new ObjectMapper().readTree(body);
+                    final var problem = JsonMapper.builder().build().readTree(body);
                     assertThat(problem.get("status").asInt()).isEqualTo(expected.value());
                     assertThat(problem.get("instance").asText()).isEqualTo("/secured");
                     assertThat(problem.get("title").asText()).isNotBlank();

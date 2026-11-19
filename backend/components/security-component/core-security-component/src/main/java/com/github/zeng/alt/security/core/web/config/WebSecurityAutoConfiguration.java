@@ -1,7 +1,7 @@
 package com.github.zeng.alt.security.core.web.config;
 
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 import com.github.zeng.alt.security.api.AuthorizationConstraint;
 import com.github.zeng.alt.security.api.AuthorizationManagerProvider;
 import com.github.zeng.alt.security.api.WhiteListService;

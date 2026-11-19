@@ -1,18 +1,16 @@
 package com.github.zeng.alt.json.serialize;
 
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.databind.BeanProperty;
-import com.fasterxml.jackson.databind.JsonSerializer;
-import com.fasterxml.jackson.databind.SerializerProvider;
-import com.fasterxml.jackson.databind.annotation.JacksonStdImpl;
-import com.fasterxml.jackson.databind.jsontype.TypeSerializer;
-import com.fasterxml.jackson.databind.ser.ContextualSerializer;
-import com.fasterxml.jackson.databind.ser.std.StdSerializer;
+import tools.jackson.core.JsonGenerator;
+import tools.jackson.databind.BeanProperty;
+import tools.jackson.databind.ValueSerializer;
+import tools.jackson.databind.SerializationContext;
+import tools.jackson.databind.annotation.JacksonStdImpl;
+import tools.jackson.databind.jsontype.TypeSerializer;
+import tools.jackson.databind.ser.std.StdSerializer;
 import com.github.zeng.alt.json.annotation.Sensitive;
 import com.github.zeng.alt.json.annotation.SensitiveType;
 import com.github.zeng.alt.json.internal.SensitiveValueHelper;
 
-import java.io.IOException;
 
 /**
  * @author zengJiaJun
@@ -20,7 +18,7 @@ import java.io.IOException;
  * @version 1.0
  */
 @JacksonStdImpl
-public class SensitiveSerializer extends StdSerializer<String> implements ContextualSerializer {
+public class SensitiveSerializer extends StdSerializer<String> {
 
     private final SensitiveType type;
     private final String placeholder;
@@ -38,7 +36,7 @@ public class SensitiveSerializer extends StdSerializer<String> implements Contex
     }
 
     @Override
-    public JsonSerializer<?> createContextual(SerializerProvider prov, BeanProperty property) {
+    public ValueSerializer<?> createContextual(SerializationContext prov, BeanProperty property) {
         Sensitive ann = property != null
                 ? property.getAnnotation(Sensitive.class)
                 : null;
@@ -49,7 +47,7 @@ public class SensitiveSerializer extends StdSerializer<String> implements Contex
     }
 
     @Override
-    public void serialize(String value, JsonGenerator gen, SerializerProvider provider) throws IOException {
+    public void serialize(String value, JsonGenerator gen, SerializationContext provider) {
         if (value == null || value.isEmpty()) {
             gen.writeString(value);
             return;
@@ -58,8 +56,8 @@ public class SensitiveSerializer extends StdSerializer<String> implements Contex
     }
 
     @Override
-    public void serializeWithType(String value, JsonGenerator gen, SerializerProvider provider,
-                                  TypeSerializer typeSer) throws IOException {
+    public void serializeWithType(String value, JsonGenerator gen, SerializationContext provider,
+                                  TypeSerializer typeSer) {
         serialize(value, gen, provider);
     }
 

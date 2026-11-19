@@ -1,12 +1,13 @@
 package com.github.zeng.alt.event.kafka;
 
+import tools.jackson.databind.json.JsonMapper;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 import com.github.zeng.alt.event.EventException;
 import com.github.zeng.alt.event.EventOutcome;
 import com.github.zeng.alt.event.config.EventBindingProperties;
@@ -50,7 +51,7 @@ class KafkaEventSettlementTest {
         final var transport = new KafkaEventTemplate(
                 publisher,
                 consumers,
-                new EventCodec(new ObjectMapper()),
+                new EventCodec(JsonMapper.builder().build()),
                 beans.getBeanProvider(KafkaEventCustomizer.class)
         );
         final var binding = new EventBindingProperties();

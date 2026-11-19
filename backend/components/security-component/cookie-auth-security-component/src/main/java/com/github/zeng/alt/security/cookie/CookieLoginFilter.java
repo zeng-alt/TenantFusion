@@ -1,6 +1,7 @@
 package com.github.zeng.alt.security.cookie;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.core.JacksonException;
 import com.github.zeng.alt.security.core.web.support.LoginLogHandler;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -47,7 +48,7 @@ public class CookieLoginFilter extends UsernamePasswordAuthenticationFilter {
                         UsernamePasswordAuthenticationToken.unauthenticated(username, password);
                 setDetails(request, authRequest);
                 return this.getAuthenticationManager().authenticate(authRequest);
-            } catch (IOException e) {
+            } catch (IOException | JacksonException e) {
                 throw new AuthenticationServiceException("Failed to parse login request body", e);
             }
         }

@@ -1,6 +1,7 @@
 package com.github.zeng.alt.security.jwt;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
 import com.github.zeng.alt.security.api.SecurityUser;
 import com.github.zeng.alt.security.core.SecurityAutoConfiguration;
 import com.github.zeng.alt.security.core.web.config.WebSecurityAutoConfiguration;
@@ -111,7 +112,7 @@ class JwtAuthAutoConfigurationTest {
                         JwtAuthAutoConfiguration.class))
                 .withPropertyValues("security.context.enabled-access=true", "security.jwt-auth.validation=true",
                         "security.jwt-auth.base64-secret=" + Base64.getEncoder().encodeToString(secret))
-                .withBean(ObjectMapper.class, ObjectMapper::new)
+                .withBean(ObjectMapper.class, () -> JsonMapper.builder().build())
                 .withBean(StorageTemplate.class, () -> mock(StorageTemplate.class, RETURNS_DEEP_STUBS))
                 .withBean("mvcHandlerMappingIntrospector", HandlerMappingIntrospector.class,
                         HandlerMappingIntrospector::new);

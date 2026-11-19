@@ -1,6 +1,7 @@
 package com.github.zeng.alt.security.cookie;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
 import com.github.zeng.alt.security.api.SecurityUser;
 import com.github.zeng.alt.security.core.SecurityAutoConfiguration;
 import com.github.zeng.alt.security.core.web.config.WebSecurityAutoConfiguration;
@@ -44,7 +45,7 @@ class CookieSecurityTest {
             .withConfiguration(AutoConfigurations.of(SecurityAutoConfiguration.class,
                     WebSecurityAutoConfiguration.class, CookieAuthAutoConfiguration.class))
             .withPropertyValues("security.username-login.enabled=false", "security.cookie-auth.validation=true")
-            .withBean(ObjectMapper.class, ObjectMapper::new)
+            .withBean(ObjectMapper.class, () -> JsonMapper.builder().build())
             .withBean(AuthenticationManager.class, () -> authentication -> authentication)
             .withBean(UserDetailsService.class, () -> username -> {
                 assertThat(TenantContextHolder.getTenantId()).isEqualTo("t001");
