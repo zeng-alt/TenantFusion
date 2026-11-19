@@ -5,3 +5,17 @@ allowBuilds:
   inferno: true
   simple-git-hooks: true
   vue-demi: true
+
+minimumReleaseAgeExclude:
+  - '@formkit/core@2.8.0'
+  - '@formkit/dev@2.8.0'
+  - '@formkit/i18n@2.8.0'
+  - '@formkit/inputs@2.8.0'
+  - '@formkit/observer@2.8.0'
+  - '@formkit/rules@2.8.0'
+  - '@formkit/themes@2.8.0'
+  - '@formkit/utils@2.8.0'
+  - '@formkit/validation@2.8.0'
+  - '@formkit/vue@2.8.0'
+  - '@zeng-alt/formkit-form-builder@2.0.0'
+  - '@zeng-alt/camunda7-ui@1.0.9'

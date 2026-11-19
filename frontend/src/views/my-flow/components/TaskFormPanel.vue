@@ -8,16 +8,16 @@
       <div class="mb-6 text-13 font-600">
         {{ task.taskName || task.taskDefinitionKey }}
       </div>
-      <BuilderProvider v-if="task.formType === 'FORM_TEMPLATE' && task.definition" :config="formBuilderConfig">
-        <FormSchemaRenderer
-          :model-value="taskFormValues[task.taskDefinitionKey]"
-          :definition="task.definition"
-          :http="request"
-          :actions="false"
-          label-position="top"
-          @update:model-value="val => taskFormValues[task.taskDefinitionKey] = val"
-        />
-      </BuilderProvider>
+      <FormRenderer
+        v-if="task.formType === 'FORM_TEMPLATE' && task.definition"
+        :config="formBuilderConfig"
+        :model-value="taskFormValues[task.taskDefinitionKey]"
+        :definition="task.definition"
+        :http="request"
+        :actions="false"
+        label-position="top"
+        @update:model-value="val => taskFormValues[task.taskDefinitionKey] = val"
+      />
       <component
         :is="getFormKeyComponent(task.formKey)"
         v-else-if="task.formType === 'FORM_KEY' && task.formKey"
@@ -42,7 +42,7 @@
 
 <script setup>
 import { FormPreview } from '@zeng-alt/camunda7-ui'
-import { BuilderProvider, FormSchemaRenderer } from '@zeng-alt/formkit-form-builder'
+import { FormRenderer } from '@zeng-alt/formkit-form-builder/renderer'
 import { defineAsyncComponent, markRaw, onBeforeUpdate, ref, watch } from 'vue'
 import { request } from '@/utils'
 import { createFormBuilderConfig } from '@/views/template/form/formBuilderConfig'

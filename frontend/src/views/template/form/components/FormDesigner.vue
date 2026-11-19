@@ -64,7 +64,7 @@ const DEFAULT_DEFINITION = {
   version: 1,
   id: `form_${randomInt()}`,
   name: '未命名表单',
-  settings: { layout: 'vertical', labelWidth: 80 },
+  settings: { labelAlign: 'top', labelWidth: 80 },
   root: {
     id: 'root',
     type: 'group',

@@ -40,15 +40,15 @@
             提交时间：{{ formatDateTime(previewSubmittedDate) }}
           </span>
         </div>
-        <BuilderProvider v-if="previewDefinition" :config="formBuilderConfig">
-          <FormSchemaRenderer
-            :model-value="previewData"
-            :definition="previewDefinition"
-            :http="request"
-            :actions="false"
-            label-position="top"
-          />
-        </BuilderProvider>
+        <FormRenderer
+          v-if="previewDefinition"
+          :config="formBuilderConfig"
+          :model-value="previewData"
+          :definition="previewDefinition"
+          :http="request"
+          :actions="false"
+          label-position="top"
+        />
         <template v-else-if="previewFields">
           <div class="mb-8 text-13 font-600">
             表单定义（GENERATED）
@@ -78,7 +78,7 @@
 </template>
 
 <script setup>
-import { BuilderProvider, FormSchemaRenderer } from '@zeng-alt/formkit-form-builder'
+import { FormRenderer } from '@zeng-alt/formkit-form-builder/renderer'
 import { NButton, NEmpty, NInput, NSpin, NTag } from 'naive-ui'
 import { h, onMounted, ref } from 'vue'
 import { CommonPage, MeCrud, MeModal, MeQueryItem } from '@/components'

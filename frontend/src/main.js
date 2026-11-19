@@ -9,7 +9,7 @@
  **********************************/
 
 import { plugin } from '@formkit/vue'
-import { formkitConfig } from '@zeng-alt/formkit-form-builder'
+import { formkitConfig } from '@zeng-alt/formkit-form-builder/renderer'
 import { createApp } from 'vue'
 
 import App from './App.vue'
@@ -30,9 +30,9 @@ async function bootstrap() {
   setupStore(app)
   setupDirectives(app)
   await setupRouter(app)
+  app.use(plugin, formkitConfig())
   app.mount('#app')
   setupNaiveDiscreteApi()
-  app.use(plugin, formkitConfig())
 }
 
 bootstrap()

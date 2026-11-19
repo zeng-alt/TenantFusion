@@ -155,24 +155,15 @@
             class="h-full min-h-0"
           >
             <div class="relative h-full min-h-400 w-full">
-              <BuilderProvider :config="formBuilderConfig">
-                <!--
-                必须等 processXml 就绪后再渲染 BpmnProcessViewer，
-                否则 processXml 与 executionState 会在同一 tick 内异步加载后同时变更，
-                BpmnProcessViewer 的 executionState watcher 会在 BPMN XML 尚未导入完成时
-                尝试添加高亮 marker，导致 elementRegistry 中找不到元素而报错。
-                base/index.vue 中数据是静态的、在组件挂载时就位，因此不会触发该竞态。
-              -->
-                <div class="h-600">
-                  <BpmnProcessViewer
-                    v-if="processXml"
-                    :theme="isDark ? 'dark' : 'light'"
-                    :process-xml="processXml"
-                    :show-timeline="true"
-                    :execution-state="executionState"
-                  />
-                </div>
-              </BuilderProvider>
+              <div class="h-600">
+                <BpmnProcessViewer
+                  v-if="processXml"
+                  :theme="isDark ? 'dark' : 'light'"
+                  :process-xml="processXml"
+                  :show-timeline="true"
+                  :execution-state="executionState"
+                />
+              </div>
             </div>
           </NTabPane>
 
@@ -184,18 +175,15 @@
             <NScrollbar class="h-full">
               <div class="flex flex-col gap-12 px-8 pb-8">
                 <div class="min-h-0 flex-1">
-                  <BuilderProvider
+                  <FormRenderer
                     v-if="globalForm?.type === 'CAMUNDA' && globalForm.definition"
+                    v-model="globalFormValues"
                     :config="formBuilderConfig"
-                  >
-                    <FormSchemaRenderer
-                      v-model="globalFormValues"
-                      :http="request"
-                      :definition="globalForm.definition"
-                      :actions="false"
-                      label-position="top"
-                    />
-                  </BuilderProvider>
+                    :http="request"
+                    :definition="globalForm.definition"
+                    :actions="false"
+                    label-position="top"
+                  />
                   <component
                     :is="getFormKeyComponent(globalForm?.formKey)"
                     v-else-if="globalForm?.type === 'EXTERNAL' && globalForm.formKey"
@@ -240,7 +228,7 @@
 <script setup>
 import { useDark } from '@vueuse/core'
 import { BpmnProcessViewer } from '@zeng-alt/camunda7-ui'
-import { BuilderProvider, FormSchemaRenderer } from '@zeng-alt/formkit-form-builder'
+import { FormRenderer } from '@zeng-alt/formkit-form-builder/renderer'
 import { NButton, NCard, NEllipsis, NEmpty, NIcon, NLayout, NLayoutContent, NLayoutHeader, NLayoutSider, NScrollbar, NSpin, NTabPane, NTabs } from 'naive-ui'
 import { computed, defineAsyncComponent, markRaw, ref, watch } from 'vue'
 import { useUserStore } from '@/store'

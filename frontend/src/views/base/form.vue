@@ -183,7 +183,7 @@ const sampleDefinition = {
   id: 'demo-form',
   name: '员工信息登记',
   description: '演示 DSL：覆盖字段类型 / 校验 / 选项 / 栅格布局 / 静态展示',
-  settings: { layout: 'vertical', columns: 12, labelWidth: 80 },
+  settings: { labelAlign: 'top', labelWidth: 80 },
   root: {
     id: 'root',
     type: 'group',

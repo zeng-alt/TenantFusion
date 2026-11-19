@@ -2,18 +2,17 @@
   <div class="w-full">
     <NSpin :show="loading" class="py-24">
       <template v-if="definition">
-        <BuilderProvider :config="config">
-          <FormSchemaRenderer
-            ref="rendererRef"
-            :definition="definition"
-            :model-value="formData"
-            :http="request"
-            :actions="false"
-            label-position="top"
-            @update:model-value="onDataUpdate"
-            @submit="onValidSubmit"
-          />
-        </BuilderProvider>
+        <FormRenderer
+          ref="rendererRef"
+          :config="config"
+          :definition="definition"
+          :model-value="formData"
+          :http="request"
+          :actions="false"
+          label-position="top"
+          @update:model-value="onDataUpdate"
+          @submit="onValidSubmit"
+        />
 
         <div
           v-if="actions && !readonly"
@@ -34,7 +33,7 @@
 </template>
 
 <script setup>
-import { BuilderProvider, FormSchemaRenderer } from '@zeng-alt/formkit-form-builder'
+import { FormRenderer } from '@zeng-alt/formkit-form-builder/renderer'
 import { NButton, NEmpty, NSpin } from 'naive-ui'
 import { computed, ref, watch } from 'vue'
 import { request } from '@/utils'
@@ -116,7 +115,7 @@ watch(
     if (value && value !== formData.value)
       formData.value = { ...value }
   },
-  { deep: true },
+  { deep: true, immediate: true },
 )
 
 watch(
