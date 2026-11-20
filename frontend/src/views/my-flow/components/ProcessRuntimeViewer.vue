@@ -177,6 +177,7 @@
                 <div class="min-h-0 flex-1">
                   <FormRenderer
                     v-if="globalForm?.type === 'CAMUNDA' && globalForm.definition"
+                    v-bind="formBuilderTheme"
                     v-model="globalFormValues"
                     :config="formBuilderConfig"
                     :http="request"
@@ -231,6 +232,7 @@ import { BpmnProcessViewer } from '@zeng-alt/camunda7-ui'
 import { FormRenderer } from '@zeng-alt/formkit-form-builder/renderer'
 import { NButton, NCard, NEllipsis, NEmpty, NIcon, NLayout, NLayoutContent, NLayoutHeader, NLayoutSider, NScrollbar, NSpin, NTabPane, NTabs } from 'naive-ui'
 import { computed, defineAsyncComponent, markRaw, ref, watch } from 'vue'
+import { useFormBuilderTheme } from '@/composables/useFormBuilderTheme'
 import { useUserStore } from '@/store'
 import { formatDateTime, request } from '@/utils'
 import { isAdmin, isSuperAdmin } from '@/utils/auth'
@@ -261,6 +263,7 @@ const emit = defineEmits(['update:approvalCollapsed', 'status'])
 
 const isDark = useDark()
 const formBuilderConfig = createFormBuilderConfig()
+const formBuilderTheme = useFormBuilderTheme()
 
 const loading = ref(false)
 const loadError = ref('')

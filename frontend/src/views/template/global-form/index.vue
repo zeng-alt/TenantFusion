@@ -42,6 +42,7 @@
         </div>
         <FormRenderer
           v-if="previewDefinition"
+          v-bind="formBuilderTheme"
           :config="formBuilderConfig"
           :model-value="previewData"
           :definition="previewDefinition"
@@ -83,6 +84,7 @@ import { NButton, NEmpty, NInput, NSpin, NTag } from 'naive-ui'
 import { h, onMounted, ref } from 'vue'
 import { CommonPage, MeCrud, MeModal, MeQueryItem } from '@/components'
 import { formatDateTime, request } from '@/utils'
+import { useFormBuilderTheme } from '@/composables/useFormBuilderTheme'
 import { createFormBuilderConfig } from '@/views/template/form/formBuilderConfig'
 import api from './api'
 
@@ -100,6 +102,7 @@ const previewWorkflowCode = ref('')
 const previewProcessInstanceId = ref('')
 const previewSubmittedDate = ref('')
 const formBuilderConfig = createFormBuilderConfig()
+const formBuilderTheme = useFormBuilderTheme()
 
 onMounted(() => {
   $table.value?.handleSearch()

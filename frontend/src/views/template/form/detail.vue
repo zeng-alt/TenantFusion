@@ -53,22 +53,26 @@
       <NEmpty v-else-if="!loading" class="py-40" description="表单模板不存在或已被删除" />
     </NSpin>
 
-    <FormDefinitionPreview
-      v-model:show="previewShow"
-      :form-definition="previewDefinition"
-      :title="previewDescription"
-      :show-data-panel="false"
-    />
+    <BuilderProvider v-bind="formBuilderTheme" :config="formBuilderConfig">
+      <FormDefinitionPreview
+        v-model:show="previewShow"
+        :form-definition="previewDefinition"
+        :title="previewDescription"
+        :show-data-panel="false"
+      />
+    </BuilderProvider>
   </CommonPage>
 </template>
 
 <script setup>
-import { FormDefinitionPreview } from '@zeng-alt/formkit-form-builder'
+import { BuilderProvider, FormDefinitionPreview } from '@zeng-alt/formkit-form-builder'
 import { NButton, NCard, NDataTable, NDescriptions, NDescriptionsItem, NEmpty, NSpin, NTag } from 'naive-ui'
 import { h, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { AppCard, CommonPage } from '@/components'
+import { useFormBuilderTheme } from '@/composables/useFormBuilderTheme'
 import { formatDateTime } from '@/utils'
+import { createFormBuilderConfig } from './formBuilderConfig'
 import api from './api'
 
 defineOptions({ name: 'FormTemplateDetail' })
@@ -79,6 +83,9 @@ const router = useRouter()
 const loading = ref(true)
 const template = ref(null)
 const versions = ref([])
+const formBuilderConfig = createFormBuilderConfig()
+const formBuilderTheme = useFormBuilderTheme()
+
 const previewShow = ref(false)
 const previewDefinition = ref(null)
 const previewDescription = ref('')

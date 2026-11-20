@@ -4,6 +4,9 @@ import {
   FormBuilder,
 } from '@zeng-alt/formkit-form-builder'
 import { computed, ref, watch } from 'vue'
+import { useFormBuilderTheme } from '@/composables/useFormBuilderTheme'
+
+const formBuilderTheme = useFormBuilderTheme()
 
 // ════════════════════════════════════════════════════════════════════════════
 // ② 完整 FormBuilderConfig：附带自定义元素的 i18n 文案（zh / en）
@@ -295,6 +298,7 @@ watch(
 <template>
   <div class="h-screen w-full flex flex-col">
     <BuilderProvider
+      v-bind="formBuilderTheme"
       :config="formBuilderConfig"
     >
       <!-- 设计器 -->

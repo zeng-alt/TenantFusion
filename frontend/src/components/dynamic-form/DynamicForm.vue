@@ -3,6 +3,7 @@
     <NSpin :show="loading" class="py-24">
       <template v-if="definition">
         <FormRenderer
+          v-bind="formBuilderTheme"
           ref="rendererRef"
           :config="config"
           :definition="definition"
@@ -36,6 +37,7 @@
 import { FormRenderer } from '@zeng-alt/formkit-form-builder/renderer'
 import { NButton, NEmpty, NSpin } from 'naive-ui'
 import { computed, ref, watch } from 'vue'
+import { useFormBuilderTheme } from '@/composables/useFormBuilderTheme'
 import { request } from '@/utils'
 import { createFormBuilderConfig } from '@/views/template/form/formBuilderConfig'
 import api from './api'
@@ -98,6 +100,7 @@ const props = defineProps({
 const emit = defineEmits(['update:modelValue', 'submit', 'error'])
 
 const config = createFormBuilderConfig()
+const formBuilderTheme = useFormBuilderTheme()
 
 const loading = ref(false)
 const submitting = ref(false)

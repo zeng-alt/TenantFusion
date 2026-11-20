@@ -29,7 +29,7 @@
       <NSpin />
     </div>
     <div v-else class="min-h-0 flex-1 overflow-hidden">
-      <BuilderProvider :config="formBuilderConfig">
+      <BuilderProvider v-bind="formBuilderTheme" :config="formBuilderConfig">
         <FormBuilder v-model="definition" />
       </BuilderProvider>
     </div>
@@ -45,6 +45,7 @@ import {
   NTag,
 } from 'naive-ui'
 import { onMounted, ref } from 'vue'
+import { useFormBuilderTheme } from '@/composables/useFormBuilderTheme'
 import { randomInt } from '@/utils'
 import api from '../api'
 import { createFormBuilderConfig } from '../formBuilderConfig'
@@ -109,6 +110,7 @@ function createDefaultDefinition() {
 const definition = ref(createDefaultDefinition())
 
 const formBuilderConfig = createFormBuilderConfig()
+const formBuilderTheme = useFormBuilderTheme()
 
 onMounted(async () => {
   try {

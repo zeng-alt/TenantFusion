@@ -10,6 +10,7 @@
       </div>
       <FormRenderer
         v-if="task.formType === 'FORM_TEMPLATE' && task.definition"
+        v-bind="formBuilderTheme"
         :config="formBuilderConfig"
         :model-value="taskFormValues[task.taskDefinitionKey]"
         :definition="task.definition"
@@ -45,6 +46,7 @@ import { FormPreview } from '@zeng-alt/camunda7-ui'
 import { FormRenderer } from '@zeng-alt/formkit-form-builder/renderer'
 import { defineAsyncComponent, markRaw, onBeforeUpdate, ref, watch } from 'vue'
 import { request } from '@/utils'
+import { useFormBuilderTheme } from '@/composables/useFormBuilderTheme'
 import { createFormBuilderConfig } from '@/views/template/form/formBuilderConfig'
 
 defineOptions({ name: 'TaskFormPanel' })
@@ -58,6 +60,7 @@ const props = defineProps({
 })
 
 const formBuilderConfig = createFormBuilderConfig()
+const formBuilderTheme = useFormBuilderTheme()
 
 /** 动态加载 FORM_KEY 对应的外部表单组件（路径以 /src/views/ 开头） */
 const viewModules = import.meta.glob('/src/views/**/*.vue')
