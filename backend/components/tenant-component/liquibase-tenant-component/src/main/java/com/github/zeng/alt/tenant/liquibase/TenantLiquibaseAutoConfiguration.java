@@ -18,6 +18,7 @@ import org.springframework.boot.jpa.autoconfigure.EntityManagerFactoryDependsOnP
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Role;
+import org.springframework.context.annotation.ImportRuntimeHints;
 import org.springframework.core.io.ResourceLoader;
 
 import javax.sql.DataSource;
@@ -36,6 +37,7 @@ import javax.sql.DataSource;
 @AutoConfiguration(after = {LiquibaseAutoConfiguration.class, TenantAutoConfiguration.class})
 @Role(BeanDefinition.ROLE_INFRASTRUCTURE)
 @EnableConfigurationProperties(TenantLiquibaseProperties.class)
+@ImportRuntimeHints(TenantLiquibaseRuntimeHints.class)
 @ConditionalOnClass(SpringLiquibase.class)
 @ConditionalOnProperty(prefix = "alt.tenant.liquibase", name = "enabled", havingValue = "true")
 public class TenantLiquibaseAutoConfiguration {

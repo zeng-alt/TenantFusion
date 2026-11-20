@@ -18,6 +18,7 @@ dependencies {
 
     testImplementation("org.springframework.boot:spring-boot-starter-test")
     testImplementation("org.liquibase:liquibase-core")
+    testImplementation("com.zaxxer:HikariCP")
     testImplementation(rootProject.libs.h2)
     testImplementation("org.postgresql:postgresql")
 }

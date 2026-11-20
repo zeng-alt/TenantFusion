@@ -4,6 +4,8 @@ import com.github.zeng.alt.tenant.api.TenantDialect;
 
 import javax.sql.DataSource;
 import java.io.PrintWriter;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Proxy;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.SQLFeatureNotSupportedException;
@@ -45,7 +47,22 @@ record SchemaAwareDataSource(DataSource delegate, TenantDialect dialect, String 
             connection.close();
             throw e;
         }
-        return connection;
+        return (Connection) Proxy.newProxyInstance(Connection.class.getClassLoader(), new Class<?>[]{Connection.class},
+                (proxy, method, arguments) -> {
+                    if (method.getName().equals("close") && !connection.isClosed()) {
+                        try (Statement statement = connection.createStatement()) {
+                            statement.execute(dialect.schemaResetSql());
+                        } finally {
+                            connection.close();
+                        }
+                        return null;
+                    }
+                    try {
+                        return method.invoke(connection, arguments);
+                    } catch (InvocationTargetException failure) {
+                        throw failure.getCause();
+                    }
+                });
     }
 
     @Override
