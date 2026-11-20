@@ -1,0 +1,25 @@
+apiVersion: k3d.io/v1alpha5
+kind: Simple
+metadata:
+  name: tenantfusion
+servers: 1
+agents: 0
+image: rancher/k3s:v1.37.2-k3s1
+kubeAPI:
+  host: 127.0.0.1
+  hostIP: 127.0.0.1
+  hostPort: "16443"
+ports:
+  - port: 127.0.0.1:18080:80
+    nodeFilters:
+      - loadbalancer
+  - port: 127.0.0.1:18443:443
+    nodeFilters:
+      - loadbalancer
+options:
+  k3d:
+    wait: true
+    timeout: 300s
+  kubeconfig:
+    updateDefaultKubeconfig: true
+    switchCurrentContext: true
