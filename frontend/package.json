@@ -24,8 +24,8 @@
     "@lezer/highlight": "1.2.3",
     "@vueuse/core": "^14.2.1",
     "@zeng-alt/camunda7-ui": "^1.0.9",
-    "@zeng-alt/formkit-form-builder": "^2.0.0",
-    "@zeng-alt/vue-spel-query-builder": "1.1.1",
+    "@zeng-alt/formkit-form-builder": "^2.0.2",
+    "@zeng-alt/vue-spel-query-builder": "1.2.0",
     "axios": "^1.19.0",
     "dayjs": "^1.11.19",
     "echarts": "^6.0.0",
@@ -42,6 +42,7 @@
   "devDependencies": {
     "@antfu/eslint-config": "^7.6.1",
     "@iconify/json": "^2.2.443",
+    "@iconify/utils": "3.1.4",
     "@unocss/eslint-config": "^66.7.0",
     "@unocss/eslint-plugin": "^66.7.0",
     "@unocss/preset-rem-to-px": "^66.7.0",

@@ -17,13 +17,13 @@
       {{ conversionError }}
     </NAlert>
     <QuerySpelEditor
-      v-if="mode === 'code'" class="abac-query-builder" :model-value="modelValue" :authentication="bindings.authentication"
+      v-if="mode === 'code'" :model-value="modelValue" :authentication="bindings.authentication"
       :principal="bindings.principal" :locals="bindings.locals" :globals="bindings.globals"
       :methods="methods" :height="260" :theme="theme" size="small" locale="zh"
       @update:model-value="emit('update:modelValue', $event)"
     />
     <RuleTree
-      v-else v-model="rule" class="abac-query-builder" :authentication="bindings.authentication" :principal="bindings.principal"
+      v-else v-model="rule" :authentication="bindings.authentication" :principal="bindings.principal"
       :locals="bindings.locals" :globals="bindings.globals" :methods="methods" :theme="theme"
       size="small" locale="zh" @change="changeRule"
     />
