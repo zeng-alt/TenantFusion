@@ -2,49 +2,45 @@ package com.github.zeng.alt.security.core.reactive;
 
 
 import com.github.zeng.alt.security.api.WhiteListService;
-import lombok.RequiredArgsConstructor;
+import com.github.zeng.alt.security.core.WhiteListTemplate;
+import org.springframework.security.authorization.AuthenticatedReactiveAuthorizationManager;
 import org.springframework.security.authorization.AuthorizationDecision;
 import org.springframework.security.authorization.AuthorizationResult;
 import org.springframework.security.authorization.ReactiveAuthorizationManager;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.web.server.authorization.AuthorizationContext;
-import org.springframework.security.web.server.util.matcher.ServerWebExchangeMatcher;
-import org.springframework.security.web.server.util.matcher.ServerWebExchangeMatchers;
-import org.springframework.util.CollectionUtils;
-import org.springframework.web.util.pattern.PathPattern;
-import org.springframework.web.util.pattern.PathPatternParser;
 import reactor.core.publisher.Mono;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Set;
 
 /**
  * @author zengJiaJun
  * @version 1.0
  * @since 2024年11月27日 21:33
  */
-@RequiredArgsConstructor
 public class ReactiveWhiteListAuthorizationManager implements ReactiveAuthorizationManager<AuthorizationContext> {
 
-    private final WhiteListService whiteListService;
+    private final WhiteListTemplate whiteList;
+    private final ReactiveAuthorizationManager<AuthorizationContext> fallback;
+
+    public ReactiveWhiteListAuthorizationManager(WhiteListService service) {
+        this(new WhiteListTemplate(service), (authentication, context) -> Mono.just(new AuthorizationDecision(false)));
+    }
+
+    public ReactiveWhiteListAuthorizationManager(
+            WhiteListTemplate whiteList,
+            ReactiveAuthorizationManager<AuthorizationContext> fallback
+    ) {
+        this.whiteList = whiteList;
+        this.fallback = fallback;
+    }
 
     @Override
     public Mono<AuthorizationResult> authorize(Mono<Authentication> authentication, AuthorizationContext object) {
-        Set<String> whiteList = whiteListService.getWhiteList();
-        if (CollectionUtils.isEmpty(whiteList)) {
-            return Mono.just(new AuthorizationDecision(false));
-        }
-        PathPatternParser parser = PathPatternParser.defaultInstance;
-
-        List<PathPattern> pathPatterns = new ArrayList<>(whiteList.size());
-        for (String pattern : whiteList) {
-            pattern = parser.initFullPathPattern(pattern);
-            PathPattern pathPattern = parser.parse(pattern);
-            pathPatterns.add(pathPattern);
-        }
-        ServerWebExchangeMatcher serverWebExchangeMatcher = ServerWebExchangeMatchers.pathMatchers(pathPatterns.toArray(new PathPattern[0]));
-        return serverWebExchangeMatcher.matches(object.getExchange()).map(result -> new AuthorizationDecision(result.isMatch()));
+        return Mono.defer(() -> switch (whiteList.resolve(object.getExchange())) {
+            case PERMIT_ALL -> Mono.just(new AuthorizationDecision(true));
+            case AUTHENTICATED -> AuthenticatedReactiveAuthorizationManager.authenticated()
+                    .authorize(authentication, object);
+            case PROTECTED -> fallback.authorize(authentication, object);
+        });
     }
 
     public static ReactiveAuthorizationManager<AuthorizationContext> authenticated(WhiteListService whiteListService) {

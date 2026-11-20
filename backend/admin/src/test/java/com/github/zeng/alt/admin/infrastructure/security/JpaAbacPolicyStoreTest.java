@@ -6,7 +6,7 @@ import com.github.zeng.alt.admin.infrastructure.entity.PolicyRule;
 import com.github.zeng.alt.admin.infrastructure.repository.PermissionRepository;
 import com.github.zeng.alt.admin.infrastructure.repository.PolicyRuleRepository;
 import com.github.zeng.alt.security.abac.AbacPolicy;
-import com.github.zeng.alt.security.abac.core.AbacPolicyCreateCmd;
+import com.github.zeng.alt.security.abac.server.AbacPolicyCreateCmd;
 import com.github.zeng.alt.tenant.api.TenantContextHolder;
 import io.vavr.control.Option;
 import org.junit.jupiter.api.AfterEach;
@@ -27,7 +27,7 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
 /**
- * 策略写入的租户边界、权限解析、资源 ID 转换与软删除委托测试。
+ * 策略写入的租户边界、权限解析、软删除委托测试。
  *
  * @author zeng-alt
  * @since 0.0.1-SNAPSHOT
@@ -41,8 +41,10 @@ class JpaAbacPolicyStoreTest {
     private PermissionRepository permissions;
 
     private final AbacPolicyMapper mapper = Mappers.getMapper(AbacPolicyMapper.class);
-    private final AbacPolicyCreateCmd cmd = new AbacPolicyCreateCmd(
-            "t001", "user:update", "subject['deptId'] == resource['deptId']", true, Option.of("42"));
+    private final AbacPolicyCreateCmd cmd = new AbacPolicyCreateCmd("t001",
+                "user:update",
+                "principal['deptId'] == resource['deptId']",
+                true);
     private JpaAbacPolicyStore store;
 
     @BeforeEach
@@ -55,6 +57,22 @@ class JpaAbacPolicyStoreTest {
     @AfterEach
     void clearTenantContext() {
         TenantContextHolder.clear();
+    }
+
+    @Test
+    void shouldReadPreviousPolicyForScopedChangeNotifications() {
+        when(repository.findById(11L)).thenReturn(Option.of(rule(11L, "true")));
+        final AbacPolicy previous = store.findById("t001", "11").get();
+        assertThat(previous.id()).isEqualTo("11");
+        assertThat(previous.tenant()).isEqualTo("t001");
+        assertThat(previous.permission()).isEqualTo("user:update");
+    }
+
+    @Test
+    void shouldNotReadPreviousPolicyOutsideCurrentTenantOrForInvalidId() {
+        assertThat(store.findById("t002", "11")).isEmpty();
+        assertThat(store.findById("t001", "invalid")).isEmpty();
+        verifyNoInteractions(repository, permissions);
     }
 
     @Test
@@ -78,7 +96,7 @@ class JpaAbacPolicyStoreTest {
     }
 
     @Test
-    void shouldCreateRuleWithResolvedPermissionAndNumericResourceId() {
+    void shouldCreateRuleWithResolvedPermission() {
         when(permissions.findByTenantAndCode("t001", "user:update")).thenReturn(Option.of(permission()));
         when(repository.save(any(PolicyRule.class))).thenAnswer(invocation -> {
             final PolicyRule rule = invocation.getArgument(0);
@@ -93,13 +111,11 @@ class JpaAbacPolicyStoreTest {
         assertThat(captor.getValue().getCondition()).isEqualTo(cmd.condition());
         assertThat(captor.getValue().getTenantBy()).isEqualTo("t001");
         assertThat(captor.getValue().getPreAuth()).isTrue();
-        assertThat(captor.getValue().getResourceId()).isEqualTo(42L);
         assertThat(captor.getValue().getPermission().getCode()).isEqualTo("user:update");
         assertThat(created.id()).isEqualTo("11");
         assertThat(created.tenant()).isEqualTo("t001");
         assertThat(created.permission()).isEqualTo("user:update");
         assertThat(created.condition()).isEqualTo(cmd.condition());
-        assertThat(created.resourceId().get()).isEqualTo("42");
         verify(permissions).findByTenantAndCode("t001", "user:update");
         verifyNoMoreInteractions(repository, permissions);
     }
@@ -114,27 +130,16 @@ class JpaAbacPolicyStoreTest {
     }
 
     @Test
-    void shouldRejectNonNumericResourceId() {
-        when(permissions.findByTenantAndCode("t001", "user:update")).thenReturn(Option.of(permission()));
-        final var invalid = new AbacPolicyCreateCmd("t001", "user:update", "true", true, Option.of("abc"));
-
-        assertThat(store.create(invalid).getLeft().code()).isEqualTo("INVALID_RESOURCE_ID");
-
-        verifyNoInteractions(repository);
-    }
-
-    @Test
-    void shouldUpdateConditionPermissionAndResourceScopeOnManagedRule() {
-        final var rule = rule(11L, "true", 1L);
+    void shouldUpdateConditionAndPermissionOnManagedRule() {
+        final var rule = rule(11L, "true");
         when(repository.findById(11L)).thenReturn(Option.of(rule));
         when(permissions.findByTenantAndCode("t001", "user:update")).thenReturn(Option.of(permission()));
         when(repository.save(rule)).thenReturn(rule);
-        final var updated = new AbacPolicy("11", "t001", "user:update", "false", false, Option.none());
+        final var updated = new AbacPolicy("11", "t001", "user:update", "false", false);
 
         assertThat(store.update(updated).get()).isEqualTo(updated);
         assertThat(rule.getCondition()).isEqualTo("false");
         assertThat(rule.getPreAuth()).isFalse();
-        assertThat(rule.getResourceId()).isNull();
 
         verify(repository).findById(11L);
         verify(repository).save(rule);
@@ -155,7 +160,7 @@ class JpaAbacPolicyStoreTest {
 
     @Test
     void shouldRejectUpdateToUnknownPermission() {
-        when(repository.findById(11L)).thenReturn(Option.of(rule(11L, "true", null)));
+        when(repository.findById(11L)).thenReturn(Option.of(rule(11L, "true")));
         when(permissions.findByTenantAndCode("t001", "user:update")).thenReturn(Option.none());
 
         assertThat(store.update(policy("11", "t001")).getLeft().code()).isEqualTo("PERMISSION_NOT_FOUND");
@@ -165,7 +170,7 @@ class JpaAbacPolicyStoreTest {
 
     @Test
     void shouldDelegateDeletionToRepositorySoftDelete() {
-        final var rule = rule(11L, "true", null);
+        final var rule = rule(11L, "true");
         when(repository.findById(11L)).thenReturn(Option.of(rule));
 
         assertThat(store.delete("t001", "11").get()).isTrue();
@@ -176,7 +181,7 @@ class JpaAbacPolicyStoreTest {
     }
 
     private AbacPolicy policy(String id, String tenant) {
-        return new AbacPolicy(id, tenant, "user:update", "true", true, Option.none());
+        return new AbacPolicy(id, tenant, "user:update", "true", true);
     }
 
     private Permission permission() {
@@ -186,12 +191,11 @@ class JpaAbacPolicyStoreTest {
         return permission;
     }
 
-    private PolicyRule rule(Long id, String condition, Long resourceId) {
+    private PolicyRule rule(Long id, String condition) {
         final var rule = new PolicyRule();
         rule.setPolicyRuleId(id);
         rule.setTenantBy("t001");
         rule.setCondition(condition);
-        rule.setResourceId(resourceId);
         rule.setPermission(permission());
         return rule;
     }

@@ -6,8 +6,8 @@ import com.github.zeng.alt.admin.infrastructure.repository.PermissionRepository;
 import com.github.zeng.alt.admin.infrastructure.repository.PolicyRuleRepository;
 import com.github.zeng.alt.security.abac.AbacFailure;
 import com.github.zeng.alt.security.abac.AbacPolicy;
-import com.github.zeng.alt.security.abac.core.AbacPolicyCreateCmd;
-import com.github.zeng.alt.security.abac.core.AbacPolicyStore;
+import com.github.zeng.alt.security.abac.server.AbacPolicyCreateCmd;
+import com.github.zeng.alt.security.abac.server.spi.AbacPolicyStore;
 import com.github.zeng.alt.tenant.api.TenantContextHolder;
 import io.vavr.control.Either;
 import io.vavr.control.Option;
@@ -33,20 +33,26 @@ public class JpaAbacPolicyStore implements AbacPolicyStore {
     private final AbacPolicyMapper mapper;
 
     @Override
+    public Option<AbacPolicy> findById(String tenant, String id) {
+        if (!tenant.equals(TenantContextHolder.getTenantId())) {
+            return Option.none();
+        }
+        return findRule(id).map(mapper::toPolicy);
+    }
+
+    @Override
     @Transactional(rollbackFor = Exception.class)
     public Either<AbacFailure, AbacPolicy> create(AbacPolicyCreateCmd cmd) {
         if (!cmd.tenant().equals(TenantContextHolder.getTenantId())) {
             return Either.left(new AbacFailure("TENANT_MISMATCH", "策略租户与当前租户不一致"));
         }
         return findPermission(cmd.tenant(), cmd.permission())
-                .flatMap(permission -> parseResourceId(cmd.resourceId())
-                        .map(resourceId -> {
-                            final PolicyRule rule = mapper.toEntity(cmd);
-                            rule.setTenantBy(cmd.tenant());
-                            rule.setPermission(permission);
-                            rule.setResourceId(resourceId.getOrNull());
-                            return mapper.toPolicy(repository.save(rule));
-                        }));
+                .map(permission -> {
+                    final PolicyRule rule = mapper.toEntity(cmd);
+                    rule.setTenantBy(cmd.tenant());
+                    rule.setPermission(permission);
+                    return mapper.toPolicy(repository.save(rule));
+                });
     }
 
     @Override
@@ -58,13 +64,11 @@ public class JpaAbacPolicyStore implements AbacPolicyStore {
         return findRule(policy.id())
                 .toEither(() -> new AbacFailure("POLICY_NOT_FOUND", "策略不存在"))
                 .flatMap(rule -> findPermission(policy.tenant(), policy.permission())
-                        .flatMap(permission -> parseResourceId(policy.resourceId())
-                                .map(resourceId -> {
-                                    mapper.merge(policy, rule);
-                                    rule.setPermission(permission);
-                                    rule.setResourceId(resourceId.getOrNull());
-                                    return mapper.toPolicy(repository.save(rule));
-                                })));
+                        .map(permission -> {
+                            mapper.merge(policy, rule);
+                            rule.setPermission(permission);
+                            return mapper.toPolicy(repository.save(rule));
+                        }));
     }
 
     @Override
@@ -93,11 +97,4 @@ public class JpaAbacPolicyStore implements AbacPolicyStore {
         return Try.of(() -> Long.parseLong(id)).toOption().flatMap(repository::findById);
     }
 
-    private Either<AbacFailure, Option<Long>> parseResourceId(Option<String> resourceId) {
-        return resourceId
-                .map(value -> Try.of(() -> Long.parseLong(value))
-                        .toEither(new AbacFailure("INVALID_RESOURCE_ID", "资源 ID 必须是数字"))
-                        .map(Option::of))
-                .getOrElse(Either.right(Option.none()));
-    }
 }

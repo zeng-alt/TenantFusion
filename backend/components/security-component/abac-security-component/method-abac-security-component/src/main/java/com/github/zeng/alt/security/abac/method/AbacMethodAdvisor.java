@@ -7,7 +7,7 @@ import org.springframework.aop.Pointcut;
 import org.springframework.aop.support.AbstractPointcutAdvisor;
 
 /**
- * 方法授权 Advisor，order 默认取 Spring Security PRE_AUTHORIZE 同档（先于事务拦截器）。
+ * 方法授权 Advisor，在事务拦截器内部执行，后置拒绝可阻止提交。
  * 注册为 bean 后由 Spring 自动代理创建器拾取。
  *
  * @author zeng-alt

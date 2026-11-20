@@ -1,7 +1,6 @@
 package com.github.zeng.alt.security.abac;
 
 import io.vavr.control.Either;
-import io.vavr.control.Option;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
@@ -24,21 +23,21 @@ class AbacApiTest {
     @Test
     void shouldExposeImmutableContextAndPolicyContracts() {
         final var context = new AbacContext("t001", "update", Map.of("id", "1"), Map.of(), Map.of("action", "PATCH"));
-        final var policy = new AbacPolicy("11", "t001", "update", "true", true, Option.of("42"));
+        final var policy = new AbacPolicy("11", "t001", "update", "true", true);
         final var failure = new AbacFailure("DENIED", "无权限");
         assertThat(context.tenant()).isEqualTo(policy.tenant());
         assertThat(context.permission()).isEqualTo("update");
-        assertThat(context.subject()).containsEntry("id", "1");
+        assertThat(context.principal()).containsEntry("id", "1");
         assertThat(context.resource()).isEmpty();
-        assertThat(context.environment()).containsEntry("action", "PATCH");
+        assertThat(context.env()).containsEntry("action", "PATCH");
         assertThat(policy.id()).isEqualTo("11");
         assertThat(policy.permission()).isEqualTo("update");
         assertThat(policy.condition()).isEqualTo("true");
         assertThat(policy.preAuth()).isTrue();
-        assertThat(policy.resourceId().get()).isEqualTo("42");
+
         assertThat(failure.code()).isEqualTo("DENIED");
         assertThat(failure.message()).isEqualTo("无权限");
-        assertThatThrownBy(() -> context.subject().put("id", "2")).isInstanceOf(UnsupportedOperationException.class);
+        assertThatThrownBy(() -> context.principal().put("id", "2")).isInstanceOf(UnsupportedOperationException.class);
     }
 
     @Test
@@ -62,7 +61,7 @@ class AbacApiTest {
             source.put("value", value);
             final var context = new AbacContext("t001", "update", source, Map.of(), Map.of());
             source.clear();
-            assertThat(context.subject()).containsEntry("value", value);
+            assertThat(context.principal()).containsEntry("value", value);
         });
     }
 

@@ -79,7 +79,7 @@ class UserAbacAuthorizationTest {
         user.setUserId(42L);
         final var command = new PatchUserDto();
         when(userRepository.findById(42L)).thenReturn(Option.of(user));
-        when(authHelper.isSuperAdmin(42L)).thenReturn(false);
+        when(authHelper.hasSuperUser(42L)).thenReturn(false);
         final UserServiceImpl proxy = proxied(10L, 10L);
 
         assertThat(proxy.patchUser(42L, command).get()).isEqualTo(42L);
@@ -89,7 +89,7 @@ class UserAbacAuthorizationTest {
 
     private UserServiceImpl proxied(long subjectDeptId, long resourceDeptId) {
         final AbacSubjectProvider subjectProvider = permission ->
-                Either.right(new AbacSubject("t001", Map.of("deptId", subjectDeptId)));
+                Either.right(new AbacSubject("t001", Map.of("deptId", subjectDeptId), java.util.Map.of("authenticated", true)));
         final AbacEnvironmentProvider environmentProvider = context -> Map.of();
         final UserRepository resourceUsers = mock(UserRepository.class);
         final User resourceUser = new User();
@@ -102,8 +102,11 @@ class UserAbacAuthorizationTest {
         final StaticListableBeanFactory beans = new StaticListableBeanFactory();
         beans.addBean("userResourceResolver", resolver);
         final AbacTemplate template = new AbacTemplateImpl(
-                context -> List.of(new AbacPolicy("1", "t001", "user:update",
-                        "subject['deptId'] == resource['deptId']", true, Option.none())),
+                context -> List.of(new AbacPolicy("1",
+                "t001",
+                "user:update",
+                "principal['deptId'] == resource['deptId']",
+                true)),
                 new SpelAbacEvaluator(), new AbacProperties());
         final AbacMethodInterceptor interceptor = new AbacMethodInterceptor(
                 new AbacAuthorizeAttributeRegistry(), subjectProvider, environmentProvider, beans, template);

@@ -13,7 +13,7 @@ import com.github.zeng.alt.admin.query.service.UserServiceImpl;
 import com.github.zeng.alt.admin.query.service.transformation.UserDtoTransformation;
 import com.github.zeng.alt.security.api.AuthHelper;
 import com.github.zeng.alt.security.api.SecurityUser;
-import com.github.zeng.alt.security.api.WhiteListService;
+import com.github.zeng.alt.security.core.WhiteListAutoConfiguration;
 import com.github.zeng.alt.security.core.properties.SecurityProperties;
 import com.github.zeng.alt.security.core.web.config.WebSecurityAutoConfiguration;
 import com.github.zeng.alt.security.jwt.JwtAuthAutoConfiguration;
@@ -22,6 +22,7 @@ import com.github.zeng.alt.security.jwt.JwtTokenProvider;
 import com.github.zeng.alt.tenant.api.TenantContextHolder;
 import com.github.zeng.alt.tenant.api.TenantSingleDataSourceProvider;
 import io.vavr.control.Option;
+import io.vavr.control.Try;
 import jakarta.servlet.Filter;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -29,9 +30,11 @@ import org.junit.jupiter.params.provider.ValueSource;
 import org.mapstruct.factory.Mappers;
 import org.springframework.beans.factory.support.StaticListableBeanFactory;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
+import org.springframework.boot.env.YamlPropertySourceLoader;
 import org.springframework.boot.test.context.runner.WebApplicationContextRunner;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -40,7 +43,6 @@ import org.springframework.web.servlet.handler.HandlerMappingIntrospector;
 
 import java.security.SecureRandom;
 import java.util.Base64;
-import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -111,8 +113,10 @@ class JwtAccountStatusTest {
         final var storage = mock(JwtStorage.class);
         when(storage.hasToken(anyString())).thenReturn(true);
         return new WebApplicationContextRunner().withConfiguration(AutoConfigurations.of(
-                        WebSecurityAutoConfiguration.class, JwtAuthAutoConfiguration.class))
-                .withUserConfiguration(MySecurityConfig.class)
+                        WebSecurityAutoConfiguration.class, JwtAuthAutoConfiguration.class, WhiteListAutoConfiguration.class))
+                .withInitializer(context -> Try.run(() -> new YamlPropertySourceLoader()
+                        .load("admin", new ClassPathResource("application.yml"))
+                        .forEach(context.getEnvironment().getPropertySources()::addLast)).get())
                 .withPropertyValues("security.username-login.enabled=false", "security.jwt-auth.authentication=true",
                         "security.jwt-auth.validation=true",
                         "security.jwt-auth.base64-secret=" + Base64.getEncoder().encodeToString(secret))
@@ -122,7 +126,6 @@ class JwtAccountStatusTest {
                 .withBean(AuthenticationManager.class, () -> authentication -> authentication)
                 .withBean(UserDetailsService.class, () -> new UserDetailsServiceImpl(users,
                         new StaticListableBeanFactory().getBeanProvider(TenantSingleDataSourceProvider.class)))
-                .withBean(WhiteListService.class, () -> Set::of)
                 .withBean("mvcHandlerMappingIntrospector", HandlerMappingIntrospector.class,
                         HandlerMappingIntrospector::new);
     }

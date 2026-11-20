@@ -127,7 +127,7 @@ class AbacMethodInterceptorTest {
     }
 
     private void stubSubject() {
-        when(subjectProvider.resolve(any())).thenReturn(Either.right(new AbacSubject("t001", Map.of("deptId", 10L))));
+        when(subjectProvider.resolve(any())).thenReturn(Either.right(new AbacSubject("t001", Map.of("deptId", 10L), java.util.Map.of("authenticated", true))));
     }
 
     private void stubDecision(Either<AbacFailure, Boolean> decision) {
@@ -144,11 +144,11 @@ class AbacMethodInterceptorTest {
         assertThat(interceptor(beans(new TestResolver(Map.of("id", "42", "deptId", 10L)))).invoke(invocation))
                 .isEqualTo("PROCEEDED");
         final ArgumentCaptor<AbacContext> captor = ArgumentCaptor.forClass(AbacContext.class);
-        verify(template).authorize(captor.capture());
+        verify(template, org.mockito.Mockito.times(2)).authorize(captor.capture());
         assertThat(captor.getValue().tenant()).isEqualTo("t001");
         assertThat(captor.getValue().permission()).isEqualTo("user:update");
         assertThat(captor.getValue().resource().get("id")).isEqualTo("42");
-        assertThat(captor.getValue().environment().get("action")).isEqualTo("PATCH");
+        assertThat(captor.getValue().env().get("action")).isEqualTo("PATCH");
     }
 
     @Test
@@ -228,6 +228,19 @@ class AbacMethodInterceptorTest {
     }
 
     @Test
+    void bindsFreshValuesForEachInvocationWhileReusingMetadata() throws Throwable {
+        stubSubject();
+        stubDecision(Either.right(true));
+        final TestResolver resolver = new TestResolver(Map.of("id", "42"));
+        final AbacMethodInterceptor interceptor = interceptor(beans(resolver));
+        interceptor.invoke(invocation("patchUser", new Class<?>[]{Long.class, String.class}, new Object[]{42L, "bob"}));
+        final AbacMethodContext first = resolver.captured;
+        interceptor.invoke(invocation("patchUser", new Class<?>[]{Long.class, String.class}, new Object[]{43L, "alice"}));
+        assertThat(first.paramByName()).containsEntry("id", 42L).containsEntry("name", "bob");
+        assertThat(resolver.captured.paramByName()).containsEntry("id", 43L).containsEntry("name", "alice");
+    }
+
+    @Test
     void shouldMergeResolversInDeclarationOrderWithLaterOverriding() throws Throwable {
         stubSubject();
         stubDecision(Either.right(true));
@@ -239,7 +252,7 @@ class AbacMethodInterceptorTest {
         interceptor(factory).invoke(invocation);
 
         final ArgumentCaptor<AbacContext> captor = ArgumentCaptor.forClass(AbacContext.class);
-        verify(template).authorize(captor.capture());
+        verify(template, org.mockito.Mockito.times(2)).authorize(captor.capture());
         assertThat(captor.getValue().resource().get("deptId")).isEqualTo(2L);
         assertThat(captor.getValue().resource().get("id")).isEqualTo("42");
     }

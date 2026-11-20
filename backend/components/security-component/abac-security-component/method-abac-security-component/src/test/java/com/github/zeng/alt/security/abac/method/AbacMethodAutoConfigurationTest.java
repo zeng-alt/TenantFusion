@@ -8,7 +8,6 @@ import org.aopalliance.intercept.MethodInvocation;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
-import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 import java.util.Map;
@@ -34,7 +33,7 @@ class AbacMethodAutoConfigurationTest {
     @Test
     void shouldDiscoverMethodSecurityBeans() {
         runner.withBean(AbacSubjectProvider.class,
-                        () -> permission -> Either.right(new AbacSubject("t001", Map.of())))
+                        () -> permission -> Either.right(new AbacSubject("t001", Map.of(), java.util.Map.of("authenticated", true))))
                 .run(context -> {
                     assertThat(context).hasSingleBean(AbacAuthorizeAttributeRegistry.class);
                     assertThat(context).hasSingleBean(AbacMethodInterceptor.class);
@@ -45,15 +44,15 @@ class AbacMethodAutoConfigurationTest {
     @Test
     void shouldBackOffWhenCustomAdvisorIsContributed() {
         runner.withBean(AbacSubjectProvider.class,
-                        () -> permission -> Either.right(new AbacSubject("t001", Map.of())))
-                .withBean(AbacMethodAdvisor.class, () -> mock(AbacMethodAdvisor.class))
+                        () -> permission -> Either.right(new AbacSubject("t001", Map.of(), java.util.Map.of("authenticated", true))))
+                .withBean(AbacMethodAdvisor.class, () -> new AbacMethodAdvisor(mock(AbacMethodInterceptor.class), 0))
                 .run(context -> assertThat(context).hasSingleBean(AbacMethodAdvisor.class));
     }
 
     @Test
     void shouldDisableWhenPropertyIsFalse() {
         runner.withBean(AbacSubjectProvider.class,
-                        () -> permission -> Either.right(new AbacSubject("t001", Map.of())))
+                        () -> permission -> Either.right(new AbacSubject("t001", Map.of(), java.util.Map.of("authenticated", true))))
                 .withPropertyValues("security.abac.method.enabled=false")
                 .run(context -> {
                     assertThat(context).doesNotHaveBean(AbacMethodInterceptor.class);

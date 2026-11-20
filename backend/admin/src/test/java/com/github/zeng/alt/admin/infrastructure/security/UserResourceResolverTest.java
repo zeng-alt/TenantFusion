@@ -41,7 +41,7 @@ class UserResourceResolverTest {
 
         final Map<String, Object> attributes = resolver.resolve(context(42L));
 
-        assertThat(attributes.get("id")).isEqualTo("42");
+        assertThat(attributes.get("id")).isEqualTo(42L);
         assertThat(attributes.get("deptId")).isEqualTo(20L);
         assertThat(attributes.get("tenant")).isEqualTo("t001");
     }

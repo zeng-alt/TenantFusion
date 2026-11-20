@@ -30,6 +30,11 @@ import java.util.regex.Pattern;
         properties = {
                 "spring.jpa.hibernate.ddl-auto=none",
                 "spring.liquibase.enabled=false",
+                // 只枚举路由；关闭 dev 的租户校验与独立迁移，避免查询空 H2 中的 main_tenant。
+                "alt.tenant.enabled=false",
+                "alt.tenant.liquibase.enabled=false",
+                // 导出不处理事件；Outbox 建表已关闭，同时关闭会写库的后台实例注册。
+                "namastack.outbox.enabled=false",
                 "spring.jpa.show-sql=false",
                 "spring.datasource.url=jdbc:h2:mem:sql_exporter;DB_CLOSE_DELAY=-1",
                 "spring.datasource.driver-class-name=org.h2.Driver",
@@ -41,7 +46,10 @@ import java.util.regex.Pattern;
                 "oss.s3.enabled=false",
                 "server.port=0",
                 "spring.aot.enabled=false",
-                "spring.autoconfigure.exclude=com.github.zeng.alt.security.rbac.client.config.RbacClientAutoConfiguration"
+                // 无业务表的导出上下文不启用事件持久化运行组件，关闭时也不会查询 event_publication。
+                "spring.autoconfigure.exclude="
+                        + "com.github.zeng.alt.security.rbac.client.config.RbacClientAutoConfiguration,"
+                        + "org.springframework.modulith.events.config.EventPublicationAutoConfiguration"
         }
 )
 public class HttpResourceSqlExporter {

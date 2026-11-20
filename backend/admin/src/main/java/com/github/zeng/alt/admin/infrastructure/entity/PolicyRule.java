@@ -8,7 +8,6 @@ import lombok.Getter;
 import lombok.Setter;
 import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.SQLRestriction;
-import org.hibernate.annotations.SoftDelete;
 import org.jspecify.annotations.Nullable;
 
 @Entity
@@ -32,9 +31,6 @@ public class PolicyRule extends TenantBaseEntity<Long> {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "permission_id")
     private Permission permission;
-
-    @Column(name = "resource_id")
-    private Long resourceId;
 
     @Column(columnDefinition = "text")
     private String condition;

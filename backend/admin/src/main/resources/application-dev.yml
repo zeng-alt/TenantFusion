@@ -125,16 +125,16 @@ security:
     validation: true
     login-path: /v1/login/**
 
-  filter:
-    ignore-url:
-      - "/h2-console/**" # 开发控制台由宿主显式放行
-      - "/v1/test/**"
-      - "/v1/camunda-identity/**"
-      - "/v1/auth/captcha"
-      - "/v3/api-docs/**"
-      - "/swagger-ui/**"
-      - "/swagger-ui.html"
-      - "/webjars/**"
+  whitelist:
+    permit-all:
+      - path: /h2-console/** # 开发控制台由宿主显式放行
+      - path: /v1/test/**
+      - path: /v1/camunda-identity/**
+      - path: /v1/auth/captcha
+      - path: /v3/api-docs/**
+      - path: /swagger-ui/**
+      - path: /swagger-ui.html
+      - path: /webjars/**
   context:
     enabled-access: true
     admin:

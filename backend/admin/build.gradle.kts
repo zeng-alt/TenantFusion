@@ -94,7 +94,8 @@ dependencies {
     implementation(project(":backend:components:security-component:rbac-security-component:rbac-serve-security-component"))
     implementation(project(":backend:components:security-component:abac-security-component:core-abac-security-component"))
     implementation(project(":backend:components:security-component:abac-security-component:method-abac-security-component"))
-    runtimeOnly(project(":backend:components:security-component:abac-security-component:spel-abac-security-component"))
+    implementation(project(":backend:components:security-component:abac-security-component:client-abac-security-component"))
+    implementation(project(":backend:components:security-component:abac-security-component:server-abac-security-component"))
     // RBAC 客户端（路由收集，可选）
     implementation(project(":backend:components:security-component:rbac-security-component:rbac-client-security-component"))
     implementation(project(":backend:components:doc-component"))
@@ -119,7 +120,6 @@ dependencies {
     testImplementation(libs.spring.modulith.starter.test)
     testImplementation(libs.spring.security.test)
     testImplementation(project(":backend:components:security-component:cookie-auth-security-component"))
-    testImplementation(project(":backend:components:security-component:abac-security-component:spel-abac-security-component"))
 
     annotationProcessor(libs.lombok)
     annotationProcessor(libs.spring.boot.configuration.processor)

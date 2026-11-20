@@ -59,7 +59,7 @@ public class RoleServiceImpl implements RoleService {
         return roleRepository.findById(id)
                 .toEither("角色不存在")
                 .filterOrElse(
-                        role -> !authHelper.isAdmin(role.getCode()),
+                        role -> !authHelper.hasAdminRole(role.getCode()),
                         role -> "超级管理员角色不能修改"
                 )
                 .map(role -> {
@@ -79,7 +79,7 @@ public class RoleServiceImpl implements RoleService {
     @Override
     @Transactional(rollbackOn = Exception.class)
     public void addRoleUsers(Long roleId, List<Long> userIds) {
-        if (userIds.stream().anyMatch(authHelper::isSuperAdmin)) {
+        if (userIds.stream().anyMatch(authHelper::hasSuperUser)) {
             throw new BaseException("内置超级用户不能修改");
         }
         Role role = roleRepository.findById(roleId).getOrNull();
@@ -103,7 +103,7 @@ public class RoleServiceImpl implements RoleService {
     @Override
     @Transactional(rollbackOn = Exception.class)
     public void removeRoleUsers(Long roleId, List<Long> userIds) {
-        if (userIds.stream().anyMatch(authHelper::isSuperAdmin)) {
+        if (userIds.stream().anyMatch(authHelper::hasSuperUser)) {
             throw new BaseException("内置超级用户不能修改");
         }
         if (roleRepository.findById(roleId).isEmpty()) {
@@ -119,7 +119,7 @@ public class RoleServiceImpl implements RoleService {
     @Transactional(rollbackOn = Exception.class)
     public void authorizePermission(AuthorizePermissionDto dto) {
         List<Role> roles = roleRepository.findByIdIn(dto.getRoleIds());
-        if (roles.stream().anyMatch(r -> authHelper.isAdmin(r.getCode()))) {
+        if (roles.stream().anyMatch(r -> authHelper.hasAdminRole(r.getCode()))) {
             throw new BaseException("超级管理员角色不能修改");
         }
         if (roles.size() != dto.getRoleIds().size()) {

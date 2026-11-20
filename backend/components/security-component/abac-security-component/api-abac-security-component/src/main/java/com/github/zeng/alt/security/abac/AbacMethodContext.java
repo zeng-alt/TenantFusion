@@ -19,6 +19,6 @@ public record AbacMethodContext(
 ) {
     public AbacMethodContext {
         args = args.clone();
-        paramByName = Map.copyOf(paramByName);
+        paramByName = java.util.Collections.unmodifiableMap(new java.util.LinkedHashMap<>(paramByName));
     }
 }

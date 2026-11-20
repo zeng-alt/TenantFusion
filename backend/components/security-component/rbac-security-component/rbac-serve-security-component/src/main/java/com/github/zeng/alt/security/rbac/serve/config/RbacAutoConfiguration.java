@@ -1,6 +1,8 @@
 package com.github.zeng.alt.security.rbac.serve.config;
 
 
+import com.github.zeng.alt.security.api.AuthorityResolver;
+import com.github.zeng.alt.security.rbac.serve.locator.PermissionLocator;
 import com.github.zeng.alt.security.rbac.serve.router.RouteTemplateEventListener;
 import com.github.zeng.alt.security.rbac.serve.RbacServeRuntimeHints;
 import com.github.zeng.alt.security.rbac.serve.repository.DefaultRbacResourceService;
@@ -55,5 +57,12 @@ public class RbacAutoConfiguration {
     public RbacResourceService rbacResourceService(StorageTemplate storageTemplate, RbacResourceLoader resourceLoader) {
         log.debug("Creating DefaultRbacResourceService with StorageTemplate + RbacResourceLoader");
         return new DefaultRbacResourceService(storageTemplate, resourceLoader);
+    }
+
+    @Bean
+    @ConditionalOnMissingBean(name = "rbacAuthorityResolver")
+    public AuthorityResolver rbacAuthorityResolver(RbacResourceService resources) {
+        final PermissionLocator locator = new PermissionLocator(resources);
+        return locator::load;
     }
 }

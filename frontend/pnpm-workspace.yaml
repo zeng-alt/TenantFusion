@@ -19,3 +19,6 @@ minimumReleaseAgeExclude:
   - '@formkit/vue@2.8.0'
   - '@zeng-alt/formkit-form-builder@2.0.0'
   - '@zeng-alt/camunda7-ui@1.0.9'
+
+patchedDependencies:
+  '@zeng-alt/vue-spel-query-builder@1.1.1': patches/@zeng-alt__vue-spel-query-builder@1.1.1.patch

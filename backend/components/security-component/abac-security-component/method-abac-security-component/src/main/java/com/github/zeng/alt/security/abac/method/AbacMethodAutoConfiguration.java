@@ -1,15 +1,23 @@
 package com.github.zeng.alt.security.abac.method;
 
 import com.github.zeng.alt.security.abac.AbacTemplate;
-import com.github.zeng.alt.security.abac.core.AbacAutoConfiguration;
 
 import org.springframework.beans.factory.ListableBeanFactory;
+import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
+import com.github.zeng.alt.security.abac.AbacResourceResolver;
+import com.github.zeng.alt.security.abac.spel.SpelAbacEvaluator;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBooleanProperty;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Role;
+import org.springframework.beans.factory.config.BeanDefinition;
+import org.springframework.beans.factory.config.BeanPostProcessor;
+import org.springframework.beans.factory.aot.BeanFactoryInitializationAotProcessor;
+import org.springframework.transaction.annotation.EnableTransactionManagement;
 
 /**
  * 方法级 ABAC 自动装配。先贡献注册表与拦截器，再包装为 Advisor；宿主必须提供主体与环境 SPI，
@@ -18,8 +26,10 @@ import org.springframework.context.annotation.Bean;
  * @author zeng-alt
  * @since 0.0.1-SNAPSHOT
  */
-@AutoConfiguration(after = AbacAutoConfiguration.class)
+@AutoConfiguration(afterName = "com.github.zeng.alt.security.abac.client.config.AbacClientAutoConfiguration")
 @EnableConfigurationProperties(AbacMethodProperties.class)
+@EnableTransactionManagement
+@ConditionalOnBooleanProperty(prefix = "security.abac.client", name = "enabled", matchIfMissing = true)
 @ConditionalOnProperty(
         prefix = "security.abac.method",
         name = "enabled",
@@ -27,6 +37,17 @@ import org.springframework.context.annotation.Bean;
         matchIfMissing = true
 )
 public class AbacMethodAutoConfiguration {
+
+    @Bean
+    public static BeanFactoryInitializationAotProcessor abacMethodAotProcessor() {
+        return new AbacMethodAotProcessor();
+    }
+
+    @Bean
+    @Role(BeanDefinition.ROLE_INFRASTRUCTURE)
+    public static BeanPostProcessor abacTransactionAdvisorHandler(ObjectProvider<AbacMethodProperties> properties) {
+        return new AbacTransactionAdvisorHandler(properties);
+    }
 
     @Bean
     @ConditionalOnMissingBean
@@ -48,6 +69,15 @@ public class AbacMethodAutoConfiguration {
 
     @Bean
     @ConditionalOnMissingBean
+    public AbacMethodResolver abacMethodResolver(ConfigurableListableBeanFactory beans,
+            AbacAuthorizeAttributeRegistry registry, ObjectProvider<AbacResourceResolver> resources,
+            ObjectProvider<AbacSchemaCustomizer> customizers, ObjectProvider<SpelAbacEvaluator> evaluator) {
+        return new AbacMethodResolver(beans, registry, resources, customizers, evaluator);
+    }
+
+    @Bean
+    @ConditionalOnMissingBean
+    @Role(BeanDefinition.ROLE_INFRASTRUCTURE)
     public AbacMethodAdvisor abacMethodAdvisor(
             ObjectProvider<AbacMethodInterceptor> interceptor, AbacMethodProperties properties) {
         return new AbacMethodAdvisor(interceptor, properties.getOrder());

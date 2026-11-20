@@ -4,6 +4,8 @@ import com.github.zeng.alt.security.abac.AbacAuthorize;
 
 import org.springframework.aop.support.StaticMethodMatcherPointcut;
 import org.springframework.core.annotation.AnnotatedElementUtils;
+import org.springframework.aop.support.AopUtils;
+import org.springframework.core.BridgeMethodResolver;
 
 import java.lang.reflect.Method;
 
@@ -16,7 +18,9 @@ import java.lang.reflect.Method;
 public final class AbacMethodPointcut extends StaticMethodMatcherPointcut {
     @Override
     public boolean matches(Method method, Class<?> targetClass) {
-        return AnnotatedElementUtils.hasAnnotation(method, AbacAuthorize.class)
+        final Method resolved = BridgeMethodResolver.findBridgedMethod(AopUtils.getMostSpecificMethod(method, targetClass));
+        return AnnotatedElementUtils.hasAnnotation(resolved, AbacAuthorize.class)
+                || AnnotatedElementUtils.hasAnnotation(method, AbacAuthorize.class)
                 || AnnotatedElementUtils.hasAnnotation(targetClass, AbacAuthorize.class);
     }
 }

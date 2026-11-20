@@ -10,11 +10,12 @@ import java.util.Map;
  * @author zeng-alt
  * @since 0.0.1-SNAPSHOT
  */
-public record AbacUserDto(String id, String tenant, Option<Long> deptId, boolean enabled) {
+public record AbacUserDto(Long id, String tenant, Option<Long> deptId, boolean enabled) {
     public Map<String, Object> attributes() {
         final var attributes = io.vavr.collection.HashMap.<String, Object>of(
                 "id", id, "tenant", tenant, "enabled", enabled
         );
-        return Map.copyOf(deptId.map(value -> attributes.put("deptId", value)).getOrElse(attributes).toJavaMap());
+        return java.util.Collections.unmodifiableMap(deptId.map(value -> attributes.put("deptId", value))
+                .getOrElse(attributes.put("deptId", null)).toJavaMap());
     }
 }

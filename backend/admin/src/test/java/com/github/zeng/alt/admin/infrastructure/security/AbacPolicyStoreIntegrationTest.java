@@ -17,13 +17,12 @@ import com.github.zeng.alt.admin.infrastructure.repository.PolicyRuleRepository;
 import com.github.zeng.alt.security.abac.AbacContext;
 import com.github.zeng.alt.security.abac.AbacPolicy;
 import com.github.zeng.alt.security.abac.AbacTemplate;
-import com.github.zeng.alt.security.abac.core.AbacPolicyCreateCmd;
+import com.github.zeng.alt.security.abac.server.AbacPolicyCreateCmd;
 import com.github.zeng.alt.security.abac.core.AbacPolicyLoader;
 import com.github.zeng.alt.security.abac.core.AbacProperties;
 import com.github.zeng.alt.security.abac.core.AbacTemplateImpl;
 import com.github.zeng.alt.security.abac.spel.SpelAbacEvaluator;
 import com.github.zeng.alt.tenant.api.TenantContextHolder;
-import io.vavr.control.Option;
 import jakarta.persistence.EntityManager;
 import org.hibernate.SessionFactory;
 import org.hibernate.boot.MetadataSources;
@@ -94,8 +93,10 @@ class AbacPolicyStoreIntegrationTest {
     void shouldPersistExpressionAndAuthorizeThroughTenantScopedLoad() {
         final var created = withTenant("t001", entityManager -> {
             final var fixture = fixture(entityManager);
-            final var policy = fixture.store().create(new AbacPolicyCreateCmd(
-                    "t001", "store:loop", "subject['deptId'] == resource['deptId']", true, Option.none())).get();
+            final var policy = fixture.store().create(new AbacPolicyCreateCmd("t001",
+                "store:loop",
+                "principal['deptId'] == resource['deptId']",
+                true)).get();
             assertThat(policy.id()).isNotBlank();
             assertThat(policy.tenant()).isEqualTo("t001");
             assertThat(policy.permission()).isEqualTo("store:loop");
@@ -115,20 +116,26 @@ class AbacPolicyStoreIntegrationTest {
     @Test
     void shouldIsolatePolicyWritesAndReadsBetweenTenants() {
         final var created = withTenant("t001", entityManager -> fixture(entityManager).store()
-                .create(new AbacPolicyCreateCmd("t001", "store:isolation", "true", true, Option.none())).get());
+                .create(new AbacPolicyCreateCmd("t001", "store:isolation", "true", true)).get());
 
         withTenant("t002", entityManager -> {
             final var fixture = fixture(entityManager);
             final var t002Context = new AbacContext("t002", "store:isolation", Map.of(), Map.of(), Map.of());
             assertThat(fixture.loader().list(t002Context)).isEmpty();
-            assertThat(fixture.store().update(new AbacPolicy(
-                    created.id(), "t001", "store:isolation", "false", true, Option.none()))
+            assertThat(fixture.store().update(new AbacPolicy(created.id(),
+                "t001",
+                "store:isolation",
+                "false",
+                true))
                     .getLeft().code()).isEqualTo("TENANT_MISMATCH");
-            assertThat(fixture.store().update(new AbacPolicy(
-                    created.id(), "t002", "store:isolation", "false", true, Option.none()))
+            assertThat(fixture.store().update(new AbacPolicy(created.id(),
+                "t002",
+                "store:isolation",
+                "false",
+                true))
                     .getLeft().code()).isEqualTo("POLICY_NOT_FOUND");
             assertThat(fixture.store().delete("t001", created.id()).getLeft().code()).isEqualTo("TENANT_MISMATCH");
-            fixture.store().create(new AbacPolicyCreateCmd("t002", "store:isolation", "false", true, Option.none())).get();
+            fixture.store().create(new AbacPolicyCreateCmd("t002", "store:isolation", "false", true)).get();
             assertThat(fixture.template().authorize(t002Context).get().getLeft().code()).isEqualTo("POLICY_DENIED");
             return null;
         });
@@ -144,12 +151,17 @@ class AbacPolicyStoreIntegrationTest {
     void shouldUpdateConditionAndSoftDeletePolicy() {
         final String deletedId = withTenant("t001", entityManager -> {
             final var fixture = fixture(entityManager);
-            final var created = fixture.store().create(new AbacPolicyCreateCmd(
-                    "t001", "store:lifecycle", "true", true, Option.none())).get();
+            final var created = fixture.store().create(new AbacPolicyCreateCmd("t001",
+                "store:lifecycle",
+                "true",
+                true)).get();
             assertThat(fixture.template().authorize(context("store:lifecycle", 10L)).get().isRight()).isTrue();
 
-            final var updated = fixture.store().update(new AbacPolicy(
-                    created.id(), "t001", "store:lifecycle", "false", true, Option.none())).get();
+            final var updated = fixture.store().update(new AbacPolicy(created.id(),
+                "t001",
+                "store:lifecycle",
+                "false",
+                true)).get();
             assertThat(updated.condition()).isEqualTo("false");
             assertThat(fixture.template().authorize(context("store:lifecycle", 10L)).get().getLeft().code())
                     .isEqualTo("POLICY_DENIED");
@@ -170,14 +182,12 @@ class AbacPolicyStoreIntegrationTest {
     }
 
     @Test
-    void shouldRejectUnknownPermissionAndInvalidResourceId() {
+    void shouldRejectUnknownPermissionAndMissingPolicy() {
         withTenant("t001", entityManager -> {
             final var store = fixture(entityManager).store();
-            assertThat(store.create(new AbacPolicyCreateCmd("t001", "store:ghost", "true", true, Option.none()))
+            assertThat(store.create(new AbacPolicyCreateCmd("t001", "store:ghost", "true", true))
                     .getLeft().code()).isEqualTo("PERMISSION_NOT_FOUND");
-            assertThat(store.create(new AbacPolicyCreateCmd("t001", "store:validation", "true", true, Option.of("abc")))
-                    .getLeft().code()).isEqualTo("INVALID_RESOURCE_ID");
-            assertThat(store.update(new AbacPolicy("999999", "t001", "store:validation", "true", true, Option.none()))
+            assertThat(store.update(new AbacPolicy("999999", "t001", "store:validation", "true", true))
                     .getLeft().code()).isEqualTo("POLICY_NOT_FOUND");
             return null;
         });
@@ -199,7 +209,10 @@ class AbacPolicyStoreIntegrationTest {
         final var repositories = new JpaRepositoryFactory(entityManager);
         final var rules = repositories.getRepository(PolicyRuleRepository.class);
         final var mapper = Mappers.getMapper(AbacPolicyMapper.class);
-        final var loader = new AbacPolicyLoaderImpl(rules, mapper);
+        final var repository = new JpaAbacPolicyRepository(rules, mapper);
+        final AbacPolicyLoader loader = context -> repository.list(
+                new com.github.zeng.alt.security.abac.policy.AbacPolicyQuery(context.tenant(), context.permission()))
+                .getOrElseThrow(failure -> new IllegalStateException(failure.message()));
         return new Fixture(
                 new JpaAbacPolicyStore(rules, repositories.getRepository(PermissionRepository.class), mapper),
                 loader,

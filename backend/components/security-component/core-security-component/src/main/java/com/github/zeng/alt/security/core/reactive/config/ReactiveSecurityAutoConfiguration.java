@@ -4,7 +4,8 @@ package com.github.zeng.alt.security.core.reactive.config;
 import tools.jackson.databind.ObjectMapper;
 import com.github.zeng.alt.security.api.ReactiveAuthorizationConstraint;
 import com.github.zeng.alt.security.api.ReactiveAuthorizationManagerProvider;
-import com.github.zeng.alt.security.api.WhiteListService;
+import com.github.zeng.alt.security.core.WhiteListAutoConfiguration;
+import com.github.zeng.alt.security.core.WhiteListTemplate;
 import com.github.zeng.alt.security.core.properties.SecurityProperties;
 import com.github.zeng.alt.security.core.reactive.*;
 import com.github.zeng.alt.security.core.reactive.handler.DefaultReactiveAccessDeniedHandler;
@@ -16,6 +17,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Import;
 import tools.jackson.databind.json.JsonMapper;
 import org.springframework.security.authorization.AuthenticatedReactiveAuthorizationManager;
 import org.springframework.security.authorization.ReactiveAuthorizationManager;
@@ -45,6 +47,7 @@ import reactor.core.publisher.Mono;
 @EnableWebFluxSecurity
 @RequiredArgsConstructor
 @ConditionalOnClass({ WebFilterChainProxy.class })
+@Import(WhiteListAutoConfiguration.class)
 public class ReactiveSecurityAutoConfiguration {
 
 	private final SecurityProperties securityProperties;
@@ -55,7 +58,7 @@ public class ReactiveSecurityAutoConfiguration {
 			ServerHttpSecurity http,
 			ObjectProvider<ReactiveAuthorizationManagerProvider<AuthorizationContext>> reactiveAuthorizationManagerProviders,
 			ObjectProvider<ServerHttpSecurityBuilderCustomizer> customizers,
-			WhiteListService whiteListService,
+			WhiteListTemplate whiteList,
 			ServerAccessDeniedHandler serverAccessDeniedHandler,
 			ServerAuthenticationEntryPoint serverAuthenticationEntryPoint,
 			ObjectProvider<AuthorizeExchangeCustomizer> authorizeExchangeCustomizers
@@ -70,7 +73,7 @@ public class ReactiveSecurityAutoConfiguration {
 			authorizeExchangeCustomizers.orderedStream().forEach(spec -> spec.customize(authorizeExchangeSpec));
 			if (Boolean.TRUE.equals(securityProperties.getEnabledAccess())) {
 				authorizeExchangeSpec.anyExchange().access(compositeReactiveAuthorizationManager(
-						reactiveAuthorizationManagerProviders, whiteListService
+						reactiveAuthorizationManagerProviders, whiteList
 				));
 			} else {
 				authorizeExchangeSpec.anyExchange().permitAll();
@@ -93,19 +96,18 @@ public class ReactiveSecurityAutoConfiguration {
 		return http.build();
 	}
 
-	private CompositeReactiveAuthorizationManager compositeReactiveAuthorizationManager(
+	private ReactiveAuthorizationManager<AuthorizationContext> compositeReactiveAuthorizationManager(
 			ObjectProvider<ReactiveAuthorizationManagerProvider<AuthorizationContext>> reactiveAuthorizationManagerProviders,
-			WhiteListService whiteListService
+			WhiteListTemplate whiteList
 	) {
 		List<ReactiveAuthorizationManager<AuthorizationContext>> list = new ArrayList<>();
-		list.add(ReactiveWhiteListAuthorizationManager.authenticated(whiteListService));
 		List<ReactiveAuthorizationManager<AuthorizationContext>> managers = reactiveAuthorizationManagerProviders.orderedStream()
 				.map(ReactiveAuthorizationManagerProvider::get).toList();
 		list.addAll(managers);
 		if (CollectionUtils.isEmpty(managers)) {
 			list.add(AuthenticatedReactiveAuthorizationManager.authenticated());
 		}
-		return new CompositeReactiveAuthorizationManager(list);
+		return new ReactiveWhiteListAuthorizationManager(whiteList, new CompositeReactiveAuthorizationManager(list));
 	}
 
 

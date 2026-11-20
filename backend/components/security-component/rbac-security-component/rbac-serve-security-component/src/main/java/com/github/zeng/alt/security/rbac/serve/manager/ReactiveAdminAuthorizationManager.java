@@ -32,7 +32,7 @@ public class ReactiveAdminAuthorizationManager implements ReactiveAuthorizationM
             return Mono.just(new AuthorizationDecision(false));
         }
         return authentication
-                .filter(auth -> auth.isAuthenticated() && isAdmin(auth))
+                .filter(auth -> auth.isAuthenticated() && hasAdmin(auth))
                 .<AuthorizationResult>map(this::getAuthorizationDecision)
                 .doOnNext(decision -> {
                     if (decision.isGranted()) {
@@ -46,7 +46,7 @@ public class ReactiveAdminAuthorizationManager implements ReactiveAuthorizationM
         return new AuthorizationDecision(authentication.isAuthenticated());
     }
 
-    private boolean isAdmin(Authentication authentication) {
+    private boolean hasAdmin(Authentication authentication) {
 
         Object principal = authentication.getPrincipal();
         if (principal instanceof SecurityUser securityUser) {

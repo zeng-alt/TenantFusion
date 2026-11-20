@@ -37,28 +37,20 @@ public final class AbacTemplateImpl implements AbacTemplate {
         if (policies.stream().anyMatch(policy -> !context.tenant().equals(policy.tenant()))) {
             return Either.left(new AbacFailure("TENANT_MISMATCH", "策略租户不匹配"));
         }
-        if (policies.stream().anyMatch(policy -> policy.resourceId().isDefined())
-                && !context.resource().containsKey("id")) {
-            return Either.left(new AbacFailure("RESOURCE_MISSING", "策略要求可信资源 ID"));
+        if (!context.invocation().transactionActive() && policies.stream().anyMatch(policy -> !policy.preAuth())) {
+            return Either.left(new AbacFailure("POST_AUTH_REQUIRES_TRANSACTION", "后置授权要求存在活动事务"));
         }
-        final List<AbacPolicy> applicable = policies.stream()
-                .filter(policy -> policy.resourceId().isEmpty()
-                        || policy.resourceId().get().equals(context.resource().get("id")))
-                .toList();
-        if (applicable.isEmpty()) {
-            return required || !policies.isEmpty()
-                    ? Either.left(new AbacFailure("POLICY_MISSING", "没有适用的授权策略")) : Either.right(true);
+        if (policies.isEmpty() && required) {
+            return Either.left(new AbacFailure("POLICY_MISSING", "没有适用的授权策略"));
         }
-        return io.vavr.collection.List.ofAll(applicable).iterator()
+        return io.vavr.collection.List.ofAll(policies).iterator()
+                .filter(policy -> policy.preAuth() == context.invocation().preAuth())
                 .map(policy -> evaluate(policy, context))
                 .find(Either::isLeft)
                 .getOrElse(Either.right(true));
     }
 
     private Either<AbacFailure, Boolean> evaluate(AbacPolicy policy, AbacContext context) {
-        if (!policy.preAuth()) {
-            return Either.left(new AbacFailure("POST_AUTH_UNSUPPORTED", "暂不支持执行后授权策略"));
-        }
         return evaluator.evaluate(policy.condition(), context)
                 .flatMap(granted -> granted ? Either.right(true)
                         : Either.left(new AbacFailure("POLICY_DENIED", "不满足资源访问条件")));

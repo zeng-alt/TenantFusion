@@ -32,21 +32,21 @@ public class DictDataListener {
 
     @PrePersist
     public void prePersist(DictData entity) {
-        if (!authHelper.isAdmin() && Boolean.TRUE.equals(entity.getIsDefault())) {
+        if (!authHelper.hasAdmin() && Boolean.TRUE.equals(entity.getIsDefault())) {
             throw new ForbiddenException("当前用户权限无法修改字典数据的【是否默认】属性");
         }
     }
 
     @PreUpdate
     public void preUpdate(DictData entity) {
-        if (!authHelper.isAdmin() && BooleanUtils.compare(entity.getOldIsDefault(), entity.getIsDefault()) != 0) {
+        if (!authHelper.hasAdmin() && BooleanUtils.compare(entity.getOldIsDefault(), entity.getIsDefault()) != 0) {
             throw new ForbiddenException("当前用户权限无法修改字典数据的【是否默认】属性");
         }
     }
 
     @PreRemove
     public void preRemove(DictData entity) {
-        if (!authHelper.isAdmin() && BooleanUtils.isTrue(entity.getIsDefault())) {
+        if (!authHelper.hasAdmin() && BooleanUtils.isTrue(entity.getIsDefault())) {
             throw new ForbiddenException("当前用户权限无法删除系统默认的字典数据");
         }
     }

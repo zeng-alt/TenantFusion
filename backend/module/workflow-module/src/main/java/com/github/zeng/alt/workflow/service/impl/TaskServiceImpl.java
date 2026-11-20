@@ -92,7 +92,7 @@ public class TaskServiceImpl implements TaskService {
     public void unclaimTask(String taskId) {
         TaskInfo task = taskApi.get(taskId);
         String currentUser = UserContextHolder.getUsername();
-        if (!Objects.equals(task.getAssignee(), currentUser) && !authHelper.isAdmin() && !authHelper.isSuperAdmin()) {
+        if (!Objects.equals(task.getAssignee(), currentUser) && !authHelper.hasAdmin()) {
             throw new BaseException("仅任务认领人、管理员或超级用户可取消认领");
         }
         taskApi.unclaim(taskId);

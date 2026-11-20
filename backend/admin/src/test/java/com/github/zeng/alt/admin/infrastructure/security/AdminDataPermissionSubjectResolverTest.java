@@ -65,7 +65,7 @@ class AdminDataPermissionSubjectResolverTest {
                 .currentRole(selected ? unrelated : null).build();
         UserContextHolder.setAuthentication(
                 UsernamePasswordAuthenticationToken.authenticated(user, null, user.getAuthorities()));
-        when(abac.resolve("read")).thenReturn(Either.right(new AbacSubject("t1", Map.of("id", "7", "deptId", 10L))));
+        when(abac.resolve("read")).thenReturn(Either.right(new AbacSubject("t1", Map.of("id", "7", "deptId", 10L), java.util.Map.of("authenticated", true))));
         when(rbac.findUserRole("7", "t1")).thenReturn(Set.of("reader", "unrelated"));
         when(rbac.findRolePermission(List.of("reader"), "7", "t1")).thenReturn(Set.of("read"));
         when(rbac.findRolePermission(List.of("unrelated"), "7", "t1")).thenReturn(Set.of("other"));

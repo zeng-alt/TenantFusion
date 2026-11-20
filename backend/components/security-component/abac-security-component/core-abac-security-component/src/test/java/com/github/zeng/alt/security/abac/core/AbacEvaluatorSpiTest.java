@@ -4,7 +4,6 @@ import com.github.zeng.alt.security.abac.AbacContext;
 import com.github.zeng.alt.security.abac.AbacFailure;
 import com.github.zeng.alt.security.abac.AbacPolicy;
 import io.vavr.control.Either;
-import io.vavr.control.Option;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -21,11 +20,12 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  */
 class AbacEvaluatorSpiTest {
     private final AbacContext context = new AbacContext("t001", "update", Map.of(), Map.of(), Map.of());
-    private final AbacPolicyLoader loader = ignored -> List.of(new AbacPolicy("1", "t001", "update", "custom", true, Option.none()));
+    private final AbacPolicyLoader loader = ignored -> List.of(new AbacPolicy("1", "t001", "update", "custom", true));
 
     @Test
     void shouldAuthorizeWithCustomEvaluator() {
         final AbacEvaluator evaluator = (expression, request) -> Either.right("custom".equals(expression));
+        assertThat(evaluator.prepare("custom").get()).isTrue();
         final var template = new AbacTemplateImpl(loader, evaluator, new AbacProperties());
         assertThat(template.authorize(context).get().isRight()).isTrue();
     }

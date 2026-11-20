@@ -2,14 +2,15 @@ package com.github.zeng.alt.security.core;
 
 
 import com.github.zeng.alt.security.api.AuthHelper;
-import com.github.zeng.alt.security.api.WhiteListService;
+import com.github.zeng.alt.security.api.AuthorityResolver;
 import com.github.zeng.alt.security.core.properties.SecurityProperties;
-import com.github.zeng.alt.security.core.properties.WhiteListProperties;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Import;
 import org.springframework.security.authentication.AuthenticationEventPublisher;
 import org.springframework.security.authentication.DefaultAuthenticationEventPublisher;
 import org.springframework.security.core.userdetails.*;
@@ -26,7 +27,8 @@ import java.util.List;
  * @version 1.0
  */
 @AutoConfiguration
-@EnableConfigurationProperties({ WhiteListProperties.class, SecurityProperties.class })
+@EnableConfigurationProperties(SecurityProperties.class)
+@Import(WhiteListAutoConfiguration.class)
 public class SecurityAutoConfiguration {
 
 
@@ -38,8 +40,8 @@ public class SecurityAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
-	public AuthHelper authHelper(SecurityProperties securityProperties) {
-		return new AuthHelperImpl(securityProperties);
+	public AuthHelper authHelper(SecurityProperties securityProperties, ObjectProvider<AuthorityResolver> authorityResolvers) {
+		return new AuthHelperImpl(securityProperties, authorityResolvers);
 	}
 
 	@Bean
@@ -52,12 +54,6 @@ public class SecurityAutoConfiguration {
 	@ConditionalOnMissingBean
 	public UserDetailsService inMemoryUserDetailsManager(PasswordEncoder passwordEncoder) {
 		return new InMemoryUserDetailsManager();
-	}
-
-	@Bean
-	@ConditionalOnMissingBean
-	public WhiteListService defaultWhiteListService(WhiteListProperties whiteListProperties) {
-		return whiteListProperties::getIgnoreUrl;
 	}
 
 

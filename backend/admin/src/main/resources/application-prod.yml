@@ -58,14 +58,14 @@ security:
     validation: true
     login-path: /v1/login/**
 
-  filter:
+  whitelist:
     # 免鉴权路径在生产环境刻意收窄，只放开登录前必须可达的取验证码接口。
     # 相比 dev 有意省略以下几项，不是漏配：
     #   /v1/test/**              测试接口，不应暴露
     #   /v3/api-docs/** 等        接口文档，需要鉴权后才能看
     #   /v1/camunda-identity/**  见下方说明，照搬会开一个密码爆破口
-    ignore-url:
-      - "/v1/auth/captcha"
+    permit-all:
+      - path: /v1/auth/captcha
 
   # RbacAutoConfiguration 由本开关控制。缺了它 RbacResourceService 不会注册，
   # UserServiceImpl 注入失败，整个应用起不来。
@@ -81,7 +81,7 @@ security:
 
 # 警告：workflow 应用通过 AdminIdentityClient 调用 /v1/camunda-identity/**，
 # 其中 POST /users/{username}/password 会返回口令是否正确的布尔值。
-# dev 把该路径整段加入 ignore-url，生产环境照搬等于对外开放一个密码校验接口，
+# dev 把该路径整段加入 permit-all，生产环境照搬等于对外开放一个密码校验接口，
 # 可被用来爆破口令，同时 /users/{username} 与 /groups 还会泄露用户与组织结构。
 # 这里刻意不放行；上线前需要为这条服务间调用配置真正的认证方式
 # （固定 token、mTLS，或让 workflow 用服务账号走正常登录）。

@@ -24,6 +24,11 @@ public class UserResourceResolver implements AbacResourceResolver {
     private final AbacUserMapper mapper;
 
     @Override
+    public Map<String, Class<?>> attributes() {
+        return Map.of("id", Long.class, "tenant", String.class, "deptId", Long.class, "enabled", Boolean.class);
+    }
+
+    @Override
     public Map<String, Object> resolve(AbacMethodContext context) {
         final Long userId = Try.of(() -> Long.valueOf(String.valueOf(context.paramByName().get("id"))))
                 .getOrElseThrow(() -> new IllegalStateException("资源标识无效"));

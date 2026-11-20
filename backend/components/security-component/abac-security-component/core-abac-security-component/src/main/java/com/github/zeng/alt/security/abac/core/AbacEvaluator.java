@@ -13,5 +13,10 @@ import io.vavr.control.Either;
  */
 @FunctionalInterface
 public interface AbacEvaluator {
+    /** 在规则进入执行缓存前准备表达式；不依赖表达式解析的实现可直接接受。 */
+    default Either<AbacFailure, Boolean> prepare(String condition) {
+        return Either.right(true);
+    }
+
     Either<AbacFailure, Boolean> evaluate(String condition, AbacContext context);
 }

@@ -1,0 +1,161 @@
+@baseUrl = http://127.0.0.1:8080
+@tenant = t001
+
+### 登录 A 部门操作者；IDEA 自动保存本示例的 access token
+POST {{baseUrl}}/v1/login/jwt
+Content-Type: application/json
+X-Tenant-Id: {{tenant}}
+
+{
+  "username": "abac_a",
+  "password": "AbacDemo@123",
+  "rememberMe": false
+}
+
+> {%
+  client.test("演示账户登录成功", function () {
+    client.assert(response.status === 200, "登录应返回 200");
+  });
+  client.global.set("abacDemoToken", response.body.data.accessToken);
+%}
+
+### 同部门：200，响应 data = 862003
+PATCH {{baseUrl}}/v1/user/862003
+Content-Type: application/json
+Authorization: Bearer {{abacDemoToken}}
+X-Tenant-Id: {{tenant}}
+
+{"enabled": true}
+
+> {%
+  client.test("同部门允许", function () {
+    client.assert(response.status === 200, "同部门应返回 200");
+    client.assert(response.body.data === 862003, "应返回被修改用户 ID");
+  });
+%}
+
+### 不同部门：403，被拒绝的停用操作不应写入数据库
+PATCH {{baseUrl}}/v1/user/862002
+Content-Type: application/json
+Authorization: Bearer {{abacDemoToken}}
+X-Tenant-Id: {{tenant}}
+
+{"enabled": false}
+
+> {%
+  client.test("跨部门拒绝", function () {
+    client.assert(response.status === 403, "跨部门应返回 403");
+  });
+%}
+
+### 请求体改为自己的部门仍为 403：授权取数据库中的目标部门
+PATCH {{baseUrl}}/v1/user/862002
+Content-Type: application/json
+Authorization: Bearer {{abacDemoToken}}
+X-Tenant-Id: {{tenant}}
+
+{"deptId": 862101}
+
+> {%
+  client.test("请求体不能覆盖授权属性", function () {
+    client.assert(response.status === 403, "应按数据库中的 B 部门拒绝");
+  });
+%}
+
+### 同部门转出到其他部门：403，前置拒绝
+PATCH {{baseUrl}}/v1/user/862003
+Content-Type: application/json
+Authorization: Bearer {{abacDemoToken}}
+X-Tenant-Id: {{tenant}}
+
+{"deptId":862102}
+
+> {%
+  client.test("不能转出到其他部门", function () {
+    client.assert(response.status === 403, "应返回 403");
+  });
+%}
+
+### 方法已执行后后置拒绝：403，事务回滚后用户名仍为 abac_target_a
+PATCH {{baseUrl}}/v1/user/862003
+Content-Type: application/json
+Authorization: Bearer {{abacDemoToken}}
+X-Tenant-Id: {{tenant}}
+
+{"username":"abac_post_denied"}
+
+> {%
+  client.test("后置校验拒绝", function () {
+    client.assert(response.status === 403, "应返回 403，数据库用户名应保持原值");
+  });
+%}
+
+### 登录 B 部门操作者
+POST {{baseUrl}}/v1/login/jwt
+Content-Type: application/json
+X-Tenant-Id: {{tenant}}
+
+{"username":"abac_b","password":"AbacDemo@123","rememberMe":false}
+
+> {%
+  client.test("B 部门账户登录成功", function () {
+    client.assert(response.status === 200, "登录应返回 200");
+  });
+  client.global.set("abacDemoBToken", response.body.data.accessToken);
+%}
+
+### 同一角色、反向跨部门仍为 403
+PATCH {{baseUrl}}/v1/user/862001
+Content-Type: application/json
+Authorization: Bearer {{abacDemoBToken}}
+X-Tenant-Id: {{tenant}}
+
+{"enabled":false}
+
+> {%
+  client.test("B 部门不能修改 A 部门", function () {
+    client.assert(response.status === 403, "应返回 403");
+  });
+%}
+
+### B 部门修改自己：200
+PATCH {{baseUrl}}/v1/user/862002
+Content-Type: application/json
+Authorization: Bearer {{abacDemoBToken}}
+X-Tenant-Id: {{tenant}}
+
+{"enabled":true}
+
+> {%
+  client.test("B 部门修改同部门用户", function () {
+    client.assert(response.status === 200, "应返回 200");
+  });
+%}
+
+### 登录未分配角色的对照账户
+POST {{baseUrl}}/v1/login/jwt
+Content-Type: application/json
+X-Tenant-Id: {{tenant}}
+
+{"username":"abac_no_permission","password":"AbacDemo@123","rememberMe":false}
+
+> {%
+  client.test("无权限账户可以登录", function () {
+    client.assert(response.status === 200, "认证应成功");
+  });
+  client.global.set("abacDemoNoPermissionToken", response.body.data.accessToken);
+%}
+
+### 同部门但没有基础权限：403
+PATCH {{baseUrl}}/v1/user/862003
+Content-Type: application/json
+Authorization: Bearer {{abacDemoNoPermissionToken}}
+X-Tenant-Id: {{tenant}}
+
+{"enabled":false}
+
+> {%
+  client.test("同部门不能替代基础权限", function () {
+    client.assert(response.status === 403, "缺少 RBAC 权限应返回 403");
+  });
+%}

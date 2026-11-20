@@ -105,7 +105,7 @@ public class UserServiceImpl implements UserService {
     )
     @Transactional(rollbackFor = Exception.class)
     public Either<String, Long> patchUser(Long id, PatchUserDto dto) {
-        if (authHelper.isSuperAdmin(id)) {
+        if (authHelper.hasSuperUser(id)) {
             return Either.left("内置超级用户不能修改");
         }
 
@@ -125,7 +125,7 @@ public class UserServiceImpl implements UserService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public Either<String, Long> resetPassword(Long id, ResetUserPasswordDto dto) {
-        if (authHelper.isSuperAdmin(id)) {
+        if (authHelper.hasSuperUser(id)) {
             return Either.left("内置超级用户不能修改密码");
         }
         return userRepository.findById(id)
@@ -168,6 +168,7 @@ public class UserServiceImpl implements UserService {
 
     @Override
     @Transactional(readOnly = true)
+    @AbacAuthorize(permission = "GET:/v1/user/info")
     public UserInfoDto userInfo(Long userId, String username) {
         if (userId == null && !StringUtils.hasText(username)) {
             throw new BaseException("userId或username至少提供一个");

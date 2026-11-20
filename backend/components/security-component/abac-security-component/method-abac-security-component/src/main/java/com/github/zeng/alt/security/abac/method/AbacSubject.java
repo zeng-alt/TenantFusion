@@ -8,8 +8,10 @@ import java.util.Map;
  * @author zeng-alt
  * @since 0.0.1-SNAPSHOT
  */
-public record AbacSubject(String tenant, Map<String, Object> attributes) {
+public record AbacSubject(String tenant, Map<String, Object> attributes, Map<String, Object> authentication) {
     public AbacSubject {
-        attributes = Map.copyOf(attributes);
+        attributes = com.github.zeng.alt.security.abac.AbacContext.snapshot(attributes);
+        authentication = com.github.zeng.alt.security.abac.AbacContext.snapshot(authentication);
     }
+
 }

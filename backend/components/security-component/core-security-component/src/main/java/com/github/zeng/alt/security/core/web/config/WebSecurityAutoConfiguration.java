@@ -4,7 +4,8 @@ package com.github.zeng.alt.security.core.web.config;
 import tools.jackson.databind.ObjectMapper;
 import com.github.zeng.alt.security.api.AuthorizationConstraint;
 import com.github.zeng.alt.security.api.AuthorizationManagerProvider;
-import com.github.zeng.alt.security.api.WhiteListService;
+import com.github.zeng.alt.security.core.WhiteListAutoConfiguration;
+import com.github.zeng.alt.security.core.WhiteListTemplate;
 import com.github.zeng.alt.security.core.properties.SecurityProperties;
 import com.github.zeng.alt.security.core.properties.UsernameLoginProperties;
 import com.github.zeng.alt.security.core.web.handler.DefaultAccessDeniedHandler;
@@ -57,7 +58,7 @@ import java.util.List;
 @ConditionalOnWebApplication(type = ConditionalOnWebApplication.Type.SERVLET)
 @EnableWebSecurity
 @EnableConfigurationProperties({UsernameLoginProperties.class})
-@Import({ LoginAutoConfiguration.class})
+@Import({LoginAutoConfiguration.class, WhiteListAutoConfiguration.class})
 public class WebSecurityAutoConfiguration {
 
 
@@ -70,7 +71,7 @@ public class WebSecurityAutoConfiguration {
 			HttpSecurity http, ObjectProvider<SecurityBuilderCustomizer> customizers,
 			ObjectProvider<AuthorizationManagerProvider<RequestAuthorizationContext>> authorizationManagerProviders,
 			ObjectProvider<AbstractLoginConfigurer> configurers,
-			WhiteListService whiteListService,
+			WhiteListTemplate whiteList,
 			ObjectProvider<AuthenticationSuccessHandler> loginSuccessAuthenticationHandler,
 			ObjectProvider<AuthenticationFailureHandler> loginFailureAuthenticationHandler,
 			AuthenticationManager authenticationManager,
@@ -97,7 +98,7 @@ public class WebSecurityAutoConfiguration {
 					requestsCustomizers.orderedStream().forEach(customizer -> customizer.customize(author));
 					if (Boolean.TRUE.equals(securityProperties.getEnabledAccess())) {
 						author.anyRequest().access(compositeAuthorizationManager(
-								authorizationManagerProviders, whiteListService
+								authorizationManagerProviders, whiteList
 						));
 					} else {
 						author.anyRequest().permitAll();
@@ -153,19 +154,18 @@ public class WebSecurityAutoConfiguration {
 	}
 
 
-	private CompositeAuthorizationManager compositeAuthorizationManager(
+	private AuthorizationManager<RequestAuthorizationContext> compositeAuthorizationManager(
 			ObjectProvider<AuthorizationManagerProvider<RequestAuthorizationContext>> authorizationManagerProviders,
-			WhiteListService whiteListService
+			WhiteListTemplate whiteList
 	) {
 		List<AuthorizationManager<RequestAuthorizationContext>> list = new ArrayList<>();
-		list.add(WhiteListAuthorizationManager.authenticated(whiteListService));
 		List<AuthorizationManager<RequestAuthorizationContext>> managers = authorizationManagerProviders.orderedStream()
 				.map(AuthorizationManagerProvider::get).toList();
 		list.addAll(managers);
 		if (CollectionUtils.isEmpty(managers)) {
 			list.add(AuthenticatedAuthorizationManager.authenticated());
 		}
-		return new CompositeAuthorizationManager(list);
+		return new WhiteListAuthorizationManager(whiteList, new CompositeAuthorizationManager(list));
 	}
 
 

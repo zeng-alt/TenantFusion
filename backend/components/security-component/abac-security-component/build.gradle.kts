@@ -5,7 +5,7 @@ plugins {
     base
 }
 
-description = "ABAC 子模块聚合：API、核心授权引擎与 SpEL 实现"
+description = "ABAC 子模块聚合：API、核心、方法/SpEL、客户端与服务端"
 
 subprojects {
     plugins.withId("jacoco") {

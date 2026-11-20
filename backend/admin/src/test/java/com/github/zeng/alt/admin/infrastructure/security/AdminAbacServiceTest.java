@@ -2,11 +2,7 @@ package com.github.zeng.alt.admin.infrastructure.security;
 
 import com.github.zeng.alt.admin.infrastructure.entity.User;
 import com.github.zeng.alt.admin.infrastructure.repository.UserRepository;
-import com.github.zeng.alt.security.abac.AbacPolicy;
-import com.github.zeng.alt.security.abac.core.AbacProperties;
-import com.github.zeng.alt.security.abac.core.AbacTemplateImpl;
 import com.github.zeng.alt.security.abac.method.AbacSubject;
-import com.github.zeng.alt.security.abac.spel.SpelAbacEvaluator;
 import com.github.zeng.alt.security.api.HttpResource;
 import com.github.zeng.alt.security.api.SecurityUser;
 import com.github.zeng.alt.security.api.UserContextHolder;
@@ -18,13 +14,13 @@ import io.vavr.control.Option;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.mapstruct.factory.Mappers;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 
-import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -32,6 +28,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 /**
@@ -43,6 +40,7 @@ import static org.mockito.Mockito.when;
 class AdminAbacServiceTest {
     private final UserRepository users = mock(UserRepository.class);
     private final RbacResourceService rbac = mock(RbacResourceService.class);
+    private final SecurityProperties properties = new SecurityProperties();
     private AdminAbacService service;
     private Authentication authentication;
 
@@ -51,10 +49,7 @@ class AdminAbacServiceTest {
         TenantContextHolder.setTenantId("t001");
         authentication = authentication("7");
         UserContextHolder.setAuthentication(authentication);
-        final var template = new AbacTemplateImpl(ignored -> List.of(new AbacPolicy(
-                "1", "t001", "user:update", "subject['deptId'] == resource['deptId']", true, Option.none()
-        )), new SpelAbacEvaluator(), new AbacProperties());
-        service = new AdminAbacService(template, rbac, users, new SecurityProperties(), Mappers.getMapper(AbacUserMapper.class));
+        service = new AdminAbacService(rbac, users, properties, Mappers.getMapper(AbacUserMapper.class));
         when(users.findById(7L)).thenReturn(Option.of(user(7L, 10L, "t001")));
     }
 
@@ -65,46 +60,26 @@ class AdminAbacServiceTest {
     }
 
     @Test
-    void shouldGrantSameDepartmentAndRejectDifferentDepartment() {
-        when(rbac.findRolePermission(any(), eq("7"), eq("t001"))).thenReturn(Set.of("user:update"));
-        assertThat(service.authorize(authentication, "user:update", attributes(10L), Map.of()).isRight()).isTrue();
-        assertThat(service.authorize(authentication, "user:update", attributes(20L), Map.of()).isLeft()).isTrue();
+    void shouldRejectMismatchedTenantBeforeQuerying() {
+        TenantContextHolder.setTenantId("t002");
+        assertThat(service.resolve("user:update").isLeft()).isTrue();
+        verifyNoInteractions(users, rbac);
     }
 
     @Test
-    void shouldRejectRbacDenialWithoutLoadingSubject() {
-        when(rbac.findRolePermission(any(), eq("7"), eq("t001"))).thenReturn(Set.of());
-        assertThat(service.authorize(authentication, "user:update", attributes(10L), Map.of()).isLeft()).isTrue();
+    void httpAuthorizationUsesRbacWithoutLoadingAbacAttributes() {
+        when(rbac.findPermission(eq("t001"), any(HttpResource.class))).thenReturn("user:update");
+        when(rbac.findRolePermission(any(), eq("7"), eq("t001"))).thenReturn(Set.of("user:update"));
+        assertThat(service.authorizeHttp(authentication, "PATCH", "/v1/user/{id}")).isEqualTo(Either.right(true));
         verifyNoInteractions(users);
     }
 
     @Test
-    void shouldNotLetSuperAdminBypassAbac() {
-        final Authentication admin = authentication("1");
+    void adminSubjectIsResolvedForMethodAuthorization() {
+        UserContextHolder.setAuthentication(authentication("1"));
         when(users.findById(1L)).thenReturn(Option.of(user(1L, 10L, "t001")));
-        assertThat(service.authorize(admin, "user:update", attributes(20L), Map.of()).isLeft()).isTrue();
+        assertThat(service.resolve("user:update").get().attributes()).containsEntry("deptId", 10L);
         verifyNoInteractions(rbac);
-    }
-
-    @Test
-    void shouldRejectMismatchedTenantBeforeQuerying() {
-        TenantContextHolder.setTenantId("t002");
-        assertThat(service.authorize(authentication, "user:update", attributes(10L), Map.of()).isLeft()).isTrue();
-        verifyNoInteractions(users, rbac);
-    }
-
-    @Test
-    void shouldRejectForeignResource() {
-        assertThat(service.authorize(authentication, "user:update", Map.of("tenant", "t002"), Map.of()).isLeft()).isTrue();
-        verifyNoInteractions(users, rbac);
-    }
-
-    @Test
-    void shouldLoadTrustedResourceForUserPatch() {
-        when(rbac.findPermission(eq("t001"), any(HttpResource.class))).thenReturn("user:update");
-        when(rbac.findRolePermission(any(), eq("7"), eq("t001"))).thenReturn(Set.of("user:update"));
-        when(users.findById(42L)).thenReturn(Option.of(user(42L, 20L, "t001")));
-        assertThat(service.authorizeHttp(authentication, "PATCH", "/v1/user/42", "/v1/user/{id}").isLeft()).isTrue();
     }
 
     @Test
@@ -122,14 +97,79 @@ class AdminAbacServiceTest {
         assertThat(service.resolve("user:update").isLeft()).isTrue();
     }
 
-    private Authentication authentication(String id) {
-        final var role = new SimpleGrantedAuthority("operator");
-        final var user = SecurityUser.builder().id(id).username("user" + id).tenant("t001").roles(role).currentRole(role).build();
-        return UsernamePasswordAuthenticationToken.authenticated(user, null, user.getAuthorities());
+    @Test
+    void shouldValidateLoginWhitelistPrincipalWithoutLoadingPermissionsOrAttributes() {
+        assertThat(service.getAuthenticatedUser(authentication).get().getId()).isEqualTo("7");
+        verifyNoInteractions(users, rbac);
     }
 
-    private Map<String, Object> attributes(Long deptId) {
-        return Map.of("id", "42", "tenant", "t001", "deptId", deptId);
+    @Test
+    void shouldRejectLoginWhitelistPrincipalFromAnotherTenant() {
+        TenantContextHolder.setTenantId("t002");
+        assertThat(service.getAuthenticatedUser(authentication).getLeft()).isEqualTo("认证租户与当前数据租户不一致");
+        verifyNoInteractions(users, rbac);
+    }
+
+    @Test
+    void shouldRejectDisabledLoginWhitelistPrincipal() {
+        final var user = (SecurityUser) authentication.getPrincipal();
+        user.setEnabled(false);
+        assertThat(service.getAuthenticatedUser(authentication).getLeft()).isEqualTo("当前用户未登录或已禁用");
+        verifyNoInteractions(users, rbac);
+    }
+
+    @ParameterizedTest
+    @CsvSource({"1, operator", "7, superAdmin", "7, SUPERADMIN"})
+    void shouldExemptHttpAdminBeforeLookingUpPermissionsOrPolicies(String id, String role) {
+        assertThat(service.authorizeHttp(authentication(id, role), "GET", "/v1/log/oper/list"))
+                .isEqualTo(Either.right(true));
+        verifyNoInteractions(users, rbac);
+    }
+
+    @Test
+    void shouldRejectDisabledHttpAdminBeforeExemption() {
+        final Authentication admin = authentication("1");
+        ((SecurityUser) admin.getPrincipal()).setEnabled(false);
+        assertThat(service.authorizeHttp(admin, "GET", null).getLeft())
+                .isEqualTo("当前用户未登录或已禁用");
+        verifyNoInteractions(users, rbac);
+    }
+
+    @Test
+    void shouldRejectHttpAdminWhenTenantDoesNotMatch() {
+        final Authentication admin = authentication("1");
+        TenantContextHolder.setTenantId("t002");
+        assertThat(service.authorizeHttp(admin, "GET", null).getLeft())
+                .isEqualTo("认证租户与当前数据租户不一致");
+        verifyNoInteractions(users, rbac);
+    }
+
+    @Test
+    void shouldRespectDisabledHttpAdminExemption() {
+        properties.getAdmin().setEnabled(false);
+        assertThat(service.authorizeHttp(authentication("1"), "GET", "/v1/log/oper/list")
+                .getLeft()).isEqualTo("未配置请求权限");
+        verify(rbac).findPermission(eq("t001"), any(HttpResource.class));
+        verifyNoInteractions(users);
+    }
+
+    @Test
+    void shouldStillRejectOrdinaryUserWhenHttpResourceIsMissing() {
+        assertThat(service.authorizeHttp(authentication, "GET", "/v1/log/oper/list")
+                .getLeft()).isEqualTo("未配置请求权限");
+        verify(rbac).findPermission(eq("t001"), any(HttpResource.class));
+        verifyNoInteractions(users);
+    }
+
+    private Authentication authentication(String id) {
+        return authentication(id, "operator");
+    }
+
+    private Authentication authentication(String id, String roleCode) {
+        final var role = new SimpleGrantedAuthority(roleCode);
+        final var user = SecurityUser.builder().id(id).username("user" + id).tenant("t001")
+                .roles(role).currentRole(role).build();
+        return UsernamePasswordAuthenticationToken.authenticated(user, null, user.getAuthorities());
     }
 
     private User user(Long id, Long deptId, String tenant) {

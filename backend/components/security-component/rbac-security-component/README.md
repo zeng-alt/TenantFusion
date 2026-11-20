@@ -77,16 +77,58 @@ dependencies {
 security:
   context:
     enabled-access: true    # 启用 RBAC 鉴权（默认 true）
-  filter:
-    ignore-url:             # 白名单路径（跳过鉴权）
-      - /public/**
-      - /api/open/**
+  whitelist:
+    permit-all:             # 匿名访问，省略 method 时匹配所有方法
+      - path: /public/**
+      - method: GET
+        path: /api/open/**
+    authenticated:          # 登录即可，不要求 HTTP RBAC / ABAC 权限
+      - method: GET
+        path: /api/profile
 
 rbac:
   client:
     enabled: true           # 启用路由注册（默认 true）
     context-path: ""        # 上下文路径前缀
 ```
+
+两组白名单按 `permit-all` → `authenticated` → 普通鉴权的顺序分类。登录规则命中后的拒绝是最终结果，
+不会继续尝试 OR Provider；两组中完全相同的方法与路径会在启动时报告冲突。普通规则保留既有
+RBAC、管理员及专用服务身份授权逻辑，无 Provider 时仍回退到登录检查。
+
+白名单只豁免 HTTP 权限检查：认证过滤器、其他全局 `AuthorizationConstraint`、方法级授权和数据权限继续执行。
+admin 的 HTTP ABAC 约束对公开请求跳过权限检查，对登录白名单只执行用户有效性和租户一致性检查。
+
+`security.context.admin.enabled=true` 时，用户 ID 匹配 `admin.id`，或当前角色代码匹配 `admin.code`
+（代码忽略大小写），即按管理员处理；用户名叫 `admin` 本身不构成豁免。admin 宿主先检查有效登录用户及
+认证租户与当前数据租户一致，再豁免管理员的 HTTP RBAC / ABAC 权限检查，不要求接口已有 HTTP 权限记录。
+该豁免不跳过账户认证、租户隔离、其他全局约束、方法级 `@AbacAuthorize` 或数据权限；关闭管理员开关后走普通授权。
+
+业务校验通过 `AuthHelper.hasAdmin()` 判断当前身份是否具备管理员及以上权限：管理员开关开启时，
+配置的内置超级用户 ID 或当前管理员角色任一匹配即可。内置超级用户没有绑定角色时仍可管理默认字典类型和字典数据。
+`hasAdminRole(code)` 与 `hasSuperUser(id)` 用于保护被修改的内置角色、用户；只匹配目标身份，
+不读取当前操作者，也不受管理员豁免开关影响。角色码与用户 ID 分别匹配，不能交叉比较。
+
+通用校验提供 `hasRole(code)`、`hasAnyRole(codes...)`、`hasAuthority(code)`、`hasAnyAuthority(codes...)`。
+角色沿用项目原有代码（如 `ADMIN`），不自动添加 `ROLE_` 前缀；已选择角色时只检查当前角色，未选择时检查已授予角色。
+权限 code 精确匹配当前角色的 RBAC 权限，复用既有 `PermissionLocator`；没有 RBAC 贡献者时匹配认证对象中的
+`GrantedAuthority`。其他权限源可贡献 `AuthorityResolver` Bean，组件按顺序查询。通用校验不隐式套用管理员豁免，
+需要管理员及以上权限的业务入口显式调用 `hasAdmin()`。
+
+代码规则通过窄粒度 customizer 贡献，组件按 `@Order` 收集，贡献者规则先于配置默认规则应用：
+
+```java
+@Bean
+public WhiteListCustomizer whiteList() {
+    return rules -> rules
+            .permitAll(HttpMethod.GET, "/module/public")
+            .authenticated(HttpMethod.PATCH, "/module/profile/{id}");
+}
+```
+
+旧 `security.filter.ignore-url` 继续按所有方法的公开路径兼容，与新配置合并。已有
+`WhiteListService` lambda 保持兼容，`getWhiteList()` 提供旧公开路径；自定义规则源可进一步实现
+`getPermitAll()` / `getAuthenticated()` 返回带方法的规则。动态规则变更在下一次请求生效，路径只在规则变化时重新编译。
 
 ### 3. 提供 UserDetailsService
 
@@ -201,12 +243,13 @@ rbac:role:permissions:tenant_001:ROLE_admin → ["user:list", "order:create", "r
 │  HTTP Request                                                       │
 │       │                                                             │
 │       ▼                                                             │
-│  CompositeAuthorizationManager                                      │
+│  WhiteListAuthorizationManager                                      │
 │       │                                                             │
-│       ├── 1. WhiteListAuthorizationManager                          │
-│       │       → 检查白名单，命中则放行                                 │
+│       ├── permit-all → 公开访问                                     │
+│       ├── authenticated → 必须登录，拒绝后不再尝试 Provider           │
+│       └── 普通接口 → CompositeAuthorizationManager                  │
 │       │                                                             │
-│       ├── 2. RbacAccessAuthorizationManager (Servlet) /             │
+│       ├── RbacAccessAuthorizationManager (Servlet) /                │
 │       │    ReactiveRbacAccessAuthorizationManager (Reactive)        │
 │       │       │                                                     │
 │       │       ├── ParseManager.parse(request)                       │
@@ -219,8 +262,8 @@ rbac:role:permissions:tenant_001:ROLE_admin → ["user:list", "order:create", "r
 │       │           → storageTemplate.get("rbac:resources:{t}:{u}")   │
 │       │           → resource.compareTo(request) 匹配 → 放行          │
 │       │                                                             │
-│       └── 3. AuthenticatedAuthorizationManager (fallback)           │
-│               → 仅检查是否已认证                                       │
+│       └── AuthenticatedAuthorizationManager (无 Provider 时)        │
+│               → 仅检查是否已认证                                    │
 └─────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -228,8 +271,11 @@ rbac:role:permissions:tenant_001:ROLE_admin → ["user:list", "order:create", "r
 
 ```
 请求 → SecurityFilterChain
+         → WhiteListAuthorizationManager
+             ├─ permit-all                         公开访问
+             ├─ authenticated                      登录检查，结果终结
+             └─ 普通接口
          → CompositeAuthorizationManager
-             ├─ WhiteListAuthorizationManager       命中白名单？→ 放行
              ├─ RbacAccessAuthorizationManager      RBAC 鉴权
              │   ├─ ParseManager.parse(request)     匹配 ResourceHandler
              │   │   └─ HttpResourceHandler         默认 fallback
@@ -248,10 +294,13 @@ rbac:role:permissions:tenant_001:ROLE_admin → ["user:list", "order:create", "r
 
 ```
 请求 → SecurityWebFilterChain
+         → ReactiveWhiteListAuthorizationManager
+             ├─ permit-all                                公开访问
+             ├─ authenticated                             登录检查，结果终结
+             └─ 普通接口
          → CompositeReactiveAuthorizationManager
-             ├─ ReactiveWhiteListAuthorizationManager      白名单
              ├─ ReactiveAdminAuthorizationManager @Order(5)
-             │   └─ username == "superAdmin" → 放行
+             │   └─ 匹配配置的管理员 ID / 当前角色代码 → 放行
              ├─ ReactiveRbacAccessAuthorizationManager @Order(10)
              │   ├─ ReactiveParseManager.parse(exchange)
              │   │   └─ ReactiveHttpResourceHandler        默认 fallback
@@ -283,10 +332,13 @@ security:
       name: "超级管理员"
       enabled: true
 
-  filter:
-    ignore-url:                             # 白名单路径列表
-      - /public/**
-      - /h2-console/**
+  whitelist:
+    permit-all:
+      - path: /public/**
+      - path: /h2-console/**
+    authenticated:
+      - method: GET
+        path: /api/profile
 
   username-login:                           # 用户名密码登录配置
     enabled: true

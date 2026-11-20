@@ -23,7 +23,7 @@ public class UserListener {
 
     @PreRemove
     public void preRemove(User user) {
-        if (authHelper.isSuperAdmin(user.getId())) {
+        if (authHelper.hasSuperUser(user.getId())) {
             throw new BaseException("内置超级用户不能删除");
         }
     }

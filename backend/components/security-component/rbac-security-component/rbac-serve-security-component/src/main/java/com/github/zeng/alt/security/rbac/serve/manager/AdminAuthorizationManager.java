@@ -35,14 +35,14 @@ public class AdminAuthorizationManager implements AuthorizationManager<RequestAu
         if (authentication == null) {
             return new AuthorizationDecision(false);
         }
-        if (authentication.isAuthenticated() && isAdmin(authentication)) {
+        if (authentication.isAuthenticated() && hasAdmin(authentication)) {
             log.debug("Super admin bypass for user '{}'", securityProperties.getAdmin());
             return new AuthorizationDecision(authentication.isAuthenticated());
         }
         return new AuthorizationDecision(false);
     }
 
-    private boolean isAdmin(Authentication authentication) {
+    private boolean hasAdmin(Authentication authentication) {
         Object principal = authentication.getPrincipal();
         if (principal instanceof SecurityUser securityUser) {
             return securityProperties.getAdmin().getId().equalsIgnoreCase(securityUser.getId())

@@ -1,1 +1,2 @@
 com.github.zeng.alt.security.abac.method.AbacMethodAutoConfiguration
+com.github.zeng.alt.security.abac.spel.SpelAbacAutoConfiguration

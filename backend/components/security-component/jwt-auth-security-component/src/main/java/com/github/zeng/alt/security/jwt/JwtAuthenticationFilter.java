@@ -5,6 +5,7 @@ import com.github.zeng.alt.security.core.properties.LoginProperties;
 import com.github.zeng.alt.tenant.api.TenantContextHolder;
 import io.vavr.control.Option;
 import io.vavr.control.Try;
+import lombok.extern.apachecommons.CommonsLog;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.Cookie;
@@ -19,6 +20,7 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.web.servlet.util.matcher.PathPatternRequestMatcher;
 import org.springframework.security.web.util.matcher.RequestMatcher;
+import org.springframework.core.log.LogMessage;
 import org.springframework.web.filter.OncePerRequestFilter;
 import org.springframework.util.StringUtils;
 
@@ -26,6 +28,7 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.Objects;
 
+@CommonsLog
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private final JwtTokenProvider jwtTokenProvider;
     private final JwtStorage jwtStorage;
@@ -88,6 +91,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             return;
         }
         final Option<SecurityUser> user = resolveUser(authHeader.substring(7), request, response);
+        log.debug(LogMessage.format("JWT request: method=%s path=%s userRestored=%s",
+                request.getMethod(), request.getRequestURI(), user.isDefined()));
         if (user.isEmpty()) {
             filterChain.doFilter(request, response);
             return;
@@ -105,8 +110,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             String token, HttpServletRequest request, HttpServletResponse response
     ) {
         final JwtTokenProvider.TokenParseResult parsed = jwtTokenProvider.parseAccessToken(token);
+        log.debug(LogMessage.format("JWT validation: method=%s path=%s status=%s",
+                request.getMethod(), request.getRequestURI(), parsed.result()));
         return switch (parsed.result()) {
             case VALID -> Option.of(jwtTokenProvider.getAccessCacheKey(parsed.jwt())).filter(jwtStorage::hasToken)
+                    .peek(key -> log.debug("JWT access token cache hit"))
+                    .onEmpty(() -> log.debug("JWT access token cache miss"))
                     .isDefined() ? accessUser(parsed.jwt()) : refreshUser(token, request, response);
             case EXPIRED -> refreshUser(token, request, response);
             case INVALID -> Option.none();
@@ -126,6 +135,13 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                         () -> Option.of(service.loadUserByUsername(jwt.getSubject())))
                         .recover(UsernameNotFoundException.class, ignored -> Option.none()).get())
                 .filter(SecurityUser.class::isInstance).map(SecurityUser.class::cast)
+                .peek(user -> log.debug(LogMessage.format(
+                        "JWT user verification: active=%s idMatches=%s tenantMatches=%s",
+                        user.isEnabled() && user.isAccountNonLocked()
+                                && user.isAccountNonExpired() && user.isCredentialsNonExpired(),
+                        Objects.equals(jwt.getClaimAsString("id"), user.getId()),
+                        Objects.equals(jwtTokenProvider.getClaimTenant(jwt), user.getTenant())
+                )))
                 .filter(user -> user.isEnabled() && user.isAccountNonLocked()
                         && user.isAccountNonExpired() && user.isCredentialsNonExpired())
                 .filter(user -> Objects.equals(jwt.getClaimAsString("id"), user.getId())

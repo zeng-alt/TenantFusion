@@ -9,9 +9,8 @@ import java.lang.annotation.Target;
 /**
  * 方法级 ABAC 前置授权注解。标注后由 method-abac 拦截器在方法执行前完成
  * 认证/租户/RBAC 预检与属性约束，拒绝抛 {@code AccessDeniedException}。
- * <p>上下文变量契约：全局根变量 {@code subject/resource/environment/tenant/permission}（无 #）
- * 供不可信 DB 策略使用；方法参数以 {@code #参数名/#p0/#a0} 自动注入 {@code AbacMethodContext}，
- * 供宿主资源解析器使用，默认不向 DB 策略开放。
+ * <p>上下文包含 principal/resource/env/authentication，方法参数通过 #参数名/#p0/#a0 读取。
+ * 后置规则在方法返回后、事务提交前执行；没有活动事务时拒绝执行。
  *
  * @author zeng-alt
  * @since 0.0.1-SNAPSHOT

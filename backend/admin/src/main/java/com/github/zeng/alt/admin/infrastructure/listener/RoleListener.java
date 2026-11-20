@@ -23,7 +23,7 @@ public class RoleListener {
 
     @PreRemove
     public void preRemove(Role role) {
-        if (authHelper.isSuperAdmin(role.getCode())) {
+        if (authHelper.hasAdminRole(role.getCode())) {
             throw new BaseException("超级管理员角色不能修改删除");
         }
     }

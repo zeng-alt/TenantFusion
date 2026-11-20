@@ -1,0 +1,2 @@
+com.github.zeng.alt.security.abac.client.config.AbacClientAutoConfiguration
+com.github.zeng.alt.security.abac.client.remote.AbacFeignAutoConfiguration
