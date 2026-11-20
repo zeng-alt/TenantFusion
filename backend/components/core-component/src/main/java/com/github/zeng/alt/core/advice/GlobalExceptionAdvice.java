@@ -4,6 +4,7 @@ package com.github.zeng.alt.core.advice;
 import com.github.zeng.alt.api.exception.BaseException;
 import com.github.zeng.alt.api.exception.BaseI18nException;
 import com.github.zeng.alt.api.rest.ErrorResponseEntity;
+import io.vavr.control.Option;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 
@@ -12,7 +13,6 @@ import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.context.support.MessageSourceAccessor;
 import org.springframework.core.log.LogMessage;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.transaction.TransactionSystemException;
 import org.springframework.web.ErrorResponse;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -32,7 +32,8 @@ public class GlobalExceptionAdvice {
         String requestURI = request.getRequestURI();
         log.warn(LogMessage.format("%s 请求业务异常: %s", requestURI, e.getMessage()));
         log.debug(LogMessage.format("%s 请求业务异常: %s", requestURI, e.getMessage()), e);
-        ErrorResponseEntity errorResponseEntity = ErrorResponseEntity.of(HttpStatus.INTERNAL_SERVER_ERROR, e.getCode(), e.getMessage());
+        ErrorResponseEntity errorResponseEntity = ErrorResponseEntity.of(
+                getHttpStatus(e.getCode()), e.getCode(), e.getMessage());
         errorResponseEntity.setInstance(URI.create(request.getRequestURI()));
         errorResponseEntity.setTitle(e.getTitle());
         return errorResponseEntity;
@@ -53,7 +54,8 @@ public class GlobalExceptionAdvice {
         String requestURI = request.getRequestURI();
         log.warn(LogMessage.format("%s 请求业务异常: %s", requestURI, e.getMessage()));
         log.debug(LogMessage.format("%s 请求业务异常: %s", requestURI, e.getMessage()), e);
-        ErrorResponseEntity errorResponseEntity = ErrorResponseEntity.of(e.getCode(), e.getMessage());
+        ErrorResponseEntity errorResponseEntity = ErrorResponseEntity.of(
+                getHttpStatus(e.getCode()), e.getCode(), e.getMessage());
         errorResponseEntity.setInstance(URI.create(request.getRequestURI()));
         errorResponseEntity.setTitle(e.getMessage());
         return errorResponseEntity;
@@ -88,5 +90,9 @@ public class GlobalExceptionAdvice {
         errorResponse.setInstance(URI.create(request.getRequestURI()));
         errorResponse.setTitle("请求未知运行异常");
         return errorResponse;
+    }
+
+    private HttpStatus getHttpStatus(Integer code) {
+        return Option.of(HttpStatus.resolve(code)).getOrElse(HttpStatus.INTERNAL_SERVER_ERROR);
     }
 }
