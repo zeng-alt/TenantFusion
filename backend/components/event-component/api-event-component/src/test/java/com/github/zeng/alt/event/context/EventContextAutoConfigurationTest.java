@@ -7,6 +7,9 @@ import org.junit.jupiter.api.Test;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.FilteredClassLoader;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
+import org.springframework.context.ApplicationEvent;
+import org.springframework.context.ApplicationListener;
+import org.springframework.security.context.DelegatingApplicationListener;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -17,6 +20,28 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @since 0.0.1-SNAPSHOT
  */
 class EventContextAutoConfigurationTest {
+
+    @Test
+    void leavesFinalApplicationListenerUnproxied() {
+        new ApplicationContextRunner()
+                .withConfiguration(AutoConfigurations.of(EventContextAutoConfiguration.class))
+                .withBean(FinalListener.class)
+                .run(context -> {
+                    assertThat(context).hasNotFailed();
+                    assertThat(context).hasSingleBean(FinalListener.class);
+                });
+    }
+
+    @Test
+    void leavesFinalSpringSecurityListenerUnproxied() {
+        new ApplicationContextRunner()
+                .withConfiguration(AutoConfigurations.of(EventContextAutoConfiguration.class))
+                .withBean(DelegatingApplicationListener.class)
+                .run(context -> {
+                    assertThat(context).hasNotFailed();
+                    assertThat(context).hasSingleBean(DelegatingApplicationListener.class);
+                });
+    }
 
     @Test
     void leavesPersistenceAdaptersOptional() {
@@ -31,5 +56,15 @@ class EventContextAutoConfigurationTest {
                     assertThat(context).doesNotHaveBean("contextEventSerializerPostProcessor");
                     assertThat(context).doesNotHaveBean("eventOutboxContextProvider");
                 });
+    }
+
+    /**
+     * 模拟第三方提供的不可继承监听器。
+     */
+    static final class FinalListener implements ApplicationListener<ApplicationEvent> {
+
+        @Override
+        public void onApplicationEvent(ApplicationEvent event) {
+        }
     }
 }

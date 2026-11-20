@@ -23,6 +23,7 @@ import org.springframework.core.Ordered;
 import org.springframework.core.annotation.AnnotatedElementUtils;
 
 import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
 
 /**
  * 在所有原生 Spring 发布进入广播器时捕获快照，保留现有广播器的持久化及分发行为。
@@ -83,6 +84,8 @@ public class SpringEventContextConfiguration {
                                 && method.getName().equals("onApplicationEvent")));
             }
         };
+        // final 监听器不能创建类代理；同步分发的上下文仍由广播器维护。
+        pointcut.setClassFilter(targetClass -> !Modifier.isFinal(targetClass.getModifiers()));
         final MethodInterceptor interceptor = invocation -> {
             try (final var scope = contexts.restore(snapshots.getContext(invocation.getArguments()[0]))) {
                 return invocation.proceed();
