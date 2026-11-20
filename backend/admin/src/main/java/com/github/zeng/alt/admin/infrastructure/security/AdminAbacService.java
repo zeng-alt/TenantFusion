@@ -47,7 +47,7 @@ public class AdminAbacService implements AbacSubjectProvider, AbacEnvironmentPro
                 .flatMap(user -> Try.of(() -> hasPermission(user, permission)).toEither()
                         .mapLeft(ignored -> "基础权限加载失败")
                         .flatMap(granted -> granted ? Either.right(user) : Either.left("没有访问权限")))
-                .flatMap(user -> subject(user).map(dto -> new AbacSubject(user.getTenant(), principal(user, dto), authentication(user))));
+                .flatMap(user -> subject(user).map(dto -> new AbacSubject(TenantContextHolder.getTenantId(), principal(user, dto), authentication(user))));
     }
 
     /** admin 当前策略不引用环境属性，贡献空环境；后续可在此补充全局环境快照。 */
@@ -80,7 +80,9 @@ public class AdminAbacService implements AbacSubjectProvider, AbacEnvironmentPro
                 || !(authentication.getPrincipal() instanceof SecurityUser user) || !user.isEnabled()) {
             return Either.left("当前用户未登录或已禁用");
         }
-        if (!StringUtils.hasText(user.getTenant()) || !user.getTenant().equals(TenantContextHolder.getTenantId())) {
+        if (!StringUtils.hasText(user.getTenant()) || !StringUtils.hasText(TenantContextHolder.getTenantId())
+                || (!user.getTenant().equals(TenantContextHolder.getTenantId())
+                        && (!canSwitchTenant(user) || !TenantContextHolder.getTenantId().equals(user.getActiveTenant())))) {
             return Either.left("认证租户与当前数据租户不一致");
         }
         return Either.right(user);
@@ -93,7 +95,8 @@ public class AdminAbacService implements AbacSubjectProvider, AbacEnvironmentPro
     }
 
     private Map<String, Object> authentication(SecurityUser user) {
-        final List<String> roles = Option.of(user.getCurrentRole()).map(role -> List.of(role.getAuthority()))
+        final List<String> roles = !user.getTenant().equals(TenantContextHolder.getTenantId()) ? List.of()
+                : Option.of(user.getCurrentRole()).map(role -> List.of(role.getAuthority()))
                 .getOrElse(() -> user.getRoles().stream().map(GrantedAuthority::getAuthority).toList());
         final java.util.Set<String> permissions = hasAdmin(user) || roles.isEmpty() ? java.util.Set.of()
                 : rbac.findRolePermission(roles, user.getId(), user.getTenant());
@@ -119,12 +122,24 @@ public class AdminAbacService implements AbacSubjectProvider, AbacEnvironmentPro
     }
 
     private Either<String, AbacUserDto> subject(SecurityUser user) {
+        if (!user.getTenant().equals(TenantContextHolder.getTenantId()) && user.isIdentitySnapshotLoaded()) {
+            return Try.of(() -> new AbacUserDto(Long.parseLong(user.getId()), user.getTenant(),
+                    Option.of(user.getIdentityDepartmentId()), user.isEnabled())).toEither()
+                    .mapLeft(ignored -> "用户标识无效");
+        }
         return Try.of(() -> Long.parseLong(user.getId())).toEither().mapLeft(ignored -> "用户标识无效")
                 .flatMap(id -> Try.of(() -> users.findById(id)).toEither().mapLeft(ignored -> "用户属性加载失败"))
                 .flatMap(found -> found.toEither("当前用户不存在"))
                 .map(mapper::toDto)
                 .filterOrElse(snapshot -> snapshot.enabled() && user.getTenant().equals(snapshot.tenant()),
                         ignored -> "当前用户不可用或租户不匹配");
+    }
+
+    private boolean canSwitchTenant(SecurityUser user) {
+        final var admin = properties.getAdmin();
+        return Boolean.TRUE.equals(admin.getEnabled()) && StringUtils.hasText(admin.getId())
+                && StringUtils.hasText(admin.getTenant()) && Objects.equals(admin.getId(), user.getId())
+                && Objects.equals(admin.getTenant(), user.getTenant());
     }
 
     private Either<String, String> permission(SecurityUser user, String method, String route) {

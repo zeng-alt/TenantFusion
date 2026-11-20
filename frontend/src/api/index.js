@@ -21,6 +21,8 @@ export default {
   getRolePermissions: () => request.get('/admin/v1/menu/resource/tree'),
   // 获取管理员信息
   getAdmin: () => request.get('/admin/v1/auth/admin'),
+  getTenants: () => request.get('/admin/v1/auth/tenants'),
+  validateTenant: tenant => request.get('/admin/v1/auth/tenant', { headers: { 'X-Active-Tenant': tenant } }),
   // 验证菜单路径
   validateMenuPath: path => request.get(`/admin/v1/menu/resource/validate?path=${path}`),
 }

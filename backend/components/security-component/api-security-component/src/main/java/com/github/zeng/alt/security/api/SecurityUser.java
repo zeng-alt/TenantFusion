@@ -42,6 +42,12 @@ public class SecurityUser implements UserDetails, TenantDetail, CredentialsConta
     private String password;
     private final String username;
     private final String tenant;
+    @JsonIgnore
+    private Long identityDepartmentId;
+    @JsonIgnore
+    private boolean identitySnapshotLoaded;
+    @JsonIgnore
+    private String activeTenant;
     private String database;
     private String schema;
 
@@ -59,6 +65,12 @@ public class SecurityUser implements UserDetails, TenantDetail, CredentialsConta
 
     private boolean enabled;
     private LocalDateTime expire;
+
+    /** 保存本次认证时从登录租户读取的用户属性。 */
+    public void setIdentityDepartment(Long departmentId) {
+        this.identityDepartmentId = departmentId;
+        this.identitySnapshotLoaded = true;
+    }
 
     /**
      * Calls the more complex constructor with all boolean arguments set to {@code true}.

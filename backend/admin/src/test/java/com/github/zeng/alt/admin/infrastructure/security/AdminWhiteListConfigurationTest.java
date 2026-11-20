@@ -20,7 +20,7 @@ import java.util.stream.Stream;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * 读取实际 admin 配置，验证七条登录规则与各环境公开范围完整迁移。
+ * 读取实际 admin 配置，验证登录规则与各环境公开范围。
  *
  * @author zeng-alt
  * @since 0.0.1-SNAPSHOT
@@ -30,16 +30,18 @@ class AdminWhiteListConfigurationTest {
     @CsvSource({
             "POST,/v1/auth/current-role/switch/operator/false",
             "GET,/v1/auth/admin",
+            "GET,/v1/auth/tenant",
+            "GET,/v1/auth/tenants",
             "PATCH,/v1/user/profile/7",
             "POST,/v1/auth/password",
             "GET,/v1/user/detail",
             "GET,/v1/menu/resource/tree",
             "GET,/v1/menu/resource/validate"
     })
-    void keepsAllSevenLoginRulesInBothProfiles(String method, String path) {
+    void keepsAuthenticatedRulesInBothProfiles(String method, String path) {
         Stream.of("dev", "prod").forEach(profile -> runner(profile).run(context -> {
             assertThat(context).hasNotFailed();
-            assertThat(context.getBean(WhiteListService.class).getAuthenticated()).hasSize(7);
+            assertThat(context.getBean(WhiteListService.class).getAuthenticated()).hasSize(9);
             assertThat(context.getBean(WhiteListTemplate.class).resolve(new MockHttpServletRequest(method, path)))
                     .isEqualTo(WhiteListAccess.AUTHENTICATED);
             assertThat(context.getBean(WhiteListTemplate.class).resolve(new MockHttpServletRequest("DELETE", path)))

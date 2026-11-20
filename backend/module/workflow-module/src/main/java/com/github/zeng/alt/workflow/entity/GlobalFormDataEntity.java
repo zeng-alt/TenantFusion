@@ -5,10 +5,11 @@ import com.github.zeng.alt.domain.key.SnowflakeId;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
-import jakarta.persistence.Lob;
 import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.Setter;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 import java.io.Serial;
 import java.time.LocalDateTime;
@@ -47,13 +48,13 @@ public class GlobalFormDataEntity extends TenantBaseEntity<Long> {
     private String workflowCode;
 
     /** 全局表单字段值（JSON：字段名 → 值） */
-    @Lob
-    @Column(name = "data", columnDefinition = "CLOB")
+    @JdbcTypeCode(SqlTypes.LONG32VARCHAR)
+    @Column(name = "data")
     private String data;
 
     /** 发起流程时保存的全局表单定义快照（JSON；CAMUNDA 类型不保存 FormKit 定义，每次实时解析最新版本） */
-    @Lob
-    @Column(name = "definition", columnDefinition = "CLOB")
+    @JdbcTypeCode(SqlTypes.LONG32VARCHAR)
+    @Column(name = "definition")
     private String definition;
 
     /** 提交时间 */

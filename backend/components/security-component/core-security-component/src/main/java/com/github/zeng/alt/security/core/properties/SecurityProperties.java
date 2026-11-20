@@ -21,6 +21,8 @@ public class SecurityProperties {
     @Data
     public static class AdminRole {
         private String id = "1";
+        /** 可切换租户的内置用户所属租户；未配置时禁用切换。 */
+        private String tenant;
         private String code = "superAdmin";
         private String name = "超级管理员";
         private Boolean enabled = true;

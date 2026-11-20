@@ -10,6 +10,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication;
+import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
@@ -30,6 +31,14 @@ public class CamundaIdentitySecurityAutoConfiguration {
     @ConditionalOnMissingBean
     public CamundaIdentityAuthenticationFilter camundaIdentityAuthenticationFilter(IdentityService identityService) {
         return new CamundaIdentityAuthenticationFilter(identityService);
+    }
+
+    @Bean
+    public FilterRegistrationBean<CamundaIdentityAuthenticationFilter> camundaIdentityFilterRegistration(
+            CamundaIdentityAuthenticationFilter filter) {
+        final var registration = new FilterRegistrationBean<>(filter);
+        registration.setEnabled(false);
+        return registration;
     }
 
     @Bean

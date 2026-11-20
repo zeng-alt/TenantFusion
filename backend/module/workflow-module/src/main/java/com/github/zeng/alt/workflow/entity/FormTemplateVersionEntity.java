@@ -8,10 +8,11 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.Id;
-import jakarta.persistence.Lob;
 import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.Setter;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 import java.io.Serial;
 import java.time.LocalDateTime;
@@ -59,8 +60,8 @@ public class FormTemplateVersionEntity extends TenantBaseEntity<Long> {
     private Boolean current = false;
 
     /** 表单定义（FormKit FormDefinition JSON） */
-    @Lob
-    @Column(name = "definition", columnDefinition = "CLOB")
+    @JdbcTypeCode(SqlTypes.LONG32VARCHAR)
+    @Column(name = "definition")
     private String definition;
 
     /** 发布时间 */

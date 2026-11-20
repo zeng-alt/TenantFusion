@@ -8,6 +8,7 @@
  **********************************/
 
 import { useAuthStore } from '@/store'
+import { getActiveTenant } from '@/utils/active-tenant'
 import { resolveResError } from './helpers'
 
 export function setupInterceptors(axiosInstance) {
@@ -48,6 +49,14 @@ function reqResolve(config) {
     // token: Bearer + xxx
     config.headers.Authorization = `Bearer ${accessToken}`
   }
+  const url = config.url || ''
+  const identityRequest = url.startsWith('/admin/v1/auth/')
+    || url.startsWith('/admin/v1/user/detail')
+    || url.startsWith('/admin/v1/user/profile/')
+    || url.startsWith('/admin/v1/logout/')
+  const tenant = getActiveTenant()
+  if (tenant && !identityRequest && (url.startsWith('/admin/') || url.startsWith('/camunda/')))
+    config.headers['X-Active-Tenant'] = tenant
   // if (refreshToken) {
   //   config.headers['X-Refresh-Token'] = refreshToken
   // }

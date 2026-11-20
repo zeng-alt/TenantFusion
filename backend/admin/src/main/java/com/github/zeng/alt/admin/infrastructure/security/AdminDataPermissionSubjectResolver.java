@@ -34,8 +34,8 @@ public class AdminDataPermissionSubjectResolver implements DataPermissionSubject
             final var user = UserContextHolder.getSecurityUser();
             final var candidates = Option.of(user.getCurrentRole()).map(role -> List.of(role.getAuthority()))
                     .getOrElse(() -> user.getRoles().stream().map(GrantedAuthority::getAuthority).toList());
-            final var roles = rbac.findUserRole(user.getId(), user.getTenant()).stream().filter(candidates::contains)
-                    .filter(role -> rbac.findRolePermission(List.of(role), user.getId(), user.getTenant())
+            final var roles = rbac.findUserRole(user.getId(), subject.tenant()).stream().filter(candidates::contains)
+                    .filter(role -> rbac.findRolePermission(List.of(role), user.getId(), subject.tenant())
                             .contains(permission)).collect(Collectors.toUnmodifiableSet());
             final var admin = properties.getAdmin();
             final boolean administrator = Boolean.TRUE.equals(admin.getEnabled())

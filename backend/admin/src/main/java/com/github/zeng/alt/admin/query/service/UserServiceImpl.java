@@ -227,6 +227,7 @@ public class UserServiceImpl implements UserService {
     ) {
 
         CurrentUserDto dto = BeanHelper.copyToObject(user, CurrentUserDto.class);
+        dto.setTenant(securityUser.getTenant());
 
         ProfileDto profile = BeanHelper.copyToObject(
                 user,

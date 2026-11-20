@@ -8,6 +8,7 @@
 
 import { defineStore } from 'pinia'
 import { usePermissionStore, useRouterStore, useTabStore, useUserStore } from '@/store'
+import { clearActiveTenant } from '@/utils/active-tenant'
 
 export const useAuthStore = defineStore('auth', {
   state: () => ({
@@ -54,6 +55,7 @@ export const useAuthStore = defineStore('auth', {
       this.resetToken()
     },
     async logout() {
+      clearActiveTenant()
       this.resetLoginState()
       this.toLogin()
     },

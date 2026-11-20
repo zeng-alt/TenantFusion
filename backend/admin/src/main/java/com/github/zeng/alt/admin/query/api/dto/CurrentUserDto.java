@@ -12,6 +12,8 @@ public class CurrentUserDto {
 
     private String username;
 
+    private String tenant;
+
     private Boolean enabled;
 
     private LocalDateTime createdDate;

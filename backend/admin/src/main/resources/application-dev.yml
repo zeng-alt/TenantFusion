@@ -77,8 +77,8 @@ alt:
     enabled: true
     mode: ROW
     default-tenant-id: master
-    # master 为超管租户，其请求绕过行级判别条件，可跨租户查看
-    root-tenant-id: master
+    # 超级管理员仅管理当前租户；空值禁用跨租户的根租户例外。
+    root-tenant-id: ""
     # 库级隔离的数据源：键即 main_tenant.datasource_key，真实凭据放这里并由环境变量注入。
     # dev 用独立 H2 内存库演示；TenantDataSourceRegistry 按需懒建池（minimumIdle=0）。
     datasources:
@@ -139,6 +139,7 @@ security:
     enabled-access: true
     admin:
       id: 1
+      tenant: master
       code: admin
   rbac:
     client:

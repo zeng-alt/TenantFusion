@@ -52,7 +52,7 @@ operaton:
   bpm:
     authorization:
       enabled: false
-      tenant-check-enabled: false
+      tenant-check-enabled: true
     job-execution:
       enabled: true
       deployment-aware: true
@@ -63,12 +63,12 @@ operaton:
 alt:
   tenant:
     # workflow 无租户库直连权限，经 remote 读 admin；启用 core 的租户上下文链路
-    #（JWT -> TenantContextHolder），当前无行级实体故为安全空转，
-    # wf_* 改 TenantBaseEntity 后即生效
+    #（JWT -> TenantContextHolder），业务实体按租户隔离。
     enabled: true
     mode: ROW
     default-tenant-id: master
-    root-tenant-id: master
+    # 超级管理员仅管理当前租户。
+    root-tenant-id: ""
     # 租户远程源：调用 admin 的 local 端点 GET /v1/tenants（保持鉴权，不开白名单）。
     # 用户链路透传当前请求 JWT；无用户上下文时（定时任务/启动预热）用 service-token（M2M）。
     remote:

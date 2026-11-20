@@ -88,8 +88,10 @@ public class AbacWorkbenchService {
     }
 
     private String tenant(String permission) {
-        final String tenant = UserContextHolder.getTenant();
-        if (tenant == null || !tenant.equals(TenantContextHolder.getTenantId())
+        final String tenant = TenantContextHolder.getTenantId();
+        final var user = UserContextHolder.getSecurityUser();
+        if (tenant == null || user == null
+                || (!tenant.equals(user.getTenant()) && !tenant.equals(user.getActiveTenant()))
                 || !(auth.hasAdmin() || auth.hasAuthority(permission))) {
             throw new AccessDeniedException("无权管理当前租户的 ABAC 策略");
         }

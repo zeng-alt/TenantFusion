@@ -11,6 +11,7 @@ import presetRemToPx from '@unocss/preset-rem-to-px'
 import { defineConfig, presetAttributify, presetIcons, presetWind3 } from 'unocss'
 // import { FIELD_TYPE_META } from '@/views/template/form-config/constants.js'
 import { getIcons } from './build/index.js'
+import menuIcons from './src/assets/icons/menu-icons.json'
 
 const icons = getIcons()
 // const fieldTypeIcons = Object.values(FIELD_TYPE_META).map(meta => meta.icon)
@@ -27,6 +28,7 @@ export default defineConfig({
         height: '1em',
       },
       collections: {
+        lucide: () => menuIcons,
         me: FileSystemIconLoader('./src/assets/icons/isme'),
         fe: FileSystemIconLoader('./src/assets/icons/feather'),
         carbon: FileSystemIconLoader('./src/assets/icons/carbon'),

@@ -13,11 +13,13 @@
       <div v-if="userStore.userInfo" class="ml-12 flex-col flex-shrink-0 items-center">
         <span class="text-14">{{ userStore.nickName ?? userStore.username }}</span>
         <span class="text-12 opacity-50">[{{ userStore.currentRole?.name }}]</span>
+        <span v-if="canSwitchTenant" class="text-12 opacity-50">{{ activeTenant }}</span>
       </div>
     </div>
   </n-dropdown>
 
   <RoleSelect ref="roleSelectRef" />
+  <TenantSelect ref="tenantSelectRef" />
 </template>
 
 <script setup>
@@ -25,11 +27,17 @@ import api from '@/api'
 import { RoleSelect } from '@/layouts/components'
 import { useAuthStore, usePermissionStore, useUserStore } from '@/store'
 import { isEmpty } from '@/utils'
+import { getActiveTenant } from '@/utils/active-tenant'
+import TenantSelect from './TenantSelect.vue'
 
 const router = useRouter()
 const userStore = useUserStore()
 const authStore = useAuthStore()
 const permissionStore = usePermissionStore()
+const canSwitchTenant = computed(() => permissionStore.admin?.enabled
+  && String(userStore.userId) === String(permissionStore.admin?.id)
+  && !!userStore.tenant && userStore.tenant === permissionStore.admin?.tenant)
+const activeTenant = computed(() => getActiveTenant() || userStore.tenant)
 
 const options = reactive([
   {
@@ -45,6 +53,12 @@ const options = reactive([
     show: computed(() => userStore.roles?.length > 1 || (userStore.roles?.length > 0 && isEmpty(userStore.currentRole))),
   },
   {
+    label: '切换租户',
+    key: 'toggleTenant',
+    icon: () => h('i', { class: 'i-basil:exchange-solid text-14' }),
+    show: canSwitchTenant,
+  },
+  {
     label: '退出登录',
     key: 'logout',
     icon: () => h('i', { class: 'i-mdi:exit-to-app text-14' }),
@@ -52,6 +66,7 @@ const options = reactive([
 ])
 
 const roleSelectRef = ref(null)
+const tenantSelectRef = ref(null)
 function handleSelect(key) {
   switch (key) {
     case 'profile':
@@ -63,6 +78,9 @@ function handleSelect(key) {
           location.reload()
         },
       })
+      break
+    case 'toggleTenant':
+      tenantSelectRef.value?.open()
       break
     case 'logout':
       $dialog.confirm({

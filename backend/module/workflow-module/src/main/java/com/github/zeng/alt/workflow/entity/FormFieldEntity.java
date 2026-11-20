@@ -8,10 +8,11 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.Id;
-import jakarta.persistence.Lob;
 import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.Setter;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 import java.io.Serial;
 
@@ -92,18 +93,18 @@ public class FormFieldEntity extends TenantBaseEntity<Long> {
     private Boolean hidden = false;
 
     /** 校验规则（JSON 数组，如 [{"type":"min","value":1,"message":"不能小于1"}]） */
-    @Lob
-    @Column(name = "validation_rules", columnDefinition = "CLOB")
+    @JdbcTypeCode(SqlTypes.LONG32VARCHAR)
+    @Column(name = "validation_rules")
     private String validationRules;
 
     /** 条件渲染规则（JSON，如 {"fieldKey":"type","operator":"eq","value":"other"}） */
-    @Lob
-    @Column(name = "visibility_condition", columnDefinition = "CLOB")
+    @JdbcTypeCode(SqlTypes.LONG32VARCHAR)
+    @Column(name = "visibility_condition")
     private String visibilityCondition;
 
     /** 类型特定属性（JSON，如 {"min":0,"max":100,"step":1,"dateFormat":"yyyy-MM-dd","fileTypes":["jpg","png"]}） */
-    @Lob
-    @Column(name = "field_props", columnDefinition = "CLOB")
+    @JdbcTypeCode(SqlTypes.LONG32VARCHAR)
+    @Column(name = "field_props")
     private String fieldProps;
 
     @Override

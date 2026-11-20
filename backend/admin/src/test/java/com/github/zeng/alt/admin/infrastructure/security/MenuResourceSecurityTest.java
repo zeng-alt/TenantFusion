@@ -1,6 +1,7 @@
 package com.github.zeng.alt.admin.infrastructure.security;
 
 import com.github.zeng.alt.admin.interfaces.rest.MenuResourceController;
+import com.github.zeng.alt.admin.interfaces.rest.TenantSwitchController;
 import com.github.zeng.alt.admin.infrastructure.repository.UserRepository;
 import com.github.zeng.alt.admin.query.api.MenuResourceService;
 import com.github.zeng.alt.security.abac.AbacTemplate;
@@ -16,6 +17,8 @@ import com.github.zeng.alt.security.jwt.JwtTokenProvider;
 import com.github.zeng.alt.security.rbac.serve.repository.RbacResourceService;
 import com.github.zeng.alt.security.rbac.serve.router.RouteTemplateManager;
 import com.github.zeng.alt.tenant.api.TenantContextHolder;
+import com.github.zeng.alt.tenant.api.TenantMetadata;
+import com.github.zeng.alt.tenant.api.TenantMetadataProvider;
 import com.github.zeng.alt.tenant.local.TenantServiceAuthorizationManager;
 import com.github.zeng.alt.security.abac.server.security.AbacServiceAuthorizationManager;
 import io.vavr.control.Try;
@@ -43,6 +46,7 @@ import tools.jackson.databind.json.JsonMapper;
 import java.security.SecureRandom;
 import java.util.Base64;
 import java.util.List;
+import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -106,6 +110,34 @@ class MenuResourceSecurityTest {
         });
     }
 
+    @Test
+    void configuredIdentityCanValidateAndListTargetTenants() {
+        runner().withPropertyValues("security.context.admin.id=7", "security.context.admin.tenant=t001")
+                .run(context -> {
+                    final var tenant = new TenantMetadata("t002", "租户二", null, null, null, null, null, true);
+                    when(context.getBean(TenantMetadataProvider.class).findCurrentById("t002"))
+                            .thenReturn(Optional.of(tenant));
+                    when(context.getBean(TenantMetadataProvider.class).findAll()).thenReturn(List.of(tenant));
+                    mvc(context).perform(get("/v1/auth/tenant").header("Authorization", bearer(context))
+                                    .header("X-Active-Tenant", "t002"))
+                            .andExpect(status().isOk()).andExpect(jsonPath("$.data").value("t002"));
+                    mvc(context).perform(get("/v1/auth/tenants").header("Authorization", bearer(context)))
+                            .andExpect(status().isOk()).andExpect(jsonPath("$.data[0].id").value("t002"));
+                });
+    }
+
+    @Test
+    void tenantAdminCannotSwitchOrListTenants() {
+        runner().withPropertyValues("security.context.admin.id=7", "security.context.admin.tenant=master")
+                .run(context -> {
+                    mvc(context).perform(get("/v1/auth/tenant").header("Authorization", bearer(context))
+                                    .header("X-Active-Tenant", "t002"))
+                            .andExpect(status().isForbidden());
+                    mvc(context).perform(get("/v1/auth/tenants").header("Authorization", bearer(context)))
+                            .andExpect(status().isForbidden());
+                });
+    }
+
     private WebApplicationContextRunner runner() {
         final byte[] secret = new byte[192];
         new SecureRandom().nextBytes(secret);
@@ -137,7 +169,7 @@ class MenuResourceSecurityTest {
 
     @Configuration(proxyBeanMethods = false)
     @EnableWebMvc
-    @Import(MenuResourceController.class)
+    @Import({MenuResourceController.class, TenantSwitchController.class})
     static class Endpoints {
         @Bean
         ObjectMapper objectMapper() {
@@ -154,6 +186,11 @@ class MenuResourceSecurityTest {
             final var storage = mock(JwtStorage.class);
             when(storage.hasToken(anyString())).thenReturn(true);
             return storage;
+        }
+
+        @Bean
+        TenantMetadataProvider tenantMetadataProvider() {
+            return mock(TenantMetadataProvider.class);
         }
 
         @Bean

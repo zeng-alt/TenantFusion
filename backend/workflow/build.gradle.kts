@@ -36,6 +36,7 @@ dependencies {
     // Camunda REST API 的 OpenAPI 定义
 //    implementation("org.operaton.bpm:operaton-engine-rest-openapi:${rootProject.libs.versions.operaton.get()}")
     runtimeOnly(libs.h2)
+    runtimeOnly(libs.postgresql)
     implementation("org.springframework.boot:spring-boot-starter-web")
 //    implementation("org.springframework.boot:spring-boot-starter-data-jpa")
 //    implementation(libs.spring.boot.starter.validation)

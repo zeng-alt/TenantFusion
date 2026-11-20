@@ -33,6 +33,7 @@ class TenantAuthRequestInterceptorTest {
         MockHttpServletRequest request = new MockHttpServletRequest();
         request.addHeader("Authorization", "Bearer user-jwt");
         request.addHeader("X-Tenant-Id", "t001");
+        request.addHeader("X-Active-Tenant", "t002");
         RequestContextHolder.setRequestAttributes(new ServletRequestAttributes(request));
 
         TenantAuthRequestInterceptor interceptor = interceptor(null);
@@ -42,6 +43,7 @@ class TenantAuthRequestInterceptorTest {
 
         assertThat(template.headers().get("Authorization")).containsExactly("Bearer user-jwt");
         assertThat(template.headers().get("X-Tenant-Id")).containsExactly("t001");
+        assertThat(template.headers().get("X-Active-Tenant")).containsExactly("t002");
     }
 
     @Test

@@ -22,6 +22,11 @@ public interface TenantMetadataProvider {
      */
     Optional<TenantMetadata> findById(String tenantId);
 
+    /** 读取当前租户状态；有缓存的实现应绕过缓存。 */
+    default Optional<TenantMetadata> findCurrentById(String tenantId) {
+        return findById(tenantId);
+    }
+
     /**
      * 查询全部启用中的租户，用于启动期校验与数据源预热。
      *

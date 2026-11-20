@@ -4,6 +4,7 @@ package com.github.zeng.alt.security.core;
 import com.github.zeng.alt.security.api.AuthHelper;
 import com.github.zeng.alt.security.api.AuthorityResolver;
 import com.github.zeng.alt.security.core.properties.SecurityProperties;
+import com.github.zeng.alt.tenant.api.TenantMetadataProvider;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
@@ -31,6 +32,12 @@ import java.util.List;
 @Import(WhiteListAutoConfiguration.class)
 public class SecurityAutoConfiguration {
 
+	@Bean
+	@ConditionalOnMissingBean
+	public TenantSwitchTemplate tenantSwitchTemplate(
+			SecurityProperties properties, ObjectProvider<TenantMetadataProvider> providers) {
+		return new TenantSwitchTemplate(properties, providers);
+	}
 
 	@Bean
 	@ConditionalOnMissingBean(PasswordEncoder.class)

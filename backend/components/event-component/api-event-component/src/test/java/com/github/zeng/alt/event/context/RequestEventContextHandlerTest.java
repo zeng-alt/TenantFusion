@@ -99,4 +99,20 @@ class RequestEventContextHandlerTest {
         }
         assertThat(UserContextHolder.getAuthentication()).isSameAs(worker);
     }
+
+    @Test
+    void preservesIdentityTenantAndSelectedTenantInEventContext() {
+        final var user = SecurityUser.withUsername("admin").id("1").tenant("master").build();
+        user.setActiveTenant("t001");
+        user.setIdentityDepartment(42L);
+        UserContextHolder.set(UsernamePasswordAuthenticationToken.authenticated(user, null, List.of()));
+        TenantContextHolder.setTenantId("t001");
+        final var snapshot = handler.capture();
+        try (final var scope = handler.restore(snapshot)) {
+            assertThat(TenantContextHolder.getTenantId()).isEqualTo("t001");
+            assertThat(UserContextHolder.getTenant()).isEqualTo("master");
+            assertThat(UserContextHolder.getSecurityUser().getActiveTenant()).isEqualTo("t001");
+            assertThat(UserContextHolder.getSecurityUser().getIdentityDepartmentId()).isEqualTo(42L);
+        }
+    }
 }

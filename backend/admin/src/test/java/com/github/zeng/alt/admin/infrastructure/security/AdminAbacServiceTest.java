@@ -83,6 +83,23 @@ class AdminAbacServiceTest {
     }
 
     @Test
+    void switchedAdminUsesHomeIdentityAndTargetPolicies() {
+        properties.getAdmin().setTenant("t001");
+        final Authentication admin = authentication("1");
+        final var principal = (SecurityUser) admin.getPrincipal();
+        principal.setIdentityDepartment(10L);
+        principal.setActiveTenant("t002");
+        UserContextHolder.setAuthentication(admin);
+        TenantContextHolder.setTenantId("t002");
+
+        final AbacSubject subject = service.resolve("user:update").get();
+
+        assertThat(subject.tenant()).isEqualTo("t002");
+        assertThat(subject.attributes()).containsEntry("tenant", "t001").containsEntry("deptId", 10L);
+        verifyNoInteractions(users, rbac);
+    }
+
+    @Test
     void shouldResolveTrustedSubjectWhenRbacGrants() {
         when(rbac.findRolePermission(any(), eq("7"), eq("t001"))).thenReturn(Set.of("user:update"));
         final Either<String, AbacSubject> subject = service.resolve("user:update");

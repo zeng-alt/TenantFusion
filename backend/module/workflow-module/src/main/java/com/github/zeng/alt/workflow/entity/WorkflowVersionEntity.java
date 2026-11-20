@@ -8,10 +8,11 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.Id;
-import jakarta.persistence.Lob;
 import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.Setter;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 import java.io.Serial;
 import java.time.LocalDateTime;
@@ -61,8 +62,8 @@ public class WorkflowVersionEntity extends TenantBaseEntity<Long> {
     private Boolean current = false;
 
     /** BPMN XML 内容 */
-    @Lob
-    @Column(name = "bpmn_xml", columnDefinition = "CLOB")
+    @JdbcTypeCode(SqlTypes.LONG32VARCHAR)
+    @Column(name = "bpmn_xml")
     private String bpmnXml;
 
     /** Camunda 部署 ID（发布时回写） */

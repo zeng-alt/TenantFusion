@@ -2,8 +2,10 @@ package com.github.zeng.alt.security.jwt;
 
 import com.github.zeng.alt.security.api.SecurityUser;
 import com.github.zeng.alt.security.core.properties.LoginProperties;
+import com.github.zeng.alt.security.core.TenantSwitchTemplate;
 import com.github.zeng.alt.tenant.api.TenantContextHolder;
 import io.vavr.control.Option;
+import io.vavr.control.Either;
 import io.vavr.control.Try;
 import lombok.extern.apachecommons.CommonsLog;
 import jakarta.servlet.FilterChain;
@@ -22,6 +24,8 @@ import org.springframework.security.web.servlet.util.matcher.PathPatternRequestM
 import org.springframework.security.web.util.matcher.RequestMatcher;
 import org.springframework.core.log.LogMessage;
 import org.springframework.web.filter.OncePerRequestFilter;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
 import org.springframework.util.StringUtils;
 
 import java.io.IOException;
@@ -38,6 +42,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private final String refreshCookieName;
     private final String refreshTokenHeader;
     private final Option<UserDetailsService> userDetailsService;
+    private final Option<TenantSwitchTemplate> tenantSwitch;
 
     public JwtAuthenticationFilter(
             JwtTokenProvider jwtTokenProvider,
@@ -52,6 +57,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         this.jwtStorage = jwtStorage;
         this.headerName = headerName;
         this.userDetailsService = Option.of(userDetailsService);
+        this.tenantSwitch = Option.none();
         this.loginRequestMatcher = PathPatternRequestMatcher.withDefaults()
                 .matcher(loginProperties.getMethod(), loginProperties.getLoginPath());
         this.newAccessTokenHeader = newAccessTokenHeader;
@@ -68,9 +74,20 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             Option<UserDetailsService> userDetailsService,
             JwtProperties properties
     ) {
+        this(jwtTokenProvider, jwtStorage, userDetailsService, properties, Option.none());
+    }
+
+    public JwtAuthenticationFilter(
+            JwtTokenProvider jwtTokenProvider,
+            JwtStorage jwtStorage,
+            Option<UserDetailsService> userDetailsService,
+            JwtProperties properties,
+            Option<TenantSwitchTemplate> tenantSwitch
+    ) {
         this.jwtTokenProvider = jwtTokenProvider;
         this.jwtStorage = jwtStorage;
         this.userDetailsService = userDetailsService;
+        this.tenantSwitch = tenantSwitch;
         this.headerName = "Authorization";
         this.loginRequestMatcher = PathPatternRequestMatcher.withDefaults()
                 .matcher(properties.getLogin().getMethod(), properties.getLogin().getLoginPath());
@@ -96,6 +113,16 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         if (user.isEmpty()) {
             filterChain.doFilter(request, response);
             return;
+        }
+        final String selectedTenant = request.getHeader("X-Active-Tenant");
+        if (StringUtils.hasText(selectedTenant)) {
+            final Either<String, String> selected = selectTenant(user.get(), selectedTenant.trim(), request, response);
+            if (selected.isLeft()) {
+                response.sendError(HttpServletResponse.SC_FORBIDDEN, selected.getLeft());
+                return;
+            }
+            user.get().setActiveTenant(selected.get());
+            setTenant(selected.get());
         }
         SecurityContextHolder.getContext().setAuthentication(UsernamePasswordAuthenticationToken.authenticated(
                 user.get(), null, user.get().getAuthorities()));
@@ -123,7 +150,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     }
 
     private Option<SecurityUser> accessUser(Jwt jwt) {
-        TenantContextHolder.setTenantId(jwtTokenProvider.getClaimTenant(jwt));
+        setTenant(jwtTokenProvider.getClaimTenant(jwt));
         if (userDetailsService.isEmpty()) {
             return Option.of(jwtTokenProvider.getUserFromClaims(jwt));
         }
@@ -159,7 +186,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 .filter(parsed -> parsed.result() == JwtTokenProvider.TokenValidationResult.VALID)
                 .map(JwtTokenProvider.TokenParseResult::jwt)
                 .filter(jwt -> jwtStorage.hasToken(jwtTokenProvider.getRefreshCacheKey(jwt)))
-                .peek(jwt -> TenantContextHolder.setTenantId(jwtTokenProvider.getClaimTenant(jwt)))
+                .peek(jwt -> setTenant(jwtTokenProvider.getClaimTenant(jwt)))
                 .flatMap(this::loadUser)
                 .peek(user -> restoreCurrentRole(user, jwtTokenProvider.getCurrentRoleFromExpiredToken(oldToken)))
                 .peek(user -> refreshAccessToken(user, oldToken, response));
@@ -185,5 +212,28 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                         .flatMap(cookies -> Option.ofOptional(cookies
                                 .filter(cookie -> refreshCookieName.equals(cookie.getName()))
                                 .map(Cookie::getValue).findFirst())));
+    }
+
+    private void setTenant(String tenant) {
+        TenantContextHolder.setTenantId(tenant);
+        TenantContextHolder.setRouting(null);
+        TenantContextHolder.setDatabase(null);
+        TenantContextHolder.setSchema(null);
+    }
+
+    private Either<String, String> selectTenant(
+            SecurityUser user, String tenant, HttpServletRequest request, HttpServletResponse response
+    ) {
+        if (RequestContextHolder.getRequestAttributes() != null) {
+            return tenantSwitch.toEither("无权切换租户").flatMap(template -> template.select(user, tenant));
+        }
+        final var attributes = new ServletRequestAttributes(request, response);
+        RequestContextHolder.setRequestAttributes(attributes);
+        try {
+            return tenantSwitch.toEither("无权切换租户").flatMap(template -> template.select(user, tenant));
+        } finally {
+            RequestContextHolder.resetRequestAttributes();
+            attributes.requestCompleted();
+        }
     }
 }

@@ -1,6 +1,7 @@
 package com.github.zeng.alt.security.jwt;
 
 import com.github.zeng.alt.security.api.UserContextHolder;
+import com.github.zeng.alt.tenant.api.TenantContextHolder;
 import com.nimbusds.jose.jwk.source.ImmutableSecret;
 import com.github.zeng.alt.security.api.SecurityUser;
 import com.nimbusds.jwt.SignedJWT;
@@ -244,8 +245,10 @@ public class JwtTokenProvider {
 
         StringJoiner joiner = new StringJoiner(":");
         joiner.add(prefix);
-        if (StringUtils.hasText(UserContextHolder.getTenant())) {
-            joiner.add(UserContextHolder.getTenant());
+        final String tenant = StringUtils.hasText(TenantContextHolder.getTenantId())
+                ? TenantContextHolder.getTenantId() : UserContextHolder.getTenant();
+        if (StringUtils.hasText(tenant)) {
+            joiner.add(tenant);
         }
         if (StringUtils.hasText(userId)) {
             joiner.add(userId);

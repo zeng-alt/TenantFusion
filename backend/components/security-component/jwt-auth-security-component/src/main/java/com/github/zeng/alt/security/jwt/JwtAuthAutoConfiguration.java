@@ -3,6 +3,7 @@ package com.github.zeng.alt.security.jwt;
 import tools.jackson.databind.ObjectMapper;
 import tools.jackson.databind.json.JsonMapper;
 import com.github.zeng.alt.security.core.properties.LoginProperties;
+import com.github.zeng.alt.security.core.TenantSwitchTemplate;
 import com.github.zeng.alt.security.core.properties.UsernameLoginProperties;
 import com.github.zeng.alt.security.core.web.SecurityBuilderCustomizer;
 import com.github.zeng.alt.storage.StorageTemplate;
@@ -113,13 +114,15 @@ public class JwtAuthAutoConfiguration {
             JwtTokenProvider jwtTokenProvider,
             JwtStorage jwtStorage,
             UserDetailsService userDetailsService,
-            JwtProperties jwtProperties) {
+            JwtProperties jwtProperties,
+            ObjectProvider<TenantSwitchTemplate> tenantSwitch) {
         return http -> {
             JwtAuthenticationFilter authFilter = new JwtAuthenticationFilter(
                     jwtTokenProvider,
                     jwtStorage,
                     Option.when(Boolean.TRUE.equals(jwtProperties.getAuthentication()), () -> userDetailsService),
-                    jwtProperties
+                    jwtProperties,
+                    Option.of(tenantSwitch.getIfAvailable())
             );
 
             http.sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))

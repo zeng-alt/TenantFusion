@@ -12,11 +12,14 @@ import org.operaton.bpm.engine.RuntimeService;
 import org.operaton.bpm.engine.repository.ProcessDefinition;
 import org.operaton.bpm.engine.runtime.MessageCorrelationBuilder;
 import org.operaton.bpm.engine.runtime.ProcessInstance;
+import org.operaton.bpm.engine.impl.identity.Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.function.Supplier;
 
 /**
  * 嵌入式流程启动实现
@@ -40,31 +43,19 @@ public class EmbeddedStartProcessApi implements StartProcessApi {
     @Override
     public ProcessInformation startByDefinition(StartByDefinitionCmd cmd) {
         String initiator = cmd.getInitiator();
-        boolean authenticated = StringUtils.hasText(initiator);
-        if (authenticated) {
-            identityService.setAuthenticatedUserId(initiator);
-        }
-        try {
+        return withInitiator(initiator, cmd.getTenantId(), () -> {
             Map<String, Object> variables = variables(cmd.getVariables());
             putInitiator(variables, initiator);
             ProcessInstance pi = startByKey(cmd.getProcessDefinitionKey(), cmd.getBusinessKey(),
                     cmd.getTenantId(), variables);
             return toProcessInformation(pi);
-        } finally {
-            if (authenticated) {
-                identityService.clearAuthentication();
-            }
-        }
+        });
     }
 
     @Override
     public ProcessInformation startByMessage(StartByMessageCmd cmd) {
         String initiator = cmd.getInitiator();
-        boolean authenticated = StringUtils.hasText(initiator);
-        if (authenticated) {
-            identityService.setAuthenticatedUserId(initiator);
-        }
-        try {
+        return withInitiator(initiator, cmd.getTenantId(), () -> {
             Map<String, Object> variables = variables(cmd.getVariables());
             putInitiator(variables, initiator);
             MessageCorrelationBuilder builder = runtimeService.createMessageCorrelation(cmd.getMessageName());
@@ -76,10 +67,23 @@ public class EmbeddedStartProcessApi implements StartProcessApi {
             }
             ProcessInstance pi = builder.setVariables(variables).correlateStartMessage();
             return toProcessInformation(pi);
+        });
+    }
+
+    private <T> T withInitiator(String initiator, String tenant, Supplier<T> action) {
+        if (!StringUtils.hasText(initiator)) {
+            return action.get();
+        }
+        final Authentication previous = identityService.getCurrentAuthentication();
+        if (previous == null) {
+            identityService.setAuthentication(initiator, List.of(), StringUtils.hasText(tenant) ? List.of(tenant) : List.of());
+        } else {
+            identityService.setAuthentication(initiator, previous.getGroupIds(), previous.getTenantIds());
+        }
+        try {
+            return action.get();
         } finally {
-            if (authenticated) {
-                identityService.clearAuthentication();
-            }
+            identityService.setAuthentication(previous);
         }
     }
 

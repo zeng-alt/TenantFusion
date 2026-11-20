@@ -34,6 +34,10 @@ namastack:
 #    prefix: /api/i18n-messages
 
 # 内置管理员的数据查询全量授权仍受当前租户边界限制。
+alt:
+  tenant:
+    root-tenant-id: ""
+
 security:
   abac:
     server:
@@ -43,6 +47,10 @@ security:
       source: local
   whitelist:
     authenticated:
+      - method: GET
+        path: /v1/auth/tenants
+      - method: GET
+        path: /v1/auth/tenant
       - method: POST
         path: /v1/auth/current-role/switch/{code}/{rememberMe}
       - method: GET

@@ -2,7 +2,11 @@ package com.github.zeng.alt.security.jwt;
 
 import com.github.zeng.alt.security.api.SecurityUser;
 import com.github.zeng.alt.security.core.properties.LoginProperties;
+import com.github.zeng.alt.security.core.properties.SecurityProperties;
+import com.github.zeng.alt.security.core.TenantSwitchTemplate;
 import com.github.zeng.alt.tenant.api.TenantContextHolder;
+import com.github.zeng.alt.tenant.api.TenantMetadata;
+import com.github.zeng.alt.tenant.api.TenantMetadataProvider;
 import com.nimbusds.jose.jwk.source.ImmutableSecret;
 import jakarta.servlet.http.Cookie;
 import io.vavr.control.Option;
@@ -12,6 +16,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.http.HttpMethod;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.security.core.Authentication;
@@ -24,6 +29,8 @@ import org.springframework.security.oauth2.jwt.JwsHeader;
 import org.springframework.security.oauth2.jwt.JwtClaimsSet;
 import org.springframework.security.oauth2.jwt.JwtEncoderParameters;
 import org.springframework.security.oauth2.jwt.NimbusJwtEncoder;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
 
 import javax.crypto.spec.SecretKeySpec;
 import java.security.SecureRandom;
@@ -31,6 +38,7 @@ import java.time.Instant;
 import java.util.Base64;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
@@ -74,6 +82,7 @@ class JwtAuthenticationFilterTest {
     void clearContexts() {
         SecurityContextHolder.clearContext();
         TenantContextHolder.clear();
+        RequestContextHolder.resetRequestAttributes();
     }
 
     @ParameterizedTest
@@ -171,6 +180,81 @@ class JwtAuthenticationFilterTest {
         headerOnly.addHeader(properties.getRefreshTokenHeader(), refresh);
         filter.doFilter(headerOnly, new MockHttpServletResponse(),
                 (req, res) -> assertThat(SecurityContextHolder.getContext().getAuthentication()).isNull());
+    }
+
+    @Test
+    void switchesOnlyAfterVerifyingOriginalIdentity() throws Exception {
+        final String access = tokens.createToken(user("active"));
+        cachedKeys.add(tokens.getAccessCacheKey(access));
+        when(users.loadUserByUsername("review-user")).thenAnswer(call -> {
+            assertThat(TenantContextHolder.getTenantId()).isEqualTo("t001");
+            return user("active");
+        });
+        final var request = request(access);
+        request.addHeader("X-Active-Tenant", "t002");
+        final var response = new MockHttpServletResponse();
+        final var filter = new JwtAuthenticationFilter(tokens, storage, Option.some(users), properties,
+                Option.some(switchTemplate("7", "t001")));
+
+        filter.doFilter(request, response, (req, res) -> {
+            assertThat(TenantContextHolder.getTenantId()).isEqualTo("t002");
+            assertThat(((SecurityUser) SecurityContextHolder.getContext().getAuthentication().getPrincipal()).getTenant())
+                    .isEqualTo("t001");
+        });
+
+        assertThat(response.getStatus()).isEqualTo(200);
+    }
+
+    @Test
+    void exposesRequestHeadersDuringRemoteTenantValidation() throws Exception {
+        final String access = tokens.createToken(user("active"));
+        cachedKeys.add(tokens.getAccessCacheKey(access));
+        when(users.loadUserByUsername("review-user")).thenReturn(user("active"));
+        final var request = request(access);
+        request.addHeader("X-Active-Tenant", "t002");
+        final var template = mock(TenantSwitchTemplate.class);
+        when(template.select(any(), anyString())).thenAnswer(call -> {
+            final var attributes = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
+            assertThat(attributes.getRequest().getHeader("Authorization")).isEqualTo("Bearer " + access);
+            assertThat(attributes.getRequest().getHeader("X-Active-Tenant")).isEqualTo("t002");
+            return io.vavr.control.Either.right("t002");
+        });
+        new JwtAuthenticationFilter(tokens, storage, Option.some(users), properties, Option.some(template))
+                .doFilter(request, new MockHttpServletResponse(), (req, res) -> {
+                    assertThat(RequestContextHolder.getRequestAttributes()).isNull();
+                    assertThat(TenantContextHolder.getTenantId()).isEqualTo("t002");
+                });
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"wrong-id", "wrong-tenant", "unknown"})
+    void rejectsUnauthorizedOrUnknownTenant(String reason) throws Exception {
+        final String access = tokens.createToken(user("active"));
+        cachedKeys.add(tokens.getAccessCacheKey(access));
+        when(users.loadUserByUsername("review-user")).thenReturn(user("active"));
+        final var request = request(access);
+        request.addHeader("X-Active-Tenant", reason.equals("unknown") ? "missing" : "t002");
+        final var response = new MockHttpServletResponse();
+        final var filter = new JwtAuthenticationFilter(tokens, storage, Option.some(users), properties,
+                Option.some(switchTemplate(reason.equals("wrong-id") ? "1" : "7",
+                        reason.equals("wrong-tenant") ? "master" : "t001")));
+
+        filter.doFilter(request, response, (req, res) -> { throw new AssertionError("request was not rejected"); });
+
+        assertThat(response.getStatus()).isEqualTo(403);
+    }
+
+    private TenantSwitchTemplate switchTemplate(String id, String tenant) {
+        final var security = new SecurityProperties();
+        security.getAdmin().setId(id);
+        security.getAdmin().setTenant(tenant);
+        final var metadata = mock(TenantMetadataProvider.class);
+        when(metadata.findCurrentById("t002")).thenReturn(Optional.of(
+                new TenantMetadata("t002", "租户二", null, null, null, null, null, true)));
+        @SuppressWarnings("unchecked")
+        final ObjectProvider<TenantMetadataProvider> provider = mock(ObjectProvider.class);
+        when(provider.getIfAvailable()).thenReturn(metadata);
+        return new TenantSwitchTemplate(security, provider);
     }
 
     private Authentication authenticate(MockHttpServletRequest request, MockHttpServletResponse response)

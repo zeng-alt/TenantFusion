@@ -11,3 +11,6 @@ databaseChangeLog:
   - include:
       file: ${tenantChangelogDir}/V0003-2026-10-02-seed-hybrid-demo-tenants.sql
       relativeToChangelogFile: true
+  - include:
+      file: ${tenantChangelogDir}/V0004-2026-11-20-isolate-master-tenant.sql
+      relativeToChangelogFile: true

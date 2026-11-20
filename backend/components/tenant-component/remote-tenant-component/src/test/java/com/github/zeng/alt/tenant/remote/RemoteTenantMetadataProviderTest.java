@@ -8,6 +8,7 @@ import org.junit.jupiter.api.Test;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -63,6 +64,28 @@ class RemoteTenantMetadataProviderTest {
         provider.evict("t001");
         provider.findById("t001");
         assertThat(calls.get()).isEqualTo(2);
+    }
+
+    @Test
+    void currentLookupDoesNotTrustCachedEnabledTenant() {
+        final var current = new AtomicReference<>(new TenantMetadata("t001", "租户一", TenantMode.ROW,
+                null, null, null, true, true));
+        final TenantRemoteSource source = new TenantRemoteSource() {
+            @Override
+            public TenantMetadata findById(String tenantId) {
+                return current.get();
+            }
+
+            @Override
+            public List<TenantMetadata> findAll() {
+                return List.of();
+            }
+        };
+        final var provider = new RemoteTenantMetadataProvider(source, 60_000L);
+        assertThat(provider.findById("t001")).isPresent();
+        current.set(null);
+        assertThat(provider.findById("t001")).isPresent();
+        assertThat(provider.findCurrentById("t001")).isEmpty();
     }
 
     @Test

@@ -25,5 +25,6 @@ dependencies {
 
     testImplementation("org.springframework.boot:spring-boot-starter-test")
     testImplementation(project(":backend:components:camunda-component:api-camunda-component"))
+    testImplementation(project(":backend:components:security-component:core-security-component"))
     testRuntimeOnly(rootProject.libs.h2)
 }

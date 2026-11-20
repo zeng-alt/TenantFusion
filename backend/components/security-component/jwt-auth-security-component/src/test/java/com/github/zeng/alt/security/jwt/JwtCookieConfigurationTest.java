@@ -4,6 +4,7 @@ import tools.jackson.databind.json.JsonMapper;
 import com.github.zeng.alt.security.api.SecurityUser;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.AfterEach;
+import com.github.zeng.alt.tenant.api.TenantContextHolder;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -73,6 +74,7 @@ class JwtCookieConfigurationTest {
     @AfterEach
     void clearContext() {
         SecurityContextHolder.clearContext();
+        TenantContextHolder.clear();
     }
 
     @ParameterizedTest
@@ -121,6 +123,16 @@ class JwtCookieConfigurationTest {
         new JwtLoginHelper(mock(AuthenticationManager.class), tokens, storage, properties).logout("7");
         verify(storage).removeAllToken("jwt:token:t001:7");
         verify(storage).removeAllToken("jwt:refresh:t001:7");
+    }
+
+    @Test
+    void revokesEditedUsersInSelectedTenant() {
+        SecurityContextHolder.getContext().setAuthentication(
+                UsernamePasswordAuthenticationToken.authenticated(user, null, user.getAuthorities()));
+        TenantContextHolder.setTenantId("t002");
+        new JwtLoginHelper(mock(AuthenticationManager.class), tokens, storage, properties).logout("7");
+        verify(storage).removeAllToken("jwt:token:t002:7");
+        verify(storage).removeAllToken("jwt:refresh:t002:7");
     }
 
     @Test

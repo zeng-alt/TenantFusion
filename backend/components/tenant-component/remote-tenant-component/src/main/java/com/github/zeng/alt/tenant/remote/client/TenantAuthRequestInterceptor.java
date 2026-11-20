@@ -45,6 +45,12 @@ public class TenantAuthRequestInterceptor implements RequestInterceptor {
                 template.header(SERVICE_KEY_HEADER, properties.getServiceToken().trim());
             }
         }
+        if (!template.headers().containsKey("X-Active-Tenant")) {
+            String activeTenant = currentRequestHeader("X-Active-Tenant");
+            if (StringUtils.hasText(activeTenant)) {
+                template.header("X-Active-Tenant", activeTenant.trim());
+            }
+        }
         String tenantHeader = properties.getTenantHeader();
         if (StringUtils.hasText(tenantHeader) && !template.headers().containsKey(tenantHeader)) {
             String tenant = currentRequestHeader(tenantHeader);

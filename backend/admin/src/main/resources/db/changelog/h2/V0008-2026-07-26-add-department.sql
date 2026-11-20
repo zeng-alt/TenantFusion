@@ -31,5 +31,5 @@ COMMENT ON COLUMN main_department.remark IS '备注';
 COMMENT ON COLUMN main_department.parent_id IS '上级部门ID';
 
 INSERT INTO MAIN_PERMISSION (permission_id, resource_type, code, name, description, is_enabled, path, component, redirect, icon, layout, keep_alive, menu_name, menu_style, resource_order, is_show, parent_id, created_by, created_date, last_modified_by, last_modified_date) VALUES
-    (2000, 'MENU', 'DeptMgt', '部门管理', NULL, TRUE, '/pms/dept', '/src/views/pms/dept/index.vue', NULL, '', '', 't', NULL, NULL, 2, TRUE, 279, NULL, '2025-05-22 20:57:26.822246', NULL, '2025-05-22 20:57:26.822246');
+    (2000, 'MENU', 'DeptMgt', '部门管理', NULL, TRUE, '/pms/dept', '/src/views/pms/dept/index.vue', NULL, 'i-lucide:folder-tree', '', 't', NULL, NULL, 2, TRUE, 279, NULL, '2025-05-22 20:57:26.822246', NULL, '2025-05-22 20:57:26.822246');
 

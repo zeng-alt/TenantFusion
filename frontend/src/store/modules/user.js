@@ -19,6 +19,9 @@ export const useUserStore = defineStore('user', {
     username() {
       return this.userInfo?.username
     },
+    tenant() {
+      return this.userInfo?.tenant
+    },
     nickName() {
       return this.userInfo?.nickName
     },

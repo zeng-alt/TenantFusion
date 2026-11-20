@@ -31,6 +31,7 @@ public class RequestEventContextHandler implements EventContextHandler {
     @Override
     public Map<String, String> capture() {
         final var routing = Option.of(TenantContextHolder.getRouting());
+        final var user = Option.of(UserContextHolder.getSecurityUser());
         return Map.copyOf(HashMap.ofEntries(
                 Tuple.of("tenantId", TenantContextHolder.getTenantId()),
                 Tuple.of("database", TenantContextHolder.getDatabase()),
@@ -41,7 +42,13 @@ public class RequestEventContextHandler implements EventContextHandler {
                 Tuple.of("routing.tableSuffix", routing.map(TenantRouting::tableSuffix).getOrNull()),
                 Tuple.of("routing.rowIsolated", routing.map(r -> Boolean.toString(r.rowIsolated())).getOrNull()),
                 Tuple.of("userId", UserContextHolder.getId()),
-                Tuple.of("username", UserContextHolder.getUsername())
+                Tuple.of("username", UserContextHolder.getUsername()),
+                Tuple.of("identityTenant", user.map(SecurityUser::getTenant).getOrNull()),
+                Tuple.of("activeTenant", user.map(SecurityUser::getActiveTenant).getOrNull()),
+                Tuple.of("identitySnapshotLoaded", user.filter(SecurityUser::isIdentitySnapshotLoaded)
+                        .map(ignored -> "true").getOrNull()),
+                Tuple.of("identityDepartmentId", user.flatMap(u -> Option.of(u.getIdentityDepartmentId()))
+                        .map(String::valueOf).getOrNull())
         ).filter((key, value) -> value != null).toJavaMap());
     }
 
@@ -64,13 +71,19 @@ public class RequestEventContextHandler implements EventContextHandler {
                 .flatMap(id -> Option.of(contextByKey.get("username")).filter(StringUtils::hasText)
                         .map(username -> SecurityUser.withUsername(username)
                                 .id(id)
-                                .tenant(contextByKey.get("tenantId"))
+                                .tenant(Option.of(contextByKey.get("identityTenant"))
+                                        .getOrElse(contextByKey.get("tenantId")))
                                 .database(contextByKey.get("database"))
                                 .schema(contextByKey.get("schema"))
                                 .build()))
-                .peek(user -> context.setAuthentication(
-                        UsernamePasswordAuthenticationToken.authenticated(user, null, List.of())
-                ));
+                .peek(user -> {
+                    user.setActiveTenant(contextByKey.get("activeTenant"));
+                    if ("true".equals(contextByKey.get("identitySnapshotLoaded"))) {
+                        user.setIdentityDepartment(Option.of(contextByKey.get("identityDepartmentId"))
+                                .map(Long::valueOf).getOrNull());
+                    }
+                    context.setAuthentication(UsernamePasswordAuthenticationToken.authenticated(user, null, List.of()));
+                });
         return context;
     }
 

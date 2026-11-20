@@ -1,6 +1,7 @@
 package com.github.zeng.alt.camunda.identity.api.security;
 
 import com.github.zeng.alt.security.api.SecurityUser;
+import com.github.zeng.alt.tenant.api.TenantContextHolder;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -22,7 +23,7 @@ import java.util.List;
  * 与 {@code JwtAuthenticationFilter} 的职责类似：每次请求从 {@link SecurityContextHolder}
  * 中取出已认证的 {@link SecurityUser}，通过 {@link IdentityService#setAuthentication}
  * 设置到 Camunda 引擎的线程上下文，使流程引擎的授权/历史操作能感知当前操作人，
- * 并在请求结束后清理。用户、角色（组）、租户均直接取自 {@link SecurityUser}，
+ * 并在请求结束后清理。用户、角色（组）取自 {@link SecurityUser}，租户取当前操作上下文，
  * 无需再向 admin 服务发起额外查询。
  */
 public class CamundaIdentityAuthenticationFilter extends OncePerRequestFilter {
@@ -45,13 +46,13 @@ public class CamundaIdentityAuthenticationFilter extends OncePerRequestFilter {
 
         String userId = securityUser.getUsername();
         List<String> groupIds = resolveGroupIds(securityUser);
-        List<String> tenantIds = StringUtils.hasText(securityUser.getTenant())
-                ? List.of(securityUser.getTenant())
+        String tenant = TenantContextHolder.getTenantId();
+        List<String> tenantIds = StringUtils.hasText(tenant)
+                ? List.of(tenant)
                 : List.of();
 
 
         identityService.setAuthentication(userId, groupIds, tenantIds);
-        identityService.setAuthenticatedUserId(userId);
         try {
             filterChain.doFilter(request, response);
         } finally {
@@ -72,7 +73,8 @@ public class CamundaIdentityAuthenticationFilter extends OncePerRequestFilter {
     }
 
     private List<String> resolveGroupIds(SecurityUser securityUser) {
-        if (securityUser.getRoles() == null) {
+        if (securityUser.getRoles() == null || (securityUser.getActiveTenant() != null
+                && !securityUser.getActiveTenant().equals(securityUser.getTenant()))) {
             return List.of();
         }
         return securityUser.getRoles().stream()

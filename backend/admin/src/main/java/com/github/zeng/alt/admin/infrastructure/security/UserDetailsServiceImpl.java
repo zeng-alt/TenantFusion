@@ -62,7 +62,7 @@ public class UserDetailsServiceImpl implements UserDetailsService {
                         return authority;
                     }).collect(Collectors.toSet());
                     Tenant tenant = provider != null ? provider.findById(user.getTenantBy()).orElse(new Tenant()) : new Tenant();
-                    return SecurityUser
+                    SecurityUser securityUser = SecurityUser
                             .withUsername(user.getUsername())
                             .id(user.getId())
                             .password(user.getPassword())
@@ -73,6 +73,8 @@ public class UserDetailsServiceImpl implements UserDetailsService {
                             .roles(roles)
                             .currentRole(CollectionUtils.isEmpty(roles) ? null : roles.iterator().next())
                             .build();
+                    securityUser.setIdentityDepartment(user.getDeptId());
+                    return securityUser;
                 }).orElseThrow(() -> new UsernameNotFoundException(username + " 用户名不存在"));
     }
 }

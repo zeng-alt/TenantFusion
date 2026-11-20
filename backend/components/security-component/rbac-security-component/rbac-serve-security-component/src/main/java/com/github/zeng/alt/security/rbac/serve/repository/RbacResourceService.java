@@ -1,7 +1,7 @@
 package com.github.zeng.alt.security.rbac.serve.repository;
 
 import com.github.zeng.alt.security.api.Resource;
-import com.github.zeng.alt.security.api.UserContextHolder;
+import com.github.zeng.alt.tenant.api.TenantContextHolder;
 
 import java.util.List;
 import java.util.Set;
@@ -21,14 +21,14 @@ public interface RbacResourceService {
     void removeRolePermission(List<String> roleCodes, String tenantName);
 
     default void removePermission(List<Resource> resources) {
-        removePermission(resources, UserContextHolder.getTenant());
+        removePermission(resources, TenantContextHolder.getTenantId());
     }
 
     default void removeUserRole(List<String> userIds) {
-        removeUserRole(userIds, UserContextHolder.getTenant());
+        removeUserRole(userIds, TenantContextHolder.getTenantId());
     }
 
     default void removeRolePermission(List<String> roleCodes) {
-        removeRolePermission(roleCodes, UserContextHolder.getTenant());
+        removeRolePermission(roleCodes, TenantContextHolder.getTenantId());
     }
 }

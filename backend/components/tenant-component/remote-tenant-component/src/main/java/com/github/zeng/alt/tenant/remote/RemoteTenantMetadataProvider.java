@@ -57,6 +57,14 @@ public class RemoteTenantMetadataProvider implements TenantMetadataProvider {
                 .toList();
     }
 
+    @Override
+    public Optional<TenantMetadata> findCurrentById(String tenantId) {
+        if (tenantId == null || tenantId.isBlank()) {
+            return Optional.empty();
+        }
+        return Optional.ofNullable(toMetadata(remoteSource.findById(tenantId)));
+    }
+
     /** 主动失效单个租户缓存，供 admin 推送/定时同步调用 */
     public void evict(String tenantId) {
         if (tenantId != null) {

@@ -3,7 +3,19 @@ package com.github.zeng.alt.camunda.engine.embedded;
 import org.junit.jupiter.api.Test;
 import com.github.zeng.alt.camunda.identity.api.CamundaUserGroupSource;
 import com.github.zeng.alt.camunda.identity.api.CamundaIdentityGroup;
+import com.github.zeng.alt.camunda.identity.api.security.CamundaIdentityAuthenticationFilter;
+import com.github.zeng.alt.camunda.engine.api.process.StartByDefinitionCmd;
+import com.github.zeng.alt.camunda.engine.embedded.process.EmbeddedStartProcessApi;
+import com.github.zeng.alt.security.api.SecurityUser;
+import com.github.zeng.alt.security.api.UserContextHolder;
+import com.github.zeng.alt.tenant.api.TenantContextHolder;
+import org.springframework.mock.web.MockHttpServletRequest;
+import org.springframework.mock.web.MockHttpServletResponse;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.ApplicationContext;
+import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import java.util.List;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -18,6 +30,7 @@ import org.springframework.test.context.TestConstructor;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
  * 验证 Boot 4 自动装配真实 Operaton 引擎并运行既有 Camunda BPMN 扩展。
@@ -33,6 +46,7 @@ import static org.assertj.core.api.Assertions.assertThat;
                 "operaton.bpm.database.schema-update=true",
                 "operaton.bpm.job-execution.enabled=false",
                 "operaton.bpm.history-level=full",
+                "operaton.bpm.authorization.tenant-check-enabled=true",
                 "spring.main.banner-mode=off"
         })
 @TestConstructor(autowireMode = TestConstructor.AutowireMode.ALL)
@@ -40,10 +54,12 @@ class OperatonEngineTest {
 
     private final ProcessEngine engine;
     private final JdbcTemplate jdbc;
+    private final ApplicationContext context;
 
-    OperatonEngineTest(ProcessEngine engine, JdbcTemplate jdbc) {
+    OperatonEngineTest(ProcessEngine engine, JdbcTemplate jdbc, ApplicationContext context) {
         this.engine = engine;
         this.jdbc = jdbc;
+        this.context = context;
     }
 
     @Test
@@ -72,6 +88,52 @@ class OperatonEngineTest {
             assertThat(jdbc.queryForList("select VERSION_ from ACT_GE_SCHEMA_LOG", String.class)).contains("7.25.0");
         } finally {
             engine.getRepositoryService().deleteDeployment(deployment.getId(), true);
+        }
+    }
+
+    @Test
+    void selectedTenantLimitsEngineQueries() throws Exception {
+        assertThat(context.getBean("camundaIdentityFilterRegistration", FilterRegistrationBean.class).isEnabled())
+                .isFalse();
+        final var first = engine.getRepositoryService().createDeployment().tenantId("first")
+                .addString("first.bpmn", legacyBpmn()).deploy();
+        final var second = engine.getRepositoryService().createDeployment().tenantId("second")
+                .addString("second.bpmn", legacyBpmn()).deploy();
+        try {
+            final var starter = new EmbeddedStartProcessApi(engine.getRuntimeService(),
+                    engine.getRepositoryService(), engine.getIdentityService());
+            assertThat(starter.startByDefinition(StartByDefinitionCmd.builder()
+                    .processDefinitionKey("upgrade").tenantId("first").initiator("worker").build())
+                    .getInstanceId()).isNotBlank();
+            assertThat(engine.getIdentityService().getCurrentAuthentication()).isNull();
+            final var user = SecurityUser.withUsername("admin").id("1").tenant("master")
+                    .roles(new SimpleGrantedAuthority("home-role")).build();
+            user.setActiveTenant("second");
+            UserContextHolder.set(UsernamePasswordAuthenticationToken.authenticated(user, null, List.of()));
+            TenantContextHolder.setTenantId("second");
+            new CamundaIdentityAuthenticationFilter(engine.getIdentityService()).doFilter(
+                    new MockHttpServletRequest(), new MockHttpServletResponse(), (request, response) -> {
+                        assertThat(engine.getIdentityService().getCurrentAuthentication().getTenantIds())
+                                .containsExactly("second");
+                        assertThat(engine.getIdentityService().getCurrentAuthentication().getGroupIds()).isEmpty();
+                        assertThat(engine.getRepositoryService().createProcessDefinitionQuery().list())
+                                .extracting(definition -> definition.getTenantId()).containsExactly("second");
+                        assertThat(engine.getRepositoryService().createProcessDefinitionQuery()
+                                .deploymentId(first.getId()).count()).isZero();
+                        assertThatThrownBy(() -> starter.startByDefinition(StartByDefinitionCmd.builder()
+                                .processDefinitionKey("upgrade").tenantId("first").initiator("admin").build()))
+                                .isInstanceOf(IllegalStateException.class);
+                        assertThat(starter.startByDefinition(StartByDefinitionCmd.builder()
+                                .processDefinitionKey("upgrade").tenantId("second").initiator("admin").build())
+                                .getInstanceId()).isNotBlank();
+                        assertThat(engine.getIdentityService().getCurrentAuthentication().getTenantIds())
+                                .containsExactly("second");
+                    });
+        } finally {
+            UserContextHolder.clear();
+            TenantContextHolder.clear();
+            engine.getRepositoryService().deleteDeployment(first.getId(), true);
+            engine.getRepositoryService().deleteDeployment(second.getId(), true);
         }
     }
 

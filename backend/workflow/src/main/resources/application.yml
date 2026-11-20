@@ -14,3 +14,18 @@ spring:
 
 logging:
   register-shutdown-hook: false
+
+alt:
+  tenant:
+    root-tenant-id: ""
+
+security:
+  context:
+    admin:
+      id: 1
+      tenant: master
+
+operaton:
+  bpm:
+    authorization:
+      tenant-check-enabled: true

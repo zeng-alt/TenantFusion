@@ -94,6 +94,7 @@
 import { useStorage } from '@vueuse/core'
 import { useAuthStore } from '@/store'
 import { lStorage, throttle } from '@/utils'
+import { clearActiveTenant } from '@/utils/active-tenant'
 import api from './api'
 
 const authStore = useAuthStore()
@@ -158,6 +159,7 @@ async function handleLogin() {
 }
 
 async function onLoginSuccess(data = {}) {
+  clearActiveTenant()
   authStore.setToken(data)
 
   $message.loading('登录中...', { key: 'login' })
